@@ -234,7 +234,7 @@ public final class FluentBenchmarker {
             migrations.add(Galaxy.autoMigration())
             migrations.add(Planet.autoMigration())
             
-            var databases = FluentDatabases()
+            var databases = FluentDatabases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
             
             let migrator = FluentMigrator(
@@ -254,7 +254,7 @@ public final class FluentBenchmarker {
             migrations.add(ErrorMigration())
             migrations.add(Planet.autoMigration())
             
-            var databases = FluentDatabases()
+            var databases = FluentDatabases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
             
             let migrator = FluentMigrator(

@@ -5,8 +5,11 @@ public struct FluentDatabases {
     
     private var _default: FluentDatabase?
     
-    public init() {
+    public let eventLoop: EventLoop
+    
+    public init(on eventLoop: EventLoop) {
         self.storage = [:]
+        self.eventLoop = eventLoop
     }
     
     public mutating func add(_ database: FluentDatabase, as id: FluentDatabaseID, isDefault: Bool = true) {
