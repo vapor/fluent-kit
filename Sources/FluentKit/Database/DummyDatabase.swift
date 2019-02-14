@@ -23,6 +23,10 @@ public struct DummyDatabase: FluentDatabase {
     public func execute(_ schema: FluentSchema) -> EventLoopFuture<Void> {
         return self.eventLoop.makeSucceededFuture(())
     }
+    
+    public func close() -> EventLoopFuture<Void> {
+        return self.eventLoop.makeSucceededFuture(())
+    }
 }
 
 // MARK: Private
