@@ -1,5 +1,7 @@
-extension FluentSQLDatabase {
-    internal func convert(_ schema: FluentSchema) -> SQLExpression {
+public struct SQLSchemaConverter {
+    public init() { }
+    
+    public func convert(_ schema: FluentSchema) -> SQLExpression {
         switch schema.action {
         case .create:
             return self.create(schema)

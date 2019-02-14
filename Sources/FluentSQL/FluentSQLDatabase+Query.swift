@@ -1,5 +1,7 @@
-extension FluentSQLDatabase {
-    internal func convert(_ fluent: FluentQuery) -> SQLExpression {
+public struct SQLQueryConverter {
+    public init() { }
+    
+    public func convert(_ fluent: FluentQuery) -> SQLExpression {
         let sql: SQLExpression
         switch fluent.action {
         case .read: sql = self.select(fluent)
@@ -10,7 +12,7 @@ extension FluentSQLDatabase {
             #warning("TODO:")
             return any as! SQLExpression
         }
-        return self.delegate.convert(fluent, sql)
+        return sql
     }
     
     // MARK: Private
