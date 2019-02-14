@@ -11,9 +11,12 @@ public struct FluentMigrator {
         self.eventLoop = eventLoop
     }
     
+    
+    #warning("TODO: handle identical migration added to two dbs")
+    
     // MARK: Prepare
     
-    public func prepare() -> EventLoopFuture<Void> {
+    public func prepareBatch() -> EventLoopFuture<Void> {
         return self.prepareMigrationLogIfNeeded().flatMap { _ -> EventLoopFuture<Void> in
             return self.unpreparedMigrations().flatMap { migrations in
                 return .andAllSync(migrations.map { item in
@@ -25,7 +28,7 @@ public struct FluentMigrator {
     
     // MARK: Revert
     
-    public func revertLast() -> EventLoopFuture<Void> {
+    public func revertLastBatch() -> EventLoopFuture<Void> {
         return self.lastBatchNumber().flatMap { self.revertBatch(number: $0) }
     }
     
@@ -37,7 +40,7 @@ public struct FluentMigrator {
         }
     }
     
-    public func revertAll() -> EventLoopFuture<Void> {
+    public func revertAllBatches() -> EventLoopFuture<Void> {
         return self.preparedMigrations().flatMap { migrations in
             return EventLoopFuture<Void>.andAllSync(migrations.map { item in
                 return { self.revert(item) }
@@ -49,7 +52,7 @@ public struct FluentMigrator {
     
     // MARK: Preview
     
-    public func previewPrepare() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
+    public func previewPrepareBatch() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
         return self.unpreparedMigrations().map { items -> [(FluentMigration, FluentDatabaseID?)] in
             return items.map { item -> (FluentMigration, FluentDatabaseID?) in
                 return (item.migration, item.id)
@@ -57,7 +60,7 @@ public struct FluentMigrator {
         }
     }
     
-    public func previewRevertLast() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
+    public func previewRevertLastBatch() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
         return self.lastBatchNumber().flatMap { lastBatch in
             return self.preparedMigrations(batch: lastBatch)
         }.map { items -> [(FluentMigration, FluentDatabaseID?)] in
@@ -67,7 +70,15 @@ public struct FluentMigrator {
         }
     }
     
-    public func previewRevertAll() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
+    public func previewRevertBatch(number: Int) -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
+        return self.preparedMigrations(batch: number).map { items -> [(FluentMigration, FluentDatabaseID?)] in
+            return items.map { item -> (FluentMigration, FluentDatabaseID?) in
+                return (item.migration, item.id)
+            }
+        }
+    }
+    
+    public func previewRevertAllBatches() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
         return self.preparedMigrations().map { items -> [(FluentMigration, FluentDatabaseID?)] in
             return items.map { item -> (FluentMigration, FluentDatabaseID?) in
                 return (item.migration, item.id)
@@ -107,6 +118,7 @@ public struct FluentMigrator {
     private func revert(_ item: FluentMigrations.Item) -> EventLoopFuture<Void> {
         let database: FluentDatabase
         if let id = item.id {
+            #warning("TODO: fix force unwrap")
             database = self.databases.database(id)!
         } else {
             database = self.databases.default()
