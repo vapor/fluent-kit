@@ -11,9 +11,10 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", .branch("master")),
         .package(url: "https://github.com/vapor/sql.git", .branch("master")),
+        .package(url: "https://github.com/vapor/codable-kit.git", .branch("master")),
     ],
     targets: [
-        .target(name: "FluentKit", dependencies: ["NIO"]),
+        .target(name: "FluentKit", dependencies: ["CodableKit", "NIO"]),
         .target(name: "FluentBenchmark", dependencies: ["FluentKit"]),
         .target(name: "FluentSQL", dependencies: ["FluentKit", "SQLKit"]),
         .testTarget(name: "FluentKitTests", dependencies: ["FluentBenchmark"]),
