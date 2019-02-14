@@ -242,8 +242,8 @@ public final class FluentBenchmarker {
                 migrations: migrations,
                 on: self.database.eventLoop
             )
-            try migrator.prepare().wait()
-            try migrator.revertAll().wait()
+            try migrator.prepareBatch().wait()
+            try migrator.revertAllBatches().wait()
         }
     }
     
@@ -263,13 +263,13 @@ public final class FluentBenchmarker {
                 on: self.database.eventLoop
             )
             do {
-                try migrator.prepare().wait()
+                try migrator.prepareBatch().wait()
                 throw Failure("prepare did not fail")
             } catch {
                 // success
                 self.log("Migration failed: \(error)")
             }
-            try migrator.revertAll().wait()
+            try migrator.revertAllBatches().wait()
         }
     }
     
