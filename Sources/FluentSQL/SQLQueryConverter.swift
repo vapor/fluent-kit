@@ -1,7 +1,7 @@
 public struct SQLQueryConverter {
     public init() { }
     
-    public func convert(_ fluent: FluentQuery) -> SQLExpression {
+    public func convert(_ fluent: DatabaseQuery) -> SQLExpression {
         let sql: SQLExpression
         switch fluent.action {
         case .read: sql = self.select(fluent)
@@ -17,13 +17,13 @@ public struct SQLQueryConverter {
     
     // MARK: Private
     
-    private func delete(_ query: FluentQuery) -> SQLExpression {
+    private func delete(_ query: DatabaseQuery) -> SQLExpression {
         var delete = SQLDelete(table: SQLIdentifier(query.entity))
         delete.predicate = self.filters(query.filters)
         return delete
     }
     
-    private func update(_ query: FluentQuery) -> SQLExpression {
+    private func update(_ query: DatabaseQuery) -> SQLExpression {
         var update = SQLUpdate(table: SQLIdentifier(query.entity))
         #warning("TODO: better indexing")
         for (i, field) in query.fields.enumerated() {
@@ -37,7 +37,7 @@ public struct SQLQueryConverter {
         return update
     }
     
-    private func select(_ query: FluentQuery) -> SQLExpression {
+    private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
         select.tables.append(SQLIdentifier(query.entity))
         select.columns = query.fields.map(self.field)
@@ -46,7 +46,7 @@ public struct SQLQueryConverter {
         return select
     }
     
-    private func insert(_ query: FluentQuery) -> SQLExpression {
+    private func insert(_ query: DatabaseQuery) -> SQLExpression {
         var insert = SQLInsert(table: SQLIdentifier(query.entity))
         insert.columns = query.fields.map(self.field)
         insert.values = query.input.map { row in
@@ -55,7 +55,7 @@ public struct SQLQueryConverter {
         return insert
     }
     
-    private func filters(_ filters: [FluentQuery.Filter]) -> SQLExpression? {
+    private func filters(_ filters: [DatabaseQuery.Filter]) -> SQLExpression? {
         guard !filters.isEmpty else {
             return nil
         }
@@ -66,7 +66,7 @@ public struct SQLQueryConverter {
         )
     }
     
-    private func join(_ join: FluentQuery.Join) -> SQLExpression {
+    private func join(_ join: DatabaseQuery.Join) -> SQLExpression {
         switch join {
         case .custom(let any): return any as! SQLExpression
         case .model(let foreign, let local):
@@ -88,7 +88,7 @@ public struct SQLQueryConverter {
         }
     }
     
-    private func field(_ field: FluentQuery.Field) -> SQLExpression {
+    private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
         switch field {
         case .custom(let any):
             #warning("TODO:")
@@ -115,7 +115,7 @@ public struct SQLQueryConverter {
         }
     }
     
-    private func filter(_ filter: FluentQuery.Filter) -> SQLExpression {
+    private func filter(_ filter: DatabaseQuery.Filter) -> SQLExpression {
         switch filter {
         case .basic(let field, let method, let value):
             return SQLBinaryExpression(
@@ -131,7 +131,7 @@ public struct SQLQueryConverter {
         }
     }
     
-    private func relation(_ relation: FluentQuery.Filter.Relation) -> SQLExpression {
+    private func relation(_ relation: DatabaseQuery.Filter.Relation) -> SQLExpression {
         switch relation {
         case .and: return SQLBinaryOperator.and
         case .or: return SQLBinaryOperator.or
@@ -142,7 +142,7 @@ public struct SQLQueryConverter {
 
     
     struct DictValues: Encodable {
-        let dict: [String: FluentQuery.Value]
+        let dict: [String: DatabaseQuery.Value]
 
         func encode(to encoder: Encoder) throws {
             var keyed = encoder.container(keyedBy: StringCodingKey.self)
@@ -159,7 +159,7 @@ public struct SQLQueryConverter {
         }
     }
     
-    private func value(_ value: FluentQuery.Value) -> SQLExpression {
+    private func value(_ value: DatabaseQuery.Value) -> SQLExpression {
         switch value {
         case .bind(let encodable):
             return SQLBind(encodable)
@@ -175,7 +175,7 @@ public struct SQLQueryConverter {
         }
     }
     
-    private func method(_ method: FluentQuery.Filter.Method) -> SQLExpression {
+    private func method(_ method: DatabaseQuery.Filter.Method) -> SQLExpression {
         switch method {
         case .equality(let inverse):
             if inverse {

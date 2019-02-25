@@ -1,15 +1,15 @@
 import FluentKit
 
-final class ErrorMigration: FluentMigration {
+final class ErrorMigration: Migration {
     init() { }
     
     struct Error: Swift.Error { }
     
-    func prepare(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeFailedFuture(Error())
     }
     
-    func revert(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

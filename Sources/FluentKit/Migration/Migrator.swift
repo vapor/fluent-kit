@@ -1,11 +1,11 @@
 import Foundation
 
-public struct FluentMigrator {
-    public let migrations: FluentMigrations
-    public let databases: FluentDatabases
+public struct Migrator {
+    public let migrations: Migrations
+    public let databases: Databases
     public let eventLoop: EventLoop
     
-    public init(databases: FluentDatabases, migrations: FluentMigrations, on eventLoop: EventLoop) {
+    public init(databases: Databases, migrations: Migrations, on eventLoop: EventLoop) {
         self.databases = databases
         self.migrations = migrations
         self.eventLoop = eventLoop
@@ -52,35 +52,35 @@ public struct FluentMigrator {
     
     // MARK: Preview
     
-    public func previewPrepareBatch() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
-        return self.unpreparedMigrations().map { items -> [(FluentMigration, FluentDatabaseID?)] in
-            return items.map { item -> (FluentMigration, FluentDatabaseID?) in
+    public func previewPrepareBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+        return self.unpreparedMigrations().map { items -> [(Migration, DatabaseID?)] in
+            return items.map { item -> (Migration, DatabaseID?) in
                 return (item.migration, item.id)
             }
         }
     }
     
-    public func previewRevertLastBatch() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
+    public func previewRevertLastBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
         return self.lastBatchNumber().flatMap { lastBatch in
             return self.preparedMigrations(batch: lastBatch)
-        }.map { items -> [(FluentMigration, FluentDatabaseID?)] in
-            return items.map { item -> (FluentMigration, FluentDatabaseID?) in
+        }.map { items -> [(Migration, DatabaseID?)] in
+            return items.map { item -> (Migration, DatabaseID?) in
                 return (item.migration, item.id)
             }
         }
     }
     
-    public func previewRevertBatch(number: Int) -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
-        return self.preparedMigrations(batch: number).map { items -> [(FluentMigration, FluentDatabaseID?)] in
-            return items.map { item -> (FluentMigration, FluentDatabaseID?) in
+    public func previewRevertBatch(number: Int) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+        return self.preparedMigrations(batch: number).map { items -> [(Migration, DatabaseID?)] in
+            return items.map { item -> (Migration, DatabaseID?) in
                 return (item.migration, item.id)
             }
         }
     }
     
-    public func previewRevertAllBatches() -> EventLoopFuture<[(FluentMigration, FluentDatabaseID?)]> {
-        return self.preparedMigrations().map { items -> [(FluentMigration, FluentDatabaseID?)] in
-            return items.map { item -> (FluentMigration, FluentDatabaseID?) in
+    public func previewRevertAllBatches() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+        return self.preparedMigrations().map { items -> [(Migration, DatabaseID?)] in
+            return items.map { item -> (Migration, DatabaseID?) in
                 return (item.migration, item.id)
             }
         }
@@ -88,8 +88,8 @@ public struct FluentMigrator {
     
     // MARK: Private
     
-    private func prepare(_ item: FluentMigrations.Item) -> EventLoopFuture<Void> {
-        let database: FluentDatabase
+    private func prepare(_ item: Migrations.Item) -> EventLoopFuture<Void> {
+        let database: Database
         if let id = item.id {
             #warning("TODO: fix force unwrap")
             database = self.databases.database(id)!
@@ -115,8 +115,8 @@ public struct FluentMigrator {
         }
     }
     
-    private func revert(_ item: FluentMigrations.Item) -> EventLoopFuture<Void> {
-        let database: FluentDatabase
+    private func revert(_ item: Migrations.Item) -> EventLoopFuture<Void> {
+        let database: Database
         if let id = item.id {
             #warning("TODO: fix force unwrap")
             database = self.databases.database(id)!
@@ -142,8 +142,8 @@ public struct FluentMigrator {
         }
     }
     
-    private func preparedMigrations() -> EventLoopFuture<[FluentMigrations.Item]> {
-        return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs -> [FluentMigrations.Item] in
+    private func preparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
+        return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs -> [Migrations.Item] in
             return try logs.compactMap { log in
                 if let item = try self.migrations.storage.filter({ try $0.migration.name == log.name.get() }).first {
                     return item
@@ -155,8 +155,8 @@ public struct FluentMigrator {
         }
     }
     
-    private func preparedMigrations(batch: Int) -> EventLoopFuture<[FluentMigrations.Item]> {
-        return self.databases.default().query(MigrationLog.self).filter(\.batch == batch).all().flatMapThrowing { logs -> [FluentMigrations.Item] in
+    private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migrations.Item]> {
+        return self.databases.default().query(MigrationLog.self).filter(\.batch == batch).all().flatMapThrowing { logs -> [Migrations.Item] in
             return try logs.compactMap { log in
                 if let item = try self.migrations.storage.filter({ try $0.migration.name == log.name.get() }).first {
                     return item
@@ -168,8 +168,8 @@ public struct FluentMigrator {
         }
     }
     
-    private func unpreparedMigrations() -> EventLoopFuture<[FluentMigrations.Item]> {
-        return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs -> [FluentMigrations.Item] in
+    private func unpreparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
+        return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs -> [Migrations.Item] in
             return try self.migrations.storage.compactMap { item in
                 if try logs.filter({ try $0.name.get() == item.migration.name }).count == 0 {
                     return item

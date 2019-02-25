@@ -1,15 +1,15 @@
-public struct FluentChildren<Parent, Child>
-    where Parent: FluentKit.FluentModel, Child: FluentKit.FluentModel
+public struct ModelChildren<Parent, Child>
+    where Parent: FluentKit.Model, Child: FluentKit.Model
 {
     let parent: Parent
-    let relation: KeyPath<Child, FluentParent<Child, Parent>>
+    let relation: KeyPath<Child, ModelParent<Child, Parent>>
     
-    init(parent: Parent, relation: KeyPath<Child, FluentParent<Child, Parent>>) {
+    init(parent: Parent, relation: KeyPath<Child, ModelParent<Child, Parent>>) {
         self.parent = parent
         self.relation = relation
     }
     
-    public func query(on database: FluentDatabase) throws -> FluentQueryBuilder<Child> {
+    public func query(on database: Database) throws -> QueryBuilder<Child> {
         let field = Child.new()[keyPath: self.relation].id
         return try database.query(Child.self).filter(
             .field(path: [field.name], entity: Child.new().entity, alias: nil),
@@ -27,12 +27,12 @@ public struct FluentChildren<Parent, Child>
     }
 }
 
-extension FluentModel {
-    public typealias Children<Model> = FluentChildren<Self, Model>
-        where Model: FluentModel
+extension Model {
+    public typealias Children<Model> = ModelChildren<Self, Model>
+        where Model: FluentKit.Model
     
-    public func children<Model>(_ relation: KeyPath<Model, FluentParent<Model, Self>>) -> Children<Model>
-        where Model: FluentKit.FluentModel
+    public func children<Model>(_ relation: KeyPath<Model, ModelParent<Model, Self>>) -> Children<Model>
+        where Model: FluentKit.Model
     {
         return .init(parent: self, relation: relation)
     }

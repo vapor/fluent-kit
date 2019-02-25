@@ -1,18 +1,18 @@
 import NIO
 
-extension FluentDatabase {
+extension Database {
     public func schema<Model>(_ model: Model.Type) -> SchemaBuilder<Model>
-        where Model: FluentKit.FluentModel
+        where Model: FluentKit.Model
     {
         return .init(database: self)
     }
 }
 
-public final class SchemaBuilder<Model> where Model: FluentKit.FluentModel {
-    let database: FluentDatabase
-    public var schema: FluentSchema
+public final class SchemaBuilder<Model> where Model: FluentKit.Model {
+    let database: Database
+    public var schema: DatabaseSchema
     
-    public init(database: FluentDatabase) {
+    public init(database: Database) {
         self.database = database
         self.schema = .init(entity: Model.new().entity)
     }
@@ -28,7 +28,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.FluentModel {
         return self
     }
     
-    public func field<Model, Value>(_ keyPath: KeyPath<Model, FluentField<Model, Value>>) -> Self {
+    public func field<Model, Value>(_ keyPath: KeyPath<Model, ModelField<Model, Value>>) -> Self {
         let field = Model.new()[keyPath: keyPath]
         return self.field(.definition(
             name: .string(field.name),
@@ -37,7 +37,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.FluentModel {
         ))
     }
     
-    public func field(_ field: FluentSchema.FieldDefinition) -> Self {
+    public func field(_ field: DatabaseSchema.FieldDefinition) -> Self {
         self.schema.createFields.append(field)
         return self
     }
@@ -46,7 +46,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.FluentModel {
         return self.deleteField(.string(name))
     }
     
-    public func deleteField(_ name: FluentSchema.FieldName) -> Self {
+    public func deleteField(_ name: DatabaseSchema.FieldName) -> Self {
         self.schema.deleteFields.append(name)
         return self
     }

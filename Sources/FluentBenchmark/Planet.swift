@@ -1,7 +1,7 @@
 import FluentKit
 
-final class Planet: FluentModel, Codable {
-    var storage: Storage
+final class Planet: Model, Codable {
+    var storage: ModelStorage
     
     var properties: [Property] {
         return [id, name, galaxy]
@@ -23,7 +23,7 @@ final class Planet: FluentModel, Codable {
         return self.parent("galaxyID")
     }
     
-    init(storage: Storage) {
+    init(storage: ModelStorage) {
         self.storage = storage
     }
 }

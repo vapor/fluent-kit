@@ -2,8 +2,8 @@ import FluentKit
 
 
 
-final class User: FluentModel {
-    var storage: Storage
+final class User: Model {
+    var storage: ModelStorage
     
     var properties: [Property] {
         return [id, name, pet.property]
@@ -25,7 +25,7 @@ final class User: FluentModel {
         return self.nested("pet", .json, .required)
     }
     
-    init(storage: Storage) {
+    init(storage: ModelStorage) {
         self.storage = storage
     }
 }
@@ -34,8 +34,8 @@ enum Animal: String, Codable {
     case cat, dog
 }
 
-final class Pet: FluentNestedModel {
-    var storage: Storage
+final class Pet: NestedModel {
+    var storage: ModelStorage
     
     var properties: [Property] {
         return [name, type]
@@ -49,15 +49,15 @@ final class Pet: FluentNestedModel {
         return self.field("type")
     }
     
-    init(storage: Storage) {
+    init(storage: ModelStorage) {
         self.storage = storage
     }
 }
 
-final class UserSeed: FluentMigration {
+final class UserSeed: Migration {
     init() { }
     
-    func prepare(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         let tanner = User()
         tanner.name.set(to: "Tanner")
         tanner.pet.name.set(to: "Ziz")
@@ -73,7 +73,7 @@ final class UserSeed: FluentMigration {
             .map { _ in }
     }
     
-    func revert(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

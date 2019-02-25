@@ -1,9 +1,9 @@
 import FluentKit
 
-final class PlanetSeed: FluentMigration {
+final class PlanetSeed: Migration {
     init() { }
     
-    func prepare(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         let milkyWay = self.add([
             "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"
         ], to: "Milky Way", on: database)
@@ -11,7 +11,7 @@ final class PlanetSeed: FluentMigration {
         return .andAllSucceed([milkyWay, andromeda], on: database.eventLoop)
     }
     
-    private func add(_ planets: [String], to galaxy: String, on database: FluentDatabase) -> EventLoopFuture<Void> {
+    private func add(_ planets: [String], to galaxy: String, on database: Database) -> EventLoopFuture<Void> {
         return database.query(Galaxy.self).filter(\.name == galaxy).first().flatMap { galaxy -> EventLoopFuture<Void> in
             guard let galaxy = galaxy else {
                 return database.eventLoop.makeSucceededFuture(())
@@ -26,7 +26,7 @@ final class PlanetSeed: FluentMigration {
         }
     }
     
-    func revert(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

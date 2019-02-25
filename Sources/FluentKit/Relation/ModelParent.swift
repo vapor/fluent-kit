@@ -1,9 +1,9 @@
-public struct FluentParent<Child, Parent>
-    where Child: FluentModel, Parent: FluentModel
+public struct ModelParent<Child, Parent>
+    where Child: Model, Parent: Model
 {
-    public var id: FluentField<Child, Parent.ID>
+    public var id: ModelField<Child, Parent.ID>
     
-    init(id: FluentField<Child, Parent.ID>) {
+    init(id: ModelField<Child, Parent.ID>) {
         self.id = id
     }
     
@@ -21,7 +21,7 @@ public struct FluentParent<Child, Parent>
     }
 }
 
-extension FluentParent: FluentProperty {
+extension ModelParent: ModelProperty {
     public var name: String {
         return self.id.name
     }
@@ -30,11 +30,11 @@ extension FluentParent: FluentProperty {
         return self.id.type
     }
     
-    public var dataType: FluentSchema.DataType? {
+    public var dataType: DatabaseSchema.DataType? {
         return self.id.dataType
     }
     
-    public var constraints: [FluentSchema.FieldConstraint] {
+    public var constraints: [DatabaseSchema.FieldConstraint] {
         return self.id.constraints
     }
     
@@ -53,12 +53,12 @@ extension FluentParent: FluentProperty {
 }
 
 
-extension FluentModel {
-    public typealias Parent<Model> = FluentParent<Self, Model>
-        where Model: FluentModel
+extension Model {
+    public typealias Parent<Model> = ModelParent<Self, Model>
+        where Model: FluentKit.Model
     
-    public func parent<Model>(_ name: String, _ dataType: FluentSchema.DataType? = nil) -> Parent<Model>
-        where Model: FluentKit.FluentModel
+    public func parent<Model>(_ name: String, _ dataType: DatabaseSchema.DataType? = nil) -> Parent<Model>
+        where Model: FluentKit.Model
     {
         return .init(id: self.field(name, dataType))
     }

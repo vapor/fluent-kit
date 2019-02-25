@@ -1,11 +1,11 @@
-public struct FluentField<Entity, Value>: FluentProperty
-    where Entity: FluentEntity, Value: Codable
+public struct ModelField<Entity, Value>: ModelProperty
+    where Entity: FluentKit.AnyModel, Value: Codable
 {
     public var type: Any.Type {
         return Value.self
     }
     
-    public var constraints: [FluentSchema.FieldConstraint]
+    public var constraints: [DatabaseSchema.FieldConstraint]
     
     public let name: String
     
@@ -13,7 +13,7 @@ public struct FluentField<Entity, Value>: FluentProperty
         return self.model.storage.path + [self.name]
     }
 
-    public let dataType: FluentSchema.DataType?
+    public let dataType: DatabaseSchema.DataType?
     
     internal let model: Entity
     
@@ -21,7 +21,7 @@ public struct FluentField<Entity, Value>: FluentProperty
         let name: String
     }
     
-    init(model: Entity, name: String, dataType: FluentSchema.DataType?, constraints: [FluentSchema.FieldConstraint]) {
+    init(model: Entity, name: String, dataType: DatabaseSchema.DataType?, constraints: [DatabaseSchema.FieldConstraint]) {
         self.model = model
         self.name = name
         self.dataType = dataType
@@ -54,14 +54,14 @@ public struct FluentField<Entity, Value>: FluentProperty
     }
 }
 
-extension FluentEntity {
-    public typealias Field<Value> = FluentField<Self, Value>
+extension AnyModel {
+    public typealias Field<Value> = ModelField<Self, Value>
         where Value: Codable
     
     public func field<Value>(
         _ name: String,
-        _ dataType: FluentSchema.DataType? = nil,
-        _ constraints: FluentSchema.FieldConstraint...
+        _ dataType: DatabaseSchema.DataType? = nil,
+        _ constraints: DatabaseSchema.FieldConstraint...
     ) -> Field<Value>
         where Value: Codable
     {

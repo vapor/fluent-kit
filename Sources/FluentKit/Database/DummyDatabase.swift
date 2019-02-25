@@ -1,4 +1,4 @@
-public struct DummyDatabase: FluentDatabase {
+public struct DummyDatabase: Database {
     /// See `FluentDatabase`.
     public var eventLoop: EventLoop {
         return EmbeddedEventLoop()
@@ -8,7 +8,7 @@ public struct DummyDatabase: FluentDatabase {
     public init() { }
     
     /// See `FluentDatabase`.
-    public func execute(_ query: FluentQuery, _ onOutput: @escaping (FluentOutput) throws -> ()) -> EventLoopFuture<Void> {
+    public func execute(_ query: DatabaseQuery, _ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
         do {
             for _ in 0..<Int.random(in: 1..<42) {
                 try onOutput(DummyOutput())
@@ -20,7 +20,7 @@ public struct DummyDatabase: FluentDatabase {
     }
     
     /// See `FluentDatabase`.
-    public func execute(_ schema: FluentSchema) -> EventLoopFuture<Void> {
+    public func execute(_ schema: DatabaseSchema) -> EventLoopFuture<Void> {
         return self.eventLoop.makeSucceededFuture(())
     }
     
@@ -31,7 +31,7 @@ public struct DummyDatabase: FluentDatabase {
 
 // MARK: Private
 
-private struct DummyOutput: FluentOutput {
+private struct DummyOutput: DatabaseOutput {
     func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
         return try T(from: DummyDecoder())
     }

@@ -4,7 +4,7 @@ import Foundation
 /// This information is used to determine which migrations need to be run
 /// when the app boots. It is also used to determine which migrations to revert when
 /// using the `RevertCommand`.
-public final class MigrationLog: FluentModel {
+public final class MigrationLog: Model {
     /// See `Model`.
     public var entity: String {
         return "fluent"
@@ -39,9 +39,9 @@ public final class MigrationLog: FluentModel {
         return [self.id, self.name, self.batch, self.createdAt, self.updatedAt]
     }
     
-    public var storage: Storage
+    public var storage: ModelStorage
     
-    public init(storage: Storage) {
+    public init(storage: ModelStorage) {
         self.storage = storage
     }
 }

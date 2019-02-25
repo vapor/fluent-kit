@@ -1,14 +1,14 @@
 @_exported import FluentKit
 @_exported import SQLKit
 
-extension FluentQuery.Filter {
-    public static func sql(_ expression: SQLExpression) -> FluentQuery.Filter {
+extension DatabaseQuery.Filter {
+    public static func sql(_ expression: SQLExpression) -> DatabaseQuery.Filter {
         return .custom(expression)
     }
 }
 
-extension FluentQuery.Field {
-    public static func sql(_ expression: SQLExpression) -> FluentQuery.Field {
+extension DatabaseQuery.Field {
+    public static func sql(_ expression: SQLExpression) -> DatabaseQuery.Field {
         return .custom(expression)
     }
 }

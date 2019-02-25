@@ -1,9 +1,9 @@
 import Foundation
 
-public struct FluentDatabases {
-    private var storage: [FluentDatabaseID: FluentDatabase]
+public struct Databases {
+    private var storage: [DatabaseID: Database]
     
-    private var _default: FluentDatabase?
+    private var _default: Database?
     
     public let eventLoop: EventLoop
     
@@ -12,18 +12,18 @@ public struct FluentDatabases {
         self.eventLoop = eventLoop
     }
     
-    public mutating func add(_ database: FluentDatabase, as id: FluentDatabaseID, isDefault: Bool = true) {
+    public mutating func add(_ database: Database, as id: DatabaseID, isDefault: Bool = true) {
         self.storage[id] = database
         if isDefault {
             self._default = database
         }
     }
     
-    public func database(_ id: FluentDatabaseID) -> FluentDatabase? {
+    public func database(_ id: DatabaseID) -> Database? {
         return self.storage[id]
     }
     
-    public func `default`() -> FluentDatabase {
+    public func `default`() -> Database {
         return self._default!
     }
 }

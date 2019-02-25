@@ -1,7 +1,7 @@
 public struct SQLSchemaConverter {
     public init() { }
     
-    public func convert(_ schema: FluentSchema) -> SQLExpression {
+    public func convert(_ schema: DatabaseSchema) -> SQLExpression {
         switch schema.action {
         case .create:
             return self.create(schema)
@@ -15,12 +15,12 @@ public struct SQLSchemaConverter {
     
     // MARK: Private
     
-    private func delete(_ schema: FluentSchema) -> SQLExpression {
+    private func delete(_ schema: DatabaseSchema) -> SQLExpression {
         var delete = SQLDropTable(table: self.name(schema.entity))
         return delete
     }
     
-    private func create(_ schema: FluentSchema) -> SQLExpression {
+    private func create(_ schema: DatabaseSchema) -> SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.entity))
         create.columns = schema.createFields.map(self.fieldDefinition)
         return create
@@ -30,7 +30,7 @@ public struct SQLSchemaConverter {
         return SQLIdentifier(string)
     }
     
-    private func fieldDefinition(_ fieldDefinition: FluentSchema.FieldDefinition) -> SQLExpression {
+    private func fieldDefinition(_ fieldDefinition: DatabaseSchema.FieldDefinition) -> SQLExpression {
         switch fieldDefinition {
         case .custom(let any):
             return any as! SQLExpression
@@ -43,7 +43,7 @@ public struct SQLSchemaConverter {
         }
     }
     
-    private func fieldName(_ fieldName: FluentSchema.FieldName) -> SQLExpression {
+    private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> SQLExpression {
         switch fieldName {
         case .custom(let any):
             return any as! SQLExpression
@@ -52,7 +52,7 @@ public struct SQLSchemaConverter {
         }
     }
     
-    private func dataType(_ dataType: FluentSchema.DataType) -> SQLExpression {
+    private func dataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression {
         switch dataType {
         case .bool: return SQLDataType.int
         case .data: return SQLDataType.blob
@@ -73,7 +73,7 @@ public struct SQLSchemaConverter {
         }
     }
     
-    private func fieldConstraint(_ fieldConstraint: FluentSchema.FieldConstraint) -> SQLExpression {
+    private func fieldConstraint(_ fieldConstraint: DatabaseSchema.FieldConstraint) -> SQLExpression {
         switch fieldConstraint {
         case .required:
             return SQLColumnConstraint.notNull

@@ -1,15 +1,14 @@
-import NIO
-
+#warning("TODO: remove Anys from protocol")
 public protocol EagerLoad: class {
-    func run(_ models: [Any], on database: FluentDatabase) -> EventLoopFuture<Void>
+    func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void>
     func get(id: Any) throws -> [Any]
 }
 
-extension FluentModel {
+extension Model {
     func joined<Joined>(_ model: Joined.Type) -> Joined
-        where Joined: FluentModel
+        where Joined: FluentKit.Model
     {
-        return Joined(storage: ModelStorage(
+        return Joined(storage: DefaultModelStorage(
             output: self.storage.output!.prefixed(by: Joined.new().entity + "_"),
             eagerLoads: [:],
             exists: true
@@ -17,14 +16,14 @@ extension FluentModel {
     }
 }
 
-extension FluentOutput {
-    func prefixed(by string: String) -> FluentOutput {
+extension DatabaseOutput {
+    func prefixed(by string: String) -> DatabaseOutput {
         return PrefixingOutput(self, prefix: string)
     }
 }
 
-struct PrefixingOutput: FluentOutput {
-    let wrapped: FluentOutput
+struct PrefixingOutput: DatabaseOutput {
+    let wrapped: DatabaseOutput
     
     let prefix: String
     
@@ -32,7 +31,7 @@ struct PrefixingOutput: FluentOutput {
         return self.wrapped.description
     }
     
-    init(_ wrapped: FluentOutput, prefix: String) {
+    init(_ wrapped: DatabaseOutput, prefix: String) {
         self.wrapped = wrapped
         self.prefix = prefix
     }
@@ -43,7 +42,7 @@ struct PrefixingOutput: FluentOutput {
 }
 
 final class JoinParentEagerLoad<Child, Parent>: EagerLoad
-    where Child: FluentModel, Parent: FluentModel
+    where Child: Model, Parent: Model
 {
     var parents: [Parent.ID: Parent]
     
@@ -51,7 +50,7 @@ final class JoinParentEagerLoad<Child, Parent>: EagerLoad
         self.parents = [:]
     }
     
-    func run(_ models: [Any], on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         var res: [Parent.ID: Parent] = [:]
         try! models.map { $0 as! Child }.forEach { child in
             let parent = child.joined(Parent.self)
@@ -69,18 +68,18 @@ final class JoinParentEagerLoad<Child, Parent>: EagerLoad
 }
 
 final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
-    where  Child: FluentModel, Parent: FluentModel
+    where  Child: Model, Parent: Model
 {
     var storage: [Parent]
     
-    let parent: KeyPath<Child, FluentParent<Child, Parent>>
+    let parent: KeyPath<Child, ModelParent<Child, Parent>>
     
-    init(_ parent: KeyPath<Child, FluentParent<Child, Parent>>) {
+    init(_ parent: KeyPath<Child, ModelParent<Child, Parent>>) {
         self.storage = []
         self.parent = parent
     }
     
-    func run(_ models: [Any], on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         let ids: [Parent.ID] = try! models
             .map { $0 as! Child }
             .map { try $0[keyPath: self.parent].id.get() }
@@ -101,18 +100,18 @@ final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
 }
 
 final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
-    where Parent: FluentModel, Child: FluentModel
+    where Parent: Model, Child: Model
 {
     var storage: [Child]
     
-    let children: KeyPath<Child, FluentField<Child, Parent.ID>>
+    let children: KeyPath<Child, ModelField<Child, Parent.ID>>
     
-    init(_ children: KeyPath<Child, FluentField<Child, Parent.ID>>) {
+    init(_ children: KeyPath<Child, ModelField<Child, Parent.ID>>) {
         self.storage = []
         self.children = children
     }
     
-    func run(_ models: [Any], on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         let ids: [Parent.ID] = try! models
             .map { $0 as! Parent }
             .map { try $0.id.get() }
@@ -131,17 +130,3 @@ final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
         }
     }
 }
-
-//struct EagerLoad {
-//    struct Request {
-//        var run: (Cache, FluentDatabase, [Any]) throws -> EventLoopFuture<Result>
-//    }
-//    var requests: [Request]
-//
-//    var cache: Cache
-//
-//    init() {
-//        self.requests = []
-//        self.cache = .init()
-//    }
-//}

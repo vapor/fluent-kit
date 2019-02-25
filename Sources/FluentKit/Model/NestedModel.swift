@@ -1,38 +1,35 @@
-public protocol FluentStorage {
-    var output: FluentOutput? { get }
-    var input: [String: FluentQuery.Value] { get set }
-    var eagerLoads: [String: EagerLoad] { get set }
-    var exists: Bool { get set }
-    var path: [String] { get }
-}
+public protocol NestedModel: AnyModel { }
 
-struct ModelStorage: FluentStorage {
-    static let empty: ModelStorage = .init(
-        output: nil,
-        eagerLoads: [:],
-        exists: false
-    )
-    
-    var output: FluentOutput?
-    var input: [String: FluentQuery.Value]
-    var eagerLoads: [String: EagerLoad]
-    var exists: Bool
-    var path: [String] {
-        return []
-    }
-
-    init(output: FluentOutput?, eagerLoads: [String: EagerLoad], exists: Bool) {
-        self.output = output
-        self.eagerLoads = eagerLoads
-        self.input = [:]
-        self.exists = exists
+extension AnyModel {
+    public func nested<Nested>(
+        _ name: String,
+        _ dataType: DatabaseSchema.DataType? = nil,
+        _ constraints: DatabaseSchema.FieldConstraint...
+    ) -> Nested
+        where Nested: AnyModel
+    {
+        let storage = NestedModelStorage(
+            name: name,
+            base: self,
+            dataType: dataType,
+            constraints: constraints
+        )
+        return .init(storage: storage)
     }
 }
 
-struct NestedOutput: FluentOutput {
+extension NestedModel {
+    public var property: ModelProperty {
+        return NestedProperty(entity: self)
+    }
+}
+
+// MARK: Private
+
+private struct NestedOutput: DatabaseOutput {
     let name: String
-    let base: FluentOutput
-    init(name: String, _ base: FluentOutput) {
+    let base: DatabaseOutput
+    init(name: String, _ base: DatabaseOutput) {
         self.name = name
         self.base = base
     }
@@ -51,23 +48,23 @@ struct NestedOutput: FluentOutput {
     }
 }
 
-struct NestedStorage: FluentStorage {
+private struct NestedModelStorage: ModelStorage {
     let name: String
-    let base: FluentEntity
-    let dataType: FluentSchema.DataType?
-    let constraints: [FluentSchema.FieldConstraint]
+    let base: AnyModel
+    let dataType: DatabaseSchema.DataType?
+    let constraints: [DatabaseSchema.FieldConstraint]
     
     var path: [String] {
         return self.base.storage.path + [self.name]
     }
     
-    var output: FluentOutput? {
+    var output: DatabaseOutput? {
         return self.base.storage.output.flatMap { output in
             return NestedOutput(name: self.name, output)
         }
     }
     
-    var input: [String: FluentQuery.Value] {
+    var input: [String: DatabaseQuery.Value] {
         get {
             switch self.base.storage.input[self.name] {
             case .none: return [:]
@@ -92,34 +89,8 @@ struct NestedStorage: FluentStorage {
     }
 }
 
-extension FluentEntity {
-    public func nested<Nested>(
-        _ name: String,
-        _ dataType: FluentSchema.DataType? = nil,
-        _ constraints: FluentSchema.FieldConstraint...
-    ) -> Nested
-        where Nested: FluentEntity
-    {
-        let storage = NestedStorage(
-            name: name,
-            base: self,
-            dataType: dataType,
-            constraints: constraints
-        )
-        return .init(storage: storage)
-    }
-}
-
-public protocol FluentNestedModel: FluentEntity { }
-
-extension FluentNestedModel {
-    public var property: FluentProperty {
-        return NestedProperty(entity: self)
-    }
-}
-
-struct NestedProperty<Nested>: FluentProperty
-    where Nested: FluentNestedModel
+private struct NestedProperty<Nested>: ModelProperty
+    where Nested: NestedModel
 {
     let entity: Nested
     
@@ -128,21 +99,21 @@ struct NestedProperty<Nested>: FluentProperty
     }
     
     public var name: String {
-        guard let storage = self.entity.storage as? NestedStorage else {
+        guard let storage = self.entity.storage as? NestedModelStorage else {
             fatalError()
         }
         return storage.name
     }
     
-    var dataType: FluentSchema.DataType? {
-        guard let storage = self.entity.storage as? NestedStorage else {
+    var dataType: DatabaseSchema.DataType? {
+        guard let storage = self.entity.storage as? NestedModelStorage else {
             fatalError()
         }
         return storage.dataType
     }
     
-    var constraints: [FluentSchema.FieldConstraint] {
-        guard let storage = self.entity.storage as? NestedStorage else {
+    var constraints: [DatabaseSchema.FieldConstraint] {
+        guard let storage = self.entity.storage as? NestedModelStorage else {
             fatalError()
         }
         return storage.constraints

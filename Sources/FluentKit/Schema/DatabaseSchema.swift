@@ -1,6 +1,7 @@
-import Foundation
+import struct Foundation.Date
+import struct Foundation.UUID
 
-public struct FluentSchema {
+public struct DatabaseSchema {
     public enum Action {
         case create
         case update

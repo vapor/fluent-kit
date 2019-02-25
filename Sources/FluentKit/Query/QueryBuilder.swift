@@ -1,21 +1,21 @@
 import NIO
 
-extension FluentDatabase {
-    public func query<Model>(_ model: Model.Type) -> FluentQueryBuilder<Model>
-        where Model: FluentKit.FluentModel
+extension Database {
+    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
+        where Model: FluentKit.Model
     {
         return .init(database: self)
     }
 }
 
-public final class FluentQueryBuilder<Model>
-    where Model: FluentKit.FluentModel
+public final class QueryBuilder<Model>
+    where Model: FluentKit.Model
 {
-    let database: FluentDatabase
-    public var query: FluentQuery
+    let database: Database
+    public var query: DatabaseQuery
     var eagerLoads: [String: EagerLoad]
     
-    public init(database: FluentDatabase) {
+    public init(database: Database) {
         self.database = database
         self.query = .init(entity: Model.new().entity)
         self.eagerLoads = [:]
@@ -33,10 +33,10 @@ public final class FluentQueryBuilder<Model>
     
     @discardableResult
     public func with<Child>(
-        _ key: KeyPath<Model, FluentChildren<Model, Child>>,
+        _ key: KeyPath<Model, ModelChildren<Model, Child>>,
         method: EagerLoadMethod = .subquery
     ) -> Self
-        where Child: FluentKit.FluentModel
+        where Child: FluentKit.Model
     {
         switch method {
         case .subquery:
@@ -50,10 +50,10 @@ public final class FluentQueryBuilder<Model>
 
     @discardableResult
     public func with<Parent>(
-        _ key: KeyPath<Model, FluentParent<Model, Parent>>,
+        _ key: KeyPath<Model, ModelParent<Model, Parent>>,
         method: EagerLoadMethod = .subquery
     ) -> Self
-        where Parent: FluentKit.FluentModel
+        where Parent: FluentKit.Model
     {
         switch method {
         case .subquery:
@@ -66,7 +66,7 @@ public final class FluentQueryBuilder<Model>
     }
     
     @discardableResult
-    public func join<Parent>(_ key: KeyPath<Model, FluentParent<Model, Parent>>) -> Self {
+    public func join<Parent>(_ key: KeyPath<Model, ModelParent<Model, Parent>>) -> Self {
         let l = Model.new()[keyPath: key].id
         let f = Parent.new().id
         self.query.fields += Parent.new().properties.map {
@@ -85,10 +85,10 @@ public final class FluentQueryBuilder<Model>
     
     @discardableResult
     public func join<Foreign, T>(
-        _ local: KeyPath<Model, FluentField<Model, T>>,
-        _ foreign: KeyPath<Foreign, FluentField<Foreign, T>>
+        _ local: KeyPath<Model, ModelField<Model, T>>,
+        _ foreign: KeyPath<Foreign, ModelField<Foreign, T>>
     ) -> Self
-        where Foreign: FluentModel
+        where Foreign: FluentKit.Model
     {
         let f = Foreign.new()[keyPath: foreign]
         let l = Model.new()[keyPath: local]
@@ -114,7 +114,7 @@ public final class FluentQueryBuilder<Model>
     
     @discardableResult
     public func filter<T>(
-        _ key: KeyPath<Model, FluentField<Model, T>>,
+        _ key: KeyPath<Model, ModelField<Model, T>>,
         in value: [T]
     ) -> Self
         where T: Encodable
@@ -127,7 +127,7 @@ public final class FluentQueryBuilder<Model>
     }
     
     @discardableResult
-    public func filter<T>(_ key: KeyPath<Model, FluentField<Model, T>>, _ method: FluentQuery.Filter.Method, _ value: T) -> Self
+    public func filter<T>(_ key: KeyPath<Model, ModelField<Model, T>>, _ method: DatabaseQuery.Filter.Method, _ value: T) -> Self
         where T: Encodable
     {
         let property = Model.new()[keyPath: key]
@@ -143,25 +143,25 @@ public final class FluentQueryBuilder<Model>
     }
     
     @discardableResult
-    public func filter(_ field: FluentQuery.Field, _ method: FluentQuery.Filter.Method, _ value: FluentQuery.Value) -> Self {
+    public func filter(_ field: DatabaseQuery.Field, _ method: DatabaseQuery.Filter.Method, _ value: DatabaseQuery.Value) -> Self {
         return self.filter(.basic(field, method, value))
     }
     
     @discardableResult
-    public func filter(_ filter: FluentQuery.Filter) -> Self {
+    public func filter(_ filter: DatabaseQuery.Filter) -> Self {
         self.query.filters.append(filter)
         return self
     }
     
     @discardableResult
-    public func set(_ data: [String: FluentQuery.Value]) -> Self {
+    public func set(_ data: [String: DatabaseQuery.Value]) -> Self {
         query.fields = data.keys.map { .field(path: [$0], entity: nil, alias: nil) }
         query.input.append(.init(data.values))
         return self
     }
     
     @discardableResult
-    public func set<Value>(_ field: KeyPath<Model, FluentField<Model, Value>>, to value: Value) -> Self {
+    public func set<Value>(_ field: KeyPath<Model, ModelField<Model, Value>>, to value: Value) -> Self {
         let ref = Model.new()
         self.query.fields = []
         query.fields.append(.field(path: [ref[keyPath: field].name], entity: nil, alias: nil))
@@ -207,7 +207,7 @@ public final class FluentQueryBuilder<Model>
     public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
         return self.database.execute(self.query) { output in
-            let model = Model.init(storage: ModelStorage(
+            let model = Model.init(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true
@@ -222,10 +222,10 @@ public final class FluentQueryBuilder<Model>
     }
 }
 
-public struct ModelFilter<Model> where Model: FluentKit.FluentModel {
+public struct ModelFilter<Model> where Model: FluentKit.Model {
     static func make<Value, Foo>(
-        _ lhs: KeyPath<Model, FluentField<Foo, Value>>,
-        _ method: FluentQuery.Filter.Method,
+        _ lhs: KeyPath<Model, ModelField<Foo, Value>>,
+        _ method: DatabaseQuery.Filter.Method,
         _ rhs: Value
     ) -> ModelFilter {
         let field = Model.new()[keyPath: lhs]
@@ -236,12 +236,12 @@ public struct ModelFilter<Model> where Model: FluentKit.FluentModel {
         ))
     }
     
-    let filter: FluentQuery.Filter
-    init(filter: FluentQuery.Filter) {
+    let filter: DatabaseQuery.Filter
+    init(filter: DatabaseQuery.Filter) {
         self.filter = filter
     }
 }
 
-public func ==<Model, Foo, Value>(lhs: KeyPath<Model, FluentField<Foo, Value>>, rhs: Value) -> ModelFilter<Model> {
+public func ==<Model, Foo, Value>(lhs: KeyPath<Model, ModelField<Foo, Value>>, rhs: Value) -> ModelFilter<Model> {
     return .make(lhs, .equality(inverse: false), rhs)
 }

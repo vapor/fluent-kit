@@ -1,9 +1,9 @@
 import FluentKit
 
-final class GalaxySeed: FluentMigration {
+final class GalaxySeed: Migration {
     init() { }
     
-    func prepare(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         let saves = ["Andromeda", "Milky Way", "Messier 82"].map { name -> EventLoopFuture<Void> in
             let galaxy = Galaxy.new()
             galaxy.name.set(to: name)
@@ -12,7 +12,7 @@ final class GalaxySeed: FluentMigration {
         return .andAllSucceed(saves, on: database.eventLoop)
     }
     
-    func revert(on database: FluentDatabase) -> EventLoopFuture<Void> {
+    func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

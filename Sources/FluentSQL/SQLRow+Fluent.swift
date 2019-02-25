@@ -1,10 +1,10 @@
 public extension SQLRow {
-    var fluentOutput: FluentOutput {
+    var fluentOutput: DatabaseOutput {
         return _FluentOutputWrapper(self)
     }
 }
 
-private struct _FluentOutputWrapper: FluentOutput {
+private struct _FluentOutputWrapper: DatabaseOutput {
     public let row: SQLRow
     public init(_ row: SQLRow) {
         self.row = row

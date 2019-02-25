@@ -3,9 +3,9 @@ import Foundation
 import XCTest
 
 public final class FluentBenchmarker {
-    public let database: FluentDatabase
+    public let database: Database
     
-    public init(database: FluentDatabase) {
+    public init(database: Database) {
         self.database = database
     }
     
@@ -230,14 +230,14 @@ public final class FluentBenchmarker {
     
     public func testMigrator() throws {
         try self.runTest(#function, []) {
-            var migrations = FluentMigrations()
+            var migrations = Migrations()
             migrations.add(Galaxy.autoMigration())
             migrations.add(Planet.autoMigration())
             
-            var databases = FluentDatabases(on: self.database.eventLoop)
+            var databases = Databases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
             
-            let migrator = FluentMigrator(
+            let migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
                 on: self.database.eventLoop
@@ -249,15 +249,15 @@ public final class FluentBenchmarker {
     
     public func testMigratorError() throws {
         try self.runTest(#function, []) {
-            var migrations = FluentMigrations()
+            var migrations = Migrations()
             migrations.add(Galaxy.autoMigration())
             migrations.add(ErrorMigration())
             migrations.add(Planet.autoMigration())
             
-            var databases = FluentDatabases(on: self.database.eventLoop)
+            var databases = Databases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
             
-            let migrator = FluentMigrator(
+            let migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
                 on: self.database.eventLoop
@@ -322,36 +322,6 @@ public final class FluentBenchmarker {
         }
     }
     
-//    public func testWorkUnit() throws {
-//        try runTest(#function, [
-//            Galaxy.autoMigration()
-//        ]) {
-//            let unit = self.database.workUnit()
-//            
-//            let galaxy = Galaxy.new()
-//            galaxy.name.set(to: "Milky Way")
-//            try galaxy.save(on: unit).wait()
-//            try galaxy.save(on: unit).wait()
-//            try galaxy.save(on: unit).wait()
-//            
-//            do {
-//                let galaxies = try self.database.query(Galaxy.self).all().wait()
-//                guard galaxies.count == 0 else {
-//                    throw Failure("expected galaxy count to be 0 before commit")
-//                }
-//            }
-//            
-//            try unit.commit().wait()
-//            
-//            do {
-//                let galaxies = try self.database.query(Galaxy.self).all().wait()
-//                guard galaxies.count == 1 else {
-//                    throw Failure("expected galaxy count to be 1 after commit")
-//                }
-//            }
-//        }
-//    }
-    
     public func testNestedModel() throws {
         try runTest(#function, [
             User.autoMigration(),
@@ -398,7 +368,7 @@ public final class FluentBenchmarker {
         }
     }
     
-    private func runTest(_ name: String, _ migrations: [FluentMigration], _ test: () throws -> ()) throws {
+    private func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
         self.log("Running \(name)...")
         for migration in migrations {
             do {

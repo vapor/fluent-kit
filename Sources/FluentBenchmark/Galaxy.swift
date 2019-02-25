@@ -1,7 +1,7 @@
 import FluentKit
 
-final class Galaxy: FluentModel {
-    var storage: Storage
+final class Galaxy: Model {
+    var storage: ModelStorage
     
     var properties: [Property] {
         return [id, name]
@@ -23,7 +23,7 @@ final class Galaxy: FluentModel {
         return self.children(\.galaxy)
     }
     
-    init(storage: Storage) {
+    init(storage: ModelStorage) {
         self.storage = storage
     }
 }
