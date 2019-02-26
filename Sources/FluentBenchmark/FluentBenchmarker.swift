@@ -16,7 +16,7 @@ public final class FluentBenchmarker {
         try self.testDelete()
         try self.testEagerLoadChildren()
         try self.testEagerLoadParent()
-        try self.testAggregateCount()
+        try self.testAggregates()
     }
     
     public func testCreate() throws {
@@ -358,35 +358,57 @@ public final class FluentBenchmarker {
         }
     }
     
-    public func testAggregateCount() throws {
+    public func testAggregates() throws {
+        // seeded db
         try runTest(#function, [
             Galaxy.autoMigration(),
             Planet.autoMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
-            do {
-                let count = try self.database.query(Planet.self)
-                    .count().wait()
-                guard count == 9 else {
-                    throw Failure("unexpected count: \(count)")
-                }
+            // whole table
+            let count = try self.database.query(Planet.self)
+                .count().wait()
+            guard count == 9 else {
+                throw Failure("unexpected count: \(count)")
             }
-            do {
-                let count = try self.database.query(Planet.self)
-                    .filter(\.name == "Earth")
-                    .count().wait()
-                guard count == 1 else {
-                    throw Failure("unexpected count: \(count)")
-                }
+            // filtered w/ results
+            let filteredCount = try self.database.query(Planet.self)
+                .filter(\.name == "Earth")
+                .count().wait()
+            guard filteredCount == 1 else {
+                throw Failure("unexpected count: \(filteredCount)")
             }
-            do {
-                let count = try self.database.query(Planet.self)
-                    .filter(\.name == "Pluto")
-                    .count().wait()
-                guard count == 0 else {
-                    throw Failure("unexpected count: \(count)")
-                }
+            // filtered empty
+            let emptyCount = try self.database.query(Planet.self)
+                .filter(\.name == "Pluto")
+                .count().wait()
+            guard emptyCount == 0 else {
+                throw Failure("unexpected count: \(emptyCount)")
+            }
+            // max id
+            let maxID = try self.database.query(Planet.self)
+                .max(\.id).wait()
+            guard maxID == 9 else {
+                throw Failure("unexpected maxID: \(maxID ?? -1)")
+            }
+        }
+        // empty db
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+        ]) {
+            // whole table
+            let count = try self.database.query(Planet.self)
+                .count().wait()
+            guard count == 0 else {
+                throw Failure("unexpected count: \(count)")
+            }
+            // maxid
+            let maxID = try self.database.query(Planet.self)
+                .max(\.id).wait()
+            guard maxID == nil else {
+                throw Failure("unexpected maxID: \(maxID!)")
             }
         }
     }
