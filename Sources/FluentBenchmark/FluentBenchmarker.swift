@@ -16,6 +16,7 @@ public final class FluentBenchmarker {
         try self.testDelete()
         try self.testEagerLoadChildren()
         try self.testEagerLoadParent()
+        try self.testAggregateCount()
     }
     
     public func testCreate() throws {
@@ -198,6 +199,7 @@ public final class FluentBenchmarker {
             let expected = """
             [{"id":1,"name":"Mercury","galaxy":{"id":2,"name":"Milky Way"}},{"id":2,"name":"Venus","galaxy":{"id":2,"name":"Milky Way"}},{"id":3,"name":"Earth","galaxy":{"id":2,"name":"Milky Way"}},{"id":4,"name":"Mars","galaxy":{"id":2,"name":"Milky Way"}},{"id":5,"name":"Jupiter","galaxy":{"id":2,"name":"Milky Way"}},{"id":6,"name":"Saturn","galaxy":{"id":2,"name":"Milky Way"}},{"id":7,"name":"Uranus","galaxy":{"id":2,"name":"Milky Way"}},{"id":8,"name":"Neptune","galaxy":{"id":2,"name":"Milky Way"}},{"id":9,"name":"PA-99-N2","galaxy":{"id":1,"name":"Andromeda"}}]
             """
+            print(string)
             guard string == expected else {
                 throw Failure("unexpected json format")
             }
@@ -352,6 +354,39 @@ public final class FluentBenchmarker {
             """
             guard string == expected else {
                 throw Failure("unexpected output")
+            }
+        }
+    }
+    
+    public func testAggregateCount() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            do {
+                let count = try self.database.query(Planet.self)
+                    .count().wait()
+                guard count == 9 else {
+                    throw Failure("unexpected count: \(count)")
+                }
+            }
+            do {
+                let count = try self.database.query(Planet.self)
+                    .filter(\.name == "Earth")
+                    .count().wait()
+                guard count == 1 else {
+                    throw Failure("unexpected count: \(count)")
+                }
+            }
+            do {
+                let count = try self.database.query(Planet.self)
+                    .filter(\.name == "Pluto")
+                    .count().wait()
+                guard count == 0 else {
+                    throw Failure("unexpected count: \(count)")
+                }
             }
         }
     }

@@ -27,10 +27,10 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func count<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<Int> {
+    public func count() -> EventLoopFuture<Int> {
         self.query.fields = [.aggregate(.fields(
             method: .count,
-            fields: [.keyPath(field)]
+            fields: [.keyPath(\Model.id)]
         ))]
         
         return self.first().flatMapThrowing { res in
