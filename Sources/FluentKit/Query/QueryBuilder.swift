@@ -17,19 +17,50 @@ public final class QueryBuilder<Model>
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(entity: Model.new().entity)
+        self.query = .init(entity: Model().entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.new().properties.map { .field(
+        self.query.fields = Model().properties.map { .field(
             path: [$0.name],
-            entity: Model.new().entity,
+            entity: Model().entity,
             alias: nil
         ) }
+    }
+    
+    @discardableResult
+    public func count<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<Int> {
+        self.query.fields = [.aggregate(.fields(
+            method: .count,
+            fields: [.keyPath(field)]
+        ))]
+        
+        return self.first().flatMapThrowing { res in
+            guard let res = res else {
+                fatalError("No model")
+            }
+            return try res.field("fluentAggregate").get()
+        }
+    }
+    
+    @discardableResult
+    public func max<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
+        self.query.fields = [.aggregate(.fields(
+            method: .maximum,
+            fields: [.keyPath(field)]
+        ))]
+        
+        return self.first().flatMapThrowing { res in
+            guard let res = res else {
+                fatalError("No model")
+            }
+            return try res.field("fluentAggregate").get()
+        }
     }
     
     public enum EagerLoadMethod {
         case subquery
         case join
     }
+    
     
     @discardableResult
     public func with<Child>(
@@ -40,8 +71,8 @@ public final class QueryBuilder<Model>
     {
         switch method {
         case .subquery:
-            let id = Model.new()[keyPath: key].relation.appending(path: \.id)
-            self.eagerLoads[Child.new().entity] = SubqueryChildEagerLoad<Model, Child>(id)
+            let id = Model()[keyPath: key].relation.appending(path: \.id)
+            self.eagerLoads[Child().entity] = SubqueryChildEagerLoad<Model, Child>(id)
         case .join:
             fatalError()
         }
@@ -57,28 +88,28 @@ public final class QueryBuilder<Model>
     {
         switch method {
         case .subquery:
-            self.eagerLoads[Parent.new().entity] = SubqueryParentEagerLoad<Model, Parent>(key)
+            self.eagerLoads[Parent().entity] = SubqueryParentEagerLoad<Model, Parent>(key)
             return self
         case .join:
-            self.eagerLoads[Parent.new().entity] = JoinParentEagerLoad<Model, Parent>()
+            self.eagerLoads[Parent().entity] = JoinParentEagerLoad<Model, Parent>()
             return self.join(key)
         }
     }
     
     @discardableResult
     public func join<Parent>(_ key: KeyPath<Model, ModelParent<Model, Parent>>) -> Self {
-        let l = Model.new()[keyPath: key].id
-        let f = Parent.new().id
-        self.query.fields += Parent.new().properties.map {
+        let l = Model()[keyPath: key].id
+        let f = Parent().id
+        self.query.fields += Parent().properties.map {
             .field(
                 path: [$0.name],
-                entity: Parent.new().entity,
-                alias: Parent.new().entity + "_" + $0.name
+                entity: Parent().entity,
+                alias: Parent().entity + "_" + $0.name
             )
         }
         self.query.joins.append(.model(
-            foreign: .field(path: [f.name], entity: Parent.new().entity, alias: nil),
-            local: .field(path: [l.name], entity: Model.new().entity, alias: nil)
+            foreign: .field(path: [f.name], entity: Parent().entity, alias: nil),
+            local: .field(path: [l.name], entity: Model().entity, alias: nil)
         ))
         return self
     }
@@ -90,18 +121,18 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model
     {
-        let f = Foreign.new()[keyPath: foreign]
-        let l = Model.new()[keyPath: local]
-        self.query.fields += Foreign.new().properties.map {
+        let f = Foreign()[keyPath: foreign]
+        let l = Model()[keyPath: local]
+        self.query.fields += Foreign().properties.map {
             return .field(
                 path: [$0.name],
-                entity: Foreign.new().entity,
-                alias: Foreign.new().entity + "_" + $0.name
+                entity: Foreign().entity,
+                alias: Foreign().entity + "_" + $0.name
             )
         }
         self.query.joins.append(.model(
-            foreign: .field(path: [f.name], entity: Foreign.new().entity, alias: nil),
-            local: .field(path: [l.name], entity: Model.new().entity, alias: nil)
+            foreign: .field(path: [f.name], entity: Foreign().entity, alias: nil),
+            local: .field(path: [l.name], entity: Model().entity, alias: nil)
         ))
         return self
     }
@@ -120,7 +151,7 @@ public final class QueryBuilder<Model>
         where T: Encodable
     {
         return self.filter(
-            .field(path: [Model.new()[keyPath: key].name], entity: Model.new().entity, alias: nil),
+            .keyPath(key),
             .subset(inverse: false),
             .array(value.map { .bind($0) })
         )
@@ -130,16 +161,7 @@ public final class QueryBuilder<Model>
     public func filter<T>(_ key: KeyPath<Model, ModelField<Model, T>>, _ method: DatabaseQuery.Filter.Method, _ value: T) -> Self
         where T: Encodable
     {
-        let property = Model.new()[keyPath: key]
-        return self.filter(
-            .field(
-                path: [property.name],
-                entity: Model.new().entity,
-                alias: nil
-            ),
-            method,
-            .bind(value)
-        )
+        return self.filter(.keyPath(key), method, .bind(value))
     }
     
     @discardableResult
@@ -162,7 +184,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, ModelField<Model, Value>>, to value: Value) -> Self {
-        let ref = Model.new()
+        let ref = Model()
         self.query.fields = []
         query.fields.append(.field(path: [ref[keyPath: field].name], entity: nil, alias: nil))
         switch query.input.count {
@@ -228,9 +250,9 @@ public struct ModelFilter<Model> where Model: FluentKit.Model {
         _ method: DatabaseQuery.Filter.Method,
         _ rhs: Value
     ) -> ModelFilter {
-        let field = Model.new()[keyPath: lhs]
+        let field = Model()[keyPath: lhs]
         return .init(filter: .basic(
-            .field(path: field.path, entity: Model.new().entity, alias: nil),
+            .field(path: field.path, entity: Model().entity, alias: nil),
             method,
             .bind(rhs)
         ))

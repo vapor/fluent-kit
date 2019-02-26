@@ -8,8 +8,8 @@ extension Model {
     func joined<Joined>(_ model: Joined.Type) -> Joined
         where Joined: FluentKit.Model
     {
-        return Joined(storage: DefaultModelStorage(
-            output: self.storage.output!.prefixed(by: Joined.new().entity + "_"),
+        return Joined.init(storage: DefaultModelStorage(
+            output: self.storage.output!.prefixed(by: Joined().entity + "_"),
             eagerLoads: [:],
             exists: true
         ))

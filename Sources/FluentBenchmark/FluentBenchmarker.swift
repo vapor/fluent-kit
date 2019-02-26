@@ -22,7 +22,7 @@ public final class FluentBenchmarker {
         try self.runTest(#function, [
             Galaxy.autoMigration()
         ]) {
-            let galaxy = Galaxy.new()
+            let galaxy = Galaxy()
             galaxy.name.set(to: "Messier 82")
             try galaxy.save(on: self.database).wait()
             guard try galaxy.id.get() == 1 else {
@@ -63,7 +63,7 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             Galaxy.autoMigration()
         ]) {
-            let galaxy = Galaxy.new()
+            let galaxy = Galaxy()
             galaxy.name.set(to: "Milkey Way")
             try galaxy.save(on: self.database).wait()
             galaxy.name.set(to: "Milky Way")
@@ -84,7 +84,7 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             Galaxy.autoMigration(),
         ]) {
-            let galaxy = Galaxy.new()
+            let galaxy = Galaxy()
             galaxy.name.set(to: "Milky Way")
             try galaxy.save(on: self.database).wait()
             try galaxy.delete(on: self.database).wait()
@@ -292,7 +292,7 @@ public final class FluentBenchmarker {
             Galaxy.autoMigration()
         ]) {
             let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter -> Galaxy in
-                let galaxy = Galaxy.new()
+                let galaxy = Galaxy()
                 galaxy.name.set(to: String(letter))
                 return galaxy
             }
