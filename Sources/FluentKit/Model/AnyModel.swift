@@ -11,10 +11,6 @@ extension AnyModel {
 }
 
 extension AnyModel {
-    public static func new() -> Self {
-        return .init()
-    }
-    
     public init() {
         self.init(storage: DefaultModelStorage(output: nil, eagerLoads: [:], exists: false))
     }

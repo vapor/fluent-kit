@@ -14,11 +14,11 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     
     public init(database: Database) {
         self.database = database
-        self.schema = .init(entity: Model.new().entity)
+        self.schema = .init(entity: Model().entity)
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.new().properties.map { field in
+        self.schema.createFields = Model().properties.map { field in
             return .definition(
                 name: .string(field.name),
                 dataType: field.dataType ?? .bestFor(type: field.type),
@@ -29,7 +29,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func field<Model, Value>(_ keyPath: KeyPath<Model, ModelField<Model, Value>>) -> Self {
-        let field = Model.new()[keyPath: keyPath]
+        let field = Model()[keyPath: keyPath]
         return self.field(.definition(
             name: .string(field.name),
             dataType: field.dataType ?? .bestFor(type: Value.self),

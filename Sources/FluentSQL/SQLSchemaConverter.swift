@@ -16,7 +16,7 @@ public struct SQLSchemaConverter {
     // MARK: Private
     
     private func delete(_ schema: DatabaseSchema) -> SQLExpression {
-        var delete = SQLDropTable(table: self.name(schema.entity))
+        let delete = SQLDropTable(table: self.name(schema.entity))
         return delete
     }
     

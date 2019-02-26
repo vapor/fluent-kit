@@ -10,16 +10,16 @@ public struct ModelChildren<Parent, Child>
     }
     
     public func query(on database: Database) throws -> QueryBuilder<Child> {
-        let field = Child.new()[keyPath: self.relation].id
+        let field = Child()[keyPath: self.relation].id
         return try database.query(Child.self).filter(
-            .field(path: [field.name], entity: Child.new().entity, alias: nil),
+            .field(path: [field.name], entity: Child().entity, alias: nil),
             .equality(inverse: false),
             .bind(self.parent.id.get())
         )
     }
     
     public func get() throws -> [Child] {
-        guard let cache = self.parent.storage.eagerLoads[Child.new().entity] else {
+        guard let cache = self.parent.storage.eagerLoads[Child().entity] else {
             fatalError("No cache set on storage.")
         }
         return try cache.get(id: self.parent.id.get())

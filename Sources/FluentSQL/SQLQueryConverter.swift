@@ -75,6 +75,8 @@ public struct SQLQueryConverter {
             case .custom(let any): table = any as! SQLExpression
             case .field(let path, let entity, let alias):
                 table = SQLIdentifier(entity!)
+            case .aggregate(let agg):
+                fatalError("can't join on aggregate")
             }
             return SQLJoin(
                 method: SQLJoinMethod.inner,
@@ -112,6 +114,22 @@ public struct SQLQueryConverter {
                 return SQLRaw("\(path[0])->>'\(path[1])'")
             default: fatalError()
             }
+        case .aggregate(let agg):
+            switch agg {
+            case .custom(let any):
+                return any as! SQLExpression
+            case .fields(let method, let fields):
+                let name: String
+                switch method {
+                case .average: name = "AVG"
+                case .count: name = "COUNT"
+                case .sum: name = "SUM"
+                case .maximum: name = "MAX"
+                case .minimum: name = "MIN"
+                case .custom(let custom): name = custom as! String
+                }
+                return SQLAlias(SQLFunction(name, args: fields.map { self.field($0) }), as: SQLIdentifier("fluentAggregate"))
+            }
         }
     }
     
@@ -138,8 +156,6 @@ public struct SQLQueryConverter {
         case .custom(let any): return any as! SQLExpression
         }
     }
-    
-
     
     struct DictValues: Encodable {
         let dict: [String: DatabaseQuery.Value]

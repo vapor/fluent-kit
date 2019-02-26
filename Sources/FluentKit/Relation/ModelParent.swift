@@ -12,7 +12,7 @@ public struct ModelParent<Child, Parent>
     }
     
     public func get() throws -> Parent {
-        guard let cache = self.id.model.storage.eagerLoads[Parent.new().entity] else {
+        guard let cache = self.id.model.storage.eagerLoads[Parent().entity] else {
             fatalError("No cache set on storage.")
         }
         return try cache.get(id: self.id.get())
@@ -39,7 +39,7 @@ extension ModelParent: ModelProperty {
     }
     
     public func encode(to container: inout KeyedEncodingContainer<StringCodingKey>) throws {
-        if self.id.model.storage.eagerLoads[Parent.new().entity] != nil {
+        if self.id.model.storage.eagerLoads[Parent().entity] != nil {
             let parent = try self.get()
             try container.encode(parent, forKey: StringCodingKey("\(Parent.self)".lowercased()))
         } else {

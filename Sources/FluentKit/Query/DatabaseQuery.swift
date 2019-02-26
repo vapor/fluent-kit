@@ -8,6 +8,31 @@ public struct DatabaseQuery {
     }
     
     public enum Field {
+        static func keyPath<M, T>(_ key: KeyPath<M, ModelField<M, T>>) -> Field
+            where M: Model
+        {
+            let model = M()
+            return .field(
+                path: [model[keyPath: key].name],
+                entity: model.entity,
+                alias: nil
+            )
+        }
+        
+        public enum Aggregate {
+            public enum Method {
+                case count
+                case sum
+                case average
+                case minimum
+                case maximum
+                case custom(Any)
+            }
+            case fields(method: Method, fields: [Field])
+            case custom(Any)
+        }
+        
+        case aggregate(Aggregate)
         case field(path: [String], entity: String?, alias: String?)
         case custom(Any)
     }
