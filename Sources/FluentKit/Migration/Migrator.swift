@@ -14,15 +14,23 @@ public struct Migrator {
     
     #warning("TODO: handle identical migration added to two dbs")
     
+    // MARK: Setup
+    
+    public func setupIfNeeded() -> EventLoopFuture<Void> {
+        return self.databases.default().query(MigrationLog.self).all().map { migrations in
+            return ()
+        }.flatMapError { error in
+            return MigrationLog.autoMigration().prepare(on: self.databases.default())
+        }
+    }
+    
     // MARK: Prepare
     
     public func prepareBatch() -> EventLoopFuture<Void> {
-        return self.prepareMigrationLogIfNeeded().flatMap { _ -> EventLoopFuture<Void> in
-            return self.unpreparedMigrations().flatMap { migrations in
-                return .andAllSync(migrations.map { item in
-                    return { self.prepare(item) }
-                }, eventLoop: self.eventLoop)
-            }
+        return self.unpreparedMigrations().flatMap { migrations in
+            return .andAllSync(migrations.map { item in
+                return { self.prepare(item) }
+            }, eventLoop: self.eventLoop)
         }
     }
     
@@ -104,14 +112,6 @@ public struct Migrator {
             log.createdAt.set(to: .init())
             log.updatedAt.set(to: .init())
             return log.save(on: self.databases.default())
-        }
-    }
-    
-    private func prepareMigrationLogIfNeeded() -> EventLoopFuture<Void> {
-        return self.databases.default().query(MigrationLog.self).all().map { migrations in
-            return ()
-        }.flatMapError { error in
-            return MigrationLog.autoMigration().prepare(on: self.databases.default())
         }
     }
     
