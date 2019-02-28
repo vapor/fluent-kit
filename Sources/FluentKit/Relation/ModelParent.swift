@@ -38,17 +38,17 @@ extension ModelParent: ModelProperty {
         return self.id.constraints
     }
     
-    public func encode(to container: inout KeyedEncodingContainer<StringCodingKey>) throws {
+    public func encode(to encoder: inout ModelEncoder) throws {
         if self.id.model.storage.eagerLoads[Parent().entity] != nil {
             let parent = try self.get()
-            try container.encode(parent, forKey: StringCodingKey("\(Parent.self)".lowercased()))
+            try encoder.encode(parent, forKey: "\(Parent.self)".lowercased())
         } else {
-            try self.id.encode(to: &container)
+            try self.id.encode(to: &encoder)
         }
     }
     
-    public func decode(from container: KeyedDecodingContainer<StringCodingKey>) throws {
-        try self.id.decode(from: container)
+    public func decode(from decoder: ModelDecoder) throws {
+        try self.id.decode(from: decoder)
     }
 }
 

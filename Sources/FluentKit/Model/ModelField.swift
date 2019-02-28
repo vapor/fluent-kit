@@ -41,12 +41,12 @@ public struct ModelField<Entity, Value>: ModelProperty
         }
     }
     
-    public func encode(to container: inout KeyedEncodingContainer<StringCodingKey>) throws {
-        try container.encode(self.get(), forKey: StringCodingKey(self.name))
+    public func encode(to encoder: inout ModelEncoder) throws {
+        try encoder.encode(self.get(), forKey: self.name)
     }
     
-    public func decode(from container: KeyedDecodingContainer<StringCodingKey>) throws {
-        try self.set(to: container.decode(Value.self, forKey: StringCodingKey(self.name)))
+    public func decode(from decoder: ModelDecoder) throws {
+        try self.set(to: decoder.decode(Value.self, forKey: self.name))
     }
     
     public func set(to value: Value) {

@@ -123,12 +123,12 @@ private struct NestedProperty<Nested>: ModelProperty
         return Nested.self
     }
     
-    public func encode(to container: inout KeyedEncodingContainer<StringCodingKey>) throws {
-        try container.encode(self.entity, forKey: StringCodingKey(self.name))
+    func encode(to encoder: inout ModelEncoder) throws {
+        try encoder.encode(self.entity, forKey: self.name)
     }
     
-    public func decode(from container: KeyedDecodingContainer<StringCodingKey>) throws {
-        let model = try container.decode(Nested.self, forKey: StringCodingKey(self.name))
+    func decode(from decoder: ModelDecoder) throws {
+        let model = try decoder.decode(Nested.self, forKey: self.name)
         self.entity.storage = model.storage
     }
 }

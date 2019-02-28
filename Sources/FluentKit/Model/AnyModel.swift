@@ -18,20 +18,20 @@ extension AnyModel {
 
 extension AnyModel where Self: Encodable {
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: StringCodingKey.self)
+        var encoder = ModelEncoder(encoder: encoder)
         for field in self.properties {
-            try field.encode(to: &container)
+            try field.encode(to: &encoder)
         }
     }
 }
 
 extension AnyModel where Self: Decodable {
     public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: StringCodingKey.self)
+        let decoder = try ModelDecoder(decoder: decoder)
         self.init()
         for field in self.properties {
             do {
-                try field.decode(from: container)
+                try field.decode(from: decoder)
             } catch {
                 print("Could not decode \(field.name): \(error)")
             }
