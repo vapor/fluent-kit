@@ -69,7 +69,7 @@ public struct SQLQueryConverter {
     private func join(_ join: DatabaseQuery.Join) -> SQLExpression {
         switch join {
         case .custom(let any): return any as! SQLExpression
-        case .model(let foreign, let local):
+        case .model(let foreign, let local, let method):
             let table: SQLExpression
             switch foreign {
             case .custom(let any): table = any as! SQLExpression
@@ -79,7 +79,7 @@ public struct SQLQueryConverter {
                 fatalError("can't join on aggregate")
             }
             return SQLJoin(
-                method: SQLJoinMethod.inner,
+                method: self.joinMethod(method),
                 table: table,
                 expression: SQLBinaryExpression(
                     left: self.field(local),
@@ -87,6 +87,18 @@ public struct SQLQueryConverter {
                     right: self.field(foreign)
                 )
             )
+        }
+    }
+    
+    private func joinMethod(_ method: DatabaseQuery.Join.Method) -> SQLExpression {
+        switch method {
+        case .inner: return SQLJoinMethod.inner
+        case .left: return SQLJoinMethod.left
+        case .right: return SQLJoinMethod.right
+        case .outer: return SQLJoinMethod.outer
+        case .custom(let any):
+            #warning("TODO:")
+            return any as! SQLExpression
         }
     }
     

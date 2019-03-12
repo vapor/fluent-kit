@@ -84,7 +84,11 @@ public struct DatabaseQuery {
     }
     
     public enum Join {
-        case model(foreign: Field, local: Field)
+        public enum Method {
+            case inner, left, right, outer
+            case custom(Any)
+        }
+        case model(foreign: Field, local: Field, method: Method)
         case custom(Any)
     }
     

@@ -5,7 +5,7 @@ public protocol EagerLoad: class {
 }
 
 extension Model {
-    func joined<Joined>(_ model: Joined.Type) -> Joined
+    public func joined<Joined>(_ model: Joined.Type) -> Joined
         where Joined: FluentKit.Model
     {
         return Joined.init(storage: DefaultModelStorage(

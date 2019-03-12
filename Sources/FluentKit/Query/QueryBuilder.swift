@@ -98,31 +98,28 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func join<Parent>(_ key: KeyPath<Model, ModelParent<Model, Parent>>) -> Self {
-        let l = Model()[keyPath: key].id
-        let f = Parent().id
-        self.query.fields += Parent().properties.map {
-            .field(
-                path: [$0.name],
-                entity: Parent().entity,
-                alias: Parent().entity + "_" + $0.name
-            )
-        }
-        self.query.joins.append(.model(
-            foreign: .field(path: [f.name], entity: Parent().entity, alias: nil),
-            local: .field(path: [l.name], entity: Model().entity, alias: nil)
-        ))
-        return self
+        return self.join(Parent().id, to: Model()[keyPath: key].id, method: .inner)
     }
     
     @discardableResult
     public func join<Foreign, T>(
-        _ local: KeyPath<Model, ModelField<Model, T>>,
-        _ foreign: KeyPath<Foreign, ModelField<Foreign, T>>
+        _ foreign: KeyPath<Foreign, ModelField<Foreign, T>>,
+        to local: KeyPath<Model, ModelField<Model, T>>,
+        method: DatabaseQuery.Join.Method = .inner
     ) -> Self
         where Foreign: FluentKit.Model
     {
-        let f = Foreign()[keyPath: foreign]
-        let l = Model()[keyPath: local]
+        return self.join(Foreign()[keyPath: foreign], to: Model()[keyPath: local], method: method)
+    }
+    
+    @discardableResult
+    public func join<Foreign, T>(
+        _ foreign: ModelField<Foreign, T>,
+        to local: ModelField<Model, T>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self
+        where Foreign: FluentKit.Model
+    {
         self.query.fields += Foreign().properties.map {
             return .field(
                 path: [$0.name],
@@ -131,8 +128,9 @@ public final class QueryBuilder<Model>
             )
         }
         self.query.joins.append(.model(
-            foreign: .field(path: [f.name], entity: Foreign().entity, alias: nil),
-            local: .field(path: [l.name], entity: Model().entity, alias: nil)
+            foreign: .field(path: [foreign.name], entity: Foreign().entity, alias: nil),
+            local: .field(path: [local.name], entity: Model().entity, alias: nil),
+            method: method
         ))
         return self
     }
