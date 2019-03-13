@@ -69,6 +69,11 @@ public struct DatabaseSchema {
         case custom(Any)
     }
     
+    public enum Constraint {
+        case unique(fields: [FieldName])
+        case custom(Any)
+    }
+    
     public enum FieldDefinition {
         case definition(name: FieldName, dataType: DataType, constraints: [FieldConstraint])
         case custom(Any)
@@ -83,11 +88,13 @@ public struct DatabaseSchema {
     public var entity: String
     public var createFields: [FieldDefinition]
     public var deleteFields: [FieldName]
+    public var constraints: [Constraint]
     
     public init(entity: String) {
         self.action = .create
         self.entity = entity
         self.createFields = []
         self.deleteFields = []
+        self.constraints = []
     }
 }

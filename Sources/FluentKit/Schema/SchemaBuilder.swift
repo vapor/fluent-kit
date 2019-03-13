@@ -28,7 +28,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func field<Model, Value>(_ keyPath: KeyPath<Model, ModelField<Model, Value>>) -> Self {
+    public func field<Value>(_ keyPath: KeyPath<Model, ModelField<Model, Value>>) -> Self {
         let field = Model()[keyPath: keyPath]
         return self.field(.definition(
             name: .string(field.name),
@@ -39,6 +39,42 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     
     public func field(_ field: DatabaseSchema.FieldDefinition) -> Self {
         self.schema.createFields.append(field)
+        return self
+    }
+    
+    public func unique<A>(
+        on a: KeyPath<Model, ModelField<Model, A>>
+    ) -> Self {
+        let a = Model()[keyPath: a]
+        self.schema.constraints.append(.unique(fields: [
+            .string(a.name)
+        ]))
+        return self
+    }
+    
+    public func unique<A, B>(
+        on a: KeyPath<Model, ModelField<Model, A>>,
+        _ b: KeyPath<Model, ModelField<Model, B>>
+    ) -> Self {
+        let a = Model()[keyPath: a]
+        let b = Model()[keyPath: b]
+        self.schema.constraints.append(.unique(fields: [
+            .string(a.name), .string(b.name)
+        ]))
+        return self
+    }
+    
+    public func unique<A, B, C>(
+        on a: KeyPath<Model, ModelField<Model, A>>,
+        _ b: KeyPath<Model, ModelField<Model, B>>,
+        _ c: KeyPath<Model, ModelField<Model, C>>
+    ) -> Self {
+        let a = Model()[keyPath: a]
+        let b = Model()[keyPath: b]
+        let c = Model()[keyPath: c]
+        self.schema.constraints.append(.unique(fields: [
+            .string(a.name), .string(b.name), .string(c.name)
+        ]))
         return self
     }
     

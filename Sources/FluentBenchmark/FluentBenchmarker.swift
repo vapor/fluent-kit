@@ -29,6 +29,7 @@ public final class FluentBenchmarker {
         try self.testIdentifierGeneration()
         try self.testNullifyField()
         try self.testChunkedFetch()
+        try self.testUniqueFields()
     }
     
     public func testCreate() throws {
@@ -562,6 +563,64 @@ public final class FluentBenchmarker {
         }
     }
     
+    func testUniqueFields() throws {
+        final class Foo: Model {
+            var properties: [Property] {
+                return [id, bar]
+            }
+            
+            var storage: Storage
+            
+            var id: Field<Int> {
+                return self.id("id")
+            }
+            
+            var bar: Field<String> {
+                return self.field("bar")
+            }
+            
+            var baz: Field<Int> {
+                return self.field("baz")
+            }
+            
+            convenience init(bar: String, baz: Int) {
+                self.init()
+                self.bar.set(to: bar)
+                self.baz.set(to: baz)
+            }
+            
+            init(storage: Storage) {
+                self.storage = storage
+            }
+        }
+        struct FooMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return database.schema(Foo.self)
+                    .auto()
+                    .unique(on: \.bar, \.baz)
+                    .create()
+            }
+            
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return database.schema(Foo.self).delete()
+            }
+        }
+        try runTest(#function, [
+            FooMigration(),
+        ]) {
+            let a1 = Foo(bar: "a", baz: 1)
+            try a1.save(on: self.database).wait()
+            let a2 = Foo(bar: "a", baz: 2)
+            try a2.save(on: self.database).wait()
+            do {
+                let a1Dup = Foo(bar: "a", baz: 1)
+                try a1Dup.save(on: self.database).wait()
+                throw Failure("should have failed")
+            } catch _ as DatabaseError {
+                // pass
+            }
+        }
+    }
     
     struct Failure: Error {
         let reason: String

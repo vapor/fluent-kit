@@ -10,3 +10,7 @@ public protocol Database {
     
     func close() -> EventLoopFuture<Void>
 }
+
+public protocol DatabaseError {
+    #warning("TODO: add useful properties like duplicate key constraint, syntax error, conn closed, etc.")
+}
