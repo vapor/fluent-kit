@@ -27,42 +27,6 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func count() -> EventLoopFuture<Int> {
-        self.query.fields = [.aggregate(.fields(
-            method: .count,
-            fields: [.keyPath(\Model.id)]
-        ))]
-        
-        return self.first().flatMapThrowing { res in
-            guard let res = res else {
-                fatalError("No model")
-            }
-            return try res.field("fluentAggregate").get()
-        }
-    }
-    
-    @discardableResult
-    public func max<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
-        self.query.fields = [.aggregate(.fields(
-            method: .maximum,
-            fields: [.keyPath(field)]
-        ))]
-        
-        return self.first().flatMapThrowing { res in
-            guard let res = res else {
-                fatalError("No model")
-            }
-            return try res.field("fluentAggregate").get()
-        }
-    }
-    
-    public enum EagerLoadMethod {
-        case subquery
-        case join
-    }
-    
-    
-    @discardableResult
     public func with<Child>(
         _ key: KeyPath<Model, ModelChildren<Model, Child>>,
         method: EagerLoadMethod = .subquery
@@ -192,6 +156,8 @@ public final class QueryBuilder<Model>
         return self
     }
     
+    // MARK: Actions
+    
     public func create() -> EventLoopFuture<Void> {
         #warning("model id not set this way")
         self.query.action = .delete
@@ -206,6 +172,73 @@ public final class QueryBuilder<Model>
     public func delete() -> EventLoopFuture<Void> {
         self.query.action = .delete
         return self.run()
+    }
+    
+    
+    // MARK: Aggregate
+    
+    public func count() -> EventLoopFuture<Int> {
+        return self.aggregate(.count, \Model.id)
+    }
+    
+    public func sum<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
+        return self.aggregate(.sum, field)
+    }
+    
+    public func average<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
+        return self.aggregate(.average, field)
+    }
+    
+    public func min<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
+        return self.aggregate(.minimum, field)
+    }
+    
+    public func max<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
+        return self.aggregate(.maximum, field)
+    }
+    
+    public func aggregate<T, U>(
+        _ method: DatabaseQuery.Field.Aggregate.Method,
+        _ field: KeyPath<Model, ModelField<Model, T>>,
+        as type: U.Type = U.self
+        ) -> EventLoopFuture<U>
+        where U: Codable
+    {
+        self.query.fields = [.aggregate(.fields(
+            method: method,
+            fields: [.keyPath(field)]
+            ))]
+        
+        return self.first().flatMapThrowing { res in
+            guard let res = res else {
+                fatalError("No model")
+            }
+            return try res.field("fluentAggregate").get()
+        }
+    }
+    
+    public enum EagerLoadMethod {
+        case subquery
+        case join
+    }
+    
+    
+    // MARK: Fetch
+    
+    public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
+        var partial: [Model] = []
+        partial.reserveCapacity(max)
+        return self.run { row in
+            partial.append(row)
+            if partial.count >= max {
+                try closure(partial)
+                partial = []
+            }
+        }.flatMapThrowing { 
+            // any stragglers
+            try closure(partial)
+            partial = []
+        }
     }
     
     public func first() -> EventLoopFuture<Model?> {

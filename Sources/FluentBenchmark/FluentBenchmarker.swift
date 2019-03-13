@@ -16,7 +16,19 @@ public final class FluentBenchmarker {
         try self.testDelete()
         try self.testEagerLoadChildren()
         try self.testEagerLoadParent()
+        try self.testEagerLoadParentJoin()
+        try self.testEagerLoadSubqueryJSONEncode()
+        try self.testEagerLoadJoinJSONEncode()
+        try self.testMigrator()
+        try self.testMigratorError()
+        try self.testJoin()
+        try self.testBatchCreate()
+        try self.testBatchUpdate()
+        try self.testNestedModel()
         try self.testAggregates()
+        try self.testIdentifierGeneration()
+        try self.testNullifyField()
+        try self.testChunkedFetch()
     }
     
     public func testCreate() throws {
@@ -428,6 +440,128 @@ public final class FluentBenchmarker {
             }
         }
     }
+    
+    public func testIdentifierGeneration() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+        ]) {
+            let galaxy = Galaxy()
+            galaxy.name.set(to: "Milky Way")
+            guard (try? galaxy.id.get()) == nil else {
+                throw Failure("id should not be set")
+            }
+            try galaxy.save(on: self.database).wait()
+            _ = try galaxy.id.get()
+            
+            
+            let a = Galaxy()
+            a.name.set(to: "A")
+            let b = Galaxy()
+            b.name.set(to: "B")
+            let c = Galaxy()
+            c.name.set(to: "c")
+            try a.save(on: self.database).wait()
+            try b.save(on: self.database).wait()
+            try c.save(on: self.database).wait()
+            guard try a.id.get() != b.id.get() && b.id.get() != c.id.get() && a.id.get() != c.id.get() else {
+                throw Failure("ids should not be equal")
+            }
+        }
+    }
+    
+    public func testNullifyField() throws {
+        final class Foo: Model {
+            var properties: [Property] {
+                return [id, bar]
+            }
+            
+            var storage: Storage
+        
+            var id: Field<Int> {
+                return self.id("id")
+            }
+            
+            var bar: Field<String?> {
+                return self.field("bar")
+            }
+            
+            init(storage: Storage) {
+                self.storage = storage
+            }
+        }
+        try runTest(#function, [
+            Foo.autoMigration(),
+        ]) {
+            let foo = Foo()
+            foo.bar.set(to: "test")
+            try foo.save(on: self.database).wait()
+            guard try foo.bar.get() != nil else {
+                throw Failure("unexpected nil value")
+            }
+            foo.bar.set(to: nil)
+            try foo.save(on: self.database).wait()
+            guard try foo.bar.get() == nil else {
+                throw Failure("unexpected non-nil value")
+            }
+            
+            guard let fetched = try self.database.query(Foo.self)
+                .filter(\.id == foo.id.get())
+                .first().wait()
+            else {
+                throw Failure("no model returned")
+            }
+            guard try fetched.bar.get() == nil else {
+                throw Failure("unexpected non-nil value")
+            }
+        }
+    }
+    
+    public func testChunkedFetch() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+        ]) {
+            var fetched64: [Galaxy] = []
+            var fetched2047: [Galaxy] = []
+            let saves = (1...512).map { i -> EventLoopFuture<Void> in
+                let galaxy = Galaxy()
+                galaxy.name.set(to: "Milky Way \(i)")
+                return galaxy.save(on: self.database)
+            }
+            try EventLoopFuture<Void>.andAllSucceed(saves, on: self.database.eventLoop).wait()
+            
+            try self.database.query(Galaxy.self).chunk(max: 64) { chunk in
+                guard chunk.count != 0 else {
+                    print("[warning] zero length chunk. there is probably an extraneous close happening")
+                    return
+                }
+                guard chunk.count == 64 else {
+                    throw Failure("bad chunk count")
+                }
+                fetched64 += chunk
+            }.wait()
+            
+            guard fetched64.count == 512 else {
+                throw Failure("did not fetch all - only \(fetched64.count) out of 512")
+            }
+            
+            try self.database.query(Galaxy.self).chunk(max: 511) { chunk in
+                guard chunk.count != 0 else {
+                    print("[warning] zero length chunk. there is probably an extraneous close happening")
+                    return
+                }
+
+                guard chunk.count == 511 || chunk.count == 1 else {
+                    throw Failure("bad chunk count")
+                }
+                fetched2047 += chunk
+            }.wait()
+            
+            guard fetched2047.count == 512 else {
+                throw Failure("did not fetch all - only \(fetched2047.count) out of 512")
+            }
+        }
+    }
+    
     
     struct Failure: Error {
         let reason: String

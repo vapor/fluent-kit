@@ -7,7 +7,9 @@ final class FluentKitTests: XCTestCase {
         // let test = DummyDatabase()
         // try FluentBenchmarker(database: test).testAll()
     }
+
     static let allTests = [
         ("testStub", testStub),
     ]
 }
+
