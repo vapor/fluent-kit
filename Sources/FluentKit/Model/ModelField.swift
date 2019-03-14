@@ -45,16 +45,23 @@ public struct ModelField<Entity, Value>: ModelProperty
         }
     }
     
+    public func set(to value: Value) {
+        self.model.storage.input[self.name] = .bind(value)
+    }
+    
+    #warning("TODO: better name")
+    public func mut(_ closure: (inout Value) throws -> ()) throws {
+        var value: Value = try self.get()
+        try closure(&value)
+        self.set(to: value)
+    }
+    
     public func encode(to encoder: inout ModelEncoder) throws {
         try encoder.encode(self.get(), forKey: self.name)
     }
     
     public func decode(from decoder: ModelDecoder) throws {
         try self.set(to: decoder.decode(Value.self, forKey: self.name))
-    }
-    
-    public func set(to value: Value) {
-        self.model.storage.input[self.name] = .bind(value)
     }
 }
 

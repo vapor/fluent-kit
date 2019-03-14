@@ -37,7 +37,8 @@ public final class FluentBenchmarker {
             Galaxy.autoMigration()
         ]) {
             let galaxy = Galaxy()
-            galaxy.name.set(to: "Messier 82")
+            galaxy.name.set(to: "Messier")
+            try galaxy.name.mut { $0 += " 82" }
             try galaxy.save(on: self.database).wait()
             guard try galaxy.id.get() == 1 else {
                 throw Failure("unexpected galaxy id: \(galaxy)")
