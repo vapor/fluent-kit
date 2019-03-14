@@ -11,8 +11,9 @@ public final class MigrationLog: Model {
     }
     
     /// See `Model`.
-    public var id: Field<UUID> {
-        return self.field("id")
+    #warning("TODO: make uuid")
+    public var id: Field<Int> {
+        return self.id("id")
     }
     
     /// The unique name of the migration.

@@ -257,8 +257,10 @@ public final class FluentBenchmarker {
                 migrations: migrations,
                 on: self.database.eventLoop
             )
+            try migrator.setupIfNeeded().wait()
             try migrator.prepareBatch().wait()
             try migrator.revertAllBatches().wait()
+            
         }
     }
     
@@ -277,6 +279,7 @@ public final class FluentBenchmarker {
                 migrations: migrations,
                 on: self.database.eventLoop
             )
+            try migrator.setupIfNeeded().wait()
             do {
                 try migrator.prepareBatch().wait()
                 throw Failure("prepare did not fail")
@@ -523,18 +526,17 @@ public final class FluentBenchmarker {
         ]) {
             var fetched64: [Galaxy] = []
             var fetched2047: [Galaxy] = []
-            let saves = (1...512).map { i -> EventLoopFuture<Void> in
-                let galaxy = Galaxy()
-                galaxy.name.set(to: "Milky Way \(i)")
-                return galaxy.save(on: self.database)
-            }
-            try EventLoopFuture<Void>.andAllSucceed(saves, on: self.database.eventLoop).wait()
+            
+            try self.database.transaction { database -> EventLoopFuture<Void> in
+                let saves = (1...512).map { i -> EventLoopFuture<Void> in
+                    let galaxy = Galaxy()
+                    galaxy.name.set(to: "Milky Way \(i)")
+                    return galaxy.save(on: database)
+                }
+                return .andAllSucceed(saves, on: database.eventLoop)
+            }.wait()
             
             try self.database.query(Galaxy.self).chunk(max: 64) { chunk in
-                guard chunk.count != 0 else {
-                    print("[warning] zero length chunk. there is probably an extraneous close happening")
-                    return
-                }
                 guard chunk.count == 64 else {
                     throw Failure("bad chunk count")
                 }
@@ -546,11 +548,6 @@ public final class FluentBenchmarker {
             }
             
             try self.database.query(Galaxy.self).chunk(max: 511) { chunk in
-                guard chunk.count != 0 else {
-                    print("[warning] zero length chunk. there is probably an extraneous close happening")
-                    return
-                }
-
                 guard chunk.count == 511 || chunk.count == 1 else {
                     throw Failure("bad chunk count")
                 }
@@ -563,10 +560,10 @@ public final class FluentBenchmarker {
         }
     }
     
-    func testUniqueFields() throws {
+    public func testUniqueFields() throws {
         final class Foo: Model {
             var properties: [Property] {
-                return [id, bar]
+                return [id, bar, baz]
             }
             
             var storage: Storage

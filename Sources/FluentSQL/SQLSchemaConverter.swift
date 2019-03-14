@@ -23,11 +23,26 @@ public struct SQLSchemaConverter {
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.entity))
         create.columns = schema.createFields.map(self.fieldDefinition)
+        create.tableConstraints = schema.constraints.map(self.constraint)
         return create
     }
     
     private func name(_ string: String) -> SQLExpression {
         return SQLIdentifier(string)
+    }
+    
+    private func constraint(_ constraint: DatabaseSchema.Constraint) -> SQLExpression {
+        switch constraint {
+        case .custom(let any):
+            return any as! SQLExpression
+        case .unique(let fields):
+            #warning("TODO: generate unique name")
+            return SQLTableConstraint(
+                columns: fields.map(self.fieldName),
+                algorithm: SQLConstraintAlgorithm.unique,
+                name: nil
+            )
+        }
     }
     
     private func fieldDefinition(_ fieldDefinition: DatabaseSchema.FieldDefinition) -> SQLExpression {

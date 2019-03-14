@@ -27,6 +27,10 @@ public struct DummyDatabase: Database {
     public func close() -> EventLoopFuture<Void> {
         return self.eventLoop.makeSucceededFuture(())
     }
+    
+    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        return closure(self)
+    }
 }
 
 // MARK: Private

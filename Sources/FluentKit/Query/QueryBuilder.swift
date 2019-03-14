@@ -236,8 +236,10 @@ public final class QueryBuilder<Model>
             }
         }.flatMapThrowing { 
             // any stragglers
-            try closure(partial)
-            partial = []
+            if !partial.isEmpty {
+                try closure(partial)
+                partial = []
+            }
         }
     }
     

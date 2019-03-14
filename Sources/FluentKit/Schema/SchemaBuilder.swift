@@ -8,6 +8,15 @@ extension Database {
     }
 }
 
+private protocol OptionalType {
+    static var wrappedType: Any.Type { get }
+}
+extension Optional: OptionalType {
+    static var wrappedType: Any.Type {
+        return Wrapped.self
+    }
+}
+
 public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     let database: Database
     public var schema: DatabaseSchema
@@ -19,10 +28,20 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     
     public func auto() -> Self {
         self.schema.createFields = Model().properties.map { field in
+            var constraints = field.constraints
+            let type: Any.Type
+            if let optionalType = field.type as? OptionalType.Type {
+                type = optionalType.wrappedType
+            } else {
+                type = field.type
+                if field.constraints.isEmpty {
+                    constraints.append(.required)
+                }
+            }
             return .definition(
                 name: .string(field.name),
-                dataType: field.dataType ?? .bestFor(type: field.type),
-                constraints: field.constraints
+                dataType: field.dataType ?? .bestFor(type: type),
+                constraints: constraints
             )
         }
         return self
