@@ -1,29 +1,15 @@
 import FluentKit
 
 final class Galaxy: Model {
-    var storage: ModelStorage
-    
-    var properties: [Property] {
-        return [id, name]
+    struct Properties: ModelProperties {
+        let id = Field<Int>("id")
+        let name = Field<String>("name")
+        let planets = Children<Planet>(id: .init("galaxyID"))
     }
+    static let properties = Properties()
     
-    var entity: String {
-        return "galaxies"
-    }
-    
-    var id: Field<Int> {
-        return self.field("id", .int, .identifier)
-    }
-    
-    var name: Field<String> {
-        return self.field("name")
-    }
-    
-    var planets: Children<Planet> {
-        return self.children(\.galaxy)
-    }
-    
-    init(storage: ModelStorage) {
+    var storage: Storage
+    init(storage: Storage) {
         self.storage = storage
     }
 }

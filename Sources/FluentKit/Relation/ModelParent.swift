@@ -1,27 +1,8 @@
-public struct ModelParent<Child, Parent>
-    where Child: Model, Parent: Model
+public struct ModelParent<Child, Parent>: ModelProperty
+    where Parent: Model, Child: Model
 {
-    public var id: ModelField<Child, Parent.ID>
+    public let id: Child.Field<Parent.ID>
     
-    init(id: ModelField<Child, Parent.ID>) {
-        self.id = id
-    }
-    
-    public func set(to parent: Parent) throws {
-        try self.id.set(to: parent.id.get())
-    }
-    
-    public func get() throws -> Parent {
-        guard let cache = self.id.model.storage.eagerLoads[Parent().entity] else {
-            fatalError("No cache set on storage.")
-        }
-        return try cache.get(id: self.id.get())
-            .map { $0 as! Parent }
-            .first!
-    }
-}
-
-extension ModelParent: ModelProperty {
     public var name: String {
         return self.id.name
     }
@@ -38,28 +19,80 @@ extension ModelParent: ModelProperty {
         return self.id.constraints
     }
     
-    public func encode(to encoder: inout ModelEncoder) throws {
-        if self.id.model.storage.eagerLoads[Parent().entity] != nil {
-            let parent = try self.get()
+    public init(id: Child.Field<Parent.ID>) {
+        self.id = id
+    }
+    
+    public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
+        if let cache = storage.eagerLoads[Parent.entity] {
+            let parent = try cache.get(id: storage.get(self.id.name, as: Parent.ID.self))
+                .map { $0 as! Parent }
+                .first!
             try encoder.encode(parent, forKey: "\(Parent.self)".lowercased())
         } else {
-            try self.id.encode(to: &encoder)
+            try self.id.encode(to: &encoder, from: storage)
         }
     }
     
-    public func decode(from decoder: ModelDecoder) throws {
-        try self.id.decode(from: decoder)
+    public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
+        try self.id.decode(from: decoder, to: &storage)
     }
 }
-
 
 extension Model {
-    public typealias Parent<Model> = ModelParent<Self, Model>
-        where Model: FluentKit.Model
+    public typealias Parent<ParentType> = ModelParent<Self, ParentType>
+        where ParentType: Model
     
-    public func parent<Model>(_ name: String, _ dataType: DatabaseSchema.DataType? = nil) -> Parent<Model>
-        where Model: FluentKit.Model
+    public typealias ParentKey<ParentType> = KeyPath<Self.Properties, Parent<ParentType>>
+        where ParentType: Model
+    
+    
+    public static func parent<T>(forKey key: ParentKey<T>) -> Parent<T> {
+        return self.properties[keyPath: key]
+    }
+    
+    public func set<ParentType>(_ key: Self.ParentKey<ParentType>, to parent: ParentType) throws
+        where ParentType: Model
     {
-        return .init(id: self.field(name, dataType))
+        try self.set(Self.parent(forKey: key).id, to: parent.get(\.id))
+    }
+
+    public func get<ParentType>(_ key: Self.ParentKey<ParentType>) throws -> ParentType
+        where ParentType: Model
+    {
+        guard let cache = self.storage.eagerLoads[ParentType.entity] else {
+            fatalError("No cache set on storage.")
+        }
+        return try cache.get(id: self.get(Self.parent(forKey: key).id))
+            .map { $0 as! ParentType }
+            .first!
     }
 }
+
+//
+//extension ModelParent: ModelProperty {
+//    public var name: String {
+//        return self.id.name
+//    }
+//
+//    public var type: Any.Type {
+//        return self.id.type
+//    }
+//
+//    public var dataType: DatabaseSchema.DataType? {
+//        return self.id.dataType
+//    }
+//
+//    public var constraints: [DatabaseSchema.FieldConstraint] {
+//        return self.id.constraints
+//    }
+//
+//    public func encode(to encoder: inout ModelEncoder) throws {
+
+//    }
+//
+//    public func decode(from decoder: ModelDecoder) throws {
+//        try self.id.decode(from: decoder)
+//    }
+//}
+

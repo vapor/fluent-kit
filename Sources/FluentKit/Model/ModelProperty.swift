@@ -5,8 +5,8 @@ public protocol ModelProperty {
     var dataType: DatabaseSchema.DataType? { get }
     var constraints: [DatabaseSchema.FieldConstraint] { get }
     
-    func encode(to encoder: inout ModelEncoder) throws
-    func decode(from decoder: ModelDecoder) throws
+    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws
+    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws
 }
 
 public struct ModelDecoder {

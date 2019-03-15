@@ -1,7 +1,6 @@
 public protocol AnyModel: class, Codable {
-    var properties: [Property] { get }
     var storage: Storage { get set }
-    var entity: String { get }
+    static var entity: String { get }
     init(storage: Storage)
 }
 
@@ -16,22 +15,22 @@ extension AnyModel {
     }
 }
 
-extension AnyModel where Self: Encodable {
+extension Model where Self: Encodable {
     public func encode(to encoder: Encoder) throws {
         var encoder = ModelEncoder(encoder: encoder)
-        for field in self.properties {
-            try field.encode(to: &encoder)
+        for property in Self.properties.all {
+            try property.encode(to: &encoder, from: self.storage)
         }
     }
 }
 
-extension AnyModel where Self: Decodable {
+extension Model where Self: Decodable {
     public init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        for field in self.properties {
+        for field in Self.properties.all {
             do {
-                try field.decode(from: decoder)
+                try field.decode(from: decoder, to: &self.storage)
             } catch {
                 print("Could not decode \(field.name): \(error)")
             }
@@ -48,7 +47,7 @@ extension AnyModel {
 
 
 extension AnyModel {
-    public var entity: String {
+    public static var entity: String {
         return "\(Self.self)"
     }
     

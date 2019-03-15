@@ -17,26 +17,23 @@ public final class QueryBuilder<Model>
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(entity: Model().entity)
+        self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model().properties.map { .field(
+        self.query.fields = Model.properties.all.map { .field(
             path: [$0.name],
-            entity: Model().entity,
+            entity: Model.entity,
             alias: nil
         ) }
     }
     
     @discardableResult
-    public func with<Child>(
-        _ key: KeyPath<Model, ModelChildren<Model, Child>>,
-        method: EagerLoadMethod = .subquery
-    ) -> Self
+    public func with<Child>(_ key: Model.ChildrenKey<Child>, method: EagerLoadMethod = .subquery) -> Self
         where Child: FluentKit.Model
     {
         switch method {
         case .subquery:
-            let id = Model()[keyPath: key].relation.appending(path: \.id)
-            self.eagerLoads[Child().entity] = SubqueryChildEagerLoad<Model, Child>(id)
+            let children = Model.children(forKey: key)
+            self.eagerLoads[Child.entity] = SubqueryChildEagerLoad<Model, Child>(children.id)
         case .join:
             fatalError()
         }
@@ -44,56 +41,50 @@ public final class QueryBuilder<Model>
     }
 
     @discardableResult
-    public func with<Parent>(
-        _ key: KeyPath<Model, ModelParent<Model, Parent>>,
-        method: EagerLoadMethod = .subquery
-    ) -> Self
+    public func with<Parent>(_ key: Model.ParentKey<Parent>, method: EagerLoadMethod = .subquery) -> Self
         where Parent: FluentKit.Model
     {
+        let parent = Model.parent(forKey: key)
         switch method {
         case .subquery:
-            self.eagerLoads[Parent().entity] = SubqueryParentEagerLoad<Model, Parent>(key)
+            self.eagerLoads[Parent.entity] = SubqueryParentEagerLoad<Model, Parent>(parent.id)
             return self
         case .join:
-            self.eagerLoads[Parent().entity] = JoinParentEagerLoad<Model, Parent>()
+            self.eagerLoads[Parent.entity] = JoinParentEagerLoad<Model, Parent>()
             return self.join(key)
         }
     }
     
     @discardableResult
-    public func join<Parent>(_ key: KeyPath<Model, ModelParent<Model, Parent>>) -> Self {
-        return self.join(Parent().id, to: Model()[keyPath: key].id, method: .inner)
+    public func join<Parent>(_ key: Model.ParentKey<Parent>) -> Self
+        where Parent: FluentKit.Model
+    {
+        return self.join(Parent.properties.id, to: Model.parent(forKey: key).id, method: .inner)
     }
     
     @discardableResult
-    public func join<Foreign, T>(
-        _ foreign: KeyPath<Foreign, ModelField<Foreign, T>>,
-        to local: KeyPath<Model, ModelField<Model, T>>,
-        method: DatabaseQuery.Join.Method = .inner
-    ) -> Self
-        where Foreign: FluentKit.Model
+    public func join<Foreign, Value>(_ foreign: Foreign.FieldKey<Value>, to local: Model.FieldKey<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
+        where Foreign: FluentKit.Model, Value: Codable
     {
-        return self.join(Foreign()[keyPath: foreign], to: Model()[keyPath: local], method: method)
+        let foreign = Foreign.field(forKey: foreign)
+        let local = Model.field(forKey: local)
+        return self.join(foreign, to: local, method: method)
     }
     
     @discardableResult
-    public func join<Foreign, T>(
-        _ foreign: ModelField<Foreign, T>,
-        to local: ModelField<Model, T>,
-        method: DatabaseQuery.Join.Method = .inner
-    ) -> Self
-        where Foreign: FluentKit.Model
+    public func join<Foreign, Value>(_ foreign: Foreign.Field<Value>, to local: Model.Field<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
+        where Foreign: FluentKit.Model, Value: Codable
     {
-        self.query.fields += Foreign().properties.map {
+        self.query.fields += Foreign.properties.all.map {
             return .field(
                 path: [$0.name],
-                entity: Foreign().entity,
-                alias: Foreign().entity + "_" + $0.name
+                entity: Foreign.entity,
+                alias: Foreign.entity + "_" + $0.name
             )
         }
         self.query.joins.append(.model(
-            foreign: .field(path: [foreign.name], entity: Foreign().entity, alias: nil),
-            local: .field(path: [local.name], entity: Model().entity, alias: nil),
+            foreign: .field(path: [foreign.name], entity: Foreign.entity, alias: nil),
+            local: .field(path: [local.name], entity: Model.entity, alias: nil),
             method: method
         ))
         return self
@@ -106,24 +97,32 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func filter<T>(
-        _ key: KeyPath<Model, ModelField<Model, T>>,
-        in value: [T]
-    ) -> Self
-        where T: Encodable
+    public func filter<Value>(_ key: Model.FieldKey<Value>, in values: [Value]) -> Self
+        where Value: Codable
     {
-        return self.filter(
-            .keyPath(key),
-            .subset(inverse: false),
-            .array(value.map { .bind($0) })
+        return self.filter(Model.field(forKey: key), in: values)
+    }
+    
+    @discardableResult
+    public func filter<Value>(_ field: Model.Field<Value>, in values: [Value]) -> Self
+        where Value: Codable
+    {
+        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), .subset(inverse: false), .array(values.map { .bind($0) })
         )
     }
     
     @discardableResult
-    public func filter<T>(_ key: KeyPath<Model, ModelField<Model, T>>, _ method: DatabaseQuery.Filter.Method, _ value: T) -> Self
-        where T: Encodable
+    public func filter<Value>(_ key: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+        where Value: Codable
     {
-        return self.filter(.keyPath(key), method, .bind(value))
+        return self.filter(Model.field(forKey: key), method, value)
+    }
+    
+    @discardableResult
+    public func filter<Value>(_ field: Model.Field<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+        where Value: Codable
+    {
+        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
     }
     
     @discardableResult
@@ -145,10 +144,12 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func set<Value>(_ field: KeyPath<Model, ModelField<Model, Value>>, to value: Value) -> Self {
-        let ref = Model()
+    public func set<Value>(_ key: Model.FieldKey<Value>, to value: Value) -> Self
+        where Value: Codable
+    {
+        let field = Model.field(forKey: key)
         self.query.fields = []
-        query.fields.append(.field(path: [ref[keyPath: field].name], entity: nil, alias: nil))
+        query.fields.append(.field(path: [field.name], entity: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -178,42 +179,47 @@ public final class QueryBuilder<Model>
     // MARK: Aggregate
     
     public func count() -> EventLoopFuture<Int> {
-        return self.aggregate(.count, \Model.id)
+        return self.aggregate(.count, \.id)
     }
     
-    public func sum<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
-        return self.aggregate(.sum, field)
-    }
-    
-    public func average<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
-        return self.aggregate(.average, field)
-    }
-    
-    public func min<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
-        return self.aggregate(.minimum, field)
-    }
-    
-    public func max<T>(_ field: KeyPath<Model, ModelField<Model, T>>) -> EventLoopFuture<T?> {
-        return self.aggregate(.maximum, field)
-    }
-    
-    public func aggregate<T, U>(
-        _ method: DatabaseQuery.Field.Aggregate.Method,
-        _ field: KeyPath<Model, ModelField<Model, T>>,
-        as type: U.Type = U.self
-        ) -> EventLoopFuture<U>
-        where U: Codable
+    public func sum<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
+        where Value: Codable
     {
+        return self.aggregate(.sum, key)
+    }
+    
+    public func average<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.average, key)
+    }
+    
+    public func min<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.minimum, key)
+    }
+    
+    public func max<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.maximum, key)
+    }
+    
+    public func aggregate<Value, Result>(_ method: DatabaseQuery.Field.Aggregate.Method, _ key: Model.FieldKey<Value>, as type: Result.Type = Result.self) -> EventLoopFuture<Result>
+        where Value: Codable, Result: Codable
+    {
+        let field = Model.field(forKey: key)
         self.query.fields = [.aggregate(.fields(
             method: method,
-            fields: [.keyPath(field)]
-            ))]
+            fields: [.field(path: [field.name], entity: Model.entity, alias: nil)]
+        ))]
         
         return self.first().flatMapThrowing { res in
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.field("fluentAggregate").get()
+            return try res.get(.init("fluentAggregate"))
         }
     }
     
@@ -278,14 +284,12 @@ public final class QueryBuilder<Model>
 }
 
 public struct ModelFilter<Model> where Model: FluentKit.Model {
-    static func make<Value, Foo>(
-        _ lhs: KeyPath<Model, ModelField<Foo, Value>>,
-        _ method: DatabaseQuery.Filter.Method,
-        _ rhs: Value
-    ) -> ModelFilter {
-        let field = Model()[keyPath: lhs]
+    static func make<Value>(_ lhs: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ rhs: Value) -> ModelFilter
+        where Value: Codable
+    {
+        let field = Model.field(forKey: lhs)
         return .init(filter: .basic(
-            .field(path: field.path, entity: Model().entity, alias: nil),
+            .field(path: [field.name], entity: Model.entity, alias: nil),
             method,
             .bind(rhs)
         ))
@@ -297,6 +301,8 @@ public struct ModelFilter<Model> where Model: FluentKit.Model {
     }
 }
 
-public func ==<Model, Foo, Value>(lhs: KeyPath<Model, ModelField<Foo, Value>>, rhs: Value) -> ModelFilter<Model> {
+public func ==<Model, Value>(lhs: Model.FieldKey<Value>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: Codable
+{
     return .make(lhs, .equality(inverse: false), rhs)
 }
