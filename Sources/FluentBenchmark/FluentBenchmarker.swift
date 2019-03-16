@@ -37,10 +37,10 @@ public final class FluentBenchmarker {
             Galaxy.autoMigration()
         ]) {
             let galaxy = Galaxy()
-            galaxy.name.set(to: "Messier")
-            try galaxy.name.mut { $0 += " 82" }
+            galaxy.set(\.name, to: "Messier")
+            try galaxy.mut(\.name) { $0 += " 82" }
             try galaxy.save(on: self.database).wait()
-            guard try galaxy.id.get() == 1 else {
+            guard try galaxy.get(\.id) == 1 else {
                 throw Failure("unexpected galaxy id: \(galaxy)")
             }
             
@@ -48,10 +48,10 @@ public final class FluentBenchmarker {
                 throw Failure("unexpected empty result set")
             }
             
-            if try fetched.name.get() != galaxy.name.get() {
+            if try fetched.get(\.name) != galaxy.get(\.name) {
                 throw Failure("unexpected name: \(galaxy) \(fetched)")
             }
-            if try fetched.id.get() != galaxy.id.get() {
+            if try fetched.get(\.id) != galaxy.get(\.id) {
                 throw Failure("unexpected id: \(galaxy) \(fetched)")
             }
         }
@@ -68,7 +68,7 @@ public final class FluentBenchmarker {
                 else {
                     throw Failure("unpexected missing galaxy")
             }
-            guard try milkyWay.name.get() == "Milky Way" else {
+            guard try milkyWay.get(\.name) == "Milky Way" else {
                 throw Failure("unexpected name")
             }
         }
@@ -79,9 +79,9 @@ public final class FluentBenchmarker {
             Galaxy.autoMigration()
         ]) {
             let galaxy = Galaxy()
-            galaxy.name.set(to: "Milkey Way")
+            galaxy.set(\.name, to: "Milkey Way")
             try galaxy.save(on: self.database).wait()
-            galaxy.name.set(to: "Milky Way")
+            galaxy.set(\.name, to: "Milky Way")
             try galaxy.save(on: self.database).wait()
             
             // verify
@@ -89,7 +89,7 @@ public final class FluentBenchmarker {
             guard galaxies.count == 1 else {
                 throw Failure("unexpected galaxy count: \(galaxies)")
             }
-            guard try galaxies[0].name.get() == "Milky Way" else {
+            guard try galaxies[0].get(\.name) == "Milky Way" else {
                 throw Failure("unexpected galaxy name")
             }
         }
@@ -100,7 +100,7 @@ public final class FluentBenchmarker {
             Galaxy.autoMigration(),
         ]) {
             let galaxy = Galaxy()
-            galaxy.name.set(to: "Milky Way")
+            galaxy.set(\.name, to: "Milky Way")
             try galaxy.save(on: self.database).wait()
             try galaxy.delete(on: self.database).wait()
             
@@ -124,13 +124,13 @@ public final class FluentBenchmarker {
                 .all().wait()
 
             for galaxy in galaxies {
-                let planets = try galaxy.planets.get()
-                switch try galaxy.name.get() {
+                let planets = try galaxy.get(\.planets)
+                switch try galaxy.get(\.name) {
                 case "Milky Way":
-                    guard try planets.contains(where: { try $0.name.get() == "Earth" }) else {
+                    guard try planets.contains(where: { try $0.get(\.name) == "Earth" }) else {
                         throw Failure("unexpected missing planet")
                     }
-                    guard try !planets.contains(where: { try $0.name.get() == "PA-99-N2"}) else {
+                    guard try !planets.contains(where: { try $0.get(\.name) == "PA-99-N2"}) else {
                         throw Failure("unexpected planet")
                     }
                 default: break
@@ -151,14 +151,14 @@ public final class FluentBenchmarker {
                 .all().wait()
             
             for planet in planets {
-                let galaxy = try planet.galaxy.get()
-                switch try planet.name.get() {
+                let galaxy = try planet.get(\.galaxy)
+                switch try planet.get(\.name) {
                 case "Earth":
-                    guard try galaxy.name.get() == "Milky Way" else {
+                    guard try galaxy.get(\.name) == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(galaxy)")
                     }
                 case "PA-99-N2":
-                    guard try galaxy.name.get() == "Andromeda" else {
+                    guard try galaxy.get(\.name) == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(galaxy)")
                     }
                 default: break
@@ -179,14 +179,14 @@ public final class FluentBenchmarker {
                 .all().wait()
             
             for planet in planets {
-                let galaxy = try planet.galaxy.get()
-                switch try planet.name.get() {
+                let galaxy = try planet.get(\.galaxy)
+                switch try planet.get(\.name) {
                 case "Earth":
-                    guard try galaxy.name.get() == "Milky Way" else {
+                    guard try galaxy.get(\.name) == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(galaxy)")
                     }
                 case "PA-99-N2":
-                    guard try galaxy.name.get() == "Andromeda" else {
+                    guard try galaxy.get(\.name) == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(galaxy)")
                     }
                 default: break
@@ -305,8 +305,8 @@ public final class FluentBenchmarker {
             print(planets)
             for planet in planets {
                 let galaxy = planet.joined(Galaxy.self)
-                let planetName = try planet.name.get()
-                let galaxyName = try galaxy.name.get()
+                let planetName = try planet.get(\.name)
+                let galaxyName = try galaxy.get(\.name)
                 switch planetName {
                 case "Earth":
                     guard galaxyName == "Milky Way" else {
@@ -328,12 +328,12 @@ public final class FluentBenchmarker {
         ]) {
             let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter -> Galaxy in
                 let galaxy = Galaxy()
-                galaxy.name.set(to: String(letter))
+                galaxy.set(\.name, to: String(letter))
                 return galaxy
             }
                 
             try galaxies.create(on: self.database).wait()
-            guard try galaxies[5].id.get() == 6 else {
+            guard try galaxies[5].get(\.id) == 6 else {
                 throw Failure("batch insert did not set id")
             }
         }
@@ -350,7 +350,7 @@ public final class FluentBenchmarker {
             let galaxies = try self.database.query(Galaxy.self).all().wait()
             for galaxy in galaxies {
                 
-                guard try galaxy.name.get() == "Foo" else {
+                guard try galaxy.get(\.name) == "Foo" else {
                     throw Failure("batch update did not set id")
                 }
             }
@@ -363,19 +363,19 @@ public final class FluentBenchmarker {
             UserSeed()
         ]) {
             let users = try self.database.query(User.self)
-                .filter(\.pet.type == .cat)
+                .filter(\.pet, "type", .equals, User.Pet.Animal.cat)
                 .all().wait()
         
             guard let user = users.first, users.count == 1 else {
                 throw Failure("unexpected user count")
             }
-            guard try user.name.get() == "Tanner" else {
+            guard try user.get(\.name) == "Tanner" else {
                 throw Failure("unexpected user name")
             }
-            guard try user.pet.name.get() == "Ziz" else {
+            guard try user.get(\.pet).name == "Ziz" else {
                 throw Failure("unexpected pet name")
             }
-            guard try user.pet.type.get() == .cat else {
+            guard try user.get(\.pet).type == .cat else {
                 throw Failure("unexpected pet type")
             }
             
@@ -451,24 +451,24 @@ public final class FluentBenchmarker {
             Galaxy.autoMigration(),
         ]) {
             let galaxy = Galaxy()
-            galaxy.name.set(to: "Milky Way")
-            guard (try? galaxy.id.get()) == nil else {
+            galaxy.set(\.name, to: "Milky Way")
+            guard (try? galaxy.get(\.id)) == nil else {
                 throw Failure("id should not be set")
             }
             try galaxy.save(on: self.database).wait()
-            _ = try galaxy.id.get()
+            _ = try galaxy.get(\.id)
             
             
             let a = Galaxy()
-            a.name.set(to: "A")
+            a.set(\.name, to: "A")
             let b = Galaxy()
-            b.name.set(to: "B")
+            b.set(\.name, to: "B")
             let c = Galaxy()
-            c.name.set(to: "c")
+            c.set(\.name, to: "c")
             try a.save(on: self.database).wait()
             try b.save(on: self.database).wait()
             try c.save(on: self.database).wait()
-            guard try a.id.get() != b.id.get() && b.id.get() != c.id.get() && a.id.get() != c.id.get() else {
+            guard try a.get(\.id) != b.get(\.id) && b.get(\.id) != c.get(\.id) && a.get(\.id) != c.get(\.id) else {
                 throw Failure("ids should not be equal")
             }
         }
@@ -476,20 +476,12 @@ public final class FluentBenchmarker {
     
     public func testNullifyField() throws {
         final class Foo: Model {
-            var properties: [Property] {
-                return [id, bar]
+            struct Properties: ModelProperties {
+                let id = Field<Int>("id")
+                let bar = Field<String?>("bar")
             }
-            
+            static let properties = Properties()
             var storage: Storage
-        
-            var id: Field<Int> {
-                return self.id("id")
-            }
-            
-            var bar: Field<String?> {
-                return self.field("bar")
-            }
-            
             init(storage: Storage) {
                 self.storage = storage
             }
@@ -498,24 +490,24 @@ public final class FluentBenchmarker {
             Foo.autoMigration(),
         ]) {
             let foo = Foo()
-            foo.bar.set(to: "test")
+            foo.set(\.bar, to: "test")
             try foo.save(on: self.database).wait()
-            guard try foo.bar.get() != nil else {
+            guard try foo.get(\.bar) != nil else {
                 throw Failure("unexpected nil value")
             }
-            foo.bar.set(to: nil)
+            foo.set(\.bar, to: nil)
             try foo.save(on: self.database).wait()
-            guard try foo.bar.get() == nil else {
+            guard try foo.get(\.bar) == nil else {
                 throw Failure("unexpected non-nil value")
             }
             
             guard let fetched = try self.database.query(Foo.self)
-                .filter(\.id == foo.id.get())
+                .filter(\.id == foo.get(\.id))
                 .first().wait()
             else {
                 throw Failure("no model returned")
             }
-            guard try fetched.bar.get() == nil else {
+            guard try fetched.get(\.bar) == nil else {
                 throw Failure("unexpected non-nil value")
             }
         }
@@ -531,7 +523,7 @@ public final class FluentBenchmarker {
             try self.database.transaction { database -> EventLoopFuture<Void> in
                 let saves = (1...512).map { i -> EventLoopFuture<Void> in
                     let galaxy = Galaxy()
-                    galaxy.name.set(to: "Milky Way \(i)")
+                    galaxy.set(\.name, to: "Milky Way \(i)")
                     return galaxy.save(on: database)
                 }
                 return .andAllSucceed(saves, on: database.eventLoop)
@@ -563,32 +555,23 @@ public final class FluentBenchmarker {
     
     public func testUniqueFields() throws {
         final class Foo: Model {
-            var properties: [Property] {
-                return [id, bar, baz]
+            struct Properties: ModelProperties {
+                let id = Field<Int>("id")
+                let bar = Field<String>("bar")
+                let baz = Field<Int>("baz")
             }
+            
+            static let properties = Properties()
             
             var storage: Storage
-            
-            var id: Field<Int> {
-                return self.id("id")
-            }
-            
-            var bar: Field<String> {
-                return self.field("bar")
-            }
-            
-            var baz: Field<Int> {
-                return self.field("baz")
+            init(storage: Storage) {
+                self.storage = storage
             }
             
             convenience init(bar: String, baz: Int) {
                 self.init()
-                self.bar.set(to: bar)
-                self.baz.set(to: baz)
-            }
-            
-            init(storage: Storage) {
-                self.storage = storage
+                self.set(\.bar, to: bar)
+                self.set(\.baz, to: baz)
             }
         }
         struct FooMigration: Migration {

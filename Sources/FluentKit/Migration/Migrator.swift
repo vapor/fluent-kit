@@ -106,11 +106,11 @@ public struct Migrator {
         }
         return item.migration.prepare(on: database).flatMap {
             let log = MigrationLog()
-            log.name.set(to: item.migration.name)
-            log.batch.set(to: 1)
+            log.set(\.name, to: item.migration.name)
+            log.set(\.batch, to: 1)
             #warning("TODO: Timestampable")
-            log.createdAt.set(to: .init())
-            log.updatedAt.set(to: .init())
+            log.set(\.createdAt, to: .init())
+            log.set(\.updatedAt, to: .init())
             return log.save(on: self.databases.default())
         }
     }
@@ -123,7 +123,7 @@ public struct Migrator {
         } else {
             database = self.databases.default()
         }
-        return item.migration.revert(on: database).flatMap {
+        return item.migration.revert(on: database).flatMap { _ -> EventLoopFuture<Void> in
             return self.databases.default().query(MigrationLog.self)
                 .filter(\.name == item.migration.name)
                 .delete()
@@ -137,18 +137,18 @@ public struct Migrator {
     private func lastBatchNumber() -> EventLoopFuture<Int> {
         #warning("TODO: use db sorting")
         return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs in
-            return try logs.sorted(by: { try $0.batch.get() > $1.batch.get() })
-                .first?.batch.get() ?? 0
+            return try logs.sorted(by: { try $0.get(\.batch) > $1.get(\.batch) })
+                .first?.get(\.batch) ?? 0
         }
     }
     
     private func preparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
         return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs -> [Migrations.Item] in
             return try logs.compactMap { log in
-                if let item = try self.migrations.storage.filter({ try $0.migration.name == log.name.get() }).first {
+                if let item = try self.migrations.storage.filter({ try $0.migration.name == log.get(\.name) }).first {
                     return item
                 } else {
-                    print("No registered migration found for \(log.name)")
+                    try print("No registered migration found for \(log.get(\.name))")
                     return nil
                 }
             }.reversed()
@@ -158,10 +158,10 @@ public struct Migrator {
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migrations.Item]> {
         return self.databases.default().query(MigrationLog.self).filter(\.batch == batch).all().flatMapThrowing { logs -> [Migrations.Item] in
             return try logs.compactMap { log in
-                if let item = try self.migrations.storage.filter({ try $0.migration.name == log.name.get() }).first {
+                if let item = try self.migrations.storage.filter({ try $0.migration.name == log.get(\.name) }).first {
                     return item
                 } else {
-                    print("No registered migration found for \(log.name)")
+                    try print("No registered migration found for \(log.get(\.name))")
                     return nil
                 }
             }.reversed()
@@ -171,7 +171,7 @@ public struct Migrator {
     private func unpreparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
         return self.databases.default().query(MigrationLog.self).all().flatMapThrowing { logs -> [Migrations.Item] in
             return try self.migrations.storage.compactMap { item in
-                if try logs.filter({ try $0.name.get() == item.migration.name }).count == 0 {
+                if try logs.filter({ try $0.get(\.name) == item.migration.name }).count == 0 {
                     return item
                 } else {
                     // log found, this has been prepared

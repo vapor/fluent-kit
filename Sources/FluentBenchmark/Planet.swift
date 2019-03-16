@@ -1,29 +1,14 @@
 import FluentKit
 
-final class Planet: Model, Codable {
-    var storage: ModelStorage
-    
-    var properties: [Property] {
-        return [id, name, galaxy]
+final class Planet: Model {
+    struct Properties: ModelProperties {
+        let id = Field<Int>("id")
+        let name = Field<String>("name")
+        let galaxy = Parent<Galaxy>(id: Field("galaxyID"))
     }
-    
-    var entity: String {
-        return "planets"
-    }
-    
-    var id: Field<Int> {
-        return self.field("id", .int, .identifier)
-    }
-    
-    var name: Field<String> {
-        return self.field("name")
-    }
-    
-    var galaxy: Parent<Galaxy> {
-        return self.parent("galaxyID")
-    }
-    
-    init(storage: ModelStorage) {
+    static let properties = Properties()
+    var storage: Storage
+    init(storage: Storage) {
         self.storage = storage
     }
 }

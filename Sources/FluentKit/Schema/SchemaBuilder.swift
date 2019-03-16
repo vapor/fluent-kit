@@ -23,11 +23,11 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     
     public init(database: Database) {
         self.database = database
-        self.schema = .init(entity: Model().entity)
+        self.schema = .init(entity: Model.entity)
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model().properties.map { field in
+        self.schema.createFields = Model.properties.all.map { field in
             var constraints = field.constraints
             let type: Any.Type
             if let optionalType = field.type as? OptionalType.Type {
@@ -47,8 +47,10 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func field<Value>(_ keyPath: KeyPath<Model, ModelField<Model, Value>>) -> Self {
-        let field = Model()[keyPath: keyPath]
+    public func field<Value>(_ key: Model.FieldKey<Value>) -> Self
+        where Value: Codable
+    {
+        let field = Model.field(forKey: key)
         return self.field(.definition(
             name: .string(field.name),
             dataType: field.dataType ?? .bestFor(type: Value.self),
@@ -61,36 +63,33 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func unique<A>(
-        on a: KeyPath<Model, ModelField<Model, A>>
-    ) -> Self {
-        let a = Model()[keyPath: a]
+    public func unique<A>(on a: Model.FieldKey<A>) -> Self
+        where A: Codable
+    {
+        let a = Model.field(forKey: a)
         self.schema.constraints.append(.unique(fields: [
             .string(a.name)
         ]))
         return self
     }
     
-    public func unique<A, B>(
-        on a: KeyPath<Model, ModelField<Model, A>>,
-        _ b: KeyPath<Model, ModelField<Model, B>>
-    ) -> Self {
-        let a = Model()[keyPath: a]
-        let b = Model()[keyPath: b]
+    public func unique<A, B>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>) -> Self
+        where A: Codable, B: Codable
+    {
+        let a = Model.field(forKey: a)
+        let b = Model.field(forKey: b)
         self.schema.constraints.append(.unique(fields: [
             .string(a.name), .string(b.name)
         ]))
         return self
     }
     
-    public func unique<A, B, C>(
-        on a: KeyPath<Model, ModelField<Model, A>>,
-        _ b: KeyPath<Model, ModelField<Model, B>>,
-        _ c: KeyPath<Model, ModelField<Model, C>>
-    ) -> Self {
-        let a = Model()[keyPath: a]
-        let b = Model()[keyPath: b]
-        let c = Model()[keyPath: c]
+    public func unique<A, B, C>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>,_ c: Model.FieldKey<C>) -> Self
+        where A: Codable, B: Codable, C: Codable
+    {
+        let a = Model.field(forKey: a)
+        let b = Model.field(forKey: b)
+        let c = Model.field(forKey: c)
         self.schema.constraints.append(.unique(fields: [
             .string(a.name), .string(b.name), .string(c.name)
         ]))

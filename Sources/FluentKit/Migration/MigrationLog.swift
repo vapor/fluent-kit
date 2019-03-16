@@ -5,47 +5,21 @@ import Foundation
 /// when the app boots. It is also used to determine which migrations to revert when
 /// using the `RevertCommand`.
 public final class MigrationLog: Model {
-    /// See `Model`.
-    public var entity: String {
-        return "fluent"
+    public struct Properties: ModelProperties {
+        public let id = Field<Int>("id")
+        public let name = Field<String>("name")
+        public let batch = Field<Int>("batch")
+        public let createdAt = Field<Date>("createdAt")
+        public let updatedAt = Field<Date>("updatedAt")
     }
     
-    /// See `Model`.
-    #warning("TODO: make uuid")
-    public var id: Field<Int> {
-        return self.id("id")
-    }
+    public static let entity = "fluent"
+    public static let properties = Properties()
     
-    /// The unique name of the migration.
-    public var name: Field<String> {
-        return self.field("name")
-    }
-    
-    /// The batch number.
-    public var batch: Field<Int> {
-        return self.field("batch")
-    }
-    
-    /// When this log was created.
-    public var createdAt: Field<Date> {
-        return self.field("createdAt")
-    }
-    
-    /// When this log was last updated.
-    public var updatedAt: Field<Date> {
-        return self.field("updatedAt")
-    }
-    
-    public var properties: [Property] {
-        return [self.id, self.name, self.batch, self.createdAt, self.updatedAt]
-    }
-    
-    public var storage: ModelStorage
-    
-    public init(storage: ModelStorage) {
+    public var storage: Storage
+    public init(storage: Storage) {
         self.storage = storage
     }
 }
 
 private var _migrationLogEntity = "fluent"
-
