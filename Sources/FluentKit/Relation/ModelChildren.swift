@@ -1,23 +1,7 @@
-public struct ModelChildren<Parent, Child>: ModelProperty
+public struct ModelChildren<Parent, Child>
     where Child: Model, Parent: Model
 {
     public let id: ModelField<Child, Parent.ID>
-    
-    public var name: String {
-        return self.id.name
-    }
-    
-    public var type: Any.Type {
-        return self.id.type
-    }
-    
-    public var dataType: DatabaseSchema.DataType? {
-        return self.id.dataType
-    }
-    
-    public var constraints: [DatabaseSchema.FieldConstraint] {
-        return self.id.constraints
-    }
     
     public init(id: ModelField<Child, Parent.ID>) {
         self.id = id

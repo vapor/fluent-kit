@@ -25,18 +25,8 @@ public struct ModelField<Model, Value>: ModelProperty
     
     public init(
         _ name: String,
-        _ dataType: DatabaseSchema.DataType? = nil,
-        _ constraints: DatabaseSchema.FieldConstraint...
-    ) {
-        self.name = name
-        self.dataType = dataType
-        self.constraints = constraints
-    }
-    
-    public init(
-        name: String,
         dataType: DatabaseSchema.DataType? = nil,
-        constraints: [DatabaseSchema.FieldConstraint] = []
+        constraints: DatabaseSchema.FieldConstraint...
     ) {
         self.name = name
         self.dataType = dataType

@@ -17,7 +17,7 @@ extension ModelProperties {
     public var all: [Model.Property] {
         return Mirror(reflecting: self)
             .children
-            .compactMap { $0 as? ModelProperty }
+            .compactMap { $0.value as? ModelProperty }
     }
 }
 

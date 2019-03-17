@@ -12,7 +12,7 @@ final class User: Model {
     struct Properties: ModelProperties {
         let id = Field<Int>("id")
         let name = Field<String>("name")
-        let pet = Field<Pet>("pet", .json)
+        let pet = Field<Pet>("pet", dataType: .json)
     }
     
     static let entity: String = "users"

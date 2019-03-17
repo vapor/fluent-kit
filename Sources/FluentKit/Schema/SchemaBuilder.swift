@@ -30,12 +30,17 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         self.schema.createFields = Model.properties.all.map { field in
             var constraints = field.constraints
             let type: Any.Type
-            if let optionalType = field.type as? OptionalType.Type {
-                type = optionalType.wrappedType
-            } else {
+            if field.name == Model.properties.id.name {
+                constraints.append(.identifier)
                 type = field.type
-                if field.constraints.isEmpty {
-                    constraints.append(.required)
+            } else {
+                if let optionalType = field.type as? OptionalType.Type {
+                    type = optionalType.wrappedType
+                } else {
+                    type = field.type
+                    if field.constraints.isEmpty {
+                        constraints.append(.required)
+                    }
                 }
             }
             return .definition(
