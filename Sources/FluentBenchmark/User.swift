@@ -9,19 +9,12 @@ final class User: Model {
         var type: Animal
     }
     
-    struct Properties: ModelProperties {
-        let id = Field<Int>("id")
-        let name = Field<String>("name")
-        let pet = Field<Pet>("pet", dataType: .json)
-    }
+    static let entity = "users"
+    static let `default` = User()
     
-    static let entity: String = "users"
-    static let properties = Properties()
-    
-    var storage: Storage
-    init(storage: Storage) {
-        self.storage = storage
-    }
+    let id = Field<Int>("id")
+    let name = Field<String>("name")
+    let pet = Field<Pet>("pet", dataType: .json)
 }
 
 
@@ -29,11 +22,11 @@ final class UserSeed: Migration {
     init() { }
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let tanner = User()
+        let tanner = User.new()
         tanner.set(\.name, to: "Tanner")
         tanner.set(\.pet, to: .init(name: "Ziz", type: .cat))
 
-        let logan = User()
+        let logan = User.new()
         logan.set(\.name, to: "Logan")
         logan.set(\.pet, to: .init(name: "Runa", type: .dog))
         

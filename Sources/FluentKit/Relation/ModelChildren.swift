@@ -23,29 +23,31 @@ extension Model {
         where ChildType: Model
     
     
-    public typealias ChildrenKey<ChildType> = KeyPath<Self.Properties, Children<ChildType>>
+    public typealias ChildrenKey<ChildType> = KeyPath<Self, Children<ChildType>>
         where ChildType: Model
     
     
     public static func children<T>(forKey key: ChildrenKey<T>) -> Children<T> {
-        return self.properties[keyPath: key]
+        return self.default[keyPath: key]
     }
-    
-    public func query<Child>(_ key: Self.ChildrenKey<Child>, on database: Database) throws -> QueryBuilder<Child>
-        where Child: Model
+}
+
+extension Instance {
+    public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) throws -> QueryBuilder<Child>
+        where Child: FluentKit.Model
     {
-        let children = Self.children(forKey: key)
+        let children = Model.children(forKey: key)
         return try database.query(Child.self)
             .filter(children.id, .equals, self.get(\.id))
     }
     
-    public func get<Child>(_ key: Self.ChildrenKey<Child>) throws -> [Child]
-        where Child: Model
+    public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Instance<Child>]
+        where Child: FluentKit.Model
     {
         guard let cache = self.storage.eagerLoads[Child.entity] else {
             fatalError("No cache set on storage.")
         }
         return try cache.get(id: self.get(\.id))
-            .map { $0 as! Child }
+            .map { $0 as! Instance<Child> }
     }
 }

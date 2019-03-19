@@ -1,34 +1,25 @@
-public protocol AnyModel: class, Codable {
-    var storage: Storage { get set }
-    static var entity: String { get }
-    init(storage: Storage)
-}
-
-extension AnyModel {
-    public typealias Property = ModelProperty
-    public typealias Storage = ModelStorage
-}
-
-extension AnyModel {
-    public init() {
+public final class Instance<Model>: Codable, CustomStringConvertible
+    where Model: FluentKit.Model
+{
+    public var exists: Bool {
+        #warning("support changing id")
+        return self.storage.output != nil
+    }
+    
+    public var storage: ModelStorage
+    
+    public init(storage: ModelStorage) {
+        self.storage = storage
+    }
+    
+    public convenience init() {
         self.init(storage: DefaultModelStorage(output: nil, eagerLoads: [:], exists: false))
     }
-}
-
-extension Model where Self: Encodable {
-    public func encode(to encoder: Encoder) throws {
-        var encoder = ModelEncoder(encoder: encoder)
-        for property in Self.properties.all {
-            try property.encode(to: &encoder, from: self.storage)
-        }
-    }
-}
-
-extension Model where Self: Decodable {
-    public init(from decoder: Decoder) throws {
+    
+    public convenience init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        for field in Self.properties.all {
+        for field in Model.default.all {
             do {
                 try field.decode(from: decoder, to: &self.storage)
             } catch {
@@ -36,19 +27,12 @@ extension Model where Self: Decodable {
             }
         }
     }
-}
-
-extension AnyModel {
-    public var exists: Bool {
-        #warning("support changing id")
-        return self.storage.output != nil
-    }
-}
-
-
-extension AnyModel {
-    public static var entity: String {
-        return "\(Self.self)"
+    
+    public func encode(to encoder: Encoder) throws {
+        var encoder = ModelEncoder(encoder: encoder)
+        for property in Model.default.all {
+            try property.encode(to: &encoder, from: self.storage)
+        }
     }
     
     public var description: String {
@@ -64,6 +48,6 @@ extension AnyModel {
         } else {
             output = "nil"
         }
-        return "\(Self.self)(input: \(input), output: \(output))"
+        return "\(Model.self)(input: \(input), output: \(output))"
     }
 }

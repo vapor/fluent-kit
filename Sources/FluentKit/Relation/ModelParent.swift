@@ -26,7 +26,7 @@ public struct ModelParent<Child, Parent>: ModelProperty
     public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
         if let cache = storage.eagerLoads[Parent.entity] {
             let parent = try cache.get(id: storage.get(self.id.name, as: Parent.ID.self))
-                .map { $0 as! Parent }
+                .map { $0 as! Instance<Parent> }
                 .first!
             try encoder.encode(parent, forKey: "\(Parent.self)".lowercased())
         } else {
@@ -43,28 +43,29 @@ extension Model {
     public typealias Parent<ParentType> = ModelParent<Self, ParentType>
         where ParentType: Model
     
-    public typealias ParentKey<ParentType> = KeyPath<Self.Properties, Parent<ParentType>>
+    public typealias ParentKey<ParentType> = KeyPath<Self, Parent<ParentType>>
         where ParentType: Model
-    
     
     public static func parent<T>(forKey key: ParentKey<T>) -> Parent<T> {
-        return self.properties[keyPath: key]
+        return self.default[keyPath: key]
     }
-    
-    public func set<ParentType>(_ key: Self.ParentKey<ParentType>, to parent: ParentType) throws
-        where ParentType: Model
+}
+
+extension Instance {
+    public func set<ParentType>(_ key: Model.ParentKey<ParentType>, to parent: Instance<ParentType>) throws
+        where ParentType: FluentKit.Model
     {
-        try self.set(Self.parent(forKey: key).id, to: parent.get(\.id))
+        try self.set(Model.parent(forKey: key).id, to: parent.get(\.id))
     }
 
-    public func get<ParentType>(_ key: Self.ParentKey<ParentType>) throws -> ParentType
-        where ParentType: Model
+    public func get<ParentType>(_ key: Model.ParentKey<ParentType>) throws -> Instance<ParentType>
+        where ParentType: FluentKit.Model
     {
         guard let cache = self.storage.eagerLoads[ParentType.entity] else {
             fatalError("No cache set on storage.")
         }
-        return try cache.get(id: self.get(Self.parent(forKey: key).id))
-            .map { $0 as! ParentType }
+        return try cache.get(id: self.get(Model.parent(forKey: key).id))
+            .map { $0 as! Instance<ParentType> }
             .first!
     }
 }

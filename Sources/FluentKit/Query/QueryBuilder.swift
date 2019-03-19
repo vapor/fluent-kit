@@ -19,7 +19,7 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.properties.all.map { .field(
+        self.query.fields = Model.default.all.map { .field(
             path: [$0.name],
             entity: Model.entity,
             alias: nil
@@ -59,7 +59,7 @@ public final class QueryBuilder<Model>
     public func join<Parent>(_ key: Model.ParentKey<Parent>) -> Self
         where Parent: FluentKit.Model
     {
-        return self.join(Parent.properties.id, to: Model.parent(forKey: key).id, method: .inner)
+        return self.join(Parent.default.id, to: Model.parent(forKey: key).id, method: .inner)
     }
     
     @discardableResult
@@ -75,7 +75,7 @@ public final class QueryBuilder<Model>
     public func join<Foreign, Value>(_ foreign: Foreign.Field<Value>, to local: Model.Field<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
         where Foreign: FluentKit.Model, Value: Codable
     {
-        self.query.fields += Foreign.properties.all.map {
+        self.query.fields += Foreign.default.all.map {
             return .field(
                 path: [$0.name],
                 entity: Foreign.entity,
@@ -231,8 +231,8 @@ public final class QueryBuilder<Model>
     
     // MARK: Fetch
     
-    public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
-        var partial: [Model] = []
+    public func chunk(max: Int, closure: @escaping ([Instance<Model>]) throws -> ()) -> EventLoopFuture<Void> {
+        var partial: [Instance<Model>] = []
         partial.reserveCapacity(max)
         return self.run { row in
             partial.append(row)
@@ -249,13 +249,13 @@ public final class QueryBuilder<Model>
         }
     }
     
-    public func first() -> EventLoopFuture<Model?> {
+    public func first() -> EventLoopFuture<Instance<Model>?> {
         return all().map { $0.first }
     }
     
-    public func all() -> EventLoopFuture<[Model]> {
+    public func all() -> EventLoopFuture<[Instance<Model>]> {
         #warning("re-use array required by run for eager loading")
-        var models: [Model] = []
+        var models: [Instance<Model>] = []
         return self.run { model in
             models.append(model)
         }.map { models }
@@ -265,10 +265,10 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
     
-    public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
-        var all: [Model] = []
+    public func run(_ onOutput: @escaping (Instance<Model>) throws -> ()) -> EventLoopFuture<Void> {
+        var all: [Instance<Model>] = []
         return self.database.execute(self.query) { output in
-            let model = Model.init(storage: DefaultModelStorage(
+            let model = Instance<Model>.init(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true
