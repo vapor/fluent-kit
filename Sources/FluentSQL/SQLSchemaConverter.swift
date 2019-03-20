@@ -1,5 +1,6 @@
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
+    func nestedFieldExpression(_ column: String, _ path: [String]) -> SQLExpression
 }
 
 public struct SQLSchemaConverter {
