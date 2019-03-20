@@ -135,13 +135,14 @@ extension Database {
         precondition(!model.exists)
         let builder = self.query(Model.self).set(model.storage.input)
         builder.query.action = .create
-        return builder.run { model in
+        return builder.run { created in
             #warning("for mysql, we might need to hold onto storage input")
             model.storage = DefaultModelStorage(
-                output: model.storage.output,
-                eagerLoads: model.storage.eagerLoads,
+                output: created.storage.output,
+                eagerLoads: created.storage.eagerLoads,
                 exists: true
             )
+            print(model.storage)
         }
     }
     
@@ -151,10 +152,10 @@ extension Database {
         precondition(model.exists)
         let builder = try! self.query(Model.self).filter(\.id == model.get(\.id)).set(model.storage.input)
         builder.query.action = .update
-        return builder.run { model in
+        return builder.run { updated in
             model.storage = DefaultModelStorage(
-                output: model.storage.output,
-                eagerLoads: model.storage.eagerLoads,
+                output: updated.storage.output,
+                eagerLoads: updated.storage.eagerLoads,
                 exists: true
             )
             #warning("for mysql, we might need to hold onto storage input")
@@ -164,6 +165,7 @@ extension Database {
     public func delete<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
+        print(model.storage)
         precondition(model.exists)
         let builder = try! self.query(Model.self).filter(\.id == model.get(\.id))
         builder.query.action = .delete

@@ -3,7 +3,7 @@ public final class Row<Model>: Codable, CustomStringConvertible
 {
     public var exists: Bool {
         #warning("support changing id")
-        return self.storage.output != nil
+        return self.storage.exists
     }
     
     public var storage: ModelStorage
