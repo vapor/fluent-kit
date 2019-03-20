@@ -326,7 +326,7 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             Galaxy.autoMigration()
         ]) {
-            let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter -> Instance<Galaxy> in
+            let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter -> Row<Galaxy> in
                 let galaxy = Galaxy.new()
                 galaxy.set(\.name, to: String(letter))
                 return galaxy
@@ -511,8 +511,8 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             Galaxy.autoMigration(),
         ]) {
-            var fetched64: [Instance<Galaxy>] = []
-            var fetched2047: [Instance<Galaxy>] = []
+            var fetched64: [Row<Galaxy>] = []
+            var fetched2047: [Row<Galaxy>] = []
             
             try self.database.transaction { database -> EventLoopFuture<Void> in
                 let saves = (1...512).map { i -> EventLoopFuture<Void> in
@@ -553,7 +553,7 @@ public final class FluentBenchmarker {
             let id = Field<Int>("id")
             let bar = Field<String>("bar")
             let baz = Field<Int>("baz")
-            static func new(bar: String, baz: Int) -> Instance<Foo> {
+            static func new(bar: String, baz: Int) -> Row<Foo> {
                 let new = self.new()
                 new.set(\.bar, to: bar)
                 new.set(\.baz, to: baz)

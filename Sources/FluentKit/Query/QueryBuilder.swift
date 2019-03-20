@@ -231,8 +231,8 @@ public final class QueryBuilder<Model>
     
     // MARK: Fetch
     
-    public func chunk(max: Int, closure: @escaping ([Instance<Model>]) throws -> ()) -> EventLoopFuture<Void> {
-        var partial: [Instance<Model>] = []
+    public func chunk(max: Int, closure: @escaping ([Row<Model>]) throws -> ()) -> EventLoopFuture<Void> {
+        var partial: [Row<Model>] = []
         partial.reserveCapacity(max)
         return self.run { row in
             partial.append(row)
@@ -249,13 +249,13 @@ public final class QueryBuilder<Model>
         }
     }
     
-    public func first() -> EventLoopFuture<Instance<Model>?> {
+    public func first() -> EventLoopFuture<Row<Model>?> {
         return all().map { $0.first }
     }
     
-    public func all() -> EventLoopFuture<[Instance<Model>]> {
+    public func all() -> EventLoopFuture<[Row<Model>]> {
         #warning("re-use array required by run for eager loading")
-        var models: [Instance<Model>] = []
+        var models: [Row<Model>] = []
         return self.run { model in
             models.append(model)
         }.map { models }
@@ -265,10 +265,10 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
     
-    public func run(_ onOutput: @escaping (Instance<Model>) throws -> ()) -> EventLoopFuture<Void> {
-        var all: [Instance<Model>] = []
+    public func run(_ onOutput: @escaping (Row<Model>) throws -> ()) -> EventLoopFuture<Void> {
+        var all: [Row<Model>] = []
         return self.database.execute(self.query) { output in
-            let model = Instance<Model>.init(storage: DefaultModelStorage(
+            let model = Row<Model>.init(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true

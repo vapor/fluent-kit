@@ -1,4 +1,4 @@
-public final class Instance<Model>: Codable, CustomStringConvertible
+public final class Row<Model>: Codable, CustomStringConvertible
     where Model: FluentKit.Model
 {
     public var exists: Bool {

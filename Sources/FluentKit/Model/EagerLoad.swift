@@ -4,11 +4,11 @@ public protocol EagerLoad: class {
     func get(id: Any) throws -> [Any]
 }
 
-extension Instance {
-    public func joined<Joined>(_ model: Joined.Type) -> Instance<Joined>
+extension Row {
+    public func joined<Joined>(_ model: Joined.Type) -> Row<Joined>
         where Joined: FluentKit.Model
     {
-        return Instance<Joined>(storage: DefaultModelStorage(
+        return Row<Joined>(storage: DefaultModelStorage(
             output: self.storage.output!.prefixed(by: Joined.entity + "_"),
             eagerLoads: [:],
             exists: true
@@ -44,15 +44,15 @@ struct PrefixingOutput: DatabaseOutput {
 final class JoinParentEagerLoad<Child, Parent>: EagerLoad
     where Child: Model, Parent: Model
 {
-    var parents: [Parent.ID: Instance<Parent>]
+    var parents: [Parent.ID: Row<Parent>]
     
     init() {
         self.parents = [:]
     }
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
-        var res: [Parent.ID: Instance<Parent>] = [:]
-        try! models.map { $0 as! Instance<Child> }.forEach { child in
+        var res: [Parent.ID: Row<Parent>] = [:]
+        try! models.map { $0 as! Row<Child> }.forEach { child in
             let parent = child.joined(Parent.self)
             try res[parent.get(\.id)] = parent
         }
@@ -70,7 +70,7 @@ final class JoinParentEagerLoad<Child, Parent>: EagerLoad
 final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
     where  Child: Model, Parent: Model
 {
-    var storage: [Instance<Parent>]
+    var storage: [Row<Parent>]
     
     let parentID: ModelField<Child, Parent.ID>
     
@@ -81,7 +81,7 @@ final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         let ids: [Parent.ID] = try! models
-            .map { $0 as! Instance<Child> }
+            .map { $0 as! Row<Child> }
             .map { try $0.get(self.parentID) }
 
         let uniqueIDs = Array(Set(ids))
@@ -102,7 +102,7 @@ final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
 final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
     where Parent: Model, Child: Model
 {
-    var storage: [Instance<Child>]
+    var storage: [Row<Child>]
     
     let parentID: ModelField<Child, Parent.ID>
     
@@ -113,7 +113,7 @@ final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         let ids: [Parent.ID] = try! models
-            .map { $0 as! Instance<Parent> }
+            .map { $0 as! Row<Parent> }
             .map { try $0.get(\.id) }
         
         let uniqueIDs = Array(Set(ids))

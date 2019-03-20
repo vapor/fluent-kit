@@ -16,7 +16,7 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func new() -> Instance<Self> {
+    public static func new() -> Row<Self> {
         return .init()
     }
 }
@@ -64,7 +64,7 @@ extension ModelStorage {
     }
 }
 
-extension Instance {
+extension Row {
     public func get<Value>(_ key: Model.FieldKey<Value>) throws -> Value
         where Value: Codable
     {
@@ -100,7 +100,7 @@ extension Instance {
 }
 
 #warning("TODO: consider deprecating")
-extension Instance {
+extension Row {
     public func save(on database: Database) -> EventLoopFuture<Void> {
         return database.save(self)
     }
@@ -119,7 +119,7 @@ extension Instance {
 }
 
 extension Database {
-    public func save<Model>(_ model: Instance<Model>) -> EventLoopFuture<Void>
+    public func save<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         if model.exists {
@@ -129,7 +129,7 @@ extension Database {
         }
     }
     
-    public func create<Model>(_ model: Instance<Model>) -> EventLoopFuture<Void>
+    public func create<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         precondition(!model.exists)
@@ -145,7 +145,7 @@ extension Database {
         }
     }
     
-    public func update<Model>(_ model: Instance<Model>) -> EventLoopFuture<Void>
+    public func update<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         precondition(model.exists)
@@ -161,7 +161,7 @@ extension Database {
         }
     }
     
-    public func delete<Model>(_ model: Instance<Model>) -> EventLoopFuture<Void>
+    public func delete<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         precondition(model.exists)
@@ -172,7 +172,7 @@ extension Database {
         }
     }
     
-    public func create<Model>(_ models: [Instance<Model>]) -> EventLoopFuture<Void>
+    public func create<Model>(_ models: [Row<Model>]) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         let builder = self.query(Model.self)
