@@ -1,5 +1,12 @@
+public protocol SQLConverterDelegate {
+    func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
+}
+
 public struct SQLSchemaConverter {
-    public init() { }
+    let delegate: SQLConverterDelegate
+    public init(delegate: SQLConverterDelegate) {
+        self.delegate = delegate
+    }
     
     public func convert(_ schema: DatabaseSchema) -> SQLExpression {
         switch schema.action {
@@ -68,6 +75,10 @@ public struct SQLSchemaConverter {
     }
     
     private func dataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression {
+        if let custom = self.delegate.customDataType(dataType) {
+            return custom
+        }
+        
         switch dataType {
         case .bool: return SQLDataType.int
         case .data: return SQLDataType.blob

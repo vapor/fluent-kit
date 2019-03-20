@@ -137,12 +137,8 @@ extension Database {
         builder.query.action = .create
         return builder.run { created in
             #warning("for mysql, we might need to hold onto storage input")
-            model.storage = DefaultModelStorage(
-                output: created.storage.output,
-                eagerLoads: created.storage.eagerLoads,
-                exists: true
-            )
-            print(model.storage)
+            try model.set(\.id, to: created.storage.get("fluentID"))
+            model.storage.exists = true
         }
     }
     
@@ -153,12 +149,7 @@ extension Database {
         let builder = try! self.query(Model.self).filter(\.id == model.get(\.id)).set(model.storage.input)
         builder.query.action = .update
         return builder.run { updated in
-            model.storage = DefaultModelStorage(
-                output: updated.storage.output,
-                eagerLoads: updated.storage.eagerLoads,
-                exists: true
-            )
-            #warning("for mysql, we might need to hold onto storage input")
+            // ignore
         }
     }
     
@@ -166,7 +157,6 @@ extension Database {
         where Model: FluentKit.Model
     {
         print(model.storage)
-        precondition(model.exists)
         let builder = try! self.query(Model.self).filter(\.id == model.get(\.id))
         builder.query.action = .delete
         return builder.run().map {
@@ -184,13 +174,9 @@ extension Database {
         }
         builder.query.action = .create
         var it = models.makeIterator()
-        return builder.run { model in
+        return builder.run { created in
             let next = it.next()!
-            next.storage = DefaultModelStorage(
-                output: model.storage.output,
-                eagerLoads: model.storage.eagerLoads,
-                exists: true
-            )
+            next.storage.exists = true
         }
     }
 }
