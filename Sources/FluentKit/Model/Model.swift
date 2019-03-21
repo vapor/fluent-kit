@@ -8,6 +8,17 @@ extension AnyModel {
     }
 }
 
+extension Model {
+    public typealias Row = ModelRow<Self>
+    
+    public static func find(_ id: Self.ID?, on database: Database) -> EventLoopFuture<Self.Row?> {
+        guard let id = id else {
+            return database.eventLoop.makeSucceededFuture(nil)
+        }
+        return database.query(Self.self).filter(\.id == id).first()
+    }
+}
+
 public protocol Model: AnyModel {
     static var `default`: Self { get }
     associatedtype ID: ModelID
@@ -16,7 +27,7 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func new() -> Row<Self> {
+    public static func new() -> Row {
         return .init()
     }
 }
@@ -64,7 +75,7 @@ extension ModelStorage {
     }
 }
 
-extension Row {
+extension ModelRow {
     public func get<Value>(_ key: Model.FieldKey<Value>) throws -> Value
         where Value: Codable
     {
@@ -99,8 +110,7 @@ extension Row {
     }
 }
 
-#warning("TODO: consider deprecating")
-extension Row {
+extension ModelRow {
     public func save(on database: Database) -> EventLoopFuture<Void> {
         return database.save(self)
     }
@@ -118,53 +128,9 @@ extension Row {
     }
 }
 
+#warning("TODO: possible to extend array of model?")
 extension Database {
-    public func save<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
-        where Model: FluentKit.Model
-    {
-        if model.exists {
-            return self.update(model)
-        } else {
-            return self.create(model)
-        }
-    }
-    
-    public func create<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
-        where Model: FluentKit.Model
-    {
-        precondition(!model.exists)
-        let builder = self.query(Model.self).set(model.storage.input)
-        builder.query.action = .create
-        return builder.run { created in
-            #warning("for mysql, we might need to hold onto storage input")
-            try model.set(\.id, to: created.storage.get("fluentID"))
-            model.storage.exists = true
-        }
-    }
-    
-    public func update<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
-        where Model: FluentKit.Model
-    {
-        precondition(model.exists)
-        let builder = try! self.query(Model.self).filter(\.id == model.get(\.id)).set(model.storage.input)
-        builder.query.action = .update
-        return builder.run { updated in
-            // ignore
-        }
-    }
-    
-    public func delete<Model>(_ model: Row<Model>) -> EventLoopFuture<Void>
-        where Model: FluentKit.Model
-    {
-        print(model.storage)
-        let builder = try! self.query(Model.self).filter(\.id == model.get(\.id))
-        builder.query.action = .delete
-        return builder.run().map {
-            model.storage.exists = false
-        }
-    }
-    
-    public func create<Model>(_ models: [Row<Model>]) -> EventLoopFuture<Void>
+    public func create<Model>(_ models: [Model.Row]) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         let builder = self.query(Model.self)
@@ -177,6 +143,53 @@ extension Database {
         return builder.run { created in
             let next = it.next()!
             next.storage.exists = true
+        }
+    }
+}
+
+private extension Database {
+    func save<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: FluentKit.Model
+    {
+        if model.exists {
+            return self.update(model)
+        } else {
+            return self.create(model)
+        }
+    }
+    
+    func create<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: FluentKit.Model
+    {
+        precondition(!model.exists)
+        let builder = self.query(Model.self).set(model.storage.input)
+        builder.query.action = .create
+        return builder.run { created in
+            #warning("for mysql, we might need to hold onto storage input")
+            try model.set(\.id, to: created.storage.get("fluentID"))
+            model.storage.exists = true
+        }
+    }
+    
+    func update<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: FluentKit.Model
+    {
+        precondition(model.exists)
+        let builder = try! self.query(Model.self).filter(\.id == model.get(\.id)).set(model.storage.input)
+        builder.query.action = .update
+        return builder.run { updated in
+            // ignore
+        }
+    }
+    
+    func delete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: FluentKit.Model
+    {
+        print(model.storage)
+        let builder = try! self.query(Model.self).filter(\.id == model.get(\.id))
+        builder.query.action = .delete
+        return builder.run().map {
+            model.storage.exists = false
         }
     }
 }

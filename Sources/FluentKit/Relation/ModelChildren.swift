@@ -32,7 +32,7 @@ extension Model {
     }
 }
 
-extension Row {
+extension ModelRow {
     public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) throws -> QueryBuilder<Child>
         where Child: FluentKit.Model
     {
@@ -41,13 +41,13 @@ extension Row {
             .filter(children.id, .equals, self.get(\.id))
     }
     
-    public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Row<Child>]
+    public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Child.Row]
         where Child: FluentKit.Model
     {
         guard let cache = self.storage.eagerLoads[Child.entity] else {
             fatalError("No cache set on storage.")
         }
         return try cache.get(id: self.get(\.id))
-            .map { $0 as! Row<Child> }
+            .map { $0 as! Child.Row }
     }
 }
