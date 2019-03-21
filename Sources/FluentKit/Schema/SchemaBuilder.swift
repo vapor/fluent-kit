@@ -27,10 +27,10 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.properties.all.map { field in
+        self.schema.createFields = Model.default.all.map { field in
             var constraints = field.constraints
             let type: Any.Type
-            if field.name == Model.properties.id.name {
+            if field.name == Model.default.id.name {
                 constraints.append(.identifier)
                 type = field.type
             } else {

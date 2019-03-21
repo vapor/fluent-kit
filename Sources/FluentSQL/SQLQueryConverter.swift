@@ -1,5 +1,8 @@
 public struct SQLQueryConverter {
-    public init() { }
+    let delegate: SQLConverterDelegate
+    public init(delegate: SQLConverterDelegate) {
+        self.delegate = delegate
+    }
     
     public func convert(_ fluent: DatabaseQuery) -> SQLExpression {
         let sql: SQLExpression
@@ -123,7 +126,10 @@ public struct SQLQueryConverter {
                     return SQLIdentifier(name)
                 }
             case 2:
-                return SQLRaw("\(path[0])->>'\(path[1])'")
+                // row->".code" = 4
+                // return SQLRaw("\(path[0])->>'\(path[1])'")
+                // return SQLRaw("JSON_EXTRACT(\(path[0]), '$.\(path[1])')")
+                return self.delegate.nestedFieldExpression(path[0], [path[1]])
             default: fatalError()
             }
         case .aggregate(let agg):

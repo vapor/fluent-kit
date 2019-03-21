@@ -105,7 +105,7 @@ public struct Migrator {
             database = self.databases.default()
         }
         return item.migration.prepare(on: database).flatMap {
-            let log = MigrationLog()
+            let log = MigrationLog.new()
             log.set(\.name, to: item.migration.name)
             log.set(\.batch, to: 1)
             #warning("TODO: Timestampable")
