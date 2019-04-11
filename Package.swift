@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "FluentSQL", targets: ["FluentSQL"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0-convergence"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/sql.git", .branch("master")),
         .package(url: "https://github.com/vapor/codable-kit.git", .branch("master")),
     ],

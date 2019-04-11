@@ -30,6 +30,7 @@ public final class FluentBenchmarker {
         try self.testNullifyField()
         try self.testChunkedFetch()
         try self.testUniqueFields()
+        try self.testAsyncCreate()
     }
     
     public func testCreate() throws {
@@ -584,6 +585,22 @@ public final class FluentBenchmarker {
                 throw Failure("should have failed")
             } catch _ as DatabaseError {
                 // pass
+            }
+        }
+    }
+
+    public func testAsyncCreate() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration()
+        ]) {
+            let a = Galaxy.new()
+            a.set(\.name, to: "a")
+            let b = Galaxy.new()
+            b.set(\.name, to: String("b"))
+            _ = try a.save(on: self.database).and(b.save(on: self.database)).wait()
+            let galaxies = try self.database.query(Galaxy.self).all().wait()
+            guard galaxies.count == 2 else {
+                throw Failure("both galaxies did not save")
             }
         }
     }
