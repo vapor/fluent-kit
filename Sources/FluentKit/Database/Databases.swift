@@ -26,4 +26,8 @@ public struct Databases {
     public func `default`() -> Database {
         return self._default!
     }
+
+    public func close() -> EventLoopFuture<Void> {
+        return .andAllSucceed(self.storage.values.map { $0.close() }, on: self.eventLoop)
+    }
 }
