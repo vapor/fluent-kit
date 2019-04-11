@@ -222,7 +222,7 @@ public final class FluentBenchmarker {
                 .init(id: 5, name: "Jupiter", galaxy: milkyWay),
                 .init(id: 6, name: "Saturn", galaxy: milkyWay),
                 .init(id: 7, name: "Uranus", galaxy: milkyWay),
-                .init(id: 8, name: "Nepture", galaxy: milkyWay),
+                .init(id: 8, name: "Neptune", galaxy: milkyWay),
                 .init(id: 9, name: "PA-99-N2", galaxy: andromeda),
             ]
 
