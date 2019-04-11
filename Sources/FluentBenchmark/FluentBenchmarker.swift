@@ -17,8 +17,7 @@ public final class FluentBenchmarker {
         try self.testEagerLoadChildren()
         try self.testEagerLoadParent()
         try self.testEagerLoadParentJoin()
-        try self.testEagerLoadSubqueryJSONEncode()
-        try self.testEagerLoadJoinJSONEncode()
+        try self.testEagerLoadJSON()
         try self.testMigrator()
         try self.testMigratorError()
         try self.testJoin()
@@ -196,51 +195,61 @@ public final class FluentBenchmarker {
         }
     }
     
-    public func testEagerLoadSubqueryJSONEncode() throws {
+    public func testEagerLoadJSON() throws {
         try runTest(#function, [
             Galaxy.autoMigration(),
             Planet.autoMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
-            let planets = try self.database.query(Planet.self)
-                .with(\.galaxy, method: .subquery)
-                .all().wait()
-            
-            let encoder = JSONEncoder()
-            let json = try encoder.encode(planets)
-            let string = String(data: json, encoding: .utf8)!
-            
-            let expected = """
-            [{"id":1,"name":"Mercury","galaxy":{"id":2,"name":"Milky Way"}},{"id":2,"name":"Venus","galaxy":{"id":2,"name":"Milky Way"}},{"id":3,"name":"Earth","galaxy":{"id":2,"name":"Milky Way"}},{"id":4,"name":"Mars","galaxy":{"id":2,"name":"Milky Way"}},{"id":5,"name":"Jupiter","galaxy":{"id":2,"name":"Milky Way"}},{"id":6,"name":"Saturn","galaxy":{"id":2,"name":"Milky Way"}},{"id":7,"name":"Uranus","galaxy":{"id":2,"name":"Milky Way"}},{"id":8,"name":"Neptune","galaxy":{"id":2,"name":"Milky Way"}},{"id":9,"name":"PA-99-N2","galaxy":{"id":1,"name":"Andromeda"}}]
-            """
-            guard string == expected else {
-                throw Failure("unexpected json format")
+            struct PlanetJSON: Codable, Equatable {
+                var id: Int
+                var name: String
+                var galaxy: GalaxyJSON
             }
-        }
-    }
-    
-    public func testEagerLoadJoinJSONEncode() throws {
-        try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
-            GalaxySeed(),
-            PlanetSeed()
-        ]) {
-            let planets = try self.database.query(Planet.self)
-                .with(\.galaxy, method: .join)
-                .all().wait()
-            
-            let encoder = JSONEncoder()
-            let json = try encoder.encode(planets)
-            let string = String(data: json, encoding: .utf8)!
-            
-            let expected = """
-            [{"id":1,"name":"Mercury","galaxy":{"id":2,"name":"Milky Way"}},{"id":2,"name":"Venus","galaxy":{"id":2,"name":"Milky Way"}},{"id":3,"name":"Earth","galaxy":{"id":2,"name":"Milky Way"}},{"id":4,"name":"Mars","galaxy":{"id":2,"name":"Milky Way"}},{"id":5,"name":"Jupiter","galaxy":{"id":2,"name":"Milky Way"}},{"id":6,"name":"Saturn","galaxy":{"id":2,"name":"Milky Way"}},{"id":7,"name":"Uranus","galaxy":{"id":2,"name":"Milky Way"}},{"id":8,"name":"Neptune","galaxy":{"id":2,"name":"Milky Way"}},{"id":9,"name":"PA-99-N2","galaxy":{"id":1,"name":"Andromeda"}}]
-            """
-            guard string == expected else {
-                throw Failure("unexpected json format")
+            struct GalaxyJSON: Codable, Equatable {
+                var id: Int
+                var name: String
             }
+
+            let milkyWay = GalaxyJSON(id: 2, name: "Milky Way")
+            let andromeda = GalaxyJSON(id: 1, name: "Andromeda")
+            let expected: [PlanetJSON] = [
+                .init(id: 1, name: "Mercury", galaxy: milkyWay),
+                .init(id: 2, name: "Venus", galaxy: milkyWay),
+                .init(id: 3, name: "Earth", galaxy: milkyWay),
+                .init(id: 4, name: "Mars", galaxy: milkyWay),
+                .init(id: 5, name: "Jupiter", galaxy: milkyWay),
+                .init(id: 6, name: "Saturn", galaxy: milkyWay),
+                .init(id: 7, name: "Uranus", galaxy: milkyWay),
+                .init(id: 8, name: "Nepture", galaxy: milkyWay),
+                .init(id: 9, name: "PA-99-N2", galaxy: andromeda),
+            ]
+
+            // subquery
+            do {
+                let planets = try self.database.query(Planet.self)
+                    .with(\.galaxy, method: .subquery)
+                    .all().wait()
+
+                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
+                guard decoded == expected else {
+                    throw Failure("unexpected output")
+                }
+            }
+
+            // join
+            do {
+                let planets = try self.database.query(Planet.self)
+                    .with(\.galaxy, method: .join)
+                    .all().wait()
+
+                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
+                guard decoded == expected else {
+                    throw Failure("unexpected output")
+                }
+            }
+
         }
     }
     
@@ -378,14 +387,21 @@ public final class FluentBenchmarker {
             guard try user.get(\.pet).type == .cat else {
                 throw Failure("unexpected pet type")
             }
-            
-            let encoder = JSONEncoder()
-            let json = try encoder.encode(user)
-            let string = String(data: json, encoding: .utf8)!
-            let expected = """
-            {"id":2,"name":"Tanner","pet":{"name":"Ziz","type":"cat"}}
-            """
-            guard string == expected else {
+
+            struct UserJSON: Equatable, Codable {
+                var id: Int
+                var name: String
+                var pet: PetJSON
+            }
+            struct PetJSON: Equatable, Codable {
+                var name: String
+                var type: String
+            }
+            // {"id":2,"name":"Tanner","pet":{"name":"Ziz","type":"cat"}}
+            let expected = UserJSON(id: 2, name: "Tanner", pet: .init(name: "Ziz", type: "cat"))
+
+            let decoded = try JSONDecoder().decode(UserJSON.self, from: JSONEncoder().encode(user))
+            guard decoded == expected else {
                 throw Failure("unexpected output")
             }
         }
