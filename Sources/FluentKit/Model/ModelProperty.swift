@@ -1,10 +1,12 @@
 public protocol ModelProperty {
-    var name: String { get }
+//    var name: String { get }
     var type: Any.Type { get }
+
+    var input: Encodable? { get }
     
-    var dataType: DatabaseSchema.DataType? { get }
-    var constraints: [DatabaseSchema.FieldConstraint] { get }
-    
+//    var dataType: DatabaseSchema.DataType? { get }
+//    var constraints: [DatabaseSchema.FieldConstraint] { get }
+//
     func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws
     func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws
 }

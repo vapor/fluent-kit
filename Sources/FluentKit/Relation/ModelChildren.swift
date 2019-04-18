@@ -1,9 +1,9 @@
 public struct ModelChildren<Parent, Child>
     where Child: Model, Parent: Model
 {
-    public let id: ModelField<Child, Parent.ID>
+    public let id: KeyPath<Child, ModelParent<Child, Parent>>
     
-    public init(id: ModelField<Child, Parent.ID>) {
+    public init(_ id: KeyPath<Child, ModelParent<Child, Parent>>) {
         self.id = id
     }
     
@@ -21,33 +21,33 @@ public struct ModelChildren<Parent, Child>
 extension Model {
     public typealias Children<ChildType> = ModelChildren<Self, ChildType>
         where ChildType: Model
-    
-    
+
+
     public typealias ChildrenKey<ChildType> = KeyPath<Self, Children<ChildType>>
         where ChildType: Model
-    
-    
-    public static func children<T>(forKey key: ChildrenKey<T>) -> Children<T> {
-        return self.default[keyPath: key]
+
+
+    public func children<T>(forKey key: ChildrenKey<T>) -> Children<T> {
+        return self[keyPath: key]
     }
 }
 
-extension ModelRow {
-    public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) throws -> QueryBuilder<Child>
-        where Child: FluentKit.Model
-    {
-        let children = Model.children(forKey: key)
-        return try database.query(Child.self)
-            .filter(children.id, .equals, self.get(\.id))
-    }
-    
-    public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Child.Row]
-        where Child: FluentKit.Model
-    {
-        guard let cache = self.storage.eagerLoads[Child.entity] else {
-            fatalError("No cache set on storage.")
-        }
-        return try cache.get(id: self.get(\.id))
-            .map { $0 as! Child.Row }
-    }
-}
+//extension ModelRow {
+//    public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) throws -> QueryBuilder<Child>
+//        where Child: FluentKit.Model
+//    {
+//        let children = Model.children(forKey: key)
+//        return try database.query(Child.self)
+//            .filter(children.id, .equals, self.get(\.id))
+//    }
+//    
+//    public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Child.Row]
+//        where Child: FluentKit.Model
+//    {
+//        guard let cache = self.storage.eagerLoads[Child.entity] else {
+//            fatalError("No cache set on storage.")
+//        }
+//        return try cache.get(id: self.get(\.id))
+//            .map { $0 as! Child.Row }
+//    }
+//}

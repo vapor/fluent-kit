@@ -19,8 +19,10 @@ extension QueryBuilder {
     ) -> Self
         where Value: NestedProperty, Value: Codable, NestedValue: Codable
     {
-        let base = Model.field(forKey: key)
-        let field: DatabaseQuery.Field = .field(path: [base.name] + path.path, entity: Model.entity, alias: nil)
+        guard let baseName = Model.name(for: key) else {
+            fatalError()
+        }
+        let field: DatabaseQuery.Field = .field(path: [baseName] + path.path, entity: Model.entity, alias: nil)
         return self.filter(field, method, .bind(value))
     }
 }

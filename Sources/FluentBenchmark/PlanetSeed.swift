@@ -17,10 +17,8 @@ final class PlanetSeed: Migration {
                 return database.eventLoop.makeSucceededFuture(())
             }
             let saves = planets.map { name -> EventLoopFuture<Void> in
-                let planet = Planet.new()
-                planet.set(\.name, to: name)
-                try! planet.set(\.galaxy, to: galaxy)
-                return planet.save(on: database)
+                return Planet(name: name, galaxyID: galaxy.id.value)
+                    .save(on: database)
             }
             return .andAllSucceed(saves, on: database.eventLoop)
         }

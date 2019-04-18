@@ -19,72 +19,74 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.default.all.map { .field(
-            path: [$0.name],
-            entity: Model.entity,
-            alias: nil
-        ) }
+        self.query.fields = Model.fields().map { (field, type) in
+            return .field(
+                path: [Model.requireName(for: field)],
+                entity: Model.entity,
+                alias: nil
+            )
+        }
     }
     
-    @discardableResult
-    public func with<Child>(_ key: Model.ChildrenKey<Child>, method: EagerLoadMethod = .subquery) -> Self
-        where Child: FluentKit.Model
-    {
-        switch method {
-        case .subquery:
-            let children = Model.children(forKey: key)
-            self.eagerLoads[Child.entity] = SubqueryChildEagerLoad<Model, Child>(children.id)
-        case .join:
-            fatalError()
-        }
-        return self
-    }
+//    @discardableResult
+//    public func with<Child>(_ key: Model.ChildrenKey<Child>, method: EagerLoadMethod = .subquery) -> Self
+//        where Child: FluentKit.Model
+//    {
+//        switch method {
+//        case .subquery:
+//            self.eagerLoads[Child.entity] = SubqueryChildEagerLoad<Model, Child>(
+//                key.appending(path: \.id).appending(path: \.id)
+//            )
+//        case .join:
+//            fatalError()
+//        }
+//        return self
+//    }
 
-    @discardableResult
-    public func with<Parent>(_ key: Model.ParentKey<Parent>, method: EagerLoadMethod = .subquery) -> Self
-        where Parent: FluentKit.Model
-    {
-        let parent = Model.parent(forKey: key)
-        switch method {
-        case .subquery:
-            self.eagerLoads[Parent.entity] = SubqueryParentEagerLoad<Model, Parent>(parent.id)
-            return self
-        case .join:
-            self.eagerLoads[Parent.entity] = JoinParentEagerLoad<Model, Parent>()
-            return self.join(key)
-        }
-    }
-    
-    @discardableResult
-    public func join<Parent>(_ key: Model.ParentKey<Parent>) -> Self
-        where Parent: FluentKit.Model
-    {
-        return self.join(Parent.default.id, to: Model.parent(forKey: key).id, method: .inner)
-    }
-    
+//    @discardableResult
+//    public func with<Parent>(_ key: Model.ParentKey<Parent>, method: EagerLoadMethod = .subquery) -> Self
+//        where Parent: FluentKit.Model
+//    {
+//        switch method {
+//        case .subquery:
+//            self.eagerLoads[Parent.entity] = SubqueryParentEagerLoad<Model, Parent>(key)
+//            return self
+//        case .join:
+//            self.eagerLoads[Parent.entity] = JoinParentEagerLoad<Model, Parent>()
+//            return self.join(key)
+//        }
+//    }
+
+//    @discardableResult
+//    public func join<Parent>(_ key: Model.ParentKey<Parent>) -> Self
+//        where Parent: FluentKit.Model
+//    {
+//        return self.join(\Parent.id, to: Model.parent(forKey: key).id, method: .inner)
+//    }
+
+//    @discardableResult
+//    public func join<Foreign, Value>(_ foreign: Foreign.FieldKey<Value>, to local: Model.FieldKey<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
+//        where Foreign: FluentKit.Model, Value: Codable
+//    {
+//        let foreign = Foreign.field(forKey: foreign)
+//        let local = Model.field(forKey: local)
+//        return self.join(foreign, to: local, method: method)
+//    }
+
     @discardableResult
     public func join<Foreign, Value>(_ foreign: Foreign.FieldKey<Value>, to local: Model.FieldKey<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
         where Foreign: FluentKit.Model, Value: Codable
     {
-        let foreign = Foreign.field(forKey: foreign)
-        let local = Model.field(forKey: local)
-        return self.join(foreign, to: local, method: method)
-    }
-    
-    @discardableResult
-    public func join<Foreign, Value>(_ foreign: Foreign.Field<Value>, to local: Model.Field<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
-        where Foreign: FluentKit.Model, Value: Codable
-    {
-        self.query.fields += Foreign.default.all.map {
+        self.query.fields += Foreign.fields().map { (field, type) in
             return .field(
-                path: [$0.name],
+                path: [Foreign.requireName(for: field)],
                 entity: Foreign.entity,
-                alias: Foreign.entity + "_" + $0.name
+                alias: Foreign.entity + "_" + Foreign.requireName(for: field)
             )
         }
         self.query.joins.append(.model(
-            foreign: .field(path: [foreign.name], entity: Foreign.entity, alias: nil),
-            local: .field(path: [local.name], entity: Model.entity, alias: nil),
+            foreign: .field(path: [Foreign.requireName(for: foreign)], entity: Foreign.entity, alias: nil),
+            local: .field(path: [Model.requireName(for: local)], entity: Model.entity, alias: nil),
             method: method
         ))
         return self
@@ -96,33 +98,44 @@ public final class QueryBuilder<Model>
         return self.filter(filter.filter)
     }
     
+//    @discardableResult
+//    public func filter<Value>(_ key: Model.FieldKey<Value>, in values: [Value]) -> Self
+//        where Value: Codable
+//    {
+//        return self.filter(Model.field(forKey: key), in: values)
+//    }
+
     @discardableResult
-    public func filter<Value>(_ key: Model.FieldKey<Value>, in values: [Value]) -> Self
+    public func filter<Value>(_ field: Model.FieldKey<Value>, in values: [Value]) -> Self
         where Value: Codable
     {
-        return self.filter(Model.field(forKey: key), in: values)
-    }
-    
-    @discardableResult
-    public func filter<Value>(_ field: Model.Field<Value>, in values: [Value]) -> Self
-        where Value: Codable
-    {
-        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), .subset(inverse: false), .array(values.map { .bind($0) })
+        return self.filter(
+            .field(
+                path: [Model.requireName(for: field)],
+                entity: Model.entity,
+                alias: nil
+            ),
+            .subset(inverse: false),
+            .array(values.map { .bind($0) })
         )
     }
     
+//    @discardableResult
+//    public func filter<Value>(_ key: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+//        where Value: Codable
+//    {
+//        return self.filter(Model.field(forKey: key), method, value)
+//    }
+//
     @discardableResult
-    public func filter<Value>(_ key: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+    public func filter<Value>(_ field: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
         where Value: Codable
     {
-        return self.filter(Model.field(forKey: key), method, value)
-    }
-    
-    @discardableResult
-    public func filter<Value>(_ field: Model.Field<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
-        where Value: Codable
-    {
-        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
+        return self.filter(
+            .field(path: [Model.requireName(for: field)], entity: Model.entity, alias: nil),
+            method,
+            .bind(value)
+        )
     }
     
     @discardableResult
@@ -147,9 +160,11 @@ public final class QueryBuilder<Model>
     public func set<Value>(_ key: Model.FieldKey<Value>, to value: Value) -> Self
         where Value: Codable
     {
-        let field = Model.field(forKey: key)
+        guard let fieldName = Model.name(for: key) else {
+            fatalError()
+        }
         self.query.fields = []
-        query.fields.append(.field(path: [field.name], entity: nil, alias: nil))
+        query.fields.append(.field(path: [fieldName], entity: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -209,17 +224,19 @@ public final class QueryBuilder<Model>
     public func aggregate<Value, Result>(_ method: DatabaseQuery.Field.Aggregate.Method, _ key: Model.FieldKey<Value>, as type: Result.Type = Result.self) -> EventLoopFuture<Result>
         where Value: Codable, Result: Codable
     {
-        let field = Model.field(forKey: key)
         self.query.fields = [.aggregate(.fields(
             method: method,
-            fields: [.field(path: [field.name], entity: Model.entity, alias: nil)]
+            fields: [.field(path: [Model.requireName(for: key)], entity: Model.entity, alias: nil)]
         ))]
         
         return self.first().flatMapThrowing { res in
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.storage.get("fluentAggregate", as: Result.self)
+            print(res)
+            fatalError()
+            #warning("TODO: fixme")
+            // return try res.storage.get("fluentAggregate", as: Result.self)
         }
     }
     
@@ -231,8 +248,8 @@ public final class QueryBuilder<Model>
     
     // MARK: Fetch
     
-    public func chunk(max: Int, closure: @escaping ([Model.Row]) throws -> ()) -> EventLoopFuture<Void> {
-        var partial: [Model.Row] = []
+    public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
+        var partial: [Model] = []
         partial.reserveCapacity(max)
         return self.run { row in
             partial.append(row)
@@ -249,13 +266,13 @@ public final class QueryBuilder<Model>
         }
     }
     
-    public func first() -> EventLoopFuture<Model.Row?> {
+    public func first() -> EventLoopFuture<Model?> {
         return all().map { $0.first }
     }
     
-    public func all() -> EventLoopFuture<[Model.Row]> {
+    public func all() -> EventLoopFuture<[Model]> {
         #warning("re-use array required by run for eager loading")
-        var models: [Model.Row] = []
+        var models: [Model] = []
         return self.run { model in
             models.append(model)
         }.map { models }
@@ -264,11 +281,17 @@ public final class QueryBuilder<Model>
     public func run() -> EventLoopFuture<Void> {
         return self.run { _ in }
     }
-    
-    public func run(_ onOutput: @escaping (Model.Row) throws -> ()) -> EventLoopFuture<Void> {
-        var all: [Model.Row] = []
+
+    internal func _run(_ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
         return self.database.execute(self.query) { output in
-            let model = Model.Row.init(storage: DefaultModelStorage(
+            try onOutput(output)
+        }
+    }
+    
+    public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
+        var all: [Model] = []
+        return self.database.execute(self.query) { output in
+            let model = Model(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true
@@ -287,9 +310,8 @@ public struct ModelFilter<Model> where Model: FluentKit.Model {
     static func make<Value>(_ lhs: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ rhs: Value) -> ModelFilter
         where Value: Codable
     {
-        let field = Model.field(forKey: lhs)
         return .init(filter: .basic(
-            .field(path: [field.name], entity: Model.entity, alias: nil),
+            .field(path: [Model.requireName(for: lhs)], entity: Model.entity, alias: nil),
             method,
             .bind(rhs)
         ))

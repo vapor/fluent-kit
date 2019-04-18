@@ -8,37 +8,56 @@ public struct ModelField<Model, Value>: ModelProperty
     public var type: Any.Type {
         return Value.self
     }
-    
-    public var constraints: [DatabaseSchema.FieldConstraint]
-    
-    public let name: String
-    
-//    public var path: [String] {
-//        return self.model.storage.path + [self.name]
-//    }
 
-    public let dataType: DatabaseSchema.DataType?
-    
-    struct Interface: Codable {
-        let name: String
+    public var input: Encodable? {
+        switch self.storage {
+        case .input(let value):
+            return value
+        default:
+            return nil
+        }
+    }
+
+    internal enum Storage {
+        case none
+        case output(Value)
+        case input(Value)
+    }
+
+    internal var storage: Storage
+
+    public var value: Value {
+        get {
+            switch self.storage {
+            case .none:
+                fatalError("No value was selected: \(Value.self)")
+            case .output(let output):
+                return output
+            case .input(let input):
+                return input
+            }
+        }
+        set {
+            self.storage = .input(newValue)
+        }
     }
     
-    public init(
-        _ name: String,
-        dataType: DatabaseSchema.DataType? = nil,
-        constraints: DatabaseSchema.FieldConstraint...
-    ) {
-        self.name = name
-        self.dataType = dataType
-        self.constraints = constraints
+    public init() {
+        self.storage = .none
+    }
+
+    public init(value: Value) {
+        self.storage = .input(value)
     }
     
     public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
-        try encoder.encode(storage.get(self.name, as: Value.self), forKey: self.name)
+        #warning("FIXME")
+        try encoder.encode(storage.get("foo", as: Value.self), forKey: "foo")
     }
 
     public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
-        try storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
+        #warning("FIXME")
+        try storage.set("foo", to: decoder.decode(Value.self, forKey: "foo"))
     }
 }
 

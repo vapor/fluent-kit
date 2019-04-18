@@ -1,41 +1,80 @@
 public struct ModelParent<Child, Parent>: ModelProperty
     where Parent: Model, Child: Model
 {
-    public let id: Child.Field<Parent.ID>
-    
-    public var name: String {
-        return self.id.name
-    }
-    
     public var type: Any.Type {
-        return self.id.type
+        return Parent.ID.self
     }
-    
-    public var dataType: DatabaseSchema.DataType? {
-        return self.id.dataType
+
+    internal enum Storage {
+        case none
+        case id(Parent.ID)
+        case eagerLoaded(Parent)
+        case input(Parent.ID)
     }
-    
-    public var constraints: [DatabaseSchema.FieldConstraint] {
-        return self.id.constraints
+
+    public var id: ModelField<Child, Parent.ID> {
+        get {
+            switch self.storage {
+            case .none:
+                fatalError()
+            case .id(let id):
+                return .init(value: id)
+            case .eagerLoaded(let parent):
+                return .init(value: parent.id.value)
+            case .input(let id):
+                return .init(value: id)
+            }
+        }
+        set {
+            self.storage = .input(newValue.value)
+        }
     }
-    
-    public init(id: Child.Field<Parent.ID>) {
-        self.id = id
+
+    var storage: Storage
+
+    public init() {
+        self.storage = .none
+    }
+
+    public var input: Encodable? {
+        switch self.storage {
+        case .input(let id):
+            return id
+        default:
+            return nil
+        }
     }
     
     public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
-        if let cache = storage.eagerLoads[Parent.entity] {
-            let parent = try cache.get(id: storage.get(self.id.name, as: Parent.ID.self))
-                .map { $0 as! Parent.Row }
-                .first!
+//        if let cache = storage.eagerLoads[Parent.entity] {
+//            let parent = try cache.get(id: storage.get("foo", as: Parent.ID.self))
+//                .map { $0 as! Parent }
+//                .first!
+//            try encoder.encode(parent, forKey: ")
+//        }
+        switch self.storage {
+        case .none: break
+        case .id(let id):
+            try encoder.encode(id, forKey: "parentID")
+        case .eagerLoaded(let parent):
             try encoder.encode(parent, forKey: "\(Parent.self)".lowercased())
-        } else {
-            try self.id.encode(to: &encoder, from: storage)
+        case .input(let id):
+            try encoder.encode(id, forKey: "parentID")
         }
     }
     
     public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
-        try self.id.decode(from: decoder, to: &storage)
+        fatalError()
+        // try self.id.decode(from: decoder, to: &storage)
+    }
+
+    public func get() -> Parent {
+        switch self.storage {
+        case .eagerLoaded(let parent):
+            return parent
+        default:
+            fatalError("No cache set on storage.")
+        }
     }
 }
 
@@ -46,27 +85,8 @@ extension Model {
     public typealias ParentKey<ParentType> = KeyPath<Self, Parent<ParentType>>
         where ParentType: Model
     
-    public static func parent<T>(forKey key: ParentKey<T>) -> Parent<T> {
-        return self.default[keyPath: key]
-    }
-}
-
-extension ModelRow {
-    public func set<ParentType>(_ key: Model.ParentKey<ParentType>, to parent: ParentType.Row) throws
-        where ParentType: FluentKit.Model
-    {
-        try self.set(Model.parent(forKey: key).id, to: parent.get(\.id))
-    }
-
-    public func get<ParentType>(_ key: Model.ParentKey<ParentType>) throws -> ParentType.Row
-        where ParentType: FluentKit.Model
-    {
-        guard let cache = self.storage.eagerLoads[ParentType.entity] else {
-            fatalError("No cache set on storage.")
-        }
-        return try cache.get(id: self.get(Model.parent(forKey: key).id))
-            .map { $0 as! ParentType.Row }
-            .first!
+    public func parent<T>(forKey key: ParentKey<T>) -> Parent<T> {
+        return self[keyPath: key]
     }
 }
 

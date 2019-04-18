@@ -27,41 +27,45 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.default.all.map { field in
-            var constraints = field.constraints
+        self.schema.createFields = Model.fields().map { (field, fieldType) in
+            var constraints = Model.constraints(for: field) ?? []
+            guard let fieldName = Model.name(for: field) else {
+                fatalError("No name for \(field)")
+            }
+            let dataType = Model.dataType(for: field)
             let type: Any.Type
-            if field.name == Model.default.id.name {
+            if fieldName == Model.name(for: \Model.id) {
                 constraints.append(.identifier)
-                type = field.type
+                type = fieldType
             } else {
-                if let optionalType = field.type as? OptionalType.Type {
+                if let optionalType = fieldType as? OptionalType.Type {
                     type = optionalType.wrappedType
                 } else {
-                    type = field.type
-                    if field.constraints.isEmpty {
+                    type = fieldType
+                    if constraints.isEmpty {
                         constraints.append(.required)
                     }
                 }
             }
             return .definition(
-                name: .string(field.name),
-                dataType: field.dataType ?? .bestFor(type: type),
+                name: .string(fieldName),
+                dataType: dataType ?? .bestFor(type: type),
                 constraints: constraints
             )
         }
         return self
     }
     
-    public func field<Value>(_ key: Model.FieldKey<Value>) -> Self
-        where Value: Codable
-    {
-        let field = Model.field(forKey: key)
-        return self.field(.definition(
-            name: .string(field.name),
-            dataType: field.dataType ?? .bestFor(type: Value.self),
-            constraints: field.constraints
-        ))
-    }
+//    public func field<Value>(_ key: Model.FieldKey<Value>) -> Self
+//        where Value: Codable
+//    {
+//        let field = Model.field(forKey: key)
+//        return self.field(.definition(
+//            name: .string(field.name),
+//            dataType: field.dataType ?? .bestFor(type: Value.self),
+//            constraints: field.constraints
+//        ))
+//    }
     
     public func field(_ field: DatabaseSchema.FieldDefinition) -> Self {
         self.schema.createFields.append(field)
@@ -71,9 +75,11 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A>(on a: Model.FieldKey<A>) -> Self
         where A: Codable
     {
-        let a = Model.field(forKey: a)
+        guard let name = Model.name(for: a) else {
+            fatalError()
+        }
         self.schema.constraints.append(.unique(fields: [
-            .string(a.name)
+            .string(name)
         ]))
         return self
     }
@@ -81,10 +87,14 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A, B>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>) -> Self
         where A: Codable, B: Codable
     {
-        let a = Model.field(forKey: a)
-        let b = Model.field(forKey: b)
+        guard let aName = Model.name(for: a) else {
+            fatalError()
+        }
+        guard let bName = Model.name(for: b) else {
+            fatalError()
+        }
         self.schema.constraints.append(.unique(fields: [
-            .string(a.name), .string(b.name)
+            .string(aName), .string(bName)
         ]))
         return self
     }
@@ -92,11 +102,17 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A, B, C>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>,_ c: Model.FieldKey<C>) -> Self
         where A: Codable, B: Codable, C: Codable
     {
-        let a = Model.field(forKey: a)
-        let b = Model.field(forKey: b)
-        let c = Model.field(forKey: c)
+        guard let aName = Model.name(for: a) else {
+            fatalError()
+        }
+        guard let bName = Model.name(for: b) else {
+            fatalError()
+        }
+        guard let cName = Model.name(for: c) else {
+            fatalError()
+        }
         self.schema.constraints.append(.unique(fields: [
-            .string(a.name), .string(b.name), .string(c.name)
+            .string(aName), .string(bName), .string(cName)
         ]))
         return self
     }
