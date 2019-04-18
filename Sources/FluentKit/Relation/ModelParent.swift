@@ -43,7 +43,7 @@ public final class ModelParent<Child, Parent>: ModelProperty
     
     public func encode(to encoder: inout ModelEncoder) throws {
         if cache != nil {
-            try encoder.encode(self.get(), forKey: "\(Parent.self)".lowercased())
+            try encoder.encode(self.value, forKey: "\(Parent.self)".lowercased())
         } else {
             try self.id.encode(to: &encoder)
         }
@@ -53,13 +53,21 @@ public final class ModelParent<Child, Parent>: ModelProperty
         try self.id.decode(from: decoder)
     }
 
-    public func get() -> Parent {
-        guard let (cache, id) = self.cache else {
-            fatalError("\(Parent.self) was not eager loaded.")
+    public var value: Parent {
+        get {
+            if let (cache, id) = self.cache {
+                return try! cache.get(id: id)
+                    .map { $0 as! Parent }
+                    .first!
+            } else {
+                let parent = Parent()
+                parent.id.value = self.id.value
+                return parent
+            }
         }
-        return try! cache.get(id: id)
-            .map { $0 as! Parent }
-            .first!
+        set {
+            self.id.value = newValue.id.value
+        }
     }
 }
 

@@ -28,7 +28,7 @@ public final class ModelChildren<Parent, Child>: ModelProperty
         self.id = .init(Child.default[keyPath: id].name)
     }
 
-    public func get() -> [Child] {
+    public var value: [Child] {
         guard let (cache, id) = self.cache else {
             fatalError("Children \(Child.self) were not eager loaded")
         }
@@ -39,7 +39,7 @@ public final class ModelChildren<Parent, Child>: ModelProperty
     
     public func encode(to encoder: inout ModelEncoder) throws {
         if self.cache != nil {
-            try encoder.encode(self.get(), forKey: self.name)
+            try encoder.encode(self.value, forKey: self.name)
         }
     }
 

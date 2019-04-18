@@ -121,7 +121,7 @@ public final class FluentBenchmarker {
                 .all().wait()
 
             for galaxy in galaxies {
-                let planets = galaxy.planets.get()
+                let planets = galaxy.planets.value
                 switch galaxy.name.value {
                 case "Milky Way":
                     guard planets.contains(where: { $0.name.value == "Earth" }) else {
@@ -148,7 +148,7 @@ public final class FluentBenchmarker {
                 .all().wait()
 
             for planet in planets {
-                let galaxy = planet.galaxy.get()
+                let galaxy = planet.galaxy.value
                 switch planet.name.value {
                 case "Earth":
                     guard galaxy.name.value == "Milky Way" else {
@@ -176,7 +176,7 @@ public final class FluentBenchmarker {
                 .all().wait()
 
             for planet in planets {
-                let galaxy = planet.galaxy.get()
+                let galaxy = planet.galaxy.value
                 switch planet.name.value {
                 case "Earth":
                     guard galaxy.name.value == "Milky Way" else {
