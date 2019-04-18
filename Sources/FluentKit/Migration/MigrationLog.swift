@@ -8,13 +8,15 @@ public final class MigrationLog: Model {
     public typealias ID = Int
 
     public static var entity = "fluent"
-    public var id = Field<Int>()
-    public var name = Field<String>()
-    public var batch = Field<Int>()
-    public var createdAt = Field<Date>()
-    public var updatedAt = Field<Date>()
+    public var id = Field<Int>("id")
+    public var name = Field<String>("name")
+    public var batch = Field<Int>("batch")
+    public var createdAt = Field<Date>("createdAt")
+    public var updatedAt = Field<Date>("updatedAt")
+    public let storage: ModelStorage
 
-    public init(id: Int? = nil, name: String, batch: Int, createdAt: Date? = nil, updatedAt: Date? = nil) {
+    public convenience init(id: Int? = nil, name: String, batch: Int, createdAt: Date? = nil, updatedAt: Date? = nil) {
+        self.init()
         if let id = id {
             self.id.value = id
         }
@@ -30,35 +32,6 @@ public final class MigrationLog: Model {
     }
 
     public init(storage: ModelStorage) {
-        fatalError()
-    }
-
-    public static func name(for keyPath: PartialKeyPath<MigrationLog>) -> String? {
-        switch keyPath {
-        case \MigrationLog.id: return "id"
-        case \MigrationLog.name: return "name"
-        case \MigrationLog.batch: return "batch"
-        case \MigrationLog.createdAt: return "createdAt"
-        case \MigrationLog.updatedAt: return "updatedAt"
-        default: return nil
-        }
-    }
-
-    public static func fields() -> [(PartialKeyPath<MigrationLog>, Any.Type)] {
-        return [
-            (\MigrationLog.id as PartialKeyPath<MigrationLog>, Int.self),
-            (\MigrationLog.name as PartialKeyPath<MigrationLog>, String.self),
-            (\MigrationLog.batch as PartialKeyPath<MigrationLog>, Int.self),
-            (\MigrationLog.createdAt as PartialKeyPath<MigrationLog>, Date.self),
-            (\MigrationLog.updatedAt as PartialKeyPath<MigrationLog>, Date.self),
-        ]
-    }
-
-    public static func dataType(for keyPath: PartialKeyPath<MigrationLog>) -> DatabaseSchema.DataType? {
-        return nil
-    }
-
-    public static func constraints(for keyPath: PartialKeyPath<MigrationLog>) -> [DatabaseSchema.FieldConstraint]? {
-        return nil
+        self.storage = storage
     }
 }

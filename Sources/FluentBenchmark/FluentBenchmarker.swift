@@ -10,26 +10,26 @@ public final class FluentBenchmarker {
     }
     
     public func testAll() throws {
-//        try self.testCreate()
-//        try self.testRead()
-//        try self.testUpdate()
-//        try self.testDelete()
-//        try self.testEagerLoadChildren()
-//        try self.testEagerLoadParent()
-//        try self.testEagerLoadParentJoin()
-//        try self.testEagerLoadJSON()
-//        try self.testMigrator()
-//        try self.testMigratorError()
-//        try self.testJoin()
-//        try self.testBatchCreate()
-//        try self.testBatchUpdate()
-//        try self.testNestedModel()
-//        try self.testAggregates()
-//        try self.testIdentifierGeneration()
-//        try self.testNullifyField()
-//        try self.testChunkedFetch()
-//        try self.testUniqueFields()
-//        try self.testAsyncCreate()
+        try self.testCreate()
+        try self.testRead()
+        try self.testUpdate()
+        try self.testDelete()
+        try self.testEagerLoadChildren()
+        try self.testEagerLoadParent()
+        try self.testEagerLoadParentJoin()
+        try self.testEagerLoadJSON()
+        try self.testMigrator()
+        try self.testMigratorError()
+        try self.testJoin()
+        try self.testBatchCreate()
+        try self.testBatchUpdate()
+        try self.testNestedModel()
+        try self.testAggregates()
+        try self.testIdentifierGeneration()
+        try self.testNullifyField()
+        try self.testChunkedFetch()
+        try self.testUniqueFields()
+        try self.testAsyncCreate()
     }
     
     public func testCreate() throws {
@@ -109,147 +109,147 @@ public final class FluentBenchmarker {
         }
     }
     
-//    public func testEagerLoadChildren() throws {
-//        try runTest(#function, [
-//            Galaxy.autoMigration(),
-//            Planet.autoMigration(),
-//            GalaxySeed(),
-//            PlanetSeed()
-//        ]) {
-//            let galaxies = try self.database.query(Galaxy.self)
-//                .with(\.planets)
-//                .all().wait()
-//
-//            for galaxy in galaxies {
-//                let planets = try galaxy.get(\.planets)
-//                switch try galaxy.get(\.name) {
-//                case "Milky Way":
-//                    guard try planets.contains(where: { try $0.get(\.name) == "Earth" }) else {
-//                        throw Failure("unexpected missing planet")
-//                    }
-//                    guard try !planets.contains(where: { try $0.get(\.name) == "PA-99-N2"}) else {
-//                        throw Failure("unexpected planet")
-//                    }
-//                default: break
-//                }
-//            }
-//        }
-//    }
-//    
-//    public func testEagerLoadParent() throws {
-//        try runTest(#function, [
-//            Galaxy.autoMigration(),
-//            Planet.autoMigration(),
-//            GalaxySeed(),
-//            PlanetSeed()
-//        ]) {
-//            let planets = try self.database.query(Planet.self)
-//                .with(\.galaxy)
-//                .all().wait()
-//            
-//            for planet in planets {
-//                let galaxy = try planet.get(\.galaxy)
-//                switch try planet.get(\.name) {
-//                case "Earth":
-//                    guard try galaxy.get(\.name) == "Milky Way" else {
-//                        throw Failure("unexpected galaxy name: \(galaxy)")
-//                    }
-//                case "PA-99-N2":
-//                    guard try galaxy.get(\.name) == "Andromeda" else {
-//                        throw Failure("unexpected galaxy name: \(galaxy)")
-//                    }
-//                default: break
-//                }
-//            }
-//        }
-//    }
-//    
-//    public func testEagerLoadParentJoin() throws {
-//        try runTest(#function, [
-//            Galaxy.autoMigration(),
-//            Planet.autoMigration(),
-//            GalaxySeed(),
-//            PlanetSeed()
-//        ]) {
-//            let planets = try self.database.query(Planet.self)
-//                .with(\.galaxy, method: .join)
-//                .all().wait()
-//            
-//            for planet in planets {
-//                let galaxy = try planet.get(\.galaxy)
-//                switch try planet.get(\.name) {
-//                case "Earth":
-//                    guard try galaxy.get(\.name) == "Milky Way" else {
-//                        throw Failure("unexpected galaxy name: \(galaxy)")
-//                    }
-//                case "PA-99-N2":
-//                    guard try galaxy.get(\.name) == "Andromeda" else {
-//                        throw Failure("unexpected galaxy name: \(galaxy)")
-//                    }
-//                default: break
-//                }
-//            }
-//        }
-//    }
-//    
-//    public func testEagerLoadJSON() throws {
-//        try runTest(#function, [
-//            Galaxy.autoMigration(),
-//            Planet.autoMigration(),
-//            GalaxySeed(),
-//            PlanetSeed()
-//        ]) {
-//            struct PlanetJSON: Codable, Equatable {
-//                var id: Int
-//                var name: String
-//                var galaxy: GalaxyJSON
-//            }
-//            struct GalaxyJSON: Codable, Equatable {
-//                var id: Int
-//                var name: String
-//            }
-//
-//            let milkyWay = GalaxyJSON(id: 2, name: "Milky Way")
-//            let andromeda = GalaxyJSON(id: 1, name: "Andromeda")
-//            let expected: [PlanetJSON] = [
-//                .init(id: 1, name: "Mercury", galaxy: milkyWay),
-//                .init(id: 2, name: "Venus", galaxy: milkyWay),
-//                .init(id: 3, name: "Earth", galaxy: milkyWay),
-//                .init(id: 4, name: "Mars", galaxy: milkyWay),
-//                .init(id: 5, name: "Jupiter", galaxy: milkyWay),
-//                .init(id: 6, name: "Saturn", galaxy: milkyWay),
-//                .init(id: 7, name: "Uranus", galaxy: milkyWay),
-//                .init(id: 8, name: "Neptune", galaxy: milkyWay),
-//                .init(id: 9, name: "PA-99-N2", galaxy: andromeda),
-//            ]
-//
-//            // subquery
-//            do {
-//                let planets = try self.database.query(Planet.self)
-//                    .with(\.galaxy, method: .subquery)
-//                    .all().wait()
-//
-//                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-//                guard decoded == expected else {
-//                    throw Failure("unexpected output")
-//                }
-//            }
-//
-//            // join
-//            do {
-//                let planets = try self.database.query(Planet.self)
-//                    .with(\.galaxy, method: .join)
-//                    .all().wait()
-//
-//                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-//                guard decoded == expected else {
-//                    throw Failure("unexpected output")
-//                }
-//            }
-//
-//        }
-//    }
-    
+    public func testEagerLoadChildren() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            let galaxies = try self.database.query(Galaxy.self)
+                .with(\.planets)
+                .all().wait()
+
+            for galaxy in galaxies {
+                let planets = galaxy.planets.get()
+                switch galaxy.name.value {
+                case "Milky Way":
+                    guard planets.contains(where: { $0.name.value == "Earth" }) else {
+                        throw Failure("unexpected missing planet")
+                    }
+                    guard !planets.contains(where: { $0.name.value == "PA-99-N2"}) else {
+                        throw Failure("unexpected planet")
+                    }
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testEagerLoadParent() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            let planets = try self.database.query(Planet.self)
+                .with(\.galaxy)
+                .all().wait()
+
+            for planet in planets {
+                let galaxy = planet.galaxy.get()
+                switch planet.name.value {
+                case "Earth":
+                    guard galaxy.name.value == "Milky Way" else {
+                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    }
+                case "PA-99-N2":
+                    guard galaxy.name.value == "Andromeda" else {
+                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    }
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testEagerLoadParentJoin() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            let planets = try self.database.query(Planet.self)
+                .with(\.galaxy, method: .join)
+                .all().wait()
+
+            for planet in planets {
+                let galaxy = planet.galaxy.get()
+                switch planet.name.value {
+                case "Earth":
+                    guard galaxy.name.value == "Milky Way" else {
+                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    }
+                case "PA-99-N2":
+                    guard galaxy.name.value == "Andromeda" else {
+                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    }
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testEagerLoadJSON() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            struct PlanetJSON: Codable, Equatable {
+                var id: Int
+                var name: String
+                var galaxy: GalaxyJSON
+            }
+            struct GalaxyJSON: Codable, Equatable {
+                var id: Int
+                var name: String
+            }
+
+            let milkyWay = GalaxyJSON(id: 2, name: "Milky Way")
+            let andromeda = GalaxyJSON(id: 1, name: "Andromeda")
+            let expected: [PlanetJSON] = [
+                .init(id: 1, name: "Mercury", galaxy: milkyWay),
+                .init(id: 2, name: "Venus", galaxy: milkyWay),
+                .init(id: 3, name: "Earth", galaxy: milkyWay),
+                .init(id: 4, name: "Mars", galaxy: milkyWay),
+                .init(id: 5, name: "Jupiter", galaxy: milkyWay),
+                .init(id: 6, name: "Saturn", galaxy: milkyWay),
+                .init(id: 7, name: "Uranus", galaxy: milkyWay),
+                .init(id: 8, name: "Neptune", galaxy: milkyWay),
+                .init(id: 9, name: "PA-99-N2", galaxy: andromeda),
+            ]
+
+            // subquery
+            do {
+                let planets = try self.database.query(Planet.self)
+                    .with(\.galaxy, method: .subquery)
+                    .all().wait()
+
+                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
+                guard decoded == expected else {
+                    throw Failure("unexpected output")
+                }
+            }
+
+            // join
+            do {
+                let planets = try self.database.query(Planet.self)
+                    .with(\.galaxy, method: .join)
+                    .all().wait()
+
+                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
+                guard decoded == expected else {
+                    throw Failure("unexpected output")
+                }
+            }
+
+        }
+    }
+
     public func testMigrator() throws {
         try self.runTest(#function, []) {
             var migrations = Migrations()
@@ -309,8 +309,7 @@ public final class FluentBenchmarker {
                 .join(\Galaxy.id, to: \Planet.galaxy.id)
                 .all().wait()
             for planet in planets {
-                #warning("TODO: fixme")
-                let galaxy: Galaxy! = nil
+                let galaxy = try planet.joined(Galaxy.self)
                 switch planet.name.value {
                 case "Earth":
                     guard galaxy.name.value == "Milky Way" else {
@@ -477,38 +476,44 @@ public final class FluentBenchmarker {
         }
     }
     
-//    public func testNullifyField() throws {
-//        final class Foo: Model {
-//            static let `default` = Foo()
-//            let id = Field<Int>()
-//            let bar = Field<String?>()
-//        }
-//        try runTest(#function, [
-//            Foo.autoMigration(),
-//        ]) {
-//            let foo = Foo.new()
-//            foo.set(\.bar, to: "test")
-//            try foo.save(on: self.database).wait()
-//            guard try foo.get(\.bar) != nil else {
-//                throw Failure("unexpected nil value")
-//            }
-//            foo.set(\.bar, to: nil)
-//            try foo.save(on: self.database).wait()
-//            guard try foo.get(\.bar) == nil else {
-//                throw Failure("unexpected non-nil value")
-//            }
-//
-//            guard let fetched = try self.database.query(Foo.self)
-//                .filter(\.id == foo.get(\.id))
-//                .first().wait()
-//            else {
-//                throw Failure("no model returned")
-//            }
-//            guard try fetched.get(\.bar) == nil else {
-//                throw Failure("unexpected non-nil value")
-//            }
-//        }
-//    }
+    public func testNullifyField() throws {
+        final class Foo: Model {
+            let id = Field<Int>("id")
+            let bar = Field<String?>("bar")
+            let storage: Storage
+            convenience init(bar: String?) {
+                self.init()
+                self.bar.value = bar
+            }
+            init(storage: Storage) {
+                self.storage = storage
+            }
+        }
+        try runTest(#function, [
+            Foo.autoMigration(),
+        ]) {
+            let foo = Foo(bar: "test")
+            try foo.save(on: self.database).wait()
+            guard foo.bar.value != nil else {
+                throw Failure("unexpected nil value")
+            }
+            foo.bar.value = nil
+            try foo.save(on: self.database).wait()
+            guard foo.bar.value == nil else {
+                throw Failure("unexpected non-nil value")
+            }
+
+            guard let fetched = try self.database.query(Foo.self)
+                .filter(\.id == foo.id.value)
+                .first().wait()
+            else {
+                throw Failure("no model returned")
+            }
+            guard fetched.bar.value == nil else {
+                throw Failure("unexpected non-nil value")
+            }
+        }
+    }
 
     public func testChunkedFetch() throws {
         try runTest(#function, [
@@ -549,47 +554,51 @@ public final class FluentBenchmarker {
         }
     }
     
-//    public func testUniqueFields() throws {
-//        final class Foo: Model {
-//            static let `default` = Foo()
-//            let id = Field<Int>("id")
-//            let bar = Field<String>("bar")
-//            let baz = Field<Int>("baz")
-//            static func new(bar: String, baz: Int) -> Row {
-//                let new = self.new()
-//                new.set(\.bar, to: bar)
-//                new.set(\.baz, to: baz)
-//                return new
-//            }
-//        }
-//        struct FooMigration: Migration {
-//            func prepare(on database: Database) -> EventLoopFuture<Void> {
-//                return database.schema(Foo.self)
-//                    .auto()
-//                    .unique(on: \.bar, \.baz)
-//                    .create()
-//            }
-//
-//            func revert(on database: Database) -> EventLoopFuture<Void> {
-//                return database.schema(Foo.self).delete()
-//            }
-//        }
-//        try runTest(#function, [
-//            FooMigration(),
-//        ]) {
-//            let a1 = Foo.new(bar: "a", baz: 1)
-//            try a1.save(on: self.database).wait()
-//            let a2 = Foo.new(bar: "a", baz: 2)
-//            try a2.save(on: self.database).wait()
-//            do {
-//                let a1Dup = Foo.new(bar: "a", baz: 1)
-//                try a1Dup.save(on: self.database).wait()
-//                throw Failure("should have failed")
-//            } catch _ as DatabaseError {
-//                // pass
-//            }
-//        }
-//    }
+    public func testUniqueFields() throws {
+        final class Foo: Model {
+            let id = Field<Int>("id")
+            let bar = Field<String>("bar")
+            let baz = Field<Int>("baz")
+            let storage: ModelStorage
+
+            convenience init(bar: String, baz: Int) {
+                self.init()
+                self.bar.value = bar
+                self.baz.value = baz
+            }
+
+            init(storage: ModelStorage) {
+                self.storage = storage
+            }
+        }
+        struct FooMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return database.schema(Foo.self)
+                    .auto()
+                    .unique(on: \.bar, \.baz)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return database.schema(Foo.self).delete()
+            }
+        }
+        try runTest(#function, [
+            FooMigration(),
+        ]) {
+            let a1 = Foo(bar: "a", baz: 1)
+            try a1.save(on: self.database).wait()
+            let a2 = Foo(bar: "a", baz: 2)
+            try a2.save(on: self.database).wait()
+            do {
+                let a1Dup = Foo(bar: "a", baz: 1)
+                try a1Dup.save(on: self.database).wait()
+                throw Failure("should have failed")
+            } catch _ as DatabaseError {
+                // pass
+            }
+        }
+    }
 
     public func testAsyncCreate() throws {
         try runTest(#function, [

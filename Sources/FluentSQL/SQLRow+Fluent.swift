@@ -13,6 +13,10 @@ private struct _FluentOutputWrapper: DatabaseOutput {
     public var description: String {
         return "\(self.row)"
     }
+
+    func contains(field: String) -> Bool {
+        return self.row.contains(column: field)
+    }
     
     public func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
         return try self.row.decode(column: field, as: T.self)

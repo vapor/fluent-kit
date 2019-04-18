@@ -27,29 +27,29 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.fields().map { (field, fieldType) in
-            var constraints = Model.constraints(for: field) ?? []
-            guard let fieldName = Model.name(for: field) else {
-                fatalError("No name for \(field)")
+        self.schema.createFields = Model.default.properties.compactMap { property in
+            guard property.isStored else {
+                return nil
             }
-            let dataType = Model.dataType(for: field)
+            var constraints = property.constraints ?? []
             let type: Any.Type
-            if fieldName == Model.name(for: \Model.id) {
+            #warning("TODO: better id checking")
+            if property.name == Model.default.id.name {
                 constraints.append(.identifier)
-                type = fieldType
+                type = property.type
             } else {
-                if let optionalType = fieldType as? OptionalType.Type {
+                if let optionalType = property.type as? OptionalType.Type {
                     type = optionalType.wrappedType
                 } else {
-                    type = fieldType
+                    type = property.type
                     if constraints.isEmpty {
                         constraints.append(.required)
                     }
                 }
             }
             return .definition(
-                name: .string(fieldName),
-                dataType: dataType ?? .bestFor(type: type),
+                name: .string(property.name),
+                dataType: property.dataType ?? .bestFor(type: type),
                 constraints: constraints
             )
         }
@@ -75,11 +75,8 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A>(on a: Model.FieldKey<A>) -> Self
         where A: Codable
     {
-        guard let name = Model.name(for: a) else {
-            fatalError()
-        }
         self.schema.constraints.append(.unique(fields: [
-            .string(name)
+            .string(Model.field(forKey: a).name)
         ]))
         return self
     }
@@ -87,14 +84,8 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A, B>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>) -> Self
         where A: Codable, B: Codable
     {
-        guard let aName = Model.name(for: a) else {
-            fatalError()
-        }
-        guard let bName = Model.name(for: b) else {
-            fatalError()
-        }
         self.schema.constraints.append(.unique(fields: [
-            .string(aName), .string(bName)
+            .string(Model.field(forKey: a).name), .string(Model.field(forKey: b).name)
         ]))
         return self
     }
@@ -102,17 +93,10 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A, B, C>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>,_ c: Model.FieldKey<C>) -> Self
         where A: Codable, B: Codable, C: Codable
     {
-        guard let aName = Model.name(for: a) else {
-            fatalError()
-        }
-        guard let bName = Model.name(for: b) else {
-            fatalError()
-        }
-        guard let cName = Model.name(for: c) else {
-            fatalError()
-        }
         self.schema.constraints.append(.unique(fields: [
-            .string(aName), .string(bName), .string(cName)
+            .string(Model.field(forKey: a).name),
+            .string(Model.field(forKey: b).name),
+            .string(Model.field(forKey: c).name)
         ]))
         return self
     }

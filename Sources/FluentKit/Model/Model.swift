@@ -1,32 +1,55 @@
-public protocol AnyModel: class, Codable {
-    static var entity: String { get }
-    var exists: Bool { get set }
+public protocol Model: class, Codable, CustomStringConvertible {
+    associatedtype ID: ModelID
+    var id: Field<ID> { get }
+    var storage: Storage { get }
+    init(storage: Storage)
+    var properties: [Property] { get }
 }
 
-extension AnyModel {
-    public var exists: Bool {
-        get { fatalError() }
-        set { fatalError() }
+extension Model {
+    public typealias Storage = ModelStorage
+    
+    public static var entity: String {
+        return "\(Self.self)"
     }
 
     public init(from decoder: Decoder) throws {
-        fatalError()
+        let decoder = try ModelDecoder(decoder: decoder)
+        self.init()
+        for property in self.properties {
+            do {
+                try property.decode(from: decoder)
+            } catch {
+                print("Could not decode \(property.name): \(error)")
+            }
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
-        fatalError()
+        var encoder = ModelEncoder(encoder: encoder)
+        for property in self.properties {
+            try property.encode(to: &encoder)
+        }
     }
-}
 
-extension AnyModel {
-    public static var entity: String {
-        return "\(Self.self)"
+    public var description: String {
+        let input: String
+        if self.storage.input.isEmpty {
+            input = "nil"
+        } else {
+            input = self.storage.input.description
+        }
+        let output: String
+        if let o = self.storage.output {
+            output = o.description
+        } else {
+            output = "nil"
+        }
+        return "\(Self.self)(input: \(input), output: \(output))"
     }
 }
 
 extension Model {
-//    public typealias Row = ModelRow<Self>
-
     public static func find(_ id: Self.ID?, on database: Database) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)
@@ -35,36 +58,46 @@ extension Model {
     }
 }
 
-public protocol Model: AnyModel {
-    associatedtype ID: ModelID
-    var id: ModelField<Self, ID> { get set }
-    static func fields() -> [(PartialKeyPath<Self>, Any.Type)]
-    static func name(for keyPath: PartialKeyPath<Self>) -> String?
-    static func dataType(for keyPath: PartialKeyPath<Self>) -> DatabaseSchema.DataType?
-    static func constraints(for keyPath: PartialKeyPath<Self>) -> [DatabaseSchema.FieldConstraint]?
-    init(storage: ModelStorage)
-}
-
 extension Model {
-    static func requireName(for keyPath: PartialKeyPath<Self>) -> String {
-        guard let name = self.name(for: keyPath) else {
-            fatalError()
-        }
+    public static var `default`: Self {
+        #warning("TODO: optimize")
+        return .init()
+    }
 
-        return name
+    public init() {
+        self.init(
+            storage: DefaultModelStorage(output: nil, eagerLoads: [:], exists: false)
+        )
+    }
+
+    public var properties: [Property] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? Property }
+    }
+
+    public var exists: Bool {
+        switch self.id.storage {
+        case .none, .input: return false
+        case .output: return true
+        }
     }
 }
 
 extension Model {
+    internal init(loading storage: ModelStorage) throws {
+        self.init(storage: storage)
+        for property in self.properties {
+            try property.load(from: storage)
+        }
+    }
+
     internal var input: [String: DatabaseQuery.Value] {
-        let values = Self.fields().compactMap { field -> (String, DatabaseQuery.Value)? in
-            guard let value = (self[keyPath: field.0] as! ModelProperty).input else {
+        let values = self.properties.compactMap { property -> (String, DatabaseQuery.Value)? in
+            guard let value = property.input else {
                 return nil
             }
-            guard let name = Self.name(for: field.0) else {
-                fatalError()
-            }
-            return (name, .bind(value))
+            return (property.name, .bind(value))
         }
         return .init(uniqueKeysWithValues: values)
     }
@@ -92,9 +125,9 @@ extension Model {
     public typealias FieldKey<Value> = KeyPath<Self, Field<Value>>
         where Value: Codable
     
-//    public static func field<T>(forKey key: FieldKey<T>) -> Field<T> {
-//        return self.default[keyPath: key]
-//    }
+    public static func field<T>(forKey key: FieldKey<T>) -> Field<T> {
+        return self.default[keyPath: key]
+    }
 }
 
 extension ModelStorage {
@@ -186,7 +219,8 @@ extension Database {
         var it = models.makeIterator()
         return builder.run { created in
             let next = it.next()!
-            next.exists = true
+            #warning("TODO: set model exists = true")
+            // next.id.storage = .output(0)
         }
     }
 }
@@ -208,10 +242,9 @@ private extension Database {
         precondition(!model.exists)
         let builder = self.query(Model.self).set(model.input)
         builder.query.action = .create
-        return builder._run { created in
+        return builder.run { created in
             #warning("for mysql, we might need to hold onto storage input")
-            model.id.value = try created.decode(field: "fluentID", as: Model.ID.self)
-            model.exists = true
+            model.id.storage = try .output(created.storage.output!.decode(field: "fluentID", as: Model.ID.self))
         }
     }
     
@@ -231,12 +264,11 @@ private extension Database {
     func delete<Model>(_ model: Model) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
-        print(model.input)
         let builder = self.query(Model.self)
             .filter(\.id == model.id.value)
         builder.query.action = .delete
         return builder.run().map {
-            model.exists = false
+            model.id.storage = .none
         }
     }
 }

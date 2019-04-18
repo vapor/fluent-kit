@@ -1,21 +1,20 @@
 #warning("TODO: remove Anys from protocol")
 public protocol EagerLoad: class {
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void>
-    func setup(_ root: Any)
-    func get(id: Any) -> [Any]
+    func get(id: Any) throws -> [Any]
 }
 
-//extension ModelRow {
-//    public func joined<Joined>(_ model: Joined.Type) -> Joined.Row
-//        where Joined: FluentKit.Model
-//    {
-//        return Joined.Row(storage: DefaultModelStorage(
-//            output: self.storage.output!.prefixed(by: Joined.entity + "_"),
-//            eagerLoads: [:],
-//            exists: true
-//        ))
-//    }
-//}
+extension Model {
+    public func joined<Joined>(_ model: Joined.Type) throws -> Joined
+        where Joined: FluentKit.Model
+    {
+        return try Joined.init(loading: DefaultModelStorage(
+            output: self.storage.output!.prefixed(by: Joined.entity + "_"),
+            eagerLoads: [:],
+            exists: true
+        ))
+    }
+}
 
 extension DatabaseOutput {
     func prefixed(by string: String) -> DatabaseOutput {
@@ -36,64 +35,57 @@ struct PrefixingOutput: DatabaseOutput {
         self.wrapped = wrapped
         self.prefix = prefix
     }
+
+    func contains(field: String) -> Bool {
+        return self.wrapped.contains(field: self.prefix + field)
+    }
     
     func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
         return try self.wrapped.decode(field: self.prefix + field, as: T.self)
     }
 }
 
-//final class JoinParentEagerLoad<Child, Parent>: EagerLoad
-//    where Child: Model, Parent: Model
-//{
-//    var parents: [Parent.ID: Parent]
-//
-//    init() {
-//        self.parents = [:]
-//    }
-//
-//    func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
-//        var res: [Parent.ID: Parent] = [:]
-//        try! models.map { $0 as! Child }.forEach { child in
-//            let parent = child.joined(Parent.self)
-//            try res[parent.get(\.id)] = parent
-//        }
-//
-//        self.parents = res
-//        return database.eventLoop.makeSucceededFuture(())
-//    }
-//
-//    func get(id: Any) throws -> [Any] {
-//        let id = id as! Parent.ID
-//        return [self.parents[id]!]
-//    }
-//}
+final class JoinParentEagerLoad<Child, Parent>: EagerLoad
+    where Child: Model, Parent: Model
+{
+    var parents: [Parent.ID: Parent]
+
+    init() {
+        self.parents = [:]
+    }
+
+    func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
+        var res: [Parent.ID: Parent] = [:]
+        try! models.map { $0 as! Child }.forEach { child in
+            let parent = try child.joined(Parent.self)
+            res[parent.id.value] = parent
+        }
+
+        self.parents = res
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    func get(id: Any) throws -> [Any] {
+        let id = id as! Parent.ID
+        return [self.parents[id]!]
+    }
+}
 
 final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
     where  Child: Model, Parent: Model
 {
     var storage: [Parent]
-    
-    let parentID: KeyPath<Parent,
-        KeyPath<Child, ModelField<Child, Parent.ID>>
-    >
+    let parentID: ModelField<Child, Parent.ID>
 
-    var childID: KeyPath<Child, ModelField<Child, Parent.ID>>!
-    
-    init(_ parentID: KeyPath<Parent,
-        KeyPath<Child, ModelField<Child, Parent.ID>>
-    >) {
+    init(_ parentID: ModelField<Child, Parent.ID>) {
         self.storage = []
         self.parentID = parentID
-    }
-
-    func setup(_ root: Any) {
-        self.childID = (root as! Parent)[keyPath: self.parentID]
     }
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         let ids: [Parent.ID] = models
             .map { $0 as! Child }
-            .map { $0[keyPath: self.childID].value }
+            .map { try! $0.storage.output!.decode(field: self.parentID.name, as: Parent.ID.self) }
 
         let uniqueIDs = Array(Set(ids))
         return database.query(Parent.self)
@@ -114,22 +106,11 @@ final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
     where Parent: Model, Child: Model
 {
     var storage: [Child]
+    let parentID: ModelField<Child, Parent.ID>
     
-    let parentID: KeyPath<Parent,
-        KeyPath<Child, ModelField<Child, Parent.ID>>
-    >
-
-    var childID: KeyPath<Child, ModelField<Child, Parent.ID>>!
-    
-    init(_ parentID: KeyPath<Parent,
-        KeyPath<Child, ModelField<Child, Parent.ID>>
-    >) {
+    init(_ parentID: ModelField<Child, Parent.ID>) {
         self.storage = []
         self.parentID = parentID
-    }
-
-    func setup(_ root: Any) {
-        self.childID = (root as! Parent)[keyPath: self.parentID]
     }
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
@@ -139,15 +120,19 @@ final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
         
         let uniqueIDs = Array(Set(ids))
         return database.query(Child.self)
-            .filter(self.childID, in: uniqueIDs)
+            .filter(self.parentID, in: uniqueIDs)
             .all()
             .map { self.storage = $0 }
     }
     
-    func get(id: Any) -> [Any] {
+    func get(id: Any) throws -> [Any] {
+        print("GET")
         let id = id as! Parent.ID
-        return self.storage.filter { child in
-            return child[keyPath: self.childID].value == id
+        print(self.storage)
+        print(id)
+        return try self.storage.filter { child in
+            try self.parentID.load(from: child.storage)
+            return self.parentID.value == id
         }
     }
 }

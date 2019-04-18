@@ -1,14 +1,33 @@
 public protocol ModelProperty {
-//    var name: String { get }
+    var name: String { get }
     var type: Any.Type { get }
+    var dataType: DatabaseSchema.DataType? { get }
+    var constraints: [DatabaseSchema.FieldConstraint]? { get }
+    var isStored: Bool { get }
 
     var input: Encodable? { get }
+    func load(from storage: ModelStorage) throws
+
+    func encode(to encoder: inout ModelEncoder) throws
+    func decode(from decoder: ModelDecoder) throws
+}
+
+extension ModelProperty {
+    public var isStored: Bool {
+        return true
+    }
     
-//    var dataType: DatabaseSchema.DataType? { get }
-//    var constraints: [DatabaseSchema.FieldConstraint] { get }
-//
-    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws
-    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws
+    public var dataType: DatabaseSchema.DataType? {
+        return nil
+    }
+
+    public var constraints: [DatabaseSchema.FieldConstraint]? {
+        return nil
+    }
+
+    public var input: Encodable? {
+        return nil
+    }
 }
 
 public struct ModelDecoder {

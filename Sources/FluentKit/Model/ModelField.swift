@@ -2,12 +2,15 @@ public enum ModelError: Error {
     case missingField(name: String)
 }
 
-public struct ModelField<Model, Value>: ModelProperty
+#warning("TODO: fixme, value type")
+public final class ModelField<Model, Value>: ModelProperty
     where Model: FluentKit.Model, Value: Codable
 {
     public var type: Any.Type {
         return Value.self
     }
+
+    public var name: String
 
     public var input: Encodable? {
         switch self.storage {
@@ -15,6 +18,21 @@ public struct ModelField<Model, Value>: ModelProperty
             return value
         default:
             return nil
+        }
+    }
+
+    public var dataType: DatabaseSchema.DataType?
+
+    public var constraints: [DatabaseSchema.FieldConstraint]?
+
+    public func load(from storage: ModelStorage) throws {
+        guard let output = storage.output else {
+            fatalError("No model storage output")
+        }
+        if output.contains(field: self.name) {
+            self.storage = try .output(output.decode(field: self.name, as: Value.self))
+        } else {
+            self.storage = .none
         }
     }
 
@@ -30,7 +48,7 @@ public struct ModelField<Model, Value>: ModelProperty
         get {
             switch self.storage {
             case .none:
-                fatalError("No value was selected: \(Value.self)")
+                fatalError("No value was selected for \(Model.self).\(self.name) (\(Value.self))")
             case .output(let output):
                 return output
             case .input(let input):
@@ -42,22 +60,30 @@ public struct ModelField<Model, Value>: ModelProperty
         }
     }
     
-    public init() {
+    public init(
+        _ name: String,
+        dataType: DatabaseSchema.DataType? = nil,
+        constraints: [DatabaseSchema.FieldConstraint]? = nil
+    ) {
+        self.name = name
+        self.dataType = dataType
+        self.constraints = constraints
         self.storage = .none
     }
-
-    public init(value: Value) {
-        self.storage = .input(value)
-    }
     
-    public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
-        #warning("FIXME")
-        try encoder.encode(storage.get("foo", as: Value.self), forKey: "foo")
+    public func encode(to encoder: inout ModelEncoder) throws {
+        switch self.storage {
+        case .input(let input):
+            try encoder.encode(input, forKey: self.name)
+        case .output(let output):
+            try encoder.encode(output, forKey: self.name)
+        case .none:
+            break
+        }
     }
 
-    public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
-        #warning("FIXME")
-        try storage.set("foo", to: decoder.decode(Value.self, forKey: "foo"))
+    public func decode(from decoder: ModelDecoder) throws {
+        self.storage = try .input(decoder.decode(Value.self, forKey: self.name))
     }
 }
 

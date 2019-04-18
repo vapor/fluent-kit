@@ -1,3 +1,4 @@
+#warning("TODO: make protocol internal")
 public protocol ModelStorage {
     var output: DatabaseOutput? { get }
     var input: [String: DatabaseQuery.Value] { get set }

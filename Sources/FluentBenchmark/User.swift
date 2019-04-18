@@ -11,11 +11,13 @@ final class User: Model {
     
     static let entity = "users"
     
-    var id = Field<Int>()
-    var name = Field<String>()
-    var pet = Field<Pet>()
+    var id = Field<Int>("id")
+    var name = Field<String>("name")
+    var pet = Field<Pet>("pet")
+    let storage: ModelStorage
 
-    init(id: Int? = nil, name: String, pet: Pet) {
+    convenience init(id: Int? = nil, name: String, pet: Pet) {
+        self.init()
         if let id = id {
             self.id.value = id
         }
@@ -24,35 +26,7 @@ final class User: Model {
     }
 
     init(storage: ModelStorage) {
-        fatalError()
-    }
-
-    static func name(for keyPath: PartialKeyPath<User>) -> String? {
-        switch keyPath {
-        case \User.id: return "id"
-        case \User.name: return "name"
-        case \User.pet: return "pet"
-        default: return nil
-        }
-    }
-
-    static func fields() -> [(PartialKeyPath<User>, Any.Type)] {
-        return [
-            (\User.id as PartialKeyPath<User>, Int.self),
-            (\User.name as PartialKeyPath<User>, String.self),
-            (\User.pet as PartialKeyPath<User>, Pet.self),
-        ]
-    }
-
-    static func dataType(for keyPath: PartialKeyPath<User>) -> DatabaseSchema.DataType? {
-        switch keyPath {
-        case \User.pet: return .json
-        default: return nil
-        }
-    }
-
-    static func constraints(for keyPath: PartialKeyPath<User>) -> [DatabaseSchema.FieldConstraint]? {
-        return nil
+        self.storage = storage
     }
 }
 
