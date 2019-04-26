@@ -60,6 +60,12 @@ extension ModelRow {
         }
     }
 
+    public func has<Value>(_ field: Model.FieldKey<Value>) -> Bool
+        where Value: Codable
+    {
+        return self.storage.cachedOutput[Model.field(forKey: field).name] != nil
+    }
+
     func get<Value>(_ key: Model.FieldKey<Value>) -> Value
         where Value: Codable
     {
