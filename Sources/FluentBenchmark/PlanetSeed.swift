@@ -18,7 +18,7 @@ final class PlanetSeed: Migration {
             }
             let saves = planets.map { name -> EventLoopFuture<Void> in
                 let planet = Planet.new()
-                planet.set(\.name, to: name)
+                planet[\.name] = name
                 try! planet.set(\.galaxy, to: galaxy)
                 return planet.save(on: database)
             }

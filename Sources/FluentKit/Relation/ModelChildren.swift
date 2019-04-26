@@ -7,11 +7,11 @@ public struct ModelChildren<Parent, Child>
         self.id = id
     }
     
-    public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
+    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
         #warning("TODO: fixme")
     }
     
-    public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
+    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
         #warning("TODO: fixme")
     }
 }
@@ -28,17 +28,17 @@ extension Model {
     
     
     public static func children<T>(forKey key: ChildrenKey<T>) -> Children<T> {
-        return self.default[keyPath: key]
+        return self.shared[keyPath: key]
     }
 }
 
 extension ModelRow {
-    public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) throws -> QueryBuilder<Child>
+    public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) -> QueryBuilder<Child>
         where Child: FluentKit.Model
     {
         let children = Model.children(forKey: key)
-        return try database.query(Child.self)
-            .filter(children.id, .equals, self.get(\.id))
+        return database.query(Child.self)
+            .filter(children.id, .equals, self[\.id])
     }
     
     public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Child.Row]

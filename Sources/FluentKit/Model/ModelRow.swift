@@ -6,20 +6,21 @@ public final class ModelRow<Model>: Codable, CustomStringConvertible
         return self.storage.exists
     }
     
-    public var storage: ModelStorage
+    var storage: ModelStorage
     
-    public init(storage: ModelStorage) {
+    init(storage: ModelStorage) throws {
         self.storage = storage
+        try self.storage.cacheOutput(for: Model.self)
     }
     
-    public convenience init() {
-        self.init(storage: DefaultModelStorage(output: nil, eagerLoads: [:], exists: false))
+    public init() {
+        self.storage = DefaultModelStorage(output: nil, eagerLoads: [:], exists: false)
     }
     
     public convenience init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        for field in Model.default.all {
+        for field in Model.shared.all {
             do {
                 try field.decode(from: decoder, to: &self.storage)
             } catch {
@@ -30,7 +31,7 @@ public final class ModelRow<Model>: Codable, CustomStringConvertible
     
     public func encode(to encoder: Encoder) throws {
         var encoder = ModelEncoder(encoder: encoder)
-        for property in Model.default.all {
+        for property in Model.shared.all {
             try property.encode(to: &encoder, from: self.storage)
         }
     }

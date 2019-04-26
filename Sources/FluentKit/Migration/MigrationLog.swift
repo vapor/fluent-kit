@@ -5,7 +5,7 @@ import Foundation
 /// when the app boots. It is also used to determine which migrations to revert when
 /// using the `RevertCommand`.
 public struct MigrationLog: Model {
-    public static var `default` = MigrationLog()
+    public static var shared = MigrationLog()
     public static var entity = "fluent"
     public let id = Field<Int>("id")
     public let name = Field<String>("name")

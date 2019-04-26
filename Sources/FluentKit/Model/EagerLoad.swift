@@ -1,14 +1,14 @@
-#warning("TODO: remove Anys from protocol")
-public protocol EagerLoad: class {
+#warning("TODO: remove Anys from protocol or make internal")
+protocol EagerLoad: class {
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void>
     func get(id: Any) throws -> [Any]
 }
 
 extension ModelRow {
-    public func joined<Joined>(_ model: Joined.Type) -> Joined.Row
+    public func joined<Joined>(_ model: Joined.Type) throws -> Joined.Row
         where Joined: FluentKit.Model
     {
-        return Joined.Row(storage: DefaultModelStorage(
+        return try Joined.Row(storage: DefaultModelStorage(
             output: self.storage.output!.prefixed(by: Joined.entity + "_"),
             eagerLoads: [:],
             exists: true
@@ -53,8 +53,8 @@ final class JoinParentEagerLoad<Child, Parent>: EagerLoad
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         var res: [Parent.ID: Parent.Row] = [:]
         try! models.map { $0 as! Child.Row }.forEach { child in
-            let parent = child.joined(Parent.self)
-            try res[parent.get(\.id)] = parent
+            let parent = try child.joined(Parent.self)
+            res[parent.get(\.id)] = parent
         }
         
         self.parents = res

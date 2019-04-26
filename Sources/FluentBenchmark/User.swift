@@ -10,7 +10,7 @@ final class User: Model {
     }
     
     static let entity = "users"
-    static let `default` = User()
+    static let shared = User()
     
     let id = Field<Int>("id")
     let name = Field<String>("name")
@@ -23,12 +23,12 @@ final class UserSeed: Migration {
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         let tanner = User.new()
-        tanner.set(\.name, to: "Tanner")
-        tanner.set(\.pet, to: .init(name: "Ziz", type: .cat))
+        tanner[\.name] = "Tanner"
+        tanner[\.pet] = .init(name: "Ziz", type: .cat)
 
         let logan = User.new()
-        logan.set(\.name, to: "Logan")
-        logan.set(\.pet, to: .init(name: "Runa", type: .dog))
+        logan[\.name] = "Logan"
+        logan[\.pet] = .init(name: "Runa", type: .dog)
         
         return logan.save(on: database)
             .and(tanner.save(on: database))
