@@ -24,7 +24,7 @@ public struct ModelParent<Child, Parent>: ModelProperty
     }
 
     func cached(from output: DatabaseOutput) throws -> Any? {
-        return nil
+        return try self.id.cached(from: output)
     }
     
     func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
@@ -56,10 +56,10 @@ extension Model {
 }
 
 extension ModelRow {
-    public func set<ParentType>(_ key: Model.ParentKey<ParentType>, to parent: ParentType.Row) throws
+    public func set<ParentType>(_ key: Model.ParentKey<ParentType>, to parent: ParentType.Row)
         where ParentType: FluentKit.Model
     {
-        try self.set(Model.parent(forKey: key).id, to: parent.get(\.id))
+        self.set(Model.parent(forKey: key).id, to: parent.get(\.id))
     }
 
     public func get<ParentType>(_ key: Model.ParentKey<ParentType>) throws -> ParentType.Row

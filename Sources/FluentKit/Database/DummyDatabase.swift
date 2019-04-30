@@ -39,6 +39,10 @@ private struct DummyOutput: DatabaseOutput {
     func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
         return try T(from: DummyDecoder())
     }
+
+    func contains(field: String) -> Bool {
+        return true
+    }
     
     var description: String {
         return "<dummy>"

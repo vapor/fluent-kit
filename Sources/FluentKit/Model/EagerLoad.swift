@@ -35,6 +35,10 @@ struct PrefixingOutput: DatabaseOutput {
         self.wrapped = wrapped
         self.prefix = prefix
     }
+
+    func contains(field: String) -> Bool {
+        return self.wrapped.contains(field: self.prefix + field)
+    }
     
     func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
         return try self.wrapped.decode(field: self.prefix + field, as: T.self)

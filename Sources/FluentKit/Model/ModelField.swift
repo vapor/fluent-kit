@@ -35,6 +35,9 @@ public struct ModelField<Model, Value>: ModelProperty
     }
 
     func cached(from output: DatabaseOutput) throws -> Any? {
+        guard output.contains(field: self.name) else {
+            return nil
+        }
         return try output.decode(field: self.name, as: Value.self)
     }
     

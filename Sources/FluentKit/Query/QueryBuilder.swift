@@ -219,7 +219,7 @@ public final class QueryBuilder<Model>
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.storage.get("fluentAggregate", as: Result.self)
+            return try res.storage.output!.decode(field: "fluentAggregate", as: Result.self)
         }
     }
     

@@ -465,7 +465,7 @@ public final class FluentBenchmarker {
         ]) {
             let galaxy = Galaxy.new()
             galaxy[\.name] = "Milky Way"
-            guard galaxy.has(\.id) else {
+            guard !galaxy.has(\.id) else {
                 throw Failure("id should not be set")
             }
             try galaxy.save(on: self.database).wait()

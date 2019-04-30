@@ -107,7 +107,7 @@ private extension Database {
         builder.query.action = .create
         return builder.run { created in
             #warning("for mysql, we might need to hold onto storage input")
-            model[\.id] = created.storage.get("fluentID")
+            model[\.id] = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
             model.storage.exists = true
         }
     }
