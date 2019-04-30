@@ -19,7 +19,7 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.default.all.map { .field(
+        self.query.fields = Model.shared.all.map { .field(
             path: [$0.name],
             entity: Model.entity,
             alias: nil
@@ -59,7 +59,7 @@ public final class QueryBuilder<Model>
     public func join<Parent>(_ key: Model.ParentKey<Parent>) -> Self
         where Parent: FluentKit.Model
     {
-        return self.join(Parent.default.id, to: Model.parent(forKey: key).id, method: .inner)
+        return self.join(Parent.shared.id, to: Model.parent(forKey: key).id, method: .inner)
     }
     
     @discardableResult
@@ -75,7 +75,7 @@ public final class QueryBuilder<Model>
     public func join<Foreign, Value>(_ foreign: Foreign.Field<Value>, to local: Model.Field<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
         where Foreign: FluentKit.Model, Value: Codable
     {
-        self.query.fields += Foreign.default.all.map {
+        self.query.fields += Foreign.shared.all.map {
             return .field(
                 path: [$0.name],
                 entity: Foreign.entity,
@@ -268,7 +268,7 @@ public final class QueryBuilder<Model>
     public func run(_ onOutput: @escaping (Model.Row) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model.Row] = []
         return self.database.execute(self.query) { output in
-            let model = Model.Row.init(storage: DefaultModelStorage(
+            let model = try Model.Row.init(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true

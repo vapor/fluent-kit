@@ -17,8 +17,9 @@ public struct ModelField<Model, Value>: ModelProperty
 //        return self.model.storage.path + [self.name]
 //    }
 
-    public let dataType: DatabaseSchema.DataType?
-    
+    internal let dataType: DatabaseSchema.DataType?
+
+    #warning("TODO: auto migrate")
     struct Interface: Codable {
         let name: String
     }
@@ -32,13 +33,61 @@ public struct ModelField<Model, Value>: ModelProperty
         self.dataType = dataType
         self.constraints = constraints
     }
+
+    func cached(from output: DatabaseOutput) throws -> Any? {
+        return try output.decode(field: self.name, as: Value.self)
+    }
     
-    public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
+    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
         try encoder.encode(storage.get(self.name, as: Value.self), forKey: self.name)
     }
 
-    public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
+    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
         try storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
+    }
+}
+
+
+extension ModelRow {
+    public subscript<Value>(_ field: Model.FieldKey<Value>) -> Value
+        where Value: Codable
+    {
+        get {
+            return self.get(field)
+        }
+        set {
+            return self.set(field, to: newValue)
+        }
+    }
+
+    public func has<Value>(_ field: Model.FieldKey<Value>) -> Bool
+        where Value: Codable
+    {
+        return self.storage.cachedOutput[Model.field(forKey: field).name] != nil
+    }
+
+    func get<Value>(_ key: Model.FieldKey<Value>) -> Value
+        where Value: Codable
+    {
+        return self.get(Model.field(forKey: key))
+    }
+
+    func get<Value>(_ field: Model.Field<Value>) -> Value
+        where Value: Codable
+    {
+        return self.storage.get(field.name)
+    }
+
+    func set<Value>(_ key: Model.FieldKey<Value>, to value: Value)
+        where Value: Codable
+    {
+        self.set(Model.field(forKey: key), to: value)
+    }
+
+    func set<Value>(_ field: Model.Field<Value>, to value: Value)
+        where Value: Codable
+    {
+        self.storage.set(field.name, to: value)
     }
 }
 

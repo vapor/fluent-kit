@@ -22,8 +22,12 @@ public struct ModelParent<Child, Parent>: ModelProperty
     public init(id: Child.Field<Parent.ID>) {
         self.id = id
     }
+
+    func cached(from output: DatabaseOutput) throws -> Any? {
+        return nil
+    }
     
-    public func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
+    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
         if let cache = storage.eagerLoads[Parent.entity] {
             let parent = try cache.get(id: storage.get(self.id.name, as: Parent.ID.self))
                 .map { $0 as! Parent.Row }
@@ -34,7 +38,7 @@ public struct ModelParent<Child, Parent>: ModelProperty
         }
     }
     
-    public func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
+    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
         try self.id.decode(from: decoder, to: &storage)
     }
 }
@@ -47,7 +51,7 @@ extension Model {
         where ParentType: Model
     
     public static func parent<T>(forKey key: ParentKey<T>) -> Parent<T> {
-        return self.default[keyPath: key]
+        return self.shared[keyPath: key]
     }
 }
 
