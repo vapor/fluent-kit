@@ -164,7 +164,7 @@ public final class QueryBuilder<Model>
     
     public func create() -> EventLoopFuture<Void> {
         #warning("model id not set this way")
-        self.query.action = .delete
+        self.query.action = .create
         return self.run()
     }
     
