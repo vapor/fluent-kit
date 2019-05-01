@@ -40,6 +40,12 @@ extension Model {
 }
 
 extension Model {
+    public static func query(on database: Database) -> QueryBuilder<Self> {
+        return .init(database: database)
+    }
+}
+
+extension Model {
     public typealias Field<Value> = ModelField<Self, Value>
         where Value: Codable
     
@@ -66,6 +72,16 @@ extension ModelRow {
     
     public func delete(on database: Database) -> EventLoopFuture<Void> {
         return database.delete(self)
+    }
+}
+
+extension ModelRow where Model: SoftDeletable {
+    public func forceDelete(on database: Database) -> EventLoopFuture<Void> {
+        return database.forceDelete(self)
+    }
+
+    public func restore(on database: Database) -> EventLoopFuture<Void> {
+        return database.restore(self)
     }
 }
 
@@ -103,33 +119,67 @@ private extension Database {
         where Model: FluentKit.Model
     {
         precondition(!model.exists)
-        let builder = self.query(Model.self).set(model.storage.input)
-        builder.query.action = .create
-        return builder.run { created in
-            #warning("for mysql, we might need to hold onto storage input")
-            model[\.id] = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
-            model.storage.exists = true
-        }
+        return self.query(Model.self)
+            .set(model.storage.input)
+            .action(.create)
+            .run { created in
+                #warning("for mysql, we might need to hold onto storage input")
+                model[\.id] = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
+                model.storage.exists = true
+            }
     }
     
     func update<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
         precondition(model.exists)
-        let builder = self.query(Model.self).filter(\.id == model[\.id]).set(model.storage.input)
-        builder.query.action = .update
-        return builder.run { updated in
-            // ignore
-        }
+        return self.query(Model.self)
+            .filter(\.id == model[\.id])
+            .set(model.storage.input)
+            .action(.update)
+            .run()
     }
     
     func delete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
-        let builder = self.query(Model.self).filter(\.id == model[\.id])
-        builder.query.action = .delete
-        return builder.run().map {
-            model.storage.exists = false
+        if let softDeletable = Model.shared as? _AnySoftDeletable {
+            softDeletable._clearDeletedAt(from: &model.storage.input)
+            return self.update(model)
+        } else {
+            return self.query(Model.self)
+                .filter(\.id == model[\.id])
+                .action(.delete)
+                .run()
+                .map {
+                    model.storage.exists = false
+                }
         }
+    }
+
+    func forceDelete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: SoftDeletable
+    {
+        return self.query(Model.self)
+            .withSoftDeleted()
+            .filter(\.id == model[\.id])
+            .action(.delete)
+            .run()
+            .map {
+                model.storage.exists = false
+            }
+    }
+
+    func restore<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: SoftDeletable
+    {
+        model[\.deletedAt] = nil
+        precondition(model.exists)
+        return self.query(Model.self)
+            .withSoftDeleted()
+            .filter(\.id == model[\.id])
+            .set(model.storage.input)
+            .action(.update)
+            .run()
     }
 }

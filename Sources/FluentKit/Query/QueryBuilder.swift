@@ -11,9 +11,12 @@ extension Database {
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model
 {
-    let database: Database
     public var query: DatabaseQuery
-    var eagerLoads: [String: EagerLoad]
+
+    internal let database: Database
+    internal var eagerLoads: [String: EagerLoad]
+    internal var includeSoftDeleted: Bool
+    internal var joinedModels: [AnyModel]
     
     public init(database: Database) {
         self.database = database
@@ -24,6 +27,8 @@ public final class QueryBuilder<Model>
             entity: Model.entity,
             alias: nil
         ) }
+        self.includeSoftDeleted = false
+        self.joinedModels = []
     }
     
     @discardableResult
@@ -82,6 +87,7 @@ public final class QueryBuilder<Model>
                 alias: Foreign.entity + "_" + $0.name
             )
         }
+        self.joinedModels.append(Foreign.shared)
         self.query.joins.append(.model(
             foreign: .field(path: [foreign.name], entity: Foreign.entity, alias: nil),
             local: .field(path: [local.name], entity: Model.entity, alias: nil),
@@ -161,7 +167,7 @@ public final class QueryBuilder<Model>
     
     public func create() -> EventLoopFuture<Void> {
         #warning("model id not set this way")
-        self.query.action = .delete
+        self.query.action = .create
         return self.run()
     }
     
@@ -260,6 +266,11 @@ public final class QueryBuilder<Model>
             models.append(model)
         }.map { models }
     }
+
+    internal func action(_ action: DatabaseQuery.Action) -> Self {
+        self.query.action = action
+        return self
+    }
     
     public func run() -> EventLoopFuture<Void> {
         return self.run { _ in }
@@ -267,7 +278,20 @@ public final class QueryBuilder<Model>
     
     public func run(_ onOutput: @escaping (Model.Row) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model.Row] = []
-        return self.database.execute(self.query) { output in
+        
+        // make a copy of this query before mutating it
+        // so that run can be called multiple times
+        var query = self.query
+
+        // check if model is soft-deletable and should be excluded
+        if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
+            softDeletable._excludeSoftDeleted(from: &query)
+            self.joinedModels
+                .compactMap { $0 as? _AnySoftDeletable }
+                .forEach { $0._excludeSoftDeleted(from: &query) }
+        }
+
+        return self.database.execute(query) { output in
             let model = try Model.Row.init(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,

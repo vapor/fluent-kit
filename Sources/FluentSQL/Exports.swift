@@ -28,7 +28,9 @@ public struct SQLList: SQLExpression {
         var first = true
         for el in self.items {
             if !first {
+                serializer.write(" ")
                 self.separator.serialize(to: &serializer)
+                serializer.write(" ")
             }
             first = false
             el.serialize(to: &serializer)

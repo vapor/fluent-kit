@@ -30,6 +30,7 @@ public final class FluentBenchmarker {
         try self.testChunkedFetch()
         try self.testUniqueFields()
         try self.testAsyncCreate()
+        try self.testSoftDelete()
     }
     
     public func testCreate() throws {
@@ -369,7 +370,7 @@ public final class FluentBenchmarker {
             UserSeed()
         ]) {
             let users = try self.database.query(User.self)
-                .filter(\.pet, "type", .equals, User.Pet.Animal.cat)
+                .filter(\.pet, "type", .equal, User.Pet.Animal.cat)
                 .all().wait()
         
             guard let user = users.first, users.count == 1 else {
@@ -614,6 +615,54 @@ public final class FluentBenchmarker {
             guard galaxies.count == 2 else {
                 throw Failure("both galaxies did not save")
             }
+        }
+    }
+
+    public func testSoftDelete() throws {
+        final class User: Model, SoftDeletable {
+            static let shared = User()
+            let id = Field<Int>("id")
+            let name = Field<String>("name")
+            let deletedAt = Field<Date?>("deletedAt")
+
+            static func new(name: String) -> Row {
+                let row = User.new()
+                row[\.name] = name
+                return row
+            }
+        }
+
+        func testCounts(allCount: Int, realCount: Int) throws {
+            let all = try User.query(on: self.database).all().wait()
+            guard all.count == allCount else {
+                throw Failure("all count should be \(allCount)")
+            }
+            let real = try User.query(on: self.database).withSoftDeleted().all().wait()
+            guard real.count == realCount else {
+                throw Failure("real count should be \(realCount)")
+            }
+        }
+
+        try runTest(#function, [
+            User.autoMigration(),
+        ]) {
+            // save two users
+            try User.new(name: "A").save(on: self.database).wait()
+            try User.new(name: "B").save(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            // soft-delete a user
+            let a = try User.query(on: self.database).filter(\.name == "A").first().wait()!
+            try a.delete(on: self.database).wait()
+            try testCounts(allCount: 1, realCount: 2)
+
+            // restore a soft-deleted user
+            try a.restore(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            // force-delete a user
+            try a.forceDelete(on: self.database).wait()
+            try testCounts(allCount: 1, realCount: 1)
         }
     }
     

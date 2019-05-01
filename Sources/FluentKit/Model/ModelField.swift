@@ -50,6 +50,12 @@ public struct ModelField<Model, Value>: ModelProperty
     }
 }
 
+extension ModelField: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self.init(value)
+    }
+}
+
 
 extension ModelRow {
     public subscript<Value>(_ field: Model.FieldKey<Value>) -> Value

@@ -1,7 +1,7 @@
 public struct ModelParent<Child, Parent>: ModelProperty
     where Parent: Model, Child: Model
 {
-    public let id: Child.Field<Parent.ID>
+    public let id: ModelField<Child, Parent.ID>
     
     public var name: String {
         return self.id.name
@@ -19,7 +19,7 @@ public struct ModelParent<Child, Parent>: ModelProperty
         return self.id.constraints
     }
     
-    public init(id: Child.Field<Parent.ID>) {
+    public init(_ id: ModelField<Child, Parent.ID>) {
         self.id = id
     }
 
