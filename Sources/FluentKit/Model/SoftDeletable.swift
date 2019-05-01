@@ -3,12 +3,24 @@ public protocol SoftDeletable: Model, _AnySoftDeletable {
 }
 
 public protocol _AnySoftDeletable {
-    var _anyDeletedAtFieldName: String { get }
+    func _clearDeletedAt(from input: inout [String: DatabaseQuery.Value])
+    func _excludeSoftDeleted(from query: inout DatabaseQuery)
 }
 
 extension SoftDeletable {
-    public var _anyDeletedAtFieldName: String {
-        return self.deletedAt.name
+    public func _clearDeletedAt(from input: inout [String: DatabaseQuery.Value]) {
+        input[self.deletedAt.name] = .bind(Date())
+    }
+    
+    public func _excludeSoftDeleted(from query: inout DatabaseQuery) {
+        let deletedAtField = DatabaseQuery.Field.field(
+            path: [self.deletedAt.name],
+            entity: Self.entity,
+            alias: nil
+        )
+        let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equal, .null)
+        let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
+        query.filters.append(.group([isNull, isFuture], .or))
     }
 }
 

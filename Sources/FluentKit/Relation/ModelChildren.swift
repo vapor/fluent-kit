@@ -3,7 +3,7 @@ public struct ModelChildren<Parent, Child>
 {
     public let id: ModelField<Child, Parent.ID>
     
-    public init(id: ModelField<Child, Parent.ID>) {
+    public init(_ id: ModelField<Child, Parent.ID>) {
         self.id = id
     }
     

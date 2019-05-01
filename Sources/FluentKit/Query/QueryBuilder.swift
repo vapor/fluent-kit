@@ -16,6 +16,7 @@ public final class QueryBuilder<Model>
     internal let database: Database
     internal var eagerLoads: [String: EagerLoad]
     internal var includeSoftDeleted: Bool
+    internal var joinedModels: [AnyModel]
     
     public init(database: Database) {
         self.database = database
@@ -27,6 +28,7 @@ public final class QueryBuilder<Model>
             alias: nil
         ) }
         self.includeSoftDeleted = false
+        self.joinedModels = []
     }
     
     @discardableResult
@@ -85,6 +87,7 @@ public final class QueryBuilder<Model>
                 alias: Foreign.entity + "_" + $0.name
             )
         }
+        self.joinedModels.append(Foreign.shared)
         self.query.joins.append(.model(
             foreign: .field(path: [foreign.name], entity: Foreign.entity, alias: nil),
             local: .field(path: [local.name], entity: Model.entity, alias: nil),
@@ -275,20 +278,20 @@ public final class QueryBuilder<Model>
     
     public func run(_ onOutput: @escaping (Model.Row) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model.Row] = []
+        
+        // make a copy of this query before mutating it
+        // so that run can be called multiple times
+        var query = self.query
 
         // check if model is soft-deletable and should be excluded
         if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
-            let deletedAtField = DatabaseQuery.Field.field(
-                path: [softDeletable._anyDeletedAtFieldName],
-                entity: Model.entity,
-                alias: nil
-            )
-            let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equal, .null)
-            let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
-            self.query.filters.append(.group([isNull, isFuture], .or))
+            softDeletable._excludeSoftDeleted(from: &query)
+            self.joinedModels
+                .compactMap { $0 as? _AnySoftDeletable }
+                .forEach { $0._excludeSoftDeleted(from: &query) }
         }
 
-        return self.database.execute(self.query) { output in
+        return self.database.execute(query) { output in
             let model = try Model.Row.init(storage: DefaultModelStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,

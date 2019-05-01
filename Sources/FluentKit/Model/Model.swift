@@ -144,7 +144,7 @@ private extension Database {
         where Model: FluentKit.Model
     {
         if let softDeletable = Model.shared as? _AnySoftDeletable {
-            model.storage.input[softDeletable._anyDeletedAtFieldName] = .bind(Date())
+            softDeletable._clearDeletedAt(from: &model.storage.input)
             return self.update(model)
         } else {
             return self.query(Model.self)
