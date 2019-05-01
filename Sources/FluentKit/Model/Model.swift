@@ -40,6 +40,12 @@ extension Model {
 }
 
 extension Model {
+    public static func query(on database: Database) -> QueryBuilder<Self> {
+        return .init(database: database)
+    }
+}
+
+extension Model {
     public typealias Field<Value> = ModelField<Self, Value>
         where Value: Codable
     
@@ -66,6 +72,16 @@ extension ModelRow {
     
     public func delete(on database: Database) -> EventLoopFuture<Void> {
         return database.delete(self)
+    }
+}
+
+extension ModelRow where Model: SoftDeletable {
+    public func forceDelete(on database: Database) -> EventLoopFuture<Void> {
+        return database.forceDelete(self)
+    }
+
+    public func restore(on database: Database) -> EventLoopFuture<Void> {
+        return database.restore(self)
     }
 }
 
@@ -126,10 +142,28 @@ private extension Database {
     func delete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
+        if let softDeletable = Model.shared as? _AnySoftDeletable {
+            model.storage.input[softDeletable._anyDeletedAtFieldName] = .bind(Date())
+            return self.update(model)
+        } else {
+            return self.forceDelete(model)
+        }
+    }
+
+    func forceDelete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: FluentKit.Model
+    {
         let builder = self.query(Model.self).filter(\.id == model[\.id])
         builder.query.action = .delete
         return builder.run().map {
             model.storage.exists = false
         }
+    }
+
+    func restore<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
+        where Model: SoftDeletable
+    {
+        model[\.deletedAt] = nil
+        return self.update(model)
     }
 }

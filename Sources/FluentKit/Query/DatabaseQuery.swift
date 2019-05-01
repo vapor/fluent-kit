@@ -31,6 +31,22 @@ public struct DatabaseQuery {
             public static var equals: Method {
                 return .equality(inverse: false)
             }
+
+            public static var greaterThan: Method {
+                return .order(inverse: false, equality: false)
+            }
+
+            public static var greaterThanOrEquals: Method {
+                return .order(inverse: false, equality: true)
+            }
+
+            public static var lessThan: Method {
+                return .order(inverse: true, equality: false)
+            }
+
+            public static var lessThanOrEquals: Method {
+                return .order(inverse: true, equality: true)
+            }
             
             /// LHS is equal to RHS
             case equality(inverse: Bool)

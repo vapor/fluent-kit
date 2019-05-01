@@ -11,9 +11,11 @@ extension Database {
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model
 {
-    let database: Database
     public var query: DatabaseQuery
-    var eagerLoads: [String: EagerLoad]
+
+    internal let database: Database
+    internal var eagerLoads: [String: EagerLoad]
+    internal var includeSoftDeleted: Bool
     
     public init(database: Database) {
         self.database = database
@@ -24,6 +26,7 @@ public final class QueryBuilder<Model>
             entity: Model.entity,
             alias: nil
         ) }
+        self.includeSoftDeleted = false
     }
     
     @discardableResult
@@ -267,6 +270,19 @@ public final class QueryBuilder<Model>
     
     public func run(_ onOutput: @escaping (Model.Row) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model.Row] = []
+
+        // check if model is soft-deletable and should be excluded
+        if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
+            let deletedAtField = DatabaseQuery.Field.field(
+                path: [softDeletable._anyDeletedAtFieldName],
+                entity: Model.entity,
+                alias: nil
+            )
+            let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equals, .null)
+            let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
+            self.query.filters.append(.group([isNull, isFuture], .or))
+        }
+
         return self.database.execute(self.query) { output in
             let model = try Model.Row.init(storage: DefaultModelStorage(
                 output: output,

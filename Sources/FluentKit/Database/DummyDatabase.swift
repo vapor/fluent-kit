@@ -1,3 +1,5 @@
+import NIO
+
 public struct DummyDatabase: Database {
     /// See `FluentDatabase`.
     public var eventLoop: EventLoop {

@@ -616,6 +616,54 @@ public final class FluentBenchmarker {
             }
         }
     }
+
+    public func testSoftDelete() throws {
+        final class User: Model, SoftDeletable {
+            static let shared = User()
+            let id = Field<Int>("id")
+            let name = Field<String>("name")
+            let deletedAt = Field<Date?>("deletedAt")
+
+            static func new(name: String) -> Row {
+                let row = User.new()
+                row[\.name] = name
+                return row
+            }
+        }
+
+        func testCounts(allCount: Int, realCount: Int) throws {
+            let all = try User.query(on: self.database).all().wait()
+            guard all.count == allCount else {
+                throw Failure("all count should be \(allCount)")
+            }
+            let real = try User.query(on: self.database).withSoftDeleted().all().wait()
+            guard real.count == realCount else {
+                throw Failure("real count should be \(realCount)")
+            }
+        }
+
+        try runTest(#function, [
+            User.autoMigration(),
+        ]) {
+            // save two users
+            try User.new(name: "A").save(on: self.database).wait()
+            try User.new(name: "B").save(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            // soft-delete a user
+            let a = try User.query(on: self.database).filter(\.name == "A").first().wait()!
+            try a.delete(on: self.database).wait()
+            try testCounts(allCount: 1, realCount: 2)
+
+            // restore a soft-deleted user
+            try a.restore(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            // force-delete a user
+            try a.forceDelete(on: self.database).wait()
+            try testCounts(allCount: 1, realCount: 1)
+        }
+    }
     
     struct Failure: Error {
         let reason: String
