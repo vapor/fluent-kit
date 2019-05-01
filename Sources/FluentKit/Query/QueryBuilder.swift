@@ -263,6 +263,11 @@ public final class QueryBuilder<Model>
             models.append(model)
         }.map { models }
     }
+
+    internal func action(_ action: DatabaseQuery.Action) -> Self {
+        self.query.action = action
+        return self
+    }
     
     public func run() -> EventLoopFuture<Void> {
         return self.run { _ in }

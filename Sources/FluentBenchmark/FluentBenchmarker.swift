@@ -30,6 +30,7 @@ public final class FluentBenchmarker {
         try self.testChunkedFetch()
         try self.testUniqueFields()
         try self.testAsyncCreate()
+        try self.testSoftDelete()
     }
     
     public func testCreate() throws {
