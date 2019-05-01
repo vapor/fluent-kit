@@ -28,15 +28,19 @@ public struct DatabaseQuery {
     
     public enum Filter {
         public enum Method {
-            public static var equals: Method {
+            public static var equal: Method {
                 return .equality(inverse: false)
+            }
+            
+            public static var notEqual: Method {
+                return .equality(inverse: true)
             }
 
             public static var greaterThan: Method {
                 return .order(inverse: false, equality: false)
             }
 
-            public static var greaterThanOrEquals: Method {
+            public static var greaterThanOrEqual: Method {
                 return .order(inverse: false, equality: true)
             }
 
@@ -44,7 +48,7 @@ public struct DatabaseQuery {
                 return .order(inverse: true, equality: false)
             }
 
-            public static var lessThanOrEquals: Method {
+            public static var lessThanOrEqual: Method {
                 return .order(inverse: true, equality: true)
             }
             

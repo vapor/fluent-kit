@@ -38,7 +38,7 @@ extension ModelRow {
     {
         let children = Model.children(forKey: key)
         return database.query(Child.self)
-            .filter(children.id, .equals, self[\.id])
+            .filter(children.id, .equal, self[\.id])
     }
     
     public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Child.Row]

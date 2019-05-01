@@ -278,7 +278,7 @@ public final class QueryBuilder<Model>
                 entity: Model.entity,
                 alias: nil
             )
-            let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equals, .null)
+            let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equal, .null)
             let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
             self.query.filters.append(.group([isNull, isFuture], .or))
         }

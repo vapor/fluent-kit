@@ -369,7 +369,7 @@ public final class FluentBenchmarker {
             UserSeed()
         ]) {
             let users = try self.database.query(User.self)
-                .filter(\.pet, "type", .equals, User.Pet.Animal.cat)
+                .filter(\.pet, "type", .equal, User.Pet.Animal.cat)
                 .all().wait()
         
             guard let user = users.first, users.count == 1 else {

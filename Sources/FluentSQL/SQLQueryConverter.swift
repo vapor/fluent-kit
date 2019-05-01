@@ -154,11 +154,22 @@ public struct SQLQueryConverter {
     private func filter(_ filter: DatabaseQuery.Filter) -> SQLExpression {
         switch filter {
         case .basic(let field, let method, let value):
-            return SQLBinaryExpression(
-                left: self.field(field),
-                op: self.method(method),
-                right: self.value(value)
-            )
+            switch (method, value) {
+            case (.equality(let inverse), .null):
+                // special case when using != and = with NULL
+                // must convert to IS NOT NULL and IS NULL respectively
+                return SQLBinaryExpression(
+                    left: self.field(field),
+                    op: inverse ? SQLBinaryOperator.isNot : SQLBinaryOperator.is,
+                    right: SQLLiteral.null
+                )
+            default:
+                return SQLBinaryExpression(
+                    left: self.field(field),
+                    op: self.method(method),
+                    right: self.value(value)
+                )
+            }
         case .custom(let any):
             #warning("TODO:")
             return any as! SQLExpression
@@ -222,6 +233,17 @@ public struct SQLQueryConverter {
                 return SQLBinaryOperator.notIn
             } else {
                 return SQLBinaryOperator.in
+            }
+        case .order(let inverse, let equality):
+            switch (inverse, equality) {
+            case (false, false):
+                return SQLBinaryOperator.greaterThan
+            case (false, true):
+                return SQLBinaryOperator.greaterThanOrEqual
+            case (true, false):
+                return SQLBinaryOperator.lessThan
+            case (true, true):
+                return SQLBinaryOperator.lessThanOrEqual
             }
         default:
             #warning("TODO:")

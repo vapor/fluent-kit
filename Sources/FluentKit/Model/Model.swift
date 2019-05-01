@@ -164,6 +164,14 @@ private extension Database {
         where Model: SoftDeletable
     {
         model[\.deletedAt] = nil
-        return self.update(model)
+        precondition(model.exists)
+        let builder = self.query(Model.self)
+            .withSoftDeleted()
+            .filter(\.id == model[\.id])
+            .set(model.storage.input)
+        builder.query.action = .update
+        return builder.run { updated in
+            // ignore
+        }
     }
 }
