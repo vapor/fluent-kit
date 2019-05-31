@@ -5,7 +5,7 @@ jobs:
     macos:
       xcode: "10.2.0"
     steps:
-      - checkoutd 
+      - checkout
       - run: swift build
       - run: swift test
   macos-release:
