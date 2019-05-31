@@ -181,19 +181,6 @@ public final class QueryBuilder<Model>
     {
         return self.filter(Model.field(forKey: key), method, value)
     }
-    @discardableResult
-    public func filter<Value>(_ key: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value?) -> Self
-        where Value: Codable
-    {
-        return self.filter(Model.field(forKey: key), method, value)
-    }
-    @discardableResult
-    public func filter<Value>(_ key: Model.FieldKey<Value?>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
-        where Value: Codable
-    {
-        return self.filter(Model.field(forKey: key), method, value)
-    }
-
     
     @discardableResult
     public func filter<Value>(_ field: Model.Field<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
@@ -201,21 +188,6 @@ public final class QueryBuilder<Model>
     {
         return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
     }
-
-    @discardableResult
-    public func filter<Value>(_ field: Model.Field<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value?) -> Self
-        where Value: Codable
-    {
-        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
-    }
-
-    @discardableResult
-    public func filter<Value>(_ field: Model.Field<Value?>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
-        where Value: Codable
-    {
-        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
-    }
-
 
     @discardableResult
     public func filter(_ field: DatabaseQuery.Field, _ method: DatabaseQuery.Filter.Method, _ value: DatabaseQuery.Value) -> Self {
