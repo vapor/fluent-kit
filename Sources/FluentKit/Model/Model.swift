@@ -23,7 +23,6 @@ public protocol Model: AnyModel {
     static var shared: Self { get }
     associatedtype ID: ModelID
     var id: ModelField<Self, ID?> { get }
-
     // MARK: Lifecycle
 
     func willCreate(_ row: Row, on database: Database) -> EventLoopFuture<Void>
