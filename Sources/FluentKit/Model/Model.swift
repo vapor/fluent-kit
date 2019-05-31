@@ -81,7 +81,14 @@ extension Model {
 
 extension Model {
     public static func new() -> Row {
-        return .init()
+        let new = Row()
+        if let timestampable = Self.shared as? _AnyTimestampable {
+            timestampable._initializeTimestampable(&new.storage.input)
+        }
+        if let softDeletable = Self.shared as? _AnySoftDeletable {
+            softDeletable._initializeSoftDeletable(&new.storage.input)
+        }
+        return new
     }
 }
 
@@ -173,8 +180,7 @@ private extension Database {
         where Model: FluentKit.Model
     {
         if let timestampable = Model.shared as? _AnyTimestampable {
-            timestampable._touchCreatedAt(from: &model.storage.input)
-            timestampable._touchUpdatedAt(from: &model.storage.input)
+            timestampable._touchCreated(&model.storage.input)
         }
         precondition(!model.exists)
         return Model.shared.willCreate(model, on: self).flatMap {
@@ -194,7 +200,7 @@ private extension Database {
         where Model: FluentKit.Model
     {
         if let timestampable = Model.shared as? _AnyTimestampable {
-            timestampable._touchUpdatedAt(from: &model.storage.input)
+            timestampable._touchUpdated(&model.storage.input)
         }
         precondition(model.exists)
         return Model.shared.willUpdate(model, on: self).flatMap {
@@ -212,7 +218,7 @@ private extension Database {
         where Model: FluentKit.Model
     {
         if let softDeletable = Model.shared as? _AnySoftDeletable {
-            softDeletable._clearDeletedAt(from: &model.storage.input)
+            softDeletable._clearDeletedAt(&model.storage.input)
             return Model.shared.willSoftDelete(model, on: self).flatMap {
                 return self.update(model)
             }.flatMap {

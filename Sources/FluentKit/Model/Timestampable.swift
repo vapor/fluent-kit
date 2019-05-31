@@ -5,15 +5,22 @@ public protocol Timestampable: Model, _AnyTimestampable {
 
 
 public protocol _AnyTimestampable {
-    func _touchCreatedAt(from input: inout [String: DatabaseQuery.Value])
-    func _touchUpdatedAt(from input: inout [String: DatabaseQuery.Value])
+    func _touchCreated(_ input: inout [String: DatabaseQuery.Value])
+    func _touchUpdated(_ input: inout [String: DatabaseQuery.Value])
+    func _initializeTimestampable(_ input: inout [String: DatabaseQuery.Value])
 }
 
 extension Timestampable {
-    public func _touchCreatedAt(from input: inout [String: DatabaseQuery.Value]) {
-        input[self.createdAt.name] = .bind(Date())
+    public func _touchCreated(_ input: inout [String: DatabaseQuery.Value]) {
+        let date = Date()
+        input[self.createdAt.name] = .bind(date)
+        input[self.updatedAt.name] = .bind(date)
     }
-    public func _touchUpdatedAt(from input: inout [String: DatabaseQuery.Value]) {
+    public func _touchUpdated(_ input: inout [String: DatabaseQuery.Value]) {
         input[self.updatedAt.name] = .bind(Date())
+    }
+    public func _initializeTimestampable(_ input: inout [String: DatabaseQuery.Value]) {
+        input[self.createdAt.name] = .bind(Date?.none)
+        input[self.updatedAt.name] = .bind(Date?.none)
     }
 }

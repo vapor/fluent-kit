@@ -1,6 +1,16 @@
 import struct Foundation.Date
 import struct Foundation.UUID
 
+private protocol _OptionalType {
+    static var _wrappedType: Any.Type { get }
+}
+
+extension Optional: _OptionalType {
+    static var _wrappedType: Any.Type {
+        return Wrapped.self
+    }
+}
+
 public struct DatabaseSchema {
     public enum Action {
         case create
@@ -10,6 +20,10 @@ public struct DatabaseSchema {
     
     public enum DataType {
         static func bestFor(type: Any.Type) -> DataType {
+            if let optional = type as? _OptionalType.Type {
+                return self.bestFor(type: optional._wrappedType)
+            }
+
             func id(_ type: Any.Type) -> ObjectIdentifier {
                 return ObjectIdentifier(type)
             }

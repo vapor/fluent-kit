@@ -665,7 +665,7 @@ public final class FluentBenchmarker {
         }
     }
 
-    func testTimestampable() throws {
+    public func testTimestampable() throws {
         final class User: Model, Timestampable {
             static let shared = User()
             let id = Field<Int?>("id")
@@ -686,7 +686,7 @@ public final class FluentBenchmarker {
             let user = User.new(name: "A")
             XCTAssertEqual(user[\.createdAt], nil)
             XCTAssertEqual(user[\.updatedAt], nil)
-            try user.save(on: self.database).wait()
+            try user.create(on: self.database).wait()
             XCTAssertNotNil(user[\.createdAt])
             XCTAssertNotNil(user[\.updatedAt])
             XCTAssertEqual(user[\.updatedAt], user[\.createdAt])
@@ -698,7 +698,7 @@ public final class FluentBenchmarker {
         }
     }
 
-    func testLifecycleHooks() throws {
+    public func testLifecycleHooks() throws {
         struct TestError: Error {
             var string: String
         }

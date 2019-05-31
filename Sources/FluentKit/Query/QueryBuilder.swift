@@ -367,10 +367,10 @@ public final class QueryBuilder<Model>
 
         // check if model is soft-deletable and should be excluded
         if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
-            softDeletable._excludeSoftDeleted(from: &query)
+            softDeletable._excludeSoftDeleted(&query)
             self.joinedModels
                 .compactMap { $0 as? _AnySoftDeletable }
-                .forEach { $0._excludeSoftDeleted(from: &query) }
+                .forEach { $0._excludeSoftDeleted(&query) }
         }
 
         return self.database.execute(query) { output in
