@@ -62,10 +62,10 @@ extension ModelRow {
         where Value: Codable
     {
         get {
-            return self.get(field)
+            return self.get(Model.field(forKey: field))
         }
         set {
-            return self.set(field, to: newValue)
+            self.set(Model.field(forKey: field), to: newValue)
         }
     }
 
@@ -75,25 +75,13 @@ extension ModelRow {
         return self.storage.cachedOutput[Model.field(forKey: field).name] != nil
     }
 
-    func get<Value>(_ key: Model.FieldKey<Value>) -> Value
-        where Value: Codable
-    {
-        return self.get(Model.field(forKey: key))
-    }
-
-    func get<Value>(_ field: Model.Field<Value>) -> Value
+    internal func get<Value>(_ field: Model.Field<Value>) -> Value
         where Value: Codable
     {
         return self.storage.get(field.name)
     }
 
-    func set<Value>(_ key: Model.FieldKey<Value>, to value: Value)
-        where Value: Codable
-    {
-        self.set(Model.field(forKey: key), to: value)
-    }
-
-    func set<Value>(_ field: Model.Field<Value>, to value: Value)
+    internal func set<Value>(_ field: Model.Field<Value>, to value: Value)
         where Value: Codable
     {
         self.storage.set(field.name, to: value)

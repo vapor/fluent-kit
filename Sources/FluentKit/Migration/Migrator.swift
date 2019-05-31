@@ -99,18 +99,14 @@ public struct Migrator {
     private func prepare(_ item: Migrations.Item) -> EventLoopFuture<Void> {
         let database: Database
         if let id = item.id {
-            #warning("TODO: fix force unwrap")
             database = self.databases.database(id)!
         } else {
             database = self.databases.default()
         }
         return item.migration.prepare(on: database).flatMap {
             let log = MigrationLog.new()
-            log.set(\.name, to: item.migration.name)
-            log.set(\.batch, to: 1)
-            #warning("TODO: Timestampable")
-            log.set(\.createdAt, to: .init())
-            log.set(\.updatedAt, to: .init())
+            log[\.name] = item.migration.name
+            log[\.batch] = 1
             return log.save(on: self.databases.default())
         }
     }
@@ -118,7 +114,6 @@ public struct Migrator {
     private func revert(_ item: Migrations.Item) -> EventLoopFuture<Void> {
         let database: Database
         if let id = item.id {
-            #warning("TODO: fix force unwrap")
             database = self.databases.database(id)!
         } else {
             database = self.databases.default()

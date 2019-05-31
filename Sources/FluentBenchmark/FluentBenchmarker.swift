@@ -31,6 +31,8 @@ public final class FluentBenchmarker {
         try self.testUniqueFields()
         try self.testAsyncCreate()
         try self.testSoftDelete()
+        try self.testTimestampable()
+        try self.testLifecycleHooks()
     }
     
     public func testCreate() throws {
@@ -125,7 +127,7 @@ public final class FluentBenchmarker {
                 .all().wait()
 
             for galaxy in galaxies {
-                let planets = try galaxy.get(\.planets)
+                let planets = galaxy[\.planets]
                 switch galaxy[\.name] {
                 case "Milky Way":
                     guard planets.contains(where: { $0[\.name] == "Earth" }) else {
@@ -152,15 +154,14 @@ public final class FluentBenchmarker {
                 .all().wait()
             
             for planet in planets {
-                let galaxy = try planet.get(\.galaxy)
                 switch planet[\.name] {
                 case "Earth":
-                    guard galaxy[\.name] == "Milky Way" else {
-                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    guard planet[\.galaxy][\.name] == "Milky Way" else {
+                        throw Failure("unexpected galaxy name: \(planet[\.galaxy])")
                     }
                 case "PA-99-N2":
-                    guard galaxy[\.name] == "Andromeda" else {
-                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    guard planet[\.galaxy][\.name] == "Andromeda" else {
+                        throw Failure("unexpected galaxy name: \(planet[\.galaxy])")
                     }
                 default: break
                 }
@@ -180,15 +181,14 @@ public final class FluentBenchmarker {
                 .all().wait()
             
             for planet in planets {
-                let galaxy = try planet.get(\.galaxy)
                 switch planet[\.name] {
                 case "Earth":
-                    guard galaxy[\.name] == "Milky Way" else {
-                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    guard planet[\.galaxy][\.name] == "Milky Way" else {
+                        throw Failure("unexpected galaxy name: \(planet[\.galaxy])")
                     }
                 case "PA-99-N2":
-                    guard galaxy[\.name] == "Andromeda" else {
-                        throw Failure("unexpected galaxy name: \(galaxy)")
+                    guard planet[\.galaxy][\.name] == "Andromeda" else {
+                        throw Failure("unexpected galaxy name: \(planet[\.galaxy])")
                     }
                 default: break
                 }
@@ -663,6 +663,114 @@ public final class FluentBenchmarker {
             // force-delete a user
             try a.forceDelete(on: self.database).wait()
             try testCounts(allCount: 1, realCount: 1)
+        }
+    }
+
+    func testTimestampable() throws {
+        final class User: Model, Timestampable {
+            static let shared = User()
+            let id = Field<Int?>("id")
+            let name = Field<String>("name")
+            let createdAt = Field<Date?>("createdAt")
+            let updatedAt = Field<Date?>("updatedAt")
+
+            static func new(name: String) -> Row {
+                let row = User.new()
+                row[\.name] = name
+                return row
+            }
+        }
+
+        try runTest(#function, [
+            User.autoMigration(),
+        ]) {
+            let user = User.new(name: "A")
+            XCTAssertEqual(user[\.createdAt], nil)
+            XCTAssertEqual(user[\.updatedAt], nil)
+            try user.save(on: self.database).wait()
+            XCTAssertNotNil(user[\.createdAt])
+            XCTAssertNotNil(user[\.updatedAt])
+            XCTAssertEqual(user[\.updatedAt], user[\.createdAt])
+            user[\.name] = "B"
+            try user.save(on: self.database).wait()
+            XCTAssertNotNil(user[\.createdAt])
+            XCTAssertNotNil(user[\.updatedAt])
+            XCTAssertNotEqual(user[\.updatedAt], user[\.createdAt])
+        }
+    }
+
+    func testLifecycleHooks() throws {
+        struct TestError: Error {
+            var string: String
+        }
+        final class User: Model {
+            static let shared = User()
+            let id = Field<Int?>("id")
+            let name = Field<String>("name")
+
+            func willCreate(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+                row[\.name] = "B"
+                return database.eventLoop.makeSucceededFuture(())
+            }
+
+            func didCreate(_ row: ModelRow<User>, on database: Database) -> EventLoopFuture<Void> {
+                return database.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
+            }
+
+            func willUpdate(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+                row[\.name] = "D"
+                return database.eventLoop.makeSucceededFuture(())
+            }
+
+            func didUpdate(_ row: ModelRow<User>, on database: Database) -> EventLoopFuture<Void> {
+                return database.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
+            }
+
+            func willDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+                row[\.name] = "E"
+                return database.eventLoop.makeSucceededFuture(())
+            }
+
+            func didDelete(_ row: ModelRow<User>, on database: Database) -> EventLoopFuture<Void> {
+                return database.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
+            }
+
+            static func new(name: String) -> Row {
+                let row = User.new()
+                row[\.name] = name
+                return row
+            }
+        }
+
+        try runTest(#function, [
+            User.autoMigration(),
+        ]) {
+            let user = User.new(name: "A")
+
+            // create
+            do {
+                try user.create(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didCreate")
+            }
+            XCTAssertEqual(user[\.name], "B")
+
+            // update
+            user[\.name] = "C"
+            do {
+                try user.update(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didUpdate")
+            }
+            XCTAssertEqual(user[\.name], "D")
+
+            // delete
+            do {
+                try user.delete(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didDelete")
+            }
+            XCTAssertEqual(user[\.name], "E")
         }
     }
     
