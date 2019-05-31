@@ -41,13 +41,13 @@ extension ModelRow {
             .filter(children.id, .equal, self[\.id]!)
     }
     
-    public func get<Child>(_ key: Model.ChildrenKey<Child>) throws -> [Child.Row]
+    public subscript<Child>(_ key: Model.ChildrenKey<Child>) -> [Child.Row]
         where Child: FluentKit.Model
     {
         guard let cache = self.storage.eagerLoads[Child.entity] else {
             fatalError("No cache set on storage.")
         }
-        return try cache.get(id: self.get(\.id)!)
+        return try! cache.get(id: self[\.id]!)
             .map { $0 as! Child.Row }
     }
 }

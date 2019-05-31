@@ -56,21 +56,20 @@ extension Model {
 }
 
 extension ModelRow {
-    public func set<ParentType>(_ key: Model.ParentKey<ParentType>, to parent: ParentType.Row)
+    public subscript<ParentType>(_ key: Model.ParentKey<ParentType>) -> ParentType.Row
         where ParentType: FluentKit.Model
     {
-        self.set(Model.parent(forKey: key).id, to: parent.get(\.id)!)
-    }
-
-    public func get<ParentType>(_ key: Model.ParentKey<ParentType>) throws -> ParentType.Row
-        where ParentType: FluentKit.Model
-    {
-        guard let cache = self.storage.eagerLoads[ParentType.entity] else {
-            fatalError("No cache set on storage.")
+        get {
+            guard let cache = self.storage.eagerLoads[ParentType.entity] else {
+                fatalError("No cache set on storage.")
+            }
+            return try! cache.get(id: self.get(Model.parent(forKey: key).id))
+                .map { $0 as! ParentType.Row }
+                .first!
         }
-        return try cache.get(id: self.get(Model.parent(forKey: key).id))
-            .map { $0 as! ParentType.Row }
-            .first!
+        set {
+            self.set(Model.parent(forKey: key).id, to: newValue[\.id]!)
+        }
     }
 }
 

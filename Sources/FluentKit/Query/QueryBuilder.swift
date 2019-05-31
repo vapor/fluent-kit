@@ -245,11 +245,23 @@ public final class QueryBuilder<Model>
     public func count() -> EventLoopFuture<Int> {
         return self.aggregate(.count, \.id)
     }
+
+    public func sum<Value>(_ key: Model.FieldKey<Value?>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.sum, key)
+    }
     
     public func sum<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.sum, key)
+    }
+
+    public func average<Value>(_ key: Model.FieldKey<Value?>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.average, key)
     }
     
     public func average<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
@@ -257,11 +269,23 @@ public final class QueryBuilder<Model>
     {
         return self.aggregate(.average, key)
     }
+
+    public func min<Value>(_ key: Model.FieldKey<Value?>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.minimum, key)
+    }
     
     public func min<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.minimum, key)
+    }
+
+    public func max<Value>(_ key: Model.FieldKey<Value?>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.maximum, key)
     }
     
     public func max<Value>(_ key: Model.FieldKey<Value>) -> EventLoopFuture<Value?>

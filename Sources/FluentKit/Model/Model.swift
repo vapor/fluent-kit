@@ -23,7 +23,61 @@ public protocol Model: AnyModel {
     static var shared: Self { get }
     associatedtype ID: ModelID
     var id: ModelField<Self, ID?> { get }
+    // MARK: Lifecycle
+
+    func willCreate(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+    func didCreate(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+
+    func willUpdate(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+    func didUpdate(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+
+    func willDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+    func didDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+
+    func willRestore(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+    func didRestore(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+
+    func willSoftDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void>
+    func didSoftDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void>
 }
+
+extension Model {
+    public func willCreate(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+    public func didCreate(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    public func willUpdate(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+    public func didUpdate(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    public func willDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+    public func didDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    public func willRestore(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+    public func didRestore(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    public func willSoftDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+    public func didSoftDelete(_ row: Row, on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+}
+
 
 extension Model {
     public static func new() -> Row {
@@ -123,14 +177,17 @@ private extension Database {
             timestampable._touchUpdatedAt(from: &model.storage.input)
         }
         precondition(!model.exists)
-        return self.query(Model.self)
-            .set(model.storage.input)
-            .action(.create)
-            .run { created in
-                #warning("for mysql, we might need to hold onto storage input")
-                model[\.id] = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
-                model.storage.exists = true
-            }
+        return Model.shared.willCreate(model, on: self).flatMap {
+            return self.query(Model.self)
+                .set(model.storage.input)
+                .action(.create)
+                .run { created in
+                    model[\.id] = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
+                    model.storage.exists = true
+                }
+        }.flatMap {
+            return Model.shared.didCreate(model, on: self)
+        }
     }
     
     func update<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
@@ -140,11 +197,15 @@ private extension Database {
             timestampable._touchUpdatedAt(from: &model.storage.input)
         }
         precondition(model.exists)
-        return self.query(Model.self)
-            .filter(\.id == model[\.id])
-            .set(model.storage.input)
-            .action(.update)
-            .run()
+        return Model.shared.willUpdate(model, on: self).flatMap {
+            return self.query(Model.self)
+                .filter(\.id == model[\.id])
+                .set(model.storage.input)
+                .action(.update)
+                .run()
+        }.flatMap {
+            return Model.shared.didUpdate(model, on: self)
+        }
     }
     
     func delete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
@@ -152,29 +213,41 @@ private extension Database {
     {
         if let softDeletable = Model.shared as? _AnySoftDeletable {
             softDeletable._clearDeletedAt(from: &model.storage.input)
-            return self.update(model)
+            return Model.shared.willSoftDelete(model, on: self).flatMap {
+                return self.update(model)
+            }.flatMap {
+                return Model.shared.didSoftDelete(model, on: self)
+            }
         } else {
-            return self.query(Model.self)
-                .filter(\.id == model[\.id])
-                .action(.delete)
-                .run()
-                .map {
-                    model.storage.exists = false
-                }
+            return Model.shared.willDelete(model, on: self).flatMap {
+                return self.query(Model.self)
+                    .filter(\.id == model[\.id])
+                    .action(.delete)
+                    .run()
+                    .map {
+                        model.storage.exists = false
+                    }
+            }.flatMap {
+                return Model.shared.didDelete(model, on: self)
+            }
         }
     }
 
     func forceDelete<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: SoftDeletable
     {
-        return self.query(Model.self)
-            .withSoftDeleted()
-            .filter(\.id == model[\.id])
-            .action(.delete)
-            .run()
-            .map {
-                model.storage.exists = false
-            }
+        return Model.shared.willDelete(model, on: self).flatMap {
+            return self.query(Model.self)
+                .withSoftDeleted()
+                .filter(\.id == model[\.id])
+                .action(.delete)
+                .run()
+                .map {
+                    model.storage.exists = false
+                }
+        }.flatMap {
+            return Model.shared.didDelete(model, on: self)
+        }
     }
 
     func restore<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
@@ -182,11 +255,15 @@ private extension Database {
     {
         model[\.deletedAt] = nil
         precondition(model.exists)
-        return self.query(Model.self)
-            .withSoftDeleted()
-            .filter(\.id == model[\.id])
-            .set(model.storage.input)
-            .action(.update)
-            .run()
+        return Model.shared.willRestore(model, on: self).flatMap {
+            return self.query(Model.self)
+                .withSoftDeleted()
+                .filter(\.id == model[\.id])
+                .set(model.storage.input)
+                .action(.update)
+                .run()
+        }.flatMap {
+            return Model.shared.didRestore(model, on: self)
+        }
     }
 }
