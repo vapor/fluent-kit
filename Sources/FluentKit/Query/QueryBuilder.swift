@@ -66,6 +66,24 @@ public final class QueryBuilder<Model>
     {
         return self.join(Parent.shared.id, to: Model.parent(forKey: key).id, method: .inner)
     }
+
+    @discardableResult
+    public func join<Foreign, Value>(_ foreign: Foreign.FieldKey<Value?>, to local: Model.FieldKey<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
+        where Foreign: FluentKit.Model, Value: Codable
+    {
+        let foreign = Foreign.field(forKey: foreign)
+        let local = Model.field(forKey: local)
+        return self.join(foreign, to: local, method: method)
+    }
+
+    @discardableResult
+    public func join<Foreign, Value>(_ foreign: Foreign.FieldKey<Value>, to local: Model.FieldKey<Value?>, method: DatabaseQuery.Join.Method = .inner) -> Self
+        where Foreign: FluentKit.Model, Value: Codable
+    {
+        let foreign = Foreign.field(forKey: foreign)
+        let local = Model.field(forKey: local)
+        return self.join(foreign, to: local, method: method)
+    }
     
     @discardableResult
     public func join<Foreign, Value>(_ foreign: Foreign.FieldKey<Value>, to local: Model.FieldKey<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
@@ -74,6 +92,46 @@ public final class QueryBuilder<Model>
         let foreign = Foreign.field(forKey: foreign)
         let local = Model.field(forKey: local)
         return self.join(foreign, to: local, method: method)
+    }
+
+    @discardableResult
+    public func join<Foreign, Value>(_ foreign: Foreign.Field<Value?>, to local: Model.Field<Value>, method: DatabaseQuery.Join.Method = .inner) -> Self
+        where Foreign: FluentKit.Model, Value: Codable
+    {
+        self.query.fields += Foreign.shared.all.map {
+            return .field(
+                path: [$0.name],
+                entity: Foreign.entity,
+                alias: Foreign.entity + "_" + $0.name
+            )
+        }
+        self.joinedModels.append(Foreign.shared)
+        self.query.joins.append(.model(
+            foreign: .field(path: [foreign.name], entity: Foreign.entity, alias: nil),
+            local: .field(path: [local.name], entity: Model.entity, alias: nil),
+            method: method
+            ))
+        return self
+    }
+
+    @discardableResult
+    public func join<Foreign, Value>(_ foreign: Foreign.Field<Value>, to local: Model.Field<Value?>, method: DatabaseQuery.Join.Method = .inner) -> Self
+        where Foreign: FluentKit.Model, Value: Codable
+    {
+        self.query.fields += Foreign.shared.all.map {
+            return .field(
+                path: [$0.name],
+                entity: Foreign.entity,
+                alias: Foreign.entity + "_" + $0.name
+            )
+        }
+        self.joinedModels.append(Foreign.shared)
+        self.query.joins.append(.model(
+            foreign: .field(path: [foreign.name], entity: Foreign.entity, alias: nil),
+            local: .field(path: [local.name], entity: Model.entity, alias: nil),
+            method: method
+            ))
+        return self
     }
     
     @discardableResult
@@ -123,6 +181,19 @@ public final class QueryBuilder<Model>
     {
         return self.filter(Model.field(forKey: key), method, value)
     }
+    @discardableResult
+    public func filter<Value>(_ key: Model.FieldKey<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value?) -> Self
+        where Value: Codable
+    {
+        return self.filter(Model.field(forKey: key), method, value)
+    }
+    @discardableResult
+    public func filter<Value>(_ key: Model.FieldKey<Value?>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+        where Value: Codable
+    {
+        return self.filter(Model.field(forKey: key), method, value)
+    }
+
     
     @discardableResult
     public func filter<Value>(_ field: Model.Field<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
@@ -130,7 +201,22 @@ public final class QueryBuilder<Model>
     {
         return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
     }
-    
+
+    @discardableResult
+    public func filter<Value>(_ field: Model.Field<Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value?) -> Self
+        where Value: Codable
+    {
+        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
+    }
+
+    @discardableResult
+    public func filter<Value>(_ field: Model.Field<Value?>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+        where Value: Codable
+    {
+        return self.filter(.field(path: [field.name], entity: Model.entity, alias: nil), method, .bind(value))
+    }
+
+
     @discardableResult
     public func filter(_ field: DatabaseQuery.Field, _ method: DatabaseQuery.Filter.Method, _ value: DatabaseQuery.Value) -> Self {
         return self.filter(.basic(field, method, value))

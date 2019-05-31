@@ -58,7 +58,7 @@ final class JoinParentEagerLoad<Child, Parent>: EagerLoad
         var res: [Parent.ID: Parent.Row] = [:]
         try! models.map { $0 as! Child.Row }.forEach { child in
             let parent = try child.joined(Parent.self)
-            res[parent.get(\.id)] = parent
+            res[parent.get(\.id)!] = parent
         }
         
         self.parents = res
@@ -98,7 +98,7 @@ final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
     func get(id: Any) throws -> [Any] {
         let id = id as! Parent.ID
         return try self.storage.filter { parent in
-            return try parent.get(\.id) == id
+            return parent.get(\.id) == id
         }
     }
 }
@@ -116,9 +116,9 @@ final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
     }
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
-        let ids: [Parent.ID] = try! models
+        let ids: [Parent.ID] = models
             .map { $0 as! Parent.Row }
-            .map { try $0.get(\.id) }
+            .map { $0.get(\.id)! }
         
         let uniqueIDs = Array(Set(ids))
         return database.query(Child.self)
@@ -130,7 +130,7 @@ final class SubqueryChildEagerLoad<Parent, Child>: EagerLoad
     func get(id: Any) throws -> [Any] {
         let id = id as! Parent.ID
         return try self.storage.filter { child in
-            return try child.get(self.parentID) == id
+            return child.get(self.parentID) == id
         }
     }
 }

@@ -12,7 +12,7 @@ final class User: Model {
     static let entity = "users"
     static let shared = User()
     
-    let id = Field<Int>("id")
+    let id = Field<Int?>("id")
     let name = Field<String>("name")
     let pet = Field<Pet>("pet", dataType: .json)
 }

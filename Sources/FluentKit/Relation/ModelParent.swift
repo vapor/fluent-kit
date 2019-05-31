@@ -59,7 +59,7 @@ extension ModelRow {
     public func set<ParentType>(_ key: Model.ParentKey<ParentType>, to parent: ParentType.Row)
         where ParentType: FluentKit.Model
     {
-        self.set(Model.parent(forKey: key).id, to: parent.get(\.id))
+        self.set(Model.parent(forKey: key).id, to: parent.get(\.id)!)
     }
 
     public func get<ParentType>(_ key: Model.ParentKey<ParentType>) throws -> ParentType.Row

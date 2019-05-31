@@ -490,7 +490,7 @@ public final class FluentBenchmarker {
     public func testNullifyField() throws {
         final class Foo: Model {
             static let shared = Foo()
-            let id = Field<Int>("id")
+            let id = Field<Int?>("id")
             let bar = Field<String?>("bar")
         }
         try runTest(#function, [
@@ -563,7 +563,7 @@ public final class FluentBenchmarker {
     public func testUniqueFields() throws {
         final class Foo: Model {
             static let shared = Foo()
-            let id = Field<Int>("id")
+            let id = Field<Int?>("id")
             let bar = Field<String>("bar")
             let baz = Field<Int>("baz")
             static func new(bar: String, baz: Int) -> Row {
@@ -621,7 +621,7 @@ public final class FluentBenchmarker {
     public func testSoftDelete() throws {
         final class User: Model, SoftDeletable {
             static let shared = User()
-            let id = Field<Int>("id")
+            let id = Field<Int?>("id")
             let name = Field<String>("name")
             let deletedAt = Field<Date?>("deletedAt")
 

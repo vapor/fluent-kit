@@ -47,7 +47,7 @@ extension ModelRow {
         guard let cache = self.storage.eagerLoads[Child.entity] else {
             fatalError("No cache set on storage.")
         }
-        return try cache.get(id: self.get(\.id))
+        return try cache.get(id: self.get(\.id)!)
             .map { $0 as! Child.Row }
     }
 }

@@ -22,7 +22,7 @@ extension Model {
 public protocol Model: AnyModel {
     static var shared: Self { get }
     associatedtype ID: ModelID
-    var id: ModelField<Self, ID> { get }
+    var id: ModelField<Self, ID?> { get }
 }
 
 extension Model {
@@ -118,6 +118,10 @@ private extension Database {
     func create<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
+        if let timestampable = Model.shared as? _AnyTimestampable {
+            timestampable._touchCreatedAt(from: &model.storage.input)
+            timestampable._touchUpdatedAt(from: &model.storage.input)
+        }
         precondition(!model.exists)
         return self.query(Model.self)
             .set(model.storage.input)
@@ -132,6 +136,9 @@ private extension Database {
     func update<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: FluentKit.Model
     {
+        if let timestampable = Model.shared as? _AnyTimestampable {
+            timestampable._touchUpdatedAt(from: &model.storage.input)
+        }
         precondition(model.exists)
         return self.query(Model.self)
             .filter(\.id == model[\.id])
