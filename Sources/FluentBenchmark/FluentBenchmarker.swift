@@ -470,7 +470,6 @@ public final class FluentBenchmarker {
                 throw Failure("id should not be set")
             }
             try galaxy.save(on: self.database).wait()
-            print(galaxy[\.id])
 
             let a = Galaxy.new()
             a[\.name] = "A"
