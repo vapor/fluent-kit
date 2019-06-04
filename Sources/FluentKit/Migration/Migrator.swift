@@ -105,8 +105,8 @@ public struct Migrator {
         }
         return item.migration.prepare(on: database).flatMap {
             let log = MigrationLog.new()
-            log[\.name] = item.migration.name
-            log[\.batch] = 1
+            log.name = item.migration.name
+            log.batch = 1
             return log.save(on: self.databases.default())
         }
     }
@@ -132,18 +132,18 @@ public struct Migrator {
     private func lastBatchNumber() -> EventLoopFuture<Int> {
         #warning("TODO: use db sorting")
         return self.databases.default().query(MigrationLog.self).all().map { logs in
-            return logs.sorted(by: { $0[\.batch] > $1[\.batch] })
-                .first?[\.batch] ?? 0
+            return logs.sorted(by: { $0.batch > $1.batch })
+                .first?.batch ?? 0
         }
     }
     
     private func preparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
         return self.databases.default().query(MigrationLog.self).all().map { logs -> [Migrations.Item] in
             return logs.compactMap { log in
-                if let item = self.migrations.storage.filter({ $0.migration.name == log[\.name] }).first {
+                if let item = self.migrations.storage.filter({ $0.migration.name == log.name }).first {
                     return item
                 } else {
-                    print("No registered migration found for \(log[\.name])")
+                    print("No registered migration found for \(log.name)")
                     return nil
                 }
             }.reversed()
@@ -153,10 +153,10 @@ public struct Migrator {
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migrations.Item]> {
         return self.databases.default().query(MigrationLog.self).filter(\.batch == batch).all().map { logs -> [Migrations.Item] in
             return logs.compactMap { log in
-                if let item = self.migrations.storage.filter({ $0.migration.name == log[\.name] }).first {
+                if let item = self.migrations.storage.filter({ $0.migration.name == log.name }).first {
                     return item
                 } else {
-                    print("No registered migration found for \(log[\.name])")
+                    print("No registered migration found for \(log.name)")
                     return nil
                 }
             }.reversed()
@@ -166,7 +166,7 @@ public struct Migrator {
     private func unpreparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
         return self.databases.default().query(MigrationLog.self).all().map { logs -> [Migrations.Item] in
             return self.migrations.storage.compactMap { item in
-                if logs.filter({ $0[\.name] == item.migration.name }).count == 0 {
+                if logs.filter({ $0.name == item.migration.name }).count == 0 {
                     return item
                 } else {
                     // log found, this has been prepared

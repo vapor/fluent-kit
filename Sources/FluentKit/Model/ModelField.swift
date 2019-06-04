@@ -56,38 +56,6 @@ extension ModelField: ExpressibleByStringLiteral {
     }
 }
 
-
-extension ModelRow {
-    public subscript<Value>(_ field: Model.FieldKey<Value>) -> Value
-        where Value: Codable
-    {
-        get {
-            return self.get(Model.field(forKey: field))
-        }
-        set {
-            self.set(Model.field(forKey: field), to: newValue)
-        }
-    }
-
-    public func has<Value>(_ field: Model.FieldKey<Value>) -> Bool
-        where Value: Codable
-    {
-        return self.storage.cachedOutput[Model.field(forKey: field).name] != nil
-    }
-
-    internal func get<Value>(_ field: Model.Field<Value>) -> Value
-        where Value: Codable
-    {
-        return self.storage.get(field.name)
-    }
-
-    internal func set<Value>(_ field: Model.Field<Value>, to value: Value)
-        where Value: Codable
-    {
-        self.storage.set(field.name, to: value)
-    }
-}
-
 //extension Model {
 //    public func field<Value>(
 //        _ name: String,

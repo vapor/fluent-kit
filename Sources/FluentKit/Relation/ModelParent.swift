@@ -46,30 +46,12 @@ public struct ModelParent<Child, Parent>: ModelProperty
 extension Model {
     public typealias Parent<ParentType> = ModelParent<Self, ParentType>
         where ParentType: Model
-    
+
     public typealias ParentKey<ParentType> = KeyPath<Self, Parent<ParentType>>
         where ParentType: Model
-    
+
     public static func parent<T>(forKey key: ParentKey<T>) -> Parent<T> {
         return self.shared[keyPath: key]
-    }
-}
-
-extension ModelRow {
-    public subscript<ParentType>(_ key: Model.ParentKey<ParentType>) -> ParentType.Row
-        where ParentType: FluentKit.Model
-    {
-        get {
-            guard let cache = self.storage.eagerLoads[ParentType.entity] else {
-                fatalError("No cache set on storage.")
-            }
-            return try! cache.get(id: self.get(Model.parent(forKey: key).id))
-                .map { $0 as! ParentType.Row }
-                .first!
-        }
-        set {
-            self.set(Model.parent(forKey: key).id, to: newValue[\.id]!)
-        }
     }
 }
 

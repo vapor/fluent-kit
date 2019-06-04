@@ -23,12 +23,12 @@ final class UserSeed: Migration {
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         let tanner = User.new()
-        tanner[\.name] = "Tanner"
-        tanner[\.pet] = .init(name: "Ziz", type: .cat)
+        tanner.name = "Tanner"
+        tanner.pet = .init(name: "Ziz", type: .cat)
 
         let logan = User.new()
-        logan[\.name] = "Logan"
-        logan[\.pet] = .init(name: "Runa", type: .dog)
+        logan.name = "Logan"
+        logan.pet = .init(name: "Runa", type: .dog)
         
         return logan.save(on: database)
             .and(tanner.save(on: database))

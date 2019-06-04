@@ -188,7 +188,7 @@ private extension Database {
                 .set(model.storage.input)
                 .action(.create)
                 .run { created in
-                    model[\.id] = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
+                    model.id = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
                     model.storage.exists = true
                 }
         }.flatMap {
@@ -205,7 +205,7 @@ private extension Database {
         precondition(model.exists)
         return Model.shared.willUpdate(model, on: self).flatMap {
             return self.query(Model.self)
-                .filter(\.id == model[\.id])
+                .filter(\.id == model.id)
                 .set(model.storage.input)
                 .action(.update)
                 .run()
@@ -227,7 +227,7 @@ private extension Database {
         } else {
             return Model.shared.willDelete(model, on: self).flatMap {
                 return self.query(Model.self)
-                    .filter(\.id == model[\.id])
+                    .filter(\.id == model.id)
                     .action(.delete)
                     .run()
                     .map {
@@ -245,7 +245,7 @@ private extension Database {
         return Model.shared.willDelete(model, on: self).flatMap {
             return self.query(Model.self)
                 .withSoftDeleted()
-                .filter(\.id == model[\.id])
+                .filter(\.id == model.id)
                 .action(.delete)
                 .run()
                 .map {
@@ -259,12 +259,12 @@ private extension Database {
     func restore<Model>(_ model: Model.Row) -> EventLoopFuture<Void>
         where Model: SoftDeletable
     {
-        model[\.deletedAt] = nil
+        model.deletedAt = nil
         precondition(model.exists)
         return Model.shared.willRestore(model, on: self).flatMap {
             return self.query(Model.self)
                 .withSoftDeleted()
-                .filter(\.id == model[\.id])
+                .filter(\.id == model.id)
                 .set(model.storage.input)
                 .action(.update)
                 .run()

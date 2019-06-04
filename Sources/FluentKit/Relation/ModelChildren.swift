@@ -38,7 +38,7 @@ extension ModelRow {
     {
         let children = Model.children(forKey: key)
         return database.query(Child.self)
-            .filter(children.id, .equal, self[\.id]!)
+            .filter(children.id, .equal, self.id!)
     }
     
     public subscript<Child>(_ key: Model.ChildrenKey<Child>) -> [Child.Row]
@@ -47,7 +47,7 @@ extension ModelRow {
         guard let cache = self.storage.eagerLoads[Child.entity] else {
             fatalError("No cache set on storage.")
         }
-        return try! cache.get(id: self[\.id]!)
+        return try! cache.get(id: self.id!)
             .map { $0 as! Child.Row }
     }
 }
