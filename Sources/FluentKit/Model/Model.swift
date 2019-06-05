@@ -91,14 +91,6 @@ extension Model {
 }
 
 extension Model {
-    internal var all: [ModelProperty] {
-        return Mirror(reflecting: self)
-            .children
-            .compactMap { $0.value as? ModelProperty }
-    }
-}
-
-extension Model {
     public static func query(on database: Database) -> QueryBuilder<Self> {
         return .init(database: database)
     }

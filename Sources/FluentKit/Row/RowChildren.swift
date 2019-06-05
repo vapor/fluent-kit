@@ -1,7 +1,7 @@
 public struct RowChildren<Value>
     where Value: Model
 {
-    let storage: ModelStorage
+    let storage: Storage
     let field: String
 
     public func eagerLoaded() throws -> [Row<Value>] {

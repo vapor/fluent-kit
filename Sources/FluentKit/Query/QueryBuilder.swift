@@ -22,7 +22,7 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.shared.all.map { .field(
+        self.query.fields = Model.shared.properties.map { .field(
             path: [$0.name],
             entity: Model.entity,
             alias: nil
@@ -120,7 +120,7 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign.shared.all.map {
+        self.query.fields += Foreign.shared.properties.map {
             return .field(
                 path: [$0.name],
                 entity: Foreign.entity,
@@ -194,6 +194,31 @@ public final class QueryBuilder<Model>
         default: query.input[0].append(.bind(value))
         }
         return self
+    }
+
+    // MARK: Nested
+
+    public func filter<Value, NestedValue>(
+        _ field: KeyPath<Model, Field<Value>>,
+        _ path: NestedPath,
+        _ method: DatabaseQuery.Filter.Method,
+        _ value: NestedValue
+    ) -> Self
+        where Value: Codable, NestedValue: Codable
+    {
+        return self.filter(Model.shared[keyPath: field].name, path, method, value)
+    }
+
+    public func filter<NestedValue>(
+        _ fieldName: String,
+        _ path: NestedPath,
+        _ method: DatabaseQuery.Filter.Method,
+        _ value: NestedValue
+    ) -> Self
+        where NestedValue: Codable
+    {
+        let field: DatabaseQuery.Field = .field(path: [fieldName] + path.path, entity: Model.entity, alias: nil)
+        return self.filter(field, method, .bind(value))
     }
     
     // MARK: Actions
@@ -331,7 +356,6 @@ public final class QueryBuilder<Model>
     }
     
     public func all() -> EventLoopFuture<[Row<Model>]> {
-        #warning("re-use array required by run for eager loading")
         var models: [Row<Model>] = []
         return self.run { model in
             models.append(model)
@@ -363,7 +387,7 @@ public final class QueryBuilder<Model>
         }
 
         return self.database.execute(query) { output in
-            let model = try Row<Model>(storage: DefaultModelStorage(
+            let model = try Row<Model>(storage: DefaultStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true
@@ -397,4 +421,16 @@ public func ==<Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> M
     where Model: FluentKit.Model
 {
     return .make(lhs, .equality(inverse: false), rhs)
+}
+
+public struct NestedPath: ExpressibleByStringLiteral {
+    public var path: [String]
+    
+    public init(path: [String]) {
+        self.path = path
+    }
+
+    public init(stringLiteral value: String) {
+        self.path = value.split(separator: ".").map(String.init)
+    }
 }

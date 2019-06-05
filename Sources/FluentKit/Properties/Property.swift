@@ -1,4 +1,4 @@
-protocol ModelProperty {
+protocol Property {
     var name: String { get }
     var type: Any.Type { get }
     
@@ -6,8 +6,16 @@ protocol ModelProperty {
     var constraints: [DatabaseSchema.FieldConstraint] { get }
 
     func cached(from output: DatabaseOutput) throws -> Any?
-    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws
-    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws
+    func encode(to encoder: inout ModelEncoder, from storage: Storage) throws
+    func decode(from decoder: ModelDecoder, to storage: inout Storage) throws
+}
+
+extension Model {
+    var properties: [Property] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? Property }
+    }
 }
 
 struct ModelDecoder {

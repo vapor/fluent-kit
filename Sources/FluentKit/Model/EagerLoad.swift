@@ -1,48 +1,6 @@
-#warning("TODO: remove Anys from protocol or make internal")
 protocol EagerLoad: class {
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void>
     func get(id: Any) throws -> [Any]
-}
-
-extension Row {
-    public func joined<Joined>(_ model: Joined.Type) throws -> Row<Joined>
-        where Joined: FluentKit.Model
-    {
-        return try Row<Joined>(storage: DefaultModelStorage(
-            output: self.storage.output!.prefixed(by: Joined.entity + "_"),
-            eagerLoads: [:],
-            exists: true
-        ))
-    }
-}
-
-extension DatabaseOutput {
-    func prefixed(by string: String) -> DatabaseOutput {
-        return PrefixingOutput(self, prefix: string)
-    }
-}
-
-struct PrefixingOutput: DatabaseOutput {
-    let wrapped: DatabaseOutput
-    
-    let prefix: String
-    
-    var description: String {
-        return self.wrapped.description
-    }
-    
-    init(_ wrapped: DatabaseOutput, prefix: String) {
-        self.wrapped = wrapped
-        self.prefix = prefix
-    }
-
-    func contains(field: String) -> Bool {
-        return self.wrapped.contains(field: self.prefix + field)
-    }
-    
-    func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
-        return try self.wrapped.decode(field: self.prefix + field, as: T.self)
-    }
 }
 
 final class JoinParentEagerLoad<Child, Parent>: EagerLoad

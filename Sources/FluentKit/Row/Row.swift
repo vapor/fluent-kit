@@ -3,19 +3,18 @@ public final class Row<Model>: Codable, CustomStringConvertible
     where Model: FluentKit.Model
 {
     public var exists: Bool {
-        #warning("support changing id")
         return self.storage.exists
     }
 
-    var storage: ModelStorage
+    var storage: Storage
 
-    init(storage: ModelStorage) throws {
+    init(storage: Storage) throws {
         self.storage = storage
         try self.storage.cacheOutput(for: Model.self)
     }
 
     public init() {
-        self.storage = DefaultModelStorage(output: nil, eagerLoads: [:], exists: false)
+        self.storage = DefaultStorage(output: nil, eagerLoads: [:], exists: false)
     }
 
     public var description: String {
@@ -64,6 +63,18 @@ public final class Row<Model>: Codable, CustomStringConvertible
         self.storage.set(fieldName, to: value)
     }
 
+    // MARK: Join
+
+    public func joined<Joined>(_ model: Joined.Type) throws -> Row<Joined>
+        where Joined: FluentKit.Model
+    {
+        return try Row<Joined>(storage: DefaultStorage(
+            output: self.storage.output!.prefixed(by: Joined.entity + "_"),
+            eagerLoads: [:],
+            exists: true
+        ))
+    }
+
     // MARK: Parent
 
     public subscript<Value>(dynamicMember field: KeyPath<Model, Parent<Value>>) -> RowParent<Value> {
@@ -103,7 +114,7 @@ public final class Row<Model>: Codable, CustomStringConvertible
     public convenience init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        for field in Model.shared.all {
+        for field in Model.shared.properties {
             do {
                 try field.decode(from: decoder, to: &self.storage)
             } catch {
@@ -114,7 +125,7 @@ public final class Row<Model>: Codable, CustomStringConvertible
 
     public func encode(to encoder: Encoder) throws {
         var encoder = ModelEncoder(encoder: encoder)
-        for property in Model.shared.all {
+        for property in Model.shared.properties {
             try property.encode(to: &encoder, from: self.storage)
         }
     }

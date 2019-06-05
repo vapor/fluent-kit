@@ -1,4 +1,4 @@
-public struct Parent<Value>: ModelProperty
+public struct Parent<Value>: Property
     where Value: Model
 {
     public var type: Any.Type {
@@ -26,7 +26,7 @@ public struct Parent<Value>: ModelProperty
         return try output.decode(field: self.name, as: Value.ID.self)
     }
     
-    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
+    func encode(to encoder: inout ModelEncoder, from storage: Storage) throws {
         if let cache = storage.eagerLoads[Value.entity] {
             let parent = try cache.get(id: storage.get(self.name, as: Value.ID.self))
                 .map { $0 as! Row<Value> }
@@ -37,7 +37,7 @@ public struct Parent<Value>: ModelProperty
         }
     }
     
-    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
+    func decode(from decoder: ModelDecoder, to storage: inout Storage) throws {
         try storage.set(self.name, to: decoder.decode(Value.ID.self, forKey: self.name))
     }
 }

@@ -1,7 +1,7 @@
 public struct RowParent<Value>
     where Value: Model
 {
-    var storage: ModelStorage
+    var storage: Storage
     let field: String
 
     public var id: Value.ID {

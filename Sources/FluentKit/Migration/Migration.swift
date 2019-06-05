@@ -1,5 +1,3 @@
-import NIO
-
 public protocol Migration {
     var name: String { get }
     func prepare(on database: Database) -> EventLoopFuture<Void>

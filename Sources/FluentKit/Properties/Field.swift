@@ -1,4 +1,4 @@
-public struct Field<Value>: ModelProperty
+public struct Field<Value>: Property
     where Value: Codable
 {
     public var type: Any.Type {
@@ -26,11 +26,11 @@ public struct Field<Value>: ModelProperty
         return try output.decode(field: self.name, as: Value.self)
     }
     
-    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
+    func encode(to encoder: inout ModelEncoder, from storage: Storage) throws {
         try encoder.encode(storage.get(self.name, as: Value.self), forKey: self.name)
     }
 
-    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws {
+    func decode(from decoder: ModelDecoder, to storage: inout Storage) throws {
         try storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
     }
 }
