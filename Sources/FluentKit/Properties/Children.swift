@@ -9,7 +9,8 @@ public struct Children<Value>: AnyProperty
     
     func encode(to encoder: inout ModelEncoder, from storage: Storage) throws {
         if let cache = storage.eagerLoads[Value.entity] {
-            let children = try cache.get(id: storage.get(self.name, as: Value.ID.self))
+            #warning("TODO: use correct root id")
+            let children = try cache.get(id: storage.get("id", as: Value.ID.self))
                 .map { $0 as! Row<Value> }
             try encoder.encode(children, forKey: "\(Value.self)".lowercased() + "s")
         }
