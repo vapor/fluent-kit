@@ -1,28 +1,13 @@
-public enum ModelError: Error {
-    case missingField(name: String)
-}
-
 public struct Field<Value>: ModelProperty
     where Value: Codable
 {
     public var type: Any.Type {
         return Value.self
     }
-    
-    public var constraints: [DatabaseSchema.FieldConstraint]
-    
+
     public let name: String
-    
-//    public var path: [String] {
-//        return self.model.storage.path + [self.name]
-//    }
-
-    internal let dataType: DatabaseSchema.DataType?
-
-    #warning("TODO: auto migrate")
-    struct Interface: Codable {
-        let name: String
-    }
+    public let dataType: DatabaseSchema.DataType?
+    public var constraints: [DatabaseSchema.FieldConstraint]
     
     public init(
         _ name: String,

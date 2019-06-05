@@ -1,35 +1,34 @@
-public struct RowParent<Child, Parent>
-    where Parent: Model, Child: Model
+public struct RowParent<Value>
+    where Value: Model
 {
-    let row: Row<Child>
-    let key: Child.ParentKey<Parent>
+    var storage: ModelStorage
+    let field: String
 
-    public var id: Parent.ID {
+    public var id: Value.ID {
         get {
-            return self.row.get(Child.parent(forKey: key).id.name)
+            return self.storage.get(self.field)
         }
-        nonmutating set {
-            self.row.set(Child.parent(forKey: key).id.name, to: newValue)
+        set {
+            self.storage.set(self.field, to: newValue)
         }
     }
 
-    public func eagerLoaded() -> Row<Parent> {
-        guard let cache = self.row.storage.eagerLoads[Parent.entity] else {
-            fatalError("No cache set on storage.")
+    public func eagerLoaded() throws -> Row<Value> {
+        guard let cache = self.storage.eagerLoads[Value.entity] else {
+            throw FluentError.missingEagerLoad(name: Value.entity.self)
         }
-        return try! cache.get(id: row.get(Child.parent(forKey: key).id.name, as: Parent.ID.self))
-            .map { $0 as! Row<Parent> }
+        return try cache.get(id: self.storage.get(self.field, as: Value.ID.self))
+            .map { $0 as! Row<Value> }
             .first!
     }
 
-    public func query(on database: Database) -> QueryBuilder<Parent> {
-        let parent = Child.parent(forKey: self.key)
-        return Parent.query(on: database)
-            .filter(Parent.shared.id.name, .equal, self.row.get(parent.id.name, as: Parent.ID.self))
+    public func query(on database: Database) -> QueryBuilder<Value> {
+        return Value.query(on: database)
+            .filter(self.field, .equal, self.storage.get(self.field, as: Value.ID.self))
     }
 
 
-    public func get(on database: Database) -> EventLoopFuture<Row<Parent>> {
+    public func get(on database: Database) -> EventLoopFuture<Row<Value>> {
         return self.query(on: database).first().map { parent in
             guard let parent = parent else {
                 fatalError()

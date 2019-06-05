@@ -132,10 +132,10 @@ public final class FluentBenchmarker {
             for galaxy in galaxies {
                 switch galaxy.name {
                 case "Milky Way":
-                    guard galaxy.planets.contains(where: { $0.name == "Earth" }) else {
+                    guard try galaxy.planets.eagerLoaded().contains(where: { $0.name == "Earth" }) else {
                         throw Failure("unexpected missing planet")
                     }
-                    guard !galaxy.planets.contains(where: { $0.name == "PA-99-N2"}) else {
+                    guard try !galaxy.planets.eagerLoaded().contains(where: { $0.name == "PA-99-N2"}) else {
                         throw Failure("unexpected planet")
                     }
                 default: break
@@ -158,11 +158,11 @@ public final class FluentBenchmarker {
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard planet.galaxy.eagerLoaded().name == "Milky Way" else {
+                    guard try planet.galaxy.eagerLoaded().name == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 case "PA-99-N2":
-                    guard planet.galaxy.eagerLoaded().name == "Andromeda" else {
+                    guard try planet.galaxy.eagerLoaded().name == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 default: break
@@ -185,11 +185,11 @@ public final class FluentBenchmarker {
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard planet.galaxy.eagerLoaded().name == "Milky Way" else {
+                    guard try planet.galaxy.eagerLoaded().name == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 case "PA-99-N2":
-                    guard planet.galaxy.eagerLoaded().name == "Andromeda" else {
+                    guard try planet.galaxy.eagerLoaded().name == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 default: break

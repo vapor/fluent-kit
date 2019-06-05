@@ -66,30 +66,25 @@ public final class Row<Model>: Codable, CustomStringConvertible
 
     // MARK: Parent
 
-    public subscript<Parent>(dynamicMember key: Model.ParentKey<Parent>) -> RowParent<Model, Parent>
-        where Parent: FluentKit.Model
-    {
-        return RowParent(row: self, key: key)
+    public subscript<Value>(dynamicMember field: KeyPath<Model, Parent<Value>>) -> RowParent<Value> {
+        get {
+            return RowParent(
+                storage: self.storage,
+                field: Model.shared[keyPath: field].name
+            )
+        }
+        set {
+            self.storage = newValue.storage
+        }
     }
 
     // MARK: Children
 
-    public func query<Child>(_ key: Model.ChildrenKey<Child>, on database: Database) -> QueryBuilder<Child>
-        where Child: FluentKit.Model
-    {
-        let children = Model.children(forKey: key)
-        return Child.query(on: database)
-            .filter(children.id.name, .equal, self.id!)
-    }
-
-    public subscript<Child>(dynamicMember key: Model.ChildrenKey<Child>) -> [Row<Child>]
-        where Child: FluentKit.Model
-    {
-        guard let cache = self.storage.eagerLoads[Child.entity] else {
-            fatalError("No cache set on storage.")
-        }
-        return try! cache.get(id: self.id!)
-            .map { $0 as! Row<Child> }
+    public subscript<Value>(dynamicMember field: KeyPath<Model, Children<Value>>) -> RowChildren<Value> {
+        return RowChildren(
+            storage: self.storage,
+            field: Model.shared[keyPath: field].name
+        )
     }
 
     // MARK: Dynamic Member Lookup

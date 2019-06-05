@@ -32,41 +32,35 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func eagerLoad<Child>(_ key: Model.ChildrenKey<Child>, method: EagerLoadMethod = .subquery) -> Self
-        where Child: FluentKit.Model
-    {
+    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
         switch method {
         case .subquery:
-            let children = Model.children(forKey: key)
-            self.eagerLoads[Child.entity] = SubqueryChildEagerLoad<Model, Child>(children.id.name)
+            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>(Model.shared[keyPath: field].name)
         case .join:
-            fatalError()
+            fatalError("Join not yet supported for eager-loading children.")
         }
         return self
     }
 
     @discardableResult
-    public func eagerLoad<Parent>(_ key: Model.ParentKey<Parent>, method: EagerLoadMethod = .subquery) -> Self
-        where Parent: FluentKit.Model
-    {
-        let parent = Model.parent(forKey: key)
+    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
         switch method {
         case .subquery:
-            self.eagerLoads[Parent.entity] = SubqueryParentEagerLoad<Model, Parent>(parent.id.name)
+            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.shared[keyPath: field].name)
             return self
         case .join:
-            self.eagerLoads[Parent.entity] = JoinParentEagerLoad<Model, Parent>()
-            return self.join(key)
+            self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
+            return self.join(field)
         }
     }
     
     @discardableResult
-    public func join<Parent>(_ key: Model.ParentKey<Parent>) -> Self
-        where Parent: FluentKit.Model
+    public func join<Value>(_ field: KeyPath<Model, Parent<Value>>) -> Self
+        where Value: FluentKit.Model
     {
         return self.join(
-            Parent.self, Parent.shared.id.name,
-            to: Model.self, Model.parent(forKey: key).id.name,
+            Value.self, Value.shared.id.name,
+            to: Model.self, Model.shared[keyPath: field].name,
             method: .inner
         )
     }
