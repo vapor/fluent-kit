@@ -31,7 +31,7 @@ public struct Parent<Value>: Property
             let parent = try cache.get(id: storage.get(self.name, as: Value.ID.self))
                 .map { $0 as! Row<Value> }
                 .first!
-            try encoder.encode(parent, forKey: "\(Parent.self)".lowercased())
+            try encoder.encode(parent, forKey: "\(Value.self)".lowercased())
         } else {
             try encoder.encode(storage.get(self.name, as: Value.ID.self), forKey: self.name)
         }
