@@ -1,4 +1,4 @@
-public struct Children<Value>
+public struct Children<Value>: AnyProperty
     where Value: Model
 {
     public let name: String
@@ -8,10 +8,14 @@ public struct Children<Value>
     }
     
     func encode(to encoder: inout ModelEncoder, from storage: Storage) throws {
-        #warning("TODO: fixme")
+        if let cache = storage.eagerLoads[Value.entity] {
+            let children = try cache.get(id: storage.get(self.name, as: Value.ID.self))
+                .map { $0 as! Row<Value> }
+            try encoder.encode(children, forKey: "\(Value.self)".lowercased() + "s")
+        }
     }
     
     func decode(from decoder: ModelDecoder, to storage: inout Storage) throws {
-        #warning("TODO: fixme")
+        // don't decode
     }
 }

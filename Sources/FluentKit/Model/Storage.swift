@@ -36,7 +36,7 @@ extension Storage {
     mutating func cacheOutput<Model>(for model: Model.Type) throws
         where Model: FluentKit.Model
     {
-        for property in Model.shared.properties {
+        for property in Model.shared.fields {
             self.cachedOutput[property.name] = try property.cached(from: self.output!)
         }
     }

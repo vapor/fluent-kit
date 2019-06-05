@@ -1,20 +1,27 @@
-protocol Property {
+protocol AnyProperty {
     var name: String { get }
-    var type: Any.Type { get }
-    
-    var dataType: DatabaseSchema.DataType? { get }
-    var constraints: [DatabaseSchema.FieldConstraint] { get }
-
-    func cached(from output: DatabaseOutput) throws -> Any?
     func encode(to encoder: inout ModelEncoder, from storage: Storage) throws
     func decode(from decoder: ModelDecoder, to storage: inout Storage) throws
 }
 
+protocol AnyField: AnyProperty {
+    var type: Any.Type { get }
+    func cached(from output: DatabaseOutput) throws -> Any?
+    var dataType: DatabaseSchema.DataType? { get }
+    var constraints: [DatabaseSchema.FieldConstraint] { get }
+}
+
 extension Model {
-    var properties: [Property] {
+    var fields: [AnyField] {
         return Mirror(reflecting: self)
             .children
-            .compactMap { $0.value as? Property }
+            .compactMap { $0.value as? AnyField }
+    }
+    
+    var properties: [AnyProperty] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? AnyProperty }
     }
 }
 

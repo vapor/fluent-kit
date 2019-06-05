@@ -27,7 +27,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.shared.properties.map { field in
+        self.schema.createFields = Model.shared.fields.map { field in
             var constraints = field.constraints
             let type: Any.Type
             if field.name == Model.shared.id.name {

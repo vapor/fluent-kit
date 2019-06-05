@@ -1,4 +1,4 @@
-public struct Field<Value>: Property
+public struct Field<Value>: AnyField
     where Value: Codable
 {
     public var type: Any.Type {

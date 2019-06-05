@@ -1,4 +1,4 @@
-public struct Parent<Value>: Property
+public struct Parent<Value>: AnyField
     where Value: Model
 {
     public var type: Any.Type {
