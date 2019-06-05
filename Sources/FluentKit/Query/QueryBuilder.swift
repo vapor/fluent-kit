@@ -30,6 +30,8 @@ public final class QueryBuilder<Model>
         self.includeSoftDeleted = false
         self.joinedModels = []
     }
+
+    // MARK: Eager Load
     
     @discardableResult
     public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
@@ -53,6 +55,8 @@ public final class QueryBuilder<Model>
             return self.join(field)
         }
     }
+
+    // MARK: Join
     
     @discardableResult
     public func join<Value>(_ field: KeyPath<Model, Parent<Value>>) -> Self
@@ -135,7 +139,8 @@ public final class QueryBuilder<Model>
         ))
         return self
     }
-    
+
+    // MARK: Filter
     
     @discardableResult
     public func filter(_ filter: ModelFilter<Model>) -> Self {
@@ -184,6 +189,8 @@ public final class QueryBuilder<Model>
         query.input.append(.init(data.values))
         return self
     }
+
+    // MARK: Set
     
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
@@ -193,6 +200,45 @@ public final class QueryBuilder<Model>
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
         }
+        return self
+    }
+
+    // MARK: Sort
+
+    /// Add a sort to the query builder for a field.
+    ///
+    ///     Planet.query(on: db).sort(\.name, .descending)
+    ///
+    /// - parameters:
+    ///     - key: Swift `KeyPath` to field on model to sort.
+    ///     - direction: Direction to sort the fields, ascending or descending.
+    /// - returns: Query builder for chaining.
+    public func sort<Value>(_ field: KeyPath<Model, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
+        return self.sort(Model.self, Model.shared[keyPath: field].name, direction)
+    }
+
+    /// Add a sort to the query builder for a field.
+    ///
+    ///     Planet.query(on: db).join(\.galaxy).sort(\Galaxy.name, .ascending)
+    ///
+    /// - parameters:
+    ///     - key: Swift `KeyPath` to field on model to sort.
+    ///     - direction: Direction to sort the fields, ascending or descending.
+    /// - returns: Query builder for chaining.
+    public func sort<Joined, Value>(_ field: KeyPath<Joined, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
+        where Joined: FluentKit.Model
+    {
+        return self.sort(Joined.self, Joined.shared[keyPath: field].name, direction)
+    }
+
+    public func sort(_ field: String, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
+        return self.sort(Model.self, field, direction)
+    }
+
+    public func sort<Joined>(_ model: Joined.Type, _ field: String, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
+        where Joined: FluentKit.Model
+    {
+        self.query.sorts.append(.sort(field: .field(path: [field], entity: Joined.entity, alias: nil), direction: direction))
         return self
     }
 

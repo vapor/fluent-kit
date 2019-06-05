@@ -100,6 +100,17 @@ public struct DatabaseQuery {
         case model(foreign: Field, local: Field, method: Method)
         case custom(Any)
     }
+
+    public enum Sort {
+        public enum Direction {
+            case ascending
+            case descending
+            case custom(Any)
+        }
+        
+        case sort(field: Field, direction: Direction)
+        case custom(Any)
+    }
     
     public var fields: [Field]
     public var action: Action
@@ -107,7 +118,8 @@ public struct DatabaseQuery {
     public var filters: [Filter]
     public var input: [[Value]]
     public var joins: [Join]
-    
+    public var sorts: [Sort]
+
     public init(entity: String) {
         self.fields = []
         self.action = .read
@@ -115,5 +127,6 @@ public struct DatabaseQuery {
         self.filters = []
         self.input = []
         self.joins = []
+        self.sorts = []
     }
 }

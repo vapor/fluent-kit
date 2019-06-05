@@ -34,6 +34,7 @@ public final class FluentBenchmarker {
         try self.testSoftDelete()
         try self.testTimestampable()
         try self.testLifecycleHooks()
+        try self.testSort()
     }
     
     public func testCreate() throws {
@@ -820,6 +821,22 @@ public final class FluentBenchmarker {
             XCTAssertEqual(user.name, "E")
         }
     }
+
+    public func testSort() throws {
+        // seeded db
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            let ascending = try Galaxy.query(on: self.database).sort(\.name, .ascending).all().wait()
+            let descending = try Galaxy.query(on: self.database).sort(\.name, .ascending).all().wait()
+            XCTAssertEqual(ascending.map { $0.name }, descending.reversed().map { $0.name })
+        }
+    }
+
+    // MARK: Utilities
     
     struct Failure: Error {
         let reason: String

@@ -46,6 +46,7 @@ public struct SQLQueryConverter {
         select.columns = query.fields.map(self.field)
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
+        select.orderBy = query.sorts.map(self.sort)
         return select
     }
     
@@ -67,6 +68,26 @@ public struct SQLQueryConverter {
             items: filters.map(self.filter),
             separator: SQLBinaryOperator.and
         )
+    }
+
+    private func sort(_ sort: DatabaseQuery.Sort) -> SQLExpression {
+        switch sort {
+        case .sort(let field, let direction):
+            return SQLOrderBy(expression: self.field(field), direction: self.direction(direction))
+        case .custom(let any):
+            return any as! SQLExpression
+        }
+    }
+
+    private func direction(_ direction: DatabaseQuery.Sort.Direction) -> SQLExpression {
+        switch direction {
+        case .ascending:
+            return SQLRaw("ASCENDING")
+        case .descending:
+            return SQLRaw("DESCENDING")
+        case .custom(let any):
+            return any as! SQLExpression
+        }
     }
     
     private func join(_ join: DatabaseQuery.Join) -> SQLExpression {

@@ -11,9 +11,6 @@ public struct Migrator {
         self.eventLoop = eventLoop
     }
     
-    
-    #warning("TODO: handle identical migration added to two dbs")
-    
     // MARK: Setup
     
     public func setupIfNeeded() -> EventLoopFuture<Void> {
@@ -130,10 +127,8 @@ public struct Migrator {
     }
     
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        #warning("TODO: use db sorting")
-        return MigrationLog.query(on: self.databases.default()).all().map { logs in
-            return logs.sorted(by: { $0.batch > $1.batch })
-                .first?.batch ?? 0
+        return MigrationLog.query(on: self.databases.default()).sort(\.batch, .descending).first().map { log in
+            return log?.batch ?? 0
         }
     }
     
