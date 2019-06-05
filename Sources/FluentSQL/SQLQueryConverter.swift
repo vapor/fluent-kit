@@ -82,9 +82,9 @@ public struct SQLQueryConverter {
     private func direction(_ direction: DatabaseQuery.Sort.Direction) -> SQLExpression {
         switch direction {
         case .ascending:
-            return SQLRaw("ASCENDING")
+            return SQLRaw("ASC")
         case .descending:
-            return SQLRaw("DESCENDING")
+            return SQLRaw("DESC")
         case .custom(let any):
             return any as! SQLExpression
         }
