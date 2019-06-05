@@ -22,7 +22,7 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.shared.properties.map { .field(
+        self.query.fields = Model.shared.fields.map { .field(
             path: [$0.name],
             entity: Model.entity,
             alias: nil
@@ -120,7 +120,7 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign.shared.properties.map {
+        self.query.fields += Foreign.shared.fields.map {
             return .field(
                 path: [$0.name],
                 entity: Foreign.entity,
