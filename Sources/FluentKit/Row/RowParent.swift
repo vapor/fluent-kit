@@ -1,15 +1,16 @@
 public struct RowParent<Value>
     where Value: Model
 {
+    let parentID: String
+    let childID: String
     var storage: Storage
-    let field: String
 
     public var id: Value.ID {
         get {
-            return self.storage.get(self.field)
+            return self.storage.get(self.childID)
         }
         set {
-            self.storage.set(self.field, to: newValue)
+            self.storage.set(self.childID, to: newValue)
         }
     }
 
@@ -17,14 +18,14 @@ public struct RowParent<Value>
         guard let cache = self.storage.eagerLoads[Value.entity] else {
             throw FluentError.missingEagerLoad(name: Value.entity.self)
         }
-        return try cache.get(id: self.storage.get(self.field, as: Value.ID.self))
+        return try cache.get(id: self.storage.get(self.childID, as: Value.ID.self))
             .map { $0 as! Row<Value> }
             .first!
     }
 
     public func query(on database: Database) -> QueryBuilder<Value> {
         return Value.query(on: database)
-            .filter(self.field, .equal, self.storage.get(self.field, as: Value.ID.self))
+            .filter(self.parentID, .equal, self.storage.get(self.childID, as: Value.ID.self))
     }
 
 

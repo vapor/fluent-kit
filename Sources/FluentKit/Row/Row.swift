@@ -80,8 +80,9 @@ public final class Row<Model>: Codable, CustomStringConvertible
     public subscript<Value>(dynamicMember field: KeyPath<Model, Parent<Value>>) -> RowParent<Value> {
         get {
             return RowParent(
-                storage: self.storage,
-                field: Model.shared[keyPath: field].name
+                parentID: Model.shared[keyPath: field].name,
+                childID: Model.shared.id.name,
+                storage: self.storage
             )
         }
         set {
@@ -93,8 +94,9 @@ public final class Row<Model>: Codable, CustomStringConvertible
 
     public subscript<Value>(dynamicMember field: KeyPath<Model, Children<Value>>) -> RowChildren<Value> {
         return RowChildren(
-            storage: self.storage,
-            field: Model.shared[keyPath: field].name
+            parentID: Model.shared[keyPath: field].name,
+            childID: Model.shared.id.name,
+            storage: self.storage
         )
     }
 
