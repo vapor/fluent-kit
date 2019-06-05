@@ -17,8 +17,7 @@ public struct Children<Value>: AnyProperty
     
     func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
         if let rows = try self.eagerLoaded(for: row) {
-            #warning("TODO: better plural support")
-            try encoder.encode(rows, forKey: "\(Value.self)".lowercased() + "s")
+            try encoder.encode(rows, forKey: Value.entity)
         }
     }
     

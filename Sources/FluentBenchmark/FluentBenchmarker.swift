@@ -575,7 +575,7 @@ public final class FluentBenchmarker {
             var fetched64: [Row<Galaxy>] = []
             var fetched2047: [Row<Galaxy>] = []
             
-            try self.database.transaction { database -> EventLoopFuture<Void> in
+            try self.database.withConnection { database -> EventLoopFuture<Void> in
                 let saves = (1...512).map { i -> EventLoopFuture<Void> in
                     let galaxy = Galaxy.row()
                     galaxy.name = "Milky Way \(i)"

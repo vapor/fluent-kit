@@ -30,7 +30,7 @@ public struct DummyDatabase: Database {
         return self.eventLoop.makeSucceededFuture(())
     }
     
-    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    public func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         return closure(self)
     }
 }

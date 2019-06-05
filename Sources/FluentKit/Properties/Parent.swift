@@ -37,8 +37,7 @@ public struct Parent<Value>: AnyField
     
     func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
         if let parent = try self.eagerLoaded(for: row) {
-            #warning("TODO: better name")
-            try encoder.encode(parent, forKey: "\(Value.self)".lowercased())
+            try encoder.encode(parent, forKey: Value.name)
         } else {
             try encoder.encode(row.storage.get(self.name, as: Value.ID.self), forKey: self.name)
         }

@@ -1,4 +1,5 @@
 public protocol AnyModel {
+    static var name: String { get }
     static var entity: String { get }
     static var id: String { get }
 }
@@ -26,8 +27,12 @@ public protocol Model: AnyModel {
 }
 
 extension AnyModel {
+    public static var name: String {
+        return "\(Self.self)".lowercased()
+    }
+
     public static var entity: String {
-        return "\(Self.self)"
+        return self.name + "s"
     }
 }
 

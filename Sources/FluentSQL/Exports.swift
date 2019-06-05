@@ -13,8 +13,6 @@ extension DatabaseQuery.Field {
     }
 }
 
-#warning("TODO: move to SQLkit")
-
 public struct SQLList: SQLExpression {
     public var items: [SQLExpression]
     public var separator: SQLExpression
@@ -37,8 +35,6 @@ public struct SQLList: SQLExpression {
         }
     }
 }
-
-#warning("TODO: move to codable kit")
 
 /// Wraps a non-generic `Encodable` type for passing to a method that requires
 /// a strong type.
