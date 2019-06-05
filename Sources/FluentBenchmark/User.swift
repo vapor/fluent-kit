@@ -1,7 +1,7 @@
 import FluentKit
 
 final class User: Model {
-    struct Pet: Codable, NestedProperty {
+    struct Pet: Codable {
         enum Animal: String, Codable {
             case cat, dog
         }
@@ -22,11 +22,11 @@ final class UserSeed: Migration {
     init() { }
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let tanner = User.new()
+        let tanner = User.row()
         tanner.name = "Tanner"
         tanner.pet = .init(name: "Ziz", type: .cat)
 
-        let logan = User.new()
+        let logan = User.row()
         logan.name = "Logan"
         logan.pet = .init(name: "Runa", type: .dog)
         

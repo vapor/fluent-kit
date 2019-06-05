@@ -10,7 +10,7 @@ protocol ModelProperty {
     func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws
 }
 
-public struct ModelDecoder {
+struct ModelDecoder {
     private var container: KeyedDecodingContainer<_ModelCodingKey>
     
     init(decoder: Decoder) throws {
@@ -24,7 +24,7 @@ public struct ModelDecoder {
     }
 }
 
-public struct ModelEncoder {
+struct ModelEncoder {
     private var container: KeyedEncodingContainer<_ModelCodingKey>
     
     init(encoder: Encoder) {

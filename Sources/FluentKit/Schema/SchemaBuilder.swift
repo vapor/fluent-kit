@@ -52,10 +52,10 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func field<Value>(_ key: Model.FieldKey<Value>) -> Self
+    public func field<Value>(_ keyPath: KeyPath<Model, Field<Value>>) -> Self
         where Value: Codable
     {
-        let field = Model.field(forKey: key)
+        let field = Model.shared[keyPath: keyPath]
         return self.field(.definition(
             name: .string(field.name),
             dataType: field.dataType ?? .bestFor(type: Value.self),
@@ -68,33 +68,33 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func unique<A>(on a: Model.FieldKey<A>) -> Self
+    public func unique<A>(on a: KeyPath<Model, Field<A>>) -> Self
         where A: Codable
     {
-        let a = Model.field(forKey: a)
+        let a = Model.shared[keyPath: a]
         self.schema.constraints.append(.unique(fields: [
             .string(a.name)
         ]))
         return self
     }
     
-    public func unique<A, B>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>) -> Self
+    public func unique<A, B>(on a: KeyPath<Model, Field<A>>, _ b: KeyPath<Model, Field<B>>) -> Self
         where A: Codable, B: Codable
     {
-        let a = Model.field(forKey: a)
-        let b = Model.field(forKey: b)
+        let a = Model.shared[keyPath: a]
+        let b = Model.shared[keyPath: b]
         self.schema.constraints.append(.unique(fields: [
             .string(a.name), .string(b.name)
         ]))
         return self
     }
     
-    public func unique<A, B, C>(on a: Model.FieldKey<A>, _ b: Model.FieldKey<B>,_ c: Model.FieldKey<C>) -> Self
+    public func unique<A, B, C>(on a: KeyPath<Model, Field<A>>, _ b: KeyPath<Model, Field<B>>,_ c: KeyPath<Model, Field<C>>) -> Self
         where A: Codable, B: Codable, C: Codable
     {
-        let a = Model.field(forKey: a)
-        let b = Model.field(forKey: b)
-        let c = Model.field(forKey: c)
+        let a = Model.shared[keyPath: a]
+        let b = Model.shared[keyPath: b]
+        let c = Model.shared[keyPath: c]
         self.schema.constraints.append(.unique(fields: [
             .string(a.name), .string(b.name), .string(c.name)
         ]))

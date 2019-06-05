@@ -1,7 +1,7 @@
 public struct ModelParent<Child, Parent>: ModelProperty
     where Parent: Model, Child: Model
 {
-    public let id: ModelField<Child, Parent.ID>
+    public let id: Field<Parent.ID>
     
     public var name: String {
         return self.id.name
@@ -19,7 +19,7 @@ public struct ModelParent<Child, Parent>: ModelProperty
         return self.id.constraints
     }
     
-    public init(_ id: ModelField<Child, Parent.ID>) {
+    public init(_ id: Field<Parent.ID>) {
         self.id = id
     }
 
@@ -30,7 +30,7 @@ public struct ModelParent<Child, Parent>: ModelProperty
     func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws {
         if let cache = storage.eagerLoads[Parent.entity] {
             let parent = try cache.get(id: storage.get(self.id.name, as: Parent.ID.self))
-                .map { $0 as! Parent.Row }
+                .map { $0 as! Row<Parent> }
                 .first!
             try encoder.encode(parent, forKey: "\(Parent.self)".lowercased())
         } else {

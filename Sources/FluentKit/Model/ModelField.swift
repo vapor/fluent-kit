@@ -2,8 +2,8 @@ public enum ModelError: Error {
     case missingField(name: String)
 }
 
-public struct ModelField<Model, Value>: ModelProperty
-    where Model: FluentKit.Model, Value: Codable
+public struct Field<Value>: ModelProperty
+    where Value: Codable
 {
     public var type: Any.Type {
         return Value.self
@@ -50,7 +50,7 @@ public struct ModelField<Model, Value>: ModelProperty
     }
 }
 
-extension ModelField: ExpressibleByStringLiteral {
+extension Field: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self.init(value)
     }
