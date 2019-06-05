@@ -198,7 +198,7 @@ public final class FluentBenchmarker {
         }
     }
     
-    public func testEagerLoadJSON() throws {
+    public func testEagerLoadParentJSON() throws {
         try runTest(#function, [
             Galaxy.autoMigration(),
             Planet.autoMigration(),
@@ -248,6 +248,66 @@ public final class FluentBenchmarker {
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
+                guard decoded == expected else {
+                    throw Failure("unexpected output")
+                }
+            }
+
+        }
+    }
+
+    public func testEagerLoadChildrenJSON() throws {
+        try runTest(#function, [
+            Galaxy.autoMigration(),
+            Planet.autoMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            struct PlanetJSON: Codable, Equatable {
+                var id: Int
+                var name: String
+                var galaxyID: Int
+            }
+            struct GalaxyJSON: Codable, Equatable {
+                var id: Int
+                var name: String
+                var planets: [PlanetJSON]
+            }
+
+            let andromeda = GalaxyJSON(id: 1, name: "Andromeda", planets: [
+                .init(id: 9, name: "PA-99-N2", galaxyID: 1),
+            ])
+            let milkyWay = GalaxyJSON(id: 2, name: "Milky Way", planets: [
+                .init(id: 1, name: "Mercury", galaxyID: 2),
+                .init(id: 2, name: "Venus", galaxyID: 2),
+                .init(id: 3, name: "Earth", galaxyID: 2),
+                .init(id: 4, name: "Mars", galaxyID: 2),
+                .init(id: 5, name: "Jupiter", galaxyID: 2),
+                .init(id: 6, name: "Saturn", galaxyID: 2),
+                .init(id: 7, name: "Uranus", galaxyID: 2),
+                .init(id: 8, name: "Neptune", galaxyID: 2),
+            ])
+            let expected: [GalaxyJSON] = [andromeda, milkyWay]
+
+            // subquery
+            do {
+                let galaxies = try Galaxy.query(on: self.database)
+                    .eagerLoad(\.planets, method: .subquery)
+                    .all().wait()
+
+                let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
+                guard decoded == expected else {
+                    throw Failure("unexpected output")
+                }
+            }
+
+            // join
+            do {
+                let galaxies = try Galaxy.query(on: self.database)
+                    .eagerLoad(\.planets, method: .join)
+                    .all().wait()
+
+                let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
                 guard decoded == expected else {
                     throw Failure("unexpected output")
                 }
@@ -342,10 +402,10 @@ public final class FluentBenchmarker {
             }
                 
             try galaxies.create(on: self.database).wait()
-            #warning("TODO: mysql cannot support this")
-//            guard try galaxies[5].get(\.id) == 6 else {
-//                throw Failure("batch insert did not set id")
-//            }
+            let count = try Galaxy.query(on: self.database).count().wait()
+            guard count == 26 else {
+                throw Failure("Not all galaxies savied")
+            }
         }
     }
     
