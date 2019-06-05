@@ -16,14 +16,14 @@ jobs:
       - run: swift build -c release
   bionic:
     docker:
-      - image: swift:5.0-bionic
+      - image: vapor/swift:5.1-bionic
     steps:
       - checkout
       - run: swift build
       - run: swift test
   bionic-release:
     docker:
-      - image: swift:5.0-bionic
+      - image: vapor/swift:5.1-bionic
     steps:
       - checkout
       - run: swift build -c release
