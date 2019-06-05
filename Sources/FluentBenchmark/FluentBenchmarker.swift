@@ -291,30 +291,14 @@ public final class FluentBenchmarker {
             let messier82 = GalaxyJSON(id: 3, name: "Messier 82", planets: [])
             let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
 
-            // subquery
-            do {
-                let galaxies = try Galaxy.query(on: self.database)
-                    .eagerLoad(\.planets, method: .subquery)
-                    .all().wait()
+            let galaxies = try Galaxy.query(on: self.database)
+                .eagerLoad(\.planets, method: .subquery)
+                .all().wait()
 
-                let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
-                guard decoded == expected else {
-                    throw Failure("unexpected output")
-                }
+            let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
+            guard decoded == expected else {
+                throw Failure("unexpected output")
             }
-
-            // join
-            do {
-                let galaxies = try Galaxy.query(on: self.database)
-                    .eagerLoad(\.planets, method: .join)
-                    .all().wait()
-
-                let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
-                guard decoded == expected else {
-                    throw Failure("unexpected output")
-                }
-            }
-
         }
     }
     
