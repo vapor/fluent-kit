@@ -1,9 +1,18 @@
+protocol AnyRow: class {
+    var model: AnyModel.Type { get }
+    var storage: Storage { get set }
+}
+
 @dynamicMemberLookup
-public final class Row<Model>: Codable, CustomStringConvertible
+public final class Row<Model>: Codable, CustomStringConvertible, AnyRow
     where Model: FluentKit.Model
 {
     public var exists: Bool {
         return self.storage.exists
+    }
+
+    var model: AnyModel.Type {
+        return Model.self
     }
 
     var storage: Storage
@@ -78,25 +87,18 @@ public final class Row<Model>: Codable, CustomStringConvertible
     // MARK: Parent
 
     public subscript<Value>(dynamicMember field: KeyPath<Model, Parent<Value>>) -> RowParent<Value> {
-        get {
-            return RowParent(
-                shortID: Model.shared.id.name,
-                longID: Model.shared[keyPath: field].name,
-                storage: self.storage
-            )
-        }
-        set {
-            self.storage = newValue.storage
-        }
+        return RowParent(
+            parent: Model.shared[keyPath: field],
+            row: self
+        )
     }
 
     // MARK: Children
 
     public subscript<Value>(dynamicMember field: KeyPath<Model, Children<Value>>) -> RowChildren<Value> {
         return RowChildren(
-            shortID: Model.shared.id.name,
-            longID: Model.shared[keyPath: field].name,
-            storage: self.storage
+            children: Model.shared[keyPath: field],
+            row: self
         )
     }
 
@@ -118,7 +120,7 @@ public final class Row<Model>: Codable, CustomStringConvertible
         self.init()
         for field in Model.shared.properties {
             do {
-                try field.decode(from: decoder, to: &self.storage)
+                try field.decode(from: decoder, to: self)
             } catch {
                 print("Could not decode \(field.name): \(error)")
             }
@@ -128,7 +130,7 @@ public final class Row<Model>: Codable, CustomStringConvertible
     public func encode(to encoder: Encoder) throws {
         var encoder = ModelEncoder(encoder: encoder)
         for property in Model.shared.properties {
-            try property.encode(to: &encoder, from: self.storage)
+            try property.encode(to: &encoder, from: self)
         }
     }
 }

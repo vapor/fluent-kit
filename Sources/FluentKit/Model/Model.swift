@@ -1,5 +1,6 @@
 public protocol AnyModel {
     static var entity: String { get }
+    static var id: String { get }
 }
 
 public protocol Model: AnyModel {
@@ -36,6 +37,10 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database).filter(\.id == id).first()
+    }
+
+    public static var id: String {
+        return self.shared.id.name
     }
 }
 

@@ -26,12 +26,12 @@ public struct Field<Value>: AnyField
         return try output.decode(field: self.name, as: Value.self)
     }
     
-    func encode(to encoder: inout ModelEncoder, from storage: Storage) throws {
-        try encoder.encode(storage.get(self.name, as: Value.self), forKey: self.name)
+    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
+        try encoder.encode(row.storage.get(self.name, as: Value.self), forKey: self.name)
     }
 
-    func decode(from decoder: ModelDecoder, to storage: inout Storage) throws {
-        try storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
+    func decode(from decoder: ModelDecoder, to row: AnyRow) throws {
+        try row.storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
     }
 }
 

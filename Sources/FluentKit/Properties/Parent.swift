@@ -25,19 +25,26 @@ public struct Parent<Value>: AnyField
         }
         return try output.decode(field: self.name, as: Value.ID.self)
     }
+
+    func eagerLoaded(for row: AnyRow) throws -> Row<Value>? {
+        guard let cache = row.storage.eagerLoads[Value.entity] else {
+            return nil
+        }
+        return try cache.get(id: row.storage.get(self.name, as: Value.ID.self))
+            .map { $0 as! Row<Value> }
+            .first!
+    }
     
-    func encode(to encoder: inout ModelEncoder, from storage: Storage) throws {
-        if let cache = storage.eagerLoads[Value.entity] {
-            let parent = try cache.get(id: storage.get(self.name, as: Value.ID.self))
-                .map { $0 as! Row<Value> }
-                .first!
+    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
+        if let parent = try self.eagerLoaded(for: row) {
+            #warning("TODO: better name")
             try encoder.encode(parent, forKey: "\(Value.self)".lowercased())
         } else {
-            try encoder.encode(storage.get(self.name, as: Value.ID.self), forKey: self.name)
+            try encoder.encode(row.storage.get(self.name, as: Value.ID.self), forKey: self.name)
         }
     }
     
-    func decode(from decoder: ModelDecoder, to storage: inout Storage) throws {
-        try storage.set(self.name, to: decoder.decode(Value.ID.self, forKey: self.name))
+    func decode(from decoder: ModelDecoder, to row: AnyRow) throws {
+        try row.storage.set(self.name, to: decoder.decode(Value.ID.self, forKey: self.name))
     }
 }

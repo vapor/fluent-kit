@@ -1,21 +1,19 @@
 public struct RowChildren<Value>
     where Value: Model
 {
-    let shortID: String
-    let longID: String
-    let storage: Storage
+    let children: Children<Value>
+    let row: AnyRow
 
     public func eagerLoaded() throws -> [Row<Value>] {
-        guard let cache = self.storage.eagerLoads[Value.entity] else {
+        guard let rows = try self.children.eagerLoaded(for: self.row) else {
             throw FluentError.missingEagerLoad(name: Value.entity.self)
         }
-        return try cache.get(id: self.storage.get(self.shortID, as: Value.ID.self))
-            .map { $0 as! Row<Value> }
+        return rows
     }
 
-
     public func query(on database: Database) -> QueryBuilder<Value> {
+        let id = self.row.storage.get(self.children.name, as: Value.ID.self)
         return Value.query(on: database)
-            .filter(self.longID, .equal, self.storage.get(self.longID, as: Value.ID.self))
+            .filter(self.children.name, .equal, id)
     }
 }

@@ -1,7 +1,7 @@
 protocol AnyProperty {
     var name: String { get }
-    func encode(to encoder: inout ModelEncoder, from storage: Storage) throws
-    func decode(from decoder: ModelDecoder, to storage: inout Storage) throws
+    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws
+    func decode(from decoder: ModelDecoder, to row: AnyRow) throws
 }
 
 protocol AnyField: AnyProperty {
