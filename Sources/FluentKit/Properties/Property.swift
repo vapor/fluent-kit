@@ -1,16 +1,31 @@
-protocol ModelProperty {
+protocol AnyProperty {
     var name: String { get }
-    var type: Any.Type { get }
-    
-    var dataType: DatabaseSchema.DataType? { get }
-    var constraints: [DatabaseSchema.FieldConstraint] { get }
-
-    func cached(from output: DatabaseOutput) throws -> Any?
-    func encode(to encoder: inout ModelEncoder, from storage: ModelStorage) throws
-    func decode(from decoder: ModelDecoder, to storage: inout ModelStorage) throws
+    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws
+    func decode(from decoder: ModelDecoder, to row: AnyRow) throws
 }
 
-public struct ModelDecoder {
+protocol AnyField: AnyProperty {
+    var type: Any.Type { get }
+    func cached(from output: DatabaseOutput) throws -> Any?
+    var dataType: DatabaseSchema.DataType? { get }
+    var constraints: [DatabaseSchema.FieldConstraint] { get }
+}
+
+extension Model {
+    var fields: [AnyField] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? AnyField }
+    }
+    
+    var properties: [AnyProperty] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? AnyProperty }
+    }
+}
+
+struct ModelDecoder {
     private var container: KeyedDecodingContainer<_ModelCodingKey>
     
     init(decoder: Decoder) throws {
@@ -24,7 +39,7 @@ public struct ModelDecoder {
     }
 }
 
-public struct ModelEncoder {
+struct ModelEncoder {
     private var container: KeyedEncodingContainer<_ModelCodingKey>
     
     init(encoder: Encoder) {

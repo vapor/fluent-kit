@@ -15,9 +15,8 @@ public struct SQLSchemaConverter {
             return self.create(schema)
         case .delete:
             return self.delete(schema)
-        default:
-            #warning("TODO:")
-            fatalError("\(self) not yet supported")
+        case .update:
+            fatalError("Update schema not yet supported")
         }
     }
     
@@ -41,15 +40,22 @@ public struct SQLSchemaConverter {
     
     private func constraint(_ constraint: DatabaseSchema.Constraint) -> SQLExpression {
         switch constraint {
-        case .custom(let any):
-            return any as! SQLExpression
         case .unique(let fields):
-            #warning("TODO: generate unique name")
+            let name = fields.map { field -> String in
+                switch field {
+                case .custom:
+                    return ""
+                case .string(let name):
+                    return name
+                }
+            }.joined(separator: "+")
             return SQLTableConstraint(
                 columns: fields.map(self.fieldName),
                 algorithm: SQLConstraintAlgorithm.unique,
-                name: nil
+                name: SQLIdentifier("uq:\(name)")
             )
+        case .custom(let any):
+            return custom(any)
         }
     }
     
@@ -68,10 +74,10 @@ public struct SQLSchemaConverter {
     
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> SQLExpression {
         switch fieldName {
-        case .custom(let any):
-            return any as! SQLExpression
         case .string(let string):
             return SQLIdentifier(string)
+        case .custom(let any):
+            return custom(any)
         }
     }
     
@@ -81,22 +87,46 @@ public struct SQLSchemaConverter {
         }
         
         switch dataType {
-        case .bool: return SQLDataType.int
-        case .data: return SQLDataType.blob
-        case .date: return SQLRaw("DATE")
-        case .datetime: return SQLRaw("TIMESTAMP")
-        case .custom(let any): return any as! SQLExpression
-        case .int64: return SQLDataType.bigint
-        case .string: return SQLDataType.text
+        case .bool:
+            return SQLDataType.int
+        case .data:
+            return SQLDataType.blob
+        case .date:
+            return SQLRaw("DATE")
+        case .datetime:
+            return SQLRaw("TIMESTAMP")
+        case .int64:
+            return SQLRaw("BIGINT")
+        case .string:
+            return SQLDataType.text
         case .json:
-            #warning("TODO: get better support for this")
             return SQLRaw("JSON")
         case .uuid:
-            #warning("TODO: get better support for this")
             return SQLRaw("UUID")
-        default:
-            #warning("TODO:")
-            fatalError("\(dataType) not yet supported")
+        case .int8:
+            return SQLDataType.int
+        case .int16:
+            return SQLDataType.int
+        case .int32:
+            return SQLDataType.int
+        case .uint8:
+            return SQLDataType.int
+        case .uint16:
+            return SQLDataType.int
+        case .uint32:
+            return SQLDataType.int
+        case .uint64:
+            return SQLDataType.int
+        case .enum:
+            fatalError("SQL enums not yet supported.")
+        case .time:
+            return SQLRaw("TIME")
+        case .float:
+            return SQLRaw("FLOAT")
+        case .double:
+            return SQLRaw("DOUBLE")
+        case .custom(let any):
+            return custom(any)
         }
     }
     
@@ -104,10 +134,10 @@ public struct SQLSchemaConverter {
         switch fieldConstraint {
         case .required:
             return SQLColumnConstraint.notNull
-        case .custom(let any):
-            return any as! SQLExpression
         case .identifier:
             return SQLColumnConstraint.primaryKey
+        case .custom(let any):
+            return custom(any)
         }
     }
 }

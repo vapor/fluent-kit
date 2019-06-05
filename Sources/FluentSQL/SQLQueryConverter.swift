@@ -12,8 +12,7 @@ public struct SQLQueryConverter {
         case .update: sql = self.update(fluent)
         case .delete: sql = self.delete(fluent)
         case .custom(let any):
-            #warning("TODO:")
-            return any as! SQLExpression
+            return custom(any)
         }
         return sql
     }
@@ -28,7 +27,6 @@ public struct SQLQueryConverter {
     
     private func update(_ query: DatabaseQuery) -> SQLExpression {
         var update = SQLUpdate(table: SQLIdentifier(query.entity))
-        #warning("TODO: better indexing")
         for (i, field) in query.fields.enumerated() {
             update.values.append(SQLBinaryExpression(
                 left: self.field(field),
@@ -46,6 +44,7 @@ public struct SQLQueryConverter {
         select.columns = query.fields.map(self.field)
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
+        select.orderBy = query.sorts.map(self.sort)
         return select
     }
     
@@ -68,18 +67,40 @@ public struct SQLQueryConverter {
             separator: SQLBinaryOperator.and
         )
     }
+
+    private func sort(_ sort: DatabaseQuery.Sort) -> SQLExpression {
+        switch sort {
+        case .sort(let field, let direction):
+            return SQLOrderBy(expression: self.field(field), direction: self.direction(direction))
+        case .custom(let any):
+            return custom(any)
+        }
+    }
+
+    private func direction(_ direction: DatabaseQuery.Sort.Direction) -> SQLExpression {
+        switch direction {
+        case .ascending:
+            return SQLRaw("ASC")
+        case .descending:
+            return SQLRaw("DESC")
+        case .custom(let any):
+            return custom(any)
+        }
+    }
     
     private func join(_ join: DatabaseQuery.Join) -> SQLExpression {
         switch join {
-        case .custom(let any): return any as! SQLExpression
+        case .custom(let any):
+            return custom(any)
         case .model(let foreign, let local, let method):
             let table: SQLExpression
             switch foreign {
-            case .custom(let any): table = any as! SQLExpression
-            case .field(let path, let entity, let alias):
+            case .custom(let any):
+                table = custom(any)
+            case .field(_, let entity, _):
                 table = SQLIdentifier(entity!)
-            case .aggregate(let agg):
-                fatalError("can't join on aggregate")
+            case .aggregate:
+                fatalError("Joining on an aggregate field is not supported.")
             }
             return SQLJoin(
                 method: self.joinMethod(method),
@@ -100,18 +121,16 @@ public struct SQLQueryConverter {
         case .right: return SQLJoinMethod.right
         case .outer: return SQLJoinMethod.outer
         case .custom(let any):
-            #warning("TODO:")
-            return any as! SQLExpression
+            return custom(any)
         }
     }
     
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
         switch field {
         case .custom(let any):
-            #warning("TODO:")
-            return any as! SQLExpression
+            return custom(any)
         case .field(let path, let entity, let alias):
-            #warning("TODO: if joins don't exist, use short column name")
+            // TODO: if joins don't exist, use short column name
             switch path.count {
             case 1:
                 let name = path[0]
@@ -130,7 +149,8 @@ public struct SQLQueryConverter {
                 // return SQLRaw("\(path[0])->>'\(path[1])'")
                 // return SQLRaw("JSON_EXTRACT(\(path[0]), '$.\(path[1])')")
                 return self.delegate.nestedFieldExpression(path[0], [path[1]])
-            default: fatalError()
+            default:
+                fatalError("Deep SQL JSON nesting not yet supported.")
             }
         case .aggregate(let agg):
             switch agg {
@@ -163,6 +183,24 @@ public struct SQLQueryConverter {
                     op: inverse ? SQLBinaryOperator.isNot : SQLBinaryOperator.is,
                     right: SQLLiteral.null
                 )
+            case (.contains(let inverse, let method), .bind(let bind)):
+                guard let string = bind as? CustomStringConvertible else {
+                    fatalError("Only string binds are supported with contains")
+                }
+                let right: SQLExpression
+                switch method {
+                case .anywhere:
+                    right = SQLRaw("%" + string.description + "%")
+                case .prefix:
+                    right = SQLRaw(string.description + "%")
+                case .suffix:
+                    right = SQLRaw("%" + string.description)
+                }
+                return SQLBinaryExpression(
+                    left: self.field(field),
+                    op: inverse ? SQLBinaryOperator.notLike : SQLBinaryOperator.like,
+                    right: right
+                )
             default:
                 return SQLBinaryExpression(
                     left: self.field(field),
@@ -171,8 +209,7 @@ public struct SQLQueryConverter {
                 )
             }
         case .custom(let any):
-            #warning("TODO:")
-            return any as! SQLExpression
+            return custom(any)
         case .group(let filters, let relation):
             return SQLList(items: filters.map(self.filter), separator: self.relation(relation))
         }
@@ -180,9 +217,12 @@ public struct SQLQueryConverter {
     
     private func relation(_ relation: DatabaseQuery.Filter.Relation) -> SQLExpression {
         switch relation {
-        case .and: return SQLBinaryOperator.and
-        case .or: return SQLBinaryOperator.or
-        case .custom(let any): return any as! SQLExpression
+        case .and:
+            return SQLBinaryOperator.and
+        case .or:
+            return SQLBinaryOperator.or
+        case .custom(let any):
+            return custom(any)
         }
     }
     
@@ -214,9 +254,8 @@ public struct SQLQueryConverter {
             return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(", ")))
         case .dictionary(let dict):
             return SQLBind(DictValues(dict: dict))
-        default:
-            #warning("TODO:")
-            fatalError("\(value) not yet supported")
+        case .custom(let any):
+            return custom(any)
         }
     }
     
@@ -245,9 +284,10 @@ public struct SQLQueryConverter {
             case (true, true):
                 return SQLBinaryOperator.lessThanOrEqual
             }
-        default:
-            #warning("TODO:")
-            fatalError("\(method) not yet supported")
+        case .contains:
+            fatalError("Contains filter method not supported at this scope.")
+        case .custom(let any):
+            return custom(any)
         }
     }
 }

@@ -10,9 +10,11 @@ public protocol Database {
     
     func close() -> EventLoopFuture<Void>
     
-    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 public protocol DatabaseError {
-    #warning("TODO: add useful properties like duplicate key constraint, syntax error, conn closed, etc.")
+    var isSyntaxError: Bool { get }
+    var isConstraintFailure: Bool { get }
+    var isConnectionClosed: Bool { get }
 }

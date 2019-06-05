@@ -12,18 +12,21 @@ final class PlanetSeed: Migration {
     }
     
     private func add(_ planets: [String], to galaxy: String, on database: Database) -> EventLoopFuture<Void> {
-        return database.query(Galaxy.self).filter(\.name == galaxy).first().flatMap { galaxy -> EventLoopFuture<Void> in
-            guard let galaxy = galaxy else {
-                return database.eventLoop.makeSucceededFuture(())
+        return Galaxy.query(on: database)
+            .filter(\.name == galaxy)
+            .first()
+            .flatMap { galaxy -> EventLoopFuture<Void> in
+                guard let galaxy = galaxy else {
+                    return database.eventLoop.makeSucceededFuture(())
+                }
+                let saves = planets.map { name -> EventLoopFuture<Void> in
+                    let planet = Planet.row()
+                    planet.name = name
+                    planet.galaxy.id = galaxy.id!
+                    return planet.save(on: database)
+                }
+                return .andAllSucceed(saves, on: database.eventLoop)
             }
-            let saves = planets.map { name -> EventLoopFuture<Void> in
-                let planet = Planet.new()
-                planet[\.name] = name
-                planet[\.galaxy] = galaxy
-                return planet.save(on: database)
-            }
-            return .andAllSucceed(saves, on: database.eventLoop)
-        }
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {

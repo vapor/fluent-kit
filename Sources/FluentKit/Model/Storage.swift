@@ -1,4 +1,4 @@
-protocol ModelStorage {
+protocol Storage {
     var output: DatabaseOutput? { get }
     var cachedOutput: [String: Any] { get set }
     var input: [String: DatabaseQuery.Value] { get set }
@@ -7,8 +7,8 @@ protocol ModelStorage {
     var path: [String] { get }
 }
 
-struct DefaultModelStorage: ModelStorage {
-    static let empty: DefaultModelStorage = .init(
+struct DefaultStorage: Storage {
+    static let empty: DefaultStorage = .init(
         output: nil,
         eagerLoads: [:],
         exists: false
@@ -32,11 +32,11 @@ struct DefaultModelStorage: ModelStorage {
     }
 }
 
-extension ModelStorage {
+extension Storage {
     mutating func cacheOutput<Model>(for model: Model.Type) throws
         where Model: FluentKit.Model
     {
-        for property in Model.shared.all {
+        for property in Model.shared.fields {
             self.cachedOutput[property.name] = try property.cached(from: self.output!)
         }
     }

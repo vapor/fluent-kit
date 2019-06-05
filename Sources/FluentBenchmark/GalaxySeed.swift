@@ -5,8 +5,8 @@ final class GalaxySeed: Migration {
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         let saves = ["Andromeda", "Milky Way", "Messier 82"].map { name -> EventLoopFuture<Void> in
-            let galaxy = Galaxy.new()
-            galaxy[\.name] = name
+            let galaxy = Galaxy.row()
+            galaxy.name = name
             return galaxy.save(on: database)
         }
         return .andAllSucceed(saves, on: database.eventLoop)
