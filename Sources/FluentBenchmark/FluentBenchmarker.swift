@@ -288,7 +288,7 @@ public final class FluentBenchmarker {
                 .init(id: 7, name: "Uranus", galaxyID: 2),
                 .init(id: 8, name: "Neptune", galaxyID: 2),
             ])
-            let messier82 = GalaxyJSON(id: 3, name: "Messier 83", planets: [])
+            let messier82 = GalaxyJSON(id: 3, name: "Messier 82", planets: [])
             let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
 
             // subquery
