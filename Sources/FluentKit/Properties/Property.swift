@@ -1,29 +1,27 @@
-protocol AnyProperty {
-    var name: String { get }
-    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws
-    func decode(from decoder: ModelDecoder, to row: AnyRow) throws
-}
+//protocol AnyProperty {
+//    var name: String { get }
+//}
 
-protocol AnyField: AnyProperty {
-    var type: Any.Type { get }
-    func cached(from output: DatabaseOutput) throws -> Any?
-    var dataType: DatabaseSchema.DataType? { get }
-    var constraints: [DatabaseSchema.FieldConstraint] { get }
-}
+//protocol AnyField: AnyProperty {
+//    var type: Any.Type { get }
+//    func cached(from output: DatabaseOutput) throws -> Any?
+//    var dataType: DatabaseSchema.DataType? { get }
+//    var constraints: [DatabaseSchema.FieldConstraint] { get }
+//}
 
-extension Model {
-    var fields: [AnyField] {
-        return Mirror(reflecting: self)
-            .children
-            .compactMap { $0.value as? AnyField }
-    }
-    
-    var properties: [AnyProperty] {
-        return Mirror(reflecting: self)
-            .children
-            .compactMap { $0.value as? AnyProperty }
-    }
-}
+//extension Model {
+//    var fields: [AnyField] {
+//        return Mirror(reflecting: self)
+//            .children
+//            .compactMap { $0.value as? AnyField }
+//    }
+//    
+//    var properties: [AnyProperty] {
+//        return Mirror(reflecting: self)
+//            .children
+//            .compactMap { $0.value as? AnyProperty }
+//    }
+//}
 
 struct ModelDecoder {
     private var container: KeyedDecodingContainer<_ModelCodingKey>

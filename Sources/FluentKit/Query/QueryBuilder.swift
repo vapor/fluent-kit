@@ -22,39 +22,41 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.shared.fields.map { .field(
-            path: [$0.name],
-            entity: Model.entity,
-            alias: nil
-        ) }
+        self.query.fields = Model.shared.fields.map { (name, field) in
+            return .field(
+                path: [name],
+                entity: Model.entity,
+                alias: nil
+            )
+        }
         self.includeSoftDeleted = false
         self.joinedModels = []
     }
 
     // MARK: Eager Load
     
-    @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        switch method {
-        case .subquery:
-            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>(Model.shared[keyPath: field].name)
-        case .join:
-            fatalError("Join not yet supported for eager-loading children.")
-        }
-        return self
-    }
-
-    @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        switch method {
-        case .subquery:
-            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.shared[keyPath: field].name)
-            return self
-        case .join:
-            self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
-            return self.join(field)
-        }
-    }
+//    @discardableResult
+//    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
+//        switch method {
+//        case .subquery:
+//            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>.init
+//        case .join:
+//            fatalError("Join not yet supported for eager-loading children.")
+//        }
+//        return self
+//    }
+//
+//    @discardableResult
+//    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
+//        switch method {
+//        case .subquery:
+//            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.name(for: field))
+//            return self
+//        case .join:
+//            self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
+//            return self.join(field)
+//        }
+//    }
 
     // MARK: Join
     
@@ -63,53 +65,53 @@ public final class QueryBuilder<Model>
         where Value: FluentKit.Model
     {
         return self.join(
-            Value.self, Value.shared.id.name,
-            to: Model.self, Model.shared[keyPath: field].name,
+            Value.self, Value.name(for: \.id),
+            to: Model.self, Model.name(for: field),
             method: .inner
         )
     }
 
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value?>>,
-        to local: KeyPath<Local, Field<Value>>,
+        _ foreign: KeyPath<Foreign, Value?>,
+        to local: KeyPath<Local, Value>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.shared[keyPath: foreign].name,
-            to: Local.self, Local.shared[keyPath: local].name,
+            Foreign.self, Foreign.name(for: foreign),
+            to: Local.self, Local.name(for: local),
             method: .inner
         )
     }
 
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value>>,
-        to local: KeyPath<Local, Field<Value?>>,
+        _ foreign: KeyPath<Foreign, Value>,
+        to local: KeyPath<Local, Value?>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.shared[keyPath: foreign].name,
-            to: Local.self, Local.shared[keyPath: local].name,
+            Foreign.self, Foreign.name(for: foreign),
+            to: Local.self, Local.name(for: local),
             method: .inner
         )
     }
 
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value>>,
-        to local: KeyPath<Local, Field<Value>>,
+        _ foreign: KeyPath<Foreign, Value>,
+        to local: KeyPath<Local, Value>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.shared[keyPath: foreign].name,
-            to: Local.self, Local.shared[keyPath: local].name,
+            Foreign.self, Foreign.name(for: foreign),
+            to: Local.self, Local.name(for: local),
             method: .inner
         )
     }
@@ -124,14 +126,14 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign.shared.fields.map {
+        self.query.fields += Foreign.shared.fields.map { (name, field) in
             return .field(
-                path: [$0.name],
+                path: [name],
                 entity: Foreign.entity,
-                alias: Foreign.entity + "_" + $0.name
+                alias: Foreign.entity + "_" + name
             )
         }
-        self.joinedModels.append(Foreign.shared)
+        self.joinedModels.append(Foreign.init())
         self.query.joins.append(.model(
             foreign: .field(path: [foreignField], entity: Foreign.entity, alias: nil),
             local: .field(path: [localField], entity: Local.entity, alias: nil),
@@ -148,8 +150,10 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, in values: [Value]) -> Self {
-        return self.filter(Model.shared[keyPath: field].name, in: values)
+    public func filter<Value>(_ field: KeyPath<Model, Value>, in values: [Value]) -> Self
+        where Value: Codable
+    {
+        return self.filter(Model.name(for: field), in: values)
     }
     
     @discardableResult
@@ -161,8 +165,10 @@ public final class QueryBuilder<Model>
     }
     
     @discardableResult
-    public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self {
-        return self.filter(Model.shared[keyPath: field].name, method, value)
+    public func filter<Value>(_ field: KeyPath<Model, Value>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
+        where Value: Codable
+    {
+        return self.filter(Model.name(for: field), method, value)
     }
     
     @discardableResult
@@ -193,9 +199,11 @@ public final class QueryBuilder<Model>
     // MARK: Set
     
     @discardableResult
-    public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
+    public func set<Value>(_ field: KeyPath<Model, Value>, to value: Value) -> Self
+        where Value: Codable
+    {
         self.query.fields = []
-        query.fields.append(.field(path: [Model.shared[keyPath: field].name], entity: nil, alias: nil))
+        query.fields.append(.field(path: [Model.name(for: field)], entity: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -213,8 +221,10 @@ public final class QueryBuilder<Model>
     ///     - key: Swift `KeyPath` to field on model to sort.
     ///     - direction: Direction to sort the fields, ascending or descending.
     /// - returns: Query builder for chaining.
-    public func sort<Value>(_ field: KeyPath<Model, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
-        return self.sort(Model.self, Model.shared[keyPath: field].name, direction)
+    public func sort<Value>(_ field: KeyPath<Model, Value>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
+        where Value: Codable
+    {
+        return self.sort(Model.self, Model.name(for: field), direction)
     }
 
     /// Add a sort to the query builder for a field.
@@ -225,10 +235,10 @@ public final class QueryBuilder<Model>
     ///     - key: Swift `KeyPath` to field on model to sort.
     ///     - direction: Direction to sort the fields, ascending or descending.
     /// - returns: Query builder for chaining.
-    public func sort<Joined, Value>(_ field: KeyPath<Joined, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
-        where Joined: FluentKit.Model
+    public func sort<Joined, Value>(_ field: KeyPath<Joined, Value>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
+        where Joined: FluentKit.Model, Value: Codable
     {
-        return self.sort(Joined.self, Joined.shared[keyPath: field].name, direction)
+        return self.sort(Joined.self, Joined.name(for: field), direction)
     }
 
     public func sort(_ field: String, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
@@ -245,14 +255,14 @@ public final class QueryBuilder<Model>
     // MARK: Nested
 
     public func filter<Value, NestedValue>(
-        _ field: KeyPath<Model, Field<Value>>,
+        _ field: KeyPath<Model, Value>,
         _ path: NestedPath,
         _ method: DatabaseQuery.Filter.Method,
         _ value: NestedValue
     ) -> Self
         where Value: Codable, NestedValue: Codable
     {
-        return self.filter(Model.shared[keyPath: field].name, path, method, value)
+        return self.filter(Model.name(for: field), path, method, value)
     }
 
     public func filter<NestedValue>(
@@ -291,49 +301,49 @@ public final class QueryBuilder<Model>
         return self.aggregate(.count, \.id)
     }
 
-    public func sum<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
+    public func sum<Value>(_ key: KeyPath<Model, Value?>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.sum, key)
     }
     
-    public func sum<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
+    public func sum<Value>(_ key: KeyPath<Model, Value>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.sum, key)
     }
 
-    public func average<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
+    public func average<Value>(_ key: KeyPath<Model, Value?>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.average, key)
     }
     
-    public func average<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
+    public func average<Value>(_ key: KeyPath<Model, Value>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.average, key)
     }
 
-    public func min<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
+    public func min<Value>(_ key: KeyPath<Model, Value?>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.minimum, key)
     }
     
-    public func min<Value>(_ key:KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
+    public func min<Value>(_ key:KeyPath<Model, Value>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.minimum, key)
     }
 
-    public func max<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
+    public func max<Value>(_ key: KeyPath<Model, Value?>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.maximum, key)
     }
     
-    public func max<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
+    public func max<Value>(_ key: KeyPath<Model, Value>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.maximum, key)
@@ -342,12 +352,12 @@ public final class QueryBuilder<Model>
 
     public func aggregate<Value, Result>(
         _ method: DatabaseQuery.Field.Aggregate.Method,
-        _ field: KeyPath<Model, Field<Value>>,
+        _ field: KeyPath<Model, Value>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
-        return self.aggregate(method, Model.shared[keyPath: field].name, as: Result.self)
+        return self.aggregate(method, Model.name(for: field), as: Result.self)
     }
     
     public func aggregate<Result>(
@@ -366,7 +376,7 @@ public final class QueryBuilder<Model>
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.storage.output!.decode(field: "fluentAggregate", as: Result.self)
+            return try res.storage!.output!.decode(field: "fluentAggregate", as: Result.self)
         }
     }
     
@@ -378,8 +388,8 @@ public final class QueryBuilder<Model>
     
     // MARK: Fetch
     
-    public func chunk(max: Int, closure: @escaping ([Row<Model>]) throws -> ()) -> EventLoopFuture<Void> {
-        var partial: [Row<Model>] = []
+    public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
+        var partial: [Model] = []
         partial.reserveCapacity(max)
         return self.run { row in
             partial.append(row)
@@ -396,12 +406,12 @@ public final class QueryBuilder<Model>
         }
     }
     
-    public func first() -> EventLoopFuture<Row<Model>?> {
+    public func first() -> EventLoopFuture<Model?> {
         return all().map { $0.first }
     }
     
-    public func all() -> EventLoopFuture<[Row<Model>]> {
-        var models: [Row<Model>] = []
+    public func all() -> EventLoopFuture<[Model]> {
+        var models: [Model] = []
         return self.run { model in
             models.append(model)
         }.map { models }
@@ -416,23 +426,24 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
     
-    public func run(_ onOutput: @escaping (Row<Model>) throws -> ()) -> EventLoopFuture<Void> {
-        var all: [Row<Model>] = []
+    public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
+        var all: [Model] = []
         
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
 
         // check if model is soft-deletable and should be excluded
-        if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
-            softDeletable._excludeSoftDeleted(&query)
-            self.joinedModels
-                .compactMap { $0 as? _AnySoftDeletable }
-                .forEach { $0._excludeSoftDeleted(&query) }
-        }
+        #warning("TODO: soft-delete")
+//        if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
+//            softDeletable._excludeSoftDeleted(&query)
+//            self.joinedModels
+//                .compactMap { $0 as? _AnySoftDeletable }
+//                .forEach { $0._excludeSoftDeleted(&query) }
+//        }
 
         return self.database.execute(query) { output in
-            let model = try Row<Model>(storage: DefaultStorage(
+            let model = try Model(storage: DefaultStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true
@@ -448,9 +459,11 @@ public final class QueryBuilder<Model>
 }
 
 public struct ModelFilter<Model> where Model: FluentKit.Model {
-    static func make<Value>(_ lhs: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ rhs: Value) -> ModelFilter {
+    static func make<Value>(_ lhs: KeyPath<Model, Value>, _ method: DatabaseQuery.Filter.Method, _ rhs: Value) -> ModelFilter
+        where Value: Codable
+    {
         return .init(filter: .basic(
-            .field(path: [Model.shared[keyPath: lhs].name], entity: Model.entity, alias: nil),
+            .field(path: [Model.name(for: lhs)], entity: Model.entity, alias: nil),
             method,
             .bind(rhs)
         ))
@@ -462,10 +475,16 @@ public struct ModelFilter<Model> where Model: FluentKit.Model {
     }
 }
 
-public func ==<Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func ==<Model, Value>(lhs: KeyPath<Model, Value>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: Codable
 {
     return .make(lhs, .equality(inverse: false), rhs)
+}
+
+public func !=<Model, Value>(lhs: KeyPath<Model, Value>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: Codable
+{
+    return .make(lhs, .equality(inverse: true), rhs)
 }
 
 public struct NestedPath: ExpressibleByStringLiteral {

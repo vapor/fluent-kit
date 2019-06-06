@@ -101,10 +101,8 @@ public struct Migrator {
             database = self.databases.default()
         }
         return item.migration.prepare(on: database).flatMap {
-            let log = MigrationLog.row()
-            log.name = item.migration.name
-            log.batch = 1
-            return log.save(on: self.databases.default())
+            return MigrationLog(name: item.migration.name, batch: 1)
+                .save(on: self.databases.default())
         }
     }
     

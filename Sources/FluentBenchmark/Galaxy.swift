@@ -1,8 +1,14 @@
 import FluentKit
 
-struct Galaxy: Model {
-    static let shared = Galaxy()
-    let id = Field<Int?>("id")
-    let name = Field<String>("name")
-    let planets = Children<Planet>("galaxyID")
+final class Galaxy: Model {
+    @Field var id: Int?
+    @Field var name: String
+    @Relation var planets: Children<Planet>
+
+    init() { }
+
+    init(id: Int? = nil, name: String) {
+        self.id = id
+        self.name = name
+    }
 }
