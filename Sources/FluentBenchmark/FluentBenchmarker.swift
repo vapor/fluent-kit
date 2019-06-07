@@ -35,6 +35,7 @@ public final class FluentBenchmarker {
         try self.testTimestampable()
         try self.testLifecycleHooks()
         try self.testSort()
+        try self.testUUIDModel()
     }
     
     public func testCreate() throws {
@@ -833,6 +834,27 @@ public final class FluentBenchmarker {
             let ascending = try Galaxy.query(on: self.database).sort(\.name, .ascending).all().wait()
             let descending = try Galaxy.query(on: self.database).sort(\.name, .descending).all().wait()
             XCTAssertEqual(ascending.map { $0.name }, descending.reversed().map { $0.name })
+        }
+    }
+
+    public func testUUIDModel() throws {
+        struct User: Model {
+            static var shared = User()
+
+            let id = Field<UUID?>("id")
+            let name = Field<String>("name")
+        }
+        // seeded db
+        try runTest(#function, [
+            User.autoMigration(),
+        ]) {
+            let user = User.row()
+            user.name = "Vapor"
+            try user.save(on: self.database).wait()
+
+            guard try User.query(on: self.database).count().wait() == 1 else {
+                throw Failure("User did not save")
+            }
         }
     }
 
