@@ -1,10 +1,29 @@
 #warning("TODO: children")
 
-public struct Children<Value>: RelationType where Value: Model {
-    public init() { }
+extension Model {
+    public typealias Children<ChildType> = ModelChildren<Self, ChildType>
+        where ChildType: Model
+}
+
+public struct ModelChildren<ParentType, ChildType>: RelationType
+    where ParentType: Model, ChildType: Model
+{
+    var nameOverride: String?
+    
+    var foreignIDName: String {
+        return self.nameOverride ?? ParentType.name + "ID"
+    }
+    
+    var baseIDName: String {
+        return ParentType.name(for: \.id)
+    }
+    
+    public init(nameOverride: String?) {
+        self.nameOverride = nameOverride
+    }
 
 
-    public func eagerLoaded() throws -> [Value] {
+    public func eagerLoaded() throws -> [ChildType] {
         #warning("TODO: fixme")
         return []
 //        guard let rows = try self.children.eagerLoaded(for: self.row) else {
@@ -13,9 +32,9 @@ public struct Children<Value>: RelationType where Value: Model {
 //        return rows
     }
 
-    public func query(on database: Database) -> QueryBuilder<Value> {
+    public func query(on database: Database) -> QueryBuilder<ChildType> {
         #warning("TODO: fixme")
-        return Value.query(on: database)
+        return ChildType.query(on: database)
 //        let id = self.row.storage.get(self.children.name, as: Value.ID.self)
 //        return Value.query(on: database)
 //            .filter(self.children.name, .equal, id)

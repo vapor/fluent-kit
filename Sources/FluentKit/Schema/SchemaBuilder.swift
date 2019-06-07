@@ -27,10 +27,10 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.shared.fields.map { (name, field) in
+        self.schema.createFields = Model.reference().fields.map { field in
             var constraints = field.constraints
             let type: Any.Type
-            if name == Model.name(for: \.id) {
+            if field.name == Model.name(for: \.id) {
                 constraints.append(.identifier)
                 type = field.type
             } else {
@@ -44,7 +44,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
                 }
             }
             return .definition(
-                name: .string(name),
+                name: .string(field.name),
                 dataType: field.dataType ?? .bestFor(type: type),
                 constraints: constraints
             )
@@ -57,7 +57,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     {
         let field = Model.field(for: keyPath)
         return self.field(.definition(
-            name: .string(field.name!),
+            name: .string(field.name),
             dataType: field.dataType ?? .bestFor(type: Value.self),
             constraints: field.constraints
         ))

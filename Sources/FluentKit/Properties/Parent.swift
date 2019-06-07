@@ -1,16 +1,81 @@
-public struct Parent<T>: RelationType where T: Model {
-    public init() {
-        self.value = .init()
+extension Model {
+    public typealias Parent<ParentType> = ModelParent<Self, ParentType>
+        where ParentType: Model
+}
+
+public final class ModelParent<ChildType, ParentType>: RelationType, AnyField
+    where ChildType: Model, ParentType: Model
+{
+    var input: DatabaseQuery.Value? {
+        return self.field.input
+    }
+    
+    var dataType: DatabaseSchema.DataType? {
+        return self.field.dataType
+    }
+    
+    var constraints: [DatabaseSchema.FieldConstraint] {
+        return self.field.constraints
+    }
+    
+    var storage: Storage? {
+        return self.field.storage
+    }
+    
+    var type: Any.Type {
+        return self.field.type
+    }
+    
+    var name: String {
+        return self.foreignIDName
+    }
+    
+    func initialize(label: String) {
+        self.field.initialize(label: self.name)
+    }
+    
+    func initialize(reflectionContext: ReflectionContext) {
+        self.field.initialize(reflectionContext: reflectionContext)
+    }
+    
+    func initialize(storage: Storage) throws {
+        try self.field.initialize(storage: storage)
+    }
+    
+    func encode(to encoder: inout ModelEncoder) throws {
+        try self.field.encode(to: &encoder)
+    }
+    
+    func decode(from decoder: ModelDecoder) throws {
+        try self.field.decode(from: decoder)
+    }
+    
+    
+    public init(nameOverride: String?) {
+        if let nameOverride = nameOverride {
+            self.field = .init(nameOverride)
+        } else {
+            self.field = .init()
+        }
     }
 
-    var value: T
+    var nameOverride: String?
+    var field: Field<ParentType.ID>
+    
+    var foreignIDName: String {
+        return self.nameOverride ?? ParentType.name + "ID"
+    }
+    
+    var baseIDName: String {
+        return ParentType.name(for: \.id)
+    }
 
-    public var id: T.ID? {
+    public var id: ParentType.ID {
         get {
-            return self.value.id
+            return self.field.value
         }
         set {
-            self.value.id = newValue
+            self.field.value = newValue
         }
     }
 //

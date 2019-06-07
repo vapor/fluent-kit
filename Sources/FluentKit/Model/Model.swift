@@ -40,8 +40,18 @@ extension AnyModel {
 
 // MARK: Reflection
 
-public protocol Reflectable {
+public protocol AnyReflectable {
+    static var anyReflectionValue: Any { get }
+}
+
+public protocol Reflectable: AnyReflectable {
     static var reflectionValue: Self { get }
+}
+
+extension Reflectable {
+    public static var anyReflectionValue: Any {
+        return self.reflectionValue
+    }
 }
 
 extension String: Reflectable {
@@ -53,6 +63,12 @@ extension String: Reflectable {
 extension Int: Reflectable {
     public static var reflectionValue: Int {
         return 0
+    }
+}
+
+extension Optional: AnyReflectable where Wrapped: AnyReflectable {
+    public static var anyReflectionValue: Any {
+        return Wrapped.anyReflectionValue
     }
 }
 
@@ -74,10 +90,13 @@ internal final class ReflectionContext {
 }
 
 protocol AnyProperty: class {
-    var storage: Storage? { get set }
-    var name: String? { get set }
+    var storage: Storage? { get }
     var type: Any.Type { get }
-    var reflectionContext: ReflectionContext? { get set }
+    var name: String { get }
+    
+    func initialize(label: String)
+    func initialize(reflectionContext: ReflectionContext)
+    func initialize(storage: Storage) throws
 
     func encode(to encoder: inout ModelEncoder) throws
     func decode(from decoder: ModelDecoder) throws
@@ -90,54 +109,49 @@ protocol AnyField: AnyProperty {
 }
 
 extension Model {
-    static func reflectionReference() -> (Self, ReflectionContext) {
-        let new = self.init()
-
-        let context = ReflectionContext()
-        new.fields.forEach { (name, field) in
-            field.name = name
-            field.reflectionContext = context
+    static func reflectable() -> (Self, ReflectionContext) {
+        let new = self.reference()
+        let reflectionContext = ReflectionContext()
+        new.fields.forEach { field in
+            field.initialize(reflectionContext: reflectionContext)
         }
-
-        return (new, context)
+        return (new, reflectionContext)
     }
 
-    public static var shared: Self {
-        return .init()
+    static func reference() -> Self {
+        let new = Self.init()
+        new.initializeLabels()
+        return new
     }
-
-    var fields: [(String, AnyField)] {
-        return Mirror(reflecting: self).children.compactMap { child -> (String, AnyField)? in
-            guard let field = child.value as? AnyField else {
-                return nil
+    
+    func initializeLabels() {
+        for child in Mirror(reflecting: self).children {
+            if let field = child.value as? AnyField, let label = child.label {
+                field.initialize(label: String(label.dropFirst()))
             }
-            guard let name = child.label else {
-                return nil
-            }
-            return (String(name.dropFirst()), field)
         }
     }
 
-    var properties: [(String, AnyProperty)] {
-        return Mirror(reflecting: self).children.compactMap { child -> (String, AnyProperty)? in
-            guard let field = child.value as? AnyProperty else {
-                return nil
-            }
-            guard let name = child.label else {
-                return nil
-            }
-            return (String(name.dropFirst()), field)
-        }
+    var fields: [AnyField] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? AnyField }
+    }
+
+    var properties: [AnyProperty] {
+        return Mirror(reflecting: self)
+            .children
+            .compactMap { $0.value as? AnyProperty }
     }
 
     static func field<T>(for keyPath: KeyPath<Self, T>) -> AnyField {
-        let (model, context) = Self.reflectionReference()
+        let (model, context) = Self.reflectable()
         _ = model[keyPath: keyPath]
         return context.lastAccessedField!
     }
 
     public static func name<T>(for keyPath: KeyPath<Self, T>) -> String {
-        return self.field(for: keyPath).name!
+        return self.field(for: keyPath).name
     }
 }
 
@@ -157,8 +171,7 @@ extension Model {
     }
 
     var storage: Storage? {
-        let (_, field) = self.fields.first!
-        return field.storage
+        return self.fields.first!.storage
     }
 }
 
@@ -242,21 +255,21 @@ extension Model {
 
     init(storage: Storage) throws {
         self.init()
-        self.load(storage: storage)
+        try self.load(storage: storage)
     }
 
-    func load(storage: Storage) {
-        for (name, field) in self.fields {
-            field.name = name
-            field.storage = storage
+    func load(storage: Storage) throws {
+        for field in self.fields {
+            try field.initialize(storage: storage)
         }
     }
 
     var input: [String: DatabaseQuery.Value] {
         var input: [String: DatabaseQuery.Value] = [:]
-
-        for (name, field) in self.fields {
-            input[name] = field.input
+        
+        self.initializeLabels()
+        for field in self.fields {
+            input[field.name] = field.input
         }
 
         return input
@@ -356,18 +369,18 @@ extension Model {
     public init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        for (name, property) in Self.shared.properties {
+        for property in Self.reference().properties {
             do {
                 try property.decode(from: decoder)
             } catch {
-                print("Could not decode \(name): \(error)")
+                print("Could not decode \(property.name): \(error)")
             }
         }
     }
 
     public func encode(to encoder: Encoder) throws {
         var encoder = ModelEncoder(encoder: encoder)
-        for (name, property) in Self.shared.properties {
+        for property in Self.reference().properties {
             try property.encode(to: &encoder)
         }
     }

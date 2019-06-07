@@ -33,17 +33,17 @@ final class SubqueryParentEagerLoad<ChildType, ParentType>: EagerLoad
     where  ChildType: Model, ParentType: Model
 {
     var storage: [ParentType]
-    let keyPath: KeyPath<ChildType, Parent<ParentType>>
+    let parentID: String
     
-    init(_ keyPath: KeyPath<ChildType, Parent<ParentType>>) {
+    init(_ parentID: String) {
         self.storage = []
-        self.keyPath = keyPath
+        self.parentID = parentID
     }
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
         let ids: [ParentType.ID] = models
             .map { $0 as! ChildType }
-            .map { $0[keyPath: self.keyPath].id! }
+            .map { try! $0.storage!.output!.decode(field: self.parentID, as: ParentType.ID.self) }
 
         let uniqueIDs = Array(Set(ids))
         return ParentType.query(on: database)
@@ -64,11 +64,11 @@ final class SubqueryChildEagerLoad<ParentType, ChildType>: EagerLoad
     where ParentType: Model, ChildType: Model
 {
     var storage: [ChildType]
-    let keyPath: KeyPath<ChildType, ParentType.ID>
-
-    init(_ keyPath: KeyPath<ChildType, ParentType.ID>) {
+    let parentID: String
+    
+    init(_ parentID: String) {
         self.storage = []
-        self.keyPath = keyPath
+        self.parentID = parentID
     }
     
     func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
@@ -78,7 +78,7 @@ final class SubqueryChildEagerLoad<ParentType, ChildType>: EagerLoad
         
         let uniqueIDs = Array(Set(ids))
         return ChildType.query(on: database)
-            .filter(self.keyPath, in: uniqueIDs)
+            .filter(self.parentID, in: uniqueIDs)
             .all()
             .map { self.storage = $0 }
     }
@@ -86,7 +86,7 @@ final class SubqueryChildEagerLoad<ParentType, ChildType>: EagerLoad
     func get(id: Any) throws -> [Any] {
         let id = id as! ParentType.ID
         return self.storage.filter { child in
-            return child[keyPath: self.keyPath] == id
+            return try! child.storage!.output!.decode(field: self.parentID, as: ParentType.ID.self) == id
         }
     }
 }

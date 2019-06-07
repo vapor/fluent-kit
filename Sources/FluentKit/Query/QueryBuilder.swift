@@ -22,9 +22,9 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.shared.fields.map { (name, field) in
+        self.query.fields = Model.reference().fields.map { field in
             return .field(
-                path: [name],
+                path: [field.name],
                 entity: Model.entity,
                 alias: nil
             )
@@ -35,33 +35,34 @@ public final class QueryBuilder<Model>
 
     // MARK: Eager Load
     
-//    @discardableResult
-//    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-//        switch method {
-//        case .subquery:
-//            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>.init
-//        case .join:
-//            fatalError("Join not yet supported for eager-loading children.")
-//        }
-//        return self
-//    }
-//
-//    @discardableResult
-//    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-//        switch method {
-//        case .subquery:
-//            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.name(for: field))
-//            return self
-//        case .join:
-//            self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
-//            return self.join(field)
-//        }
-//    }
+    @discardableResult
+    public func eagerLoad<Value>(_ field: KeyPath<Model, ModelChildren<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
+        switch method {
+        case .subquery:
+            let name = Model.reference()[keyPath: field].foreignIDName
+            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>(name)
+        case .join:
+            fatalError("Join not yet supported for eager-loading children.")
+        }
+        return self
+    }
+
+    @discardableResult
+    public func eagerLoad<Value>(_ field: KeyPath<Model, ModelParent<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
+        switch method {
+        case .subquery:
+            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.name(for: field))
+            return self
+        case .join:
+            self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
+            return self.join(field)
+        }
+    }
 
     // MARK: Join
     
     @discardableResult
-    public func join<Value>(_ field: KeyPath<Model, Parent<Value>>) -> Self
+    public func join<Value>(_ field: KeyPath<Model, ModelParent<Model, Value>>) -> Self
         where Value: FluentKit.Model
     {
         return self.join(
@@ -126,11 +127,11 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign.shared.fields.map { (name, field) in
+        self.query.fields += Foreign.reference().fields.map { field in
             return .field(
-                path: [name],
+                path: [field.name],
                 entity: Foreign.entity,
-                alias: Foreign.entity + "_" + name
+                alias: Foreign.entity + "_" + field.name
             )
         }
         self.joinedModels.append(Foreign.init())

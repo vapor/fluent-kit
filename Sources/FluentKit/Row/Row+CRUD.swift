@@ -18,7 +18,7 @@ extension Model {
                 .action(.create)
                 .run { created in
                     self.id = try created.storage!.output!.decode(field: "fluentID", as: Self.ID.self)
-                    self.load(storage: DefaultStorage(output: nil, eagerLoads: [:], exists: true))
+                    try self.load(storage: DefaultStorage(output: nil, eagerLoads: [:], exists: true))
                 }
         }.flatMap {
             return self.didCreate(on: database)
