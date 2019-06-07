@@ -79,7 +79,7 @@ public struct DatabaseSchema {
     
     public enum FieldConstraint {
         case required
-        case identifier
+        case identifier(generated: Bool)
         case custom(Any)
     }
     

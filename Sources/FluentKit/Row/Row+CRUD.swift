@@ -12,12 +12,17 @@ extension Row {
             timestampable._touchCreated(&self.storage.input)
         }
         precondition(!self.exists)
+        if let generatedIDType = Model.ID.self as? AnyGeneratableID.Type {
+            self.id = (generatedIDType.anyGenerateID() as! Model.ID)
+        }
         return Model.shared.willCreate(self, on: database).flatMap {
             return Model.query(on: database)
                 .set(self.storage.input)
                 .action(.create)
                 .run { created in
-                    self.id = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
+                    if Model.ID.self is AnyGeneratableID.Type { } else {
+                        self.id = try created.storage.output!.decode(field: "fluentID", as: Model.ID.self)
+                    }
                     self.storage.exists = true
             }
         }.flatMap {

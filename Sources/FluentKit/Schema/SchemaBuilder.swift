@@ -17,6 +17,26 @@ extension Optional: OptionalType {
     }
 }
 
+protocol AnyGeneratableID {
+    static func anyGenerateID() -> Any
+}
+
+protocol GeneratableID: AnyGeneratableID {
+    static func generateID() -> Self
+}
+
+extension GeneratableID {
+    static func anyGenerateID() -> Any {
+        self.generateID()
+    }
+}
+
+extension UUID: GeneratableID {
+    static func generateID() -> UUID {
+        .init()
+    }
+}
+
 public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     let database: Database
     public var schema: DatabaseSchema
@@ -30,19 +50,24 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         self.schema.createFields = Model.shared.fields.map { field in
             var constraints = field.constraints
             let type: Any.Type
-            if field.name == Model.shared.id.name {
-                constraints.append(.identifier)
-                type = field.type
+
+            let isOptional: Bool
+            if let optionalType = field.type as? OptionalType.Type {
+                isOptional = true
+                type = optionalType.wrappedType
             } else {
-                if let optionalType = field.type as? OptionalType.Type {
-                    type = optionalType.wrappedType
-                } else {
-                    type = field.type
-                    if field.constraints.isEmpty {
-                        constraints.append(.required)
-                    }
-                }
+                isOptional = false
+                type = field.type
             }
+
+            if field.name == Model.shared.id.name {
+                constraints.append(.identifier(
+                    generated: type is AnyGeneratableID.Type
+                ))
+            } else if !isOptional, field.constraints.isEmpty {
+                constraints.append(.required)
+            }
+            
             return .definition(
                 name: .string(field.name),
                 dataType: field.dataType ?? .bestFor(type: type),
