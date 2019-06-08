@@ -12,12 +12,17 @@ extension Model {
 //            timestampable._touchCreated(&self.storage.input)
 //        }
         precondition(!self.exists)
+        if let generatedIDType = Self.ID.self as? AnyGeneratableID.Type {
+        self.id = (generatedIDType.anyGenerateID() as! Self.ID)
+        }
         return self.willCreate(on: database).flatMap {
             return Self.query(on: database)
                 .set(self.input)
                 .action(.create)
                 .run { created in
-                    self.id = try created.storage!.output!.decode(field: "fluentID", as: Self.ID.self)
+                    if Self.ID.self is AnyGeneratableID.Type { } else {
+                        self.id = try created.storage!.output!.decode(field: "fluentID", as: Self.ID.self)
+                    }
                     try self.load(storage: DefaultStorage(output: nil, eagerLoads: [:], exists: true))
                 }
         }.flatMap {

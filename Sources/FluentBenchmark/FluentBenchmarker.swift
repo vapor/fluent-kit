@@ -22,7 +22,7 @@ public final class FluentBenchmarker {
 //        try self.testMigrator()
 //        try self.testMigratorError()
 //        try self.testJoin()
-//        try self.testBatchCreate()
+        try self.testBatchCreate()
 //        try self.testBatchUpdate()
 //        try self.testNestedModel()
 //        try self.testAggregates()
@@ -35,6 +35,7 @@ public final class FluentBenchmarker {
 //        try self.testTimestampable()
 //        try self.testLifecycleHooks()
 //        try self.testSort()
+        try self.testUUIDModel()
     }
     
     public func testCreate() throws {
@@ -830,6 +831,28 @@ public final class FluentBenchmarker {
 //            XCTAssertEqual(ascending.map { $0.name }, descending.reversed().map { $0.name })
 //        }
 //    }
+
+    public func testUUIDModel() throws {
+        final class User: Model {
+            @Field var id: UUID?
+            @Field var name: String
+
+            init() { }
+        }
+        
+        // seeded db
+        try runTest(#function, [
+            User.autoMigration(),
+        ]) {
+            let user = User()
+            user.name = "Vapor"
+            try user.save(on: self.database).wait()
+
+            guard try User.query(on: self.database).count().wait() == 1 else {
+                throw Failure("User did not save")
+            }
+        }
+    }
 
     // MARK: Utilities
     
