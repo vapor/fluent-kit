@@ -111,6 +111,16 @@ public struct DatabaseQuery {
         case sort(field: Field, direction: Direction)
         case custom(Any)
     }
+
+    public enum Limit {
+        case count(Int)
+        case custom(Any)
+    }
+
+    public enum Offset {
+        case count(Int)
+        case custom(Any)
+    }
     
     public var fields: [Field]
     public var action: Action
@@ -119,6 +129,8 @@ public struct DatabaseQuery {
     public var input: [[Value]]
     public var joins: [Join]
     public var sorts: [Sort]
+    public var limits: [Limit]
+    public var offsets: [Offset]
 
     public init(entity: String) {
         self.fields = []
@@ -128,5 +140,7 @@ public struct DatabaseQuery {
         self.input = []
         self.joins = []
         self.sorts = []
+        self.limits = []
+        self.offsets = []
     }
 }
