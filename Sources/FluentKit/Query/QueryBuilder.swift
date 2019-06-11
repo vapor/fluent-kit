@@ -374,7 +374,20 @@ public final class QueryBuilder<Model>
         case subquery
         case join
     }
-    
+
+    // MARK: Limit
+
+    public func limit(_ count: Int) -> Self {
+        self.query.limits.append(.count(count))
+        return self
+    }
+
+    // MARK: Offset
+
+    public func offset(_ count: Int) -> Self {
+        self.query.offsets.append(.count(count))
+        return self
+    }
     
     // MARK: Fetch
     
@@ -397,7 +410,13 @@ public final class QueryBuilder<Model>
     }
     
     public func first() -> EventLoopFuture<Row<Model>?> {
-        return all().map { $0.first }
+        var model: Row<Model>? = nil
+        return self.limit(1)
+            .run { result in
+                assert(model == nil, "unexpected database output")
+                model = result
+            }
+            .map { model }
     }
     
     public func all() -> EventLoopFuture<[Row<Model>]> {

@@ -313,13 +313,22 @@ public final class FluentBenchmarker {
             var databases = Databases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
             
-            let migrator = Migrator(
+            var migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()
             try migrator.prepareBatch().wait()
+
+            migrator.migrations.add(GalaxySeed())
+            try migrator.prepareBatch().wait()
+
+            let logs = try MigrationLog.query(on: self.database).all().wait().map { $0.batch }
+            guard logs == [1, 1, 2] else {
+                throw Failure("batch did not increment")
+            }
+
             try migrator.revertAllBatches().wait()
             
         }

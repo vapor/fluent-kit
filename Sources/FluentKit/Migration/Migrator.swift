@@ -1,8 +1,8 @@
 import Foundation
 
 public struct Migrator {
-    public let migrations: Migrations
-    public let databases: Databases
+    public var migrations: Migrations
+    public var databases: Databases
     public let eventLoop: EventLoop
     
     public init(databases: Databases, migrations: Migrations, on eventLoop: EventLoop) {
@@ -25,8 +25,11 @@ public struct Migrator {
     
     public func prepareBatch() -> EventLoopFuture<Void> {
         return self.unpreparedMigrations().flatMap { migrations in
+            return self.lastBatchNumber()
+                .and(value: migrations)
+        }.flatMap { (lastBatch, migrations) in
             return .andAllSync(migrations.map { item in
-                return { self.prepare(item) }
+                return { self.prepare(item, batch: lastBatch + 1) }
             }, eventLoop: self.eventLoop)
         }
     }
@@ -93,7 +96,7 @@ public struct Migrator {
     
     // MARK: Private
     
-    private func prepare(_ item: Migrations.Item) -> EventLoopFuture<Void> {
+    private func prepare(_ item: Migrations.Item, batch: Int) -> EventLoopFuture<Void> {
         let database: Database
         if let id = item.id {
             database = self.databases.database(id)!
@@ -103,7 +106,7 @@ public struct Migrator {
         return item.migration.prepare(on: database).flatMap {
             let log = MigrationLog.row()
             log.name = item.migration.name
-            log.batch = 1
+            log.batch = batch
             return log.save(on: self.databases.default())
         }
     }
