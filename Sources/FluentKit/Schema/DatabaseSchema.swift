@@ -34,6 +34,7 @@ public struct DatabaseSchema {
             case id(UInt.self), id(UInt64.self): return .uint64
             case id(UUID.self): return .uuid
             case id(Date.self): return .datetime
+            case id(Bool.self): return .bool
             default: return .json
             }
         }
