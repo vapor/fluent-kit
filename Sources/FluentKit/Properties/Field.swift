@@ -40,30 +40,3 @@ extension Field: ExpressibleByStringLiteral {
         self.init(value)
     }
 }
-
-//extension Model {
-//    public func field<Value>(
-//        _ name: String,
-//        _ dataType: DatabaseSchema.DataType? = nil,
-//        _ constraints: DatabaseSchema.FieldConstraint...
-//    ) -> Field<Value>
-//        where Value: Codable
-//    {
-//        return .init(name: name, dataType: dataType, constraints: constraints)
-//    }
-//
-//    public func id<Value>(
-//        _ name: String,
-//        _ dataType: DatabaseSchema.DataType? = nil,
-//        _ constraints: DatabaseSchema.FieldConstraint...
-//    ) -> Field<Value>
-//        where Value: Codable
-//    {
-//        return .init(
-//            model: self,
-//            name: name,
-//            dataType: dataType,
-//            constraints: constraints + [.identifier]
-//        )
-//    }
-//}
