@@ -134,8 +134,8 @@ public struct SQLSchemaConverter {
         switch fieldConstraint {
         case .required:
             return SQLColumnConstraint.notNull
-        case .identifier(let generated):
-            return SQLColumnConstraint.primaryKey(autoIncrement: !generated, name: nil)
+        case .identifier(let auto):
+            return SQLColumnConstraint.primaryKey(autoIncrement: auto, name: nil)
         case .custom(let any):
             return custom(any)
         }
