@@ -466,25 +466,113 @@ public final class QueryBuilder<Model>
     }
 }
 
+// MARK: Operators
+
+public func == <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .equal, .bind(rhs))
+}
+
+public func != <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .notEqual, .bind(rhs))
+}
+
+public func >= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .greaterThanOrEqual, .bind(rhs))
+}
+
+public func > <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .greaterThan, .bind(rhs))
+}
+
+public func < <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .lessThan, .bind(rhs))
+}
+
+public func <= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .lessThanOrEqual, .bind(rhs))
+}
+
+infix operator ~~
+public func ~~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: [Value]) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .subset(inverse: false), .array(rhs.map { .bind($0) }))
+}
+
+infix operator !~
+public func !~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: [Value]) -> ModelFilter<Model>
+    where Model: FluentKit.Model
+{
+    return .make(lhs, .subset(inverse: true), .array(rhs.map { .bind($0) }))
+}
+
+
+public func ~= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: CustomStringConvertible
+{
+    return .make(lhs, .contains(inverse: false, .suffix), .bind(rhs))
+}
+
+public func ~~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: CustomStringConvertible
+{
+    return .make(lhs, .contains(inverse: false, .anywhere), .bind(rhs))
+}
+
+infix operator =~
+public func =~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: CustomStringConvertible
+{
+    return .make(lhs, .contains(inverse: false, .prefix), .bind(rhs))
+}
+
+
+infix operator !~=
+public func !~= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: CustomStringConvertible
+{
+    return .make(lhs, .contains(inverse: true, .suffix), .bind(rhs))
+}
+
+infix operator !~~
+public func !~~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: CustomStringConvertible
+{
+    return .make(lhs, .contains(inverse: true, .anywhere), .bind(rhs))
+}
+
+infix operator !=~
+public func !=~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Value: CustomStringConvertible
+{
+    return .make(lhs, .contains(inverse: true, .prefix), .bind(rhs))
+}
+
 public struct ModelFilter<Model> where Model: FluentKit.Model {
-    static func make<Value>(_ lhs: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ rhs: Value) -> ModelFilter {
+    static func make<Value>(_ lhs: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ rhs: DatabaseQuery.Value) -> ModelFilter {
         return .init(filter: .basic(
             .field(path: [Model.shared[keyPath: lhs].name], entity: Model.entity, alias: nil),
             method,
-            .bind(rhs)
+            rhs
         ))
     }
-    
+
     let filter: DatabaseQuery.Filter
     init(filter: DatabaseQuery.Filter) {
         self.filter = filter
     }
-}
-
-public func ==<Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
-{
-    return .make(lhs, .equality(inverse: false), rhs)
 }
 
 public struct NestedPath: ExpressibleByStringLiteral {
