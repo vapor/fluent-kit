@@ -146,6 +146,13 @@ public final class QueryBuilder<Model>
     public func filter(_ filter: ModelFilter<Model>) -> Self {
         return self.filter(filter.filter)
     }
+
+    @discardableResult
+    public func filter<Joined>(_ filter: ModelFilter<Joined>) -> Self
+        where Joined: FluentKit.Model
+    {
+        return self.filter(filter.filter)
+    }
     
     @discardableResult
     public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, in values: [Value]) -> Self {
