@@ -62,7 +62,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
 
             if field.name == Model.shared.id.name {
                 constraints.append(.identifier(
-                    generated: type is AnyGeneratableID.Type
+                    auto: !(type is AnyGeneratableID.Type)
                 ))
             } else if !isOptional, field.constraints.isEmpty {
                 constraints.append(.required)
@@ -77,14 +77,30 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func field<Value>(_ keyPath: KeyPath<Model, Field<Value>>) -> Self
+    public func field<Value>(
+        _ keyPath: KeyPath<Model, Field<Value>>,
+        _ dataType: DatabaseSchema.DataType,
+        _ constraints: DatabaseSchema.FieldConstraint...
+    ) -> Self
         where Value: Codable
     {
         let field = Model.shared[keyPath: keyPath]
         return self.field(.definition(
             name: .string(field.name),
-            dataType: field.dataType ?? .bestFor(type: Value.self),
-            constraints: field.constraints
+            dataType: dataType,
+            constraints: constraints
+        ))
+    }
+
+    public func field(
+        _ name: String,
+        _ dataType: DatabaseSchema.DataType,
+        _ constraints: DatabaseSchema.FieldConstraint...
+    ) -> Self {
+        return self.field(.definition(
+            name: .string(name),
+            dataType: dataType,
+            constraints: constraints
         ))
     }
     
