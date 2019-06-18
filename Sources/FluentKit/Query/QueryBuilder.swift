@@ -201,7 +201,9 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
-        self.query.fields = []
+        if query.input.count == 0 {
+            self.query.fields = []
+        }
         query.fields.append(.field(path: [Model.shared[keyPath: field].name], entity: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
