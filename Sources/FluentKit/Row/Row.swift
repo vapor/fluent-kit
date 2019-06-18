@@ -122,6 +122,9 @@ public final class Row<Model>: Codable, CustomStringConvertible, AnyRow
             do {
                 try field.decode(from: decoder, to: self)
             } catch {
+                if let field = field as? AnyField, !"\(field.type)".contains("Optional<") {
+                    throw error
+                }
                 print("Could not decode \(field.name): \(error)")
             }
         }
