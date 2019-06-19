@@ -13,7 +13,7 @@ public final class QueryBuilder<Model>
 {
     public var query: DatabaseQuery
 
-    internal let database: Database
+    public let database: Database
     internal var eagerLoads: [String: EagerLoad]
     internal var includeSoftDeleted: Bool
     internal var joinedModels: [AnyModel]
