@@ -14,10 +14,6 @@ public final class ID<Value>: AnyField
         }
     }
 
-    public var wrapperValue: ID<Value> {
-        return self
-    }
-
     var name: String {
         return self.field.name
     }
