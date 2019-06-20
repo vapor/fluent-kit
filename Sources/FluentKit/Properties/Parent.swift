@@ -1,49 +1,78 @@
-public struct Parent<Value>: AnyField
+public final class Parent<Value>: RelationValue, AnyField
     where Value: Model
 {
-    public var type: Any.Type {
-        return Value.ID.self
-    }
+    private let idField: Field<Value.ID>
+    private var eagerLoadedValue: Value?
 
-    public let name: String
-    public let dataType: DatabaseSchema.DataType?
-    public var constraints: [DatabaseSchema.FieldConstraint]
-    
-    public init(
-        _ name: String,
-        dataType: DatabaseSchema.DataType? = nil,
-        constraints: DatabaseSchema.FieldConstraint...
-    ) {
-        self.name = name
-        self.dataType = dataType
-        self.constraints = constraints
-    }
-
-    func cached(from output: DatabaseOutput) throws -> Any? {
-        guard output.contains(field: self.name) else {
-            return nil
+    public var id: Value.ID {
+        get {
+            return self.idField.wrappedValue
         }
-        return try output.decode(field: self.name, as: Value.ID.self)
+        set {
+            self.idField.wrappedValue = newValue
+        }
     }
 
-    func eagerLoaded(for row: AnyRow) throws -> Row<Value>? {
-        guard let cache = row.storage.eagerLoads[Value.entity] else {
-            return nil
+    var type: Any.Type {
+        return self.idField.type
+    }
+
+    var name: String {
+        return self.idField.name
+    }
+
+    var input: DatabaseQuery.Value? {
+        return self.idField.input
+    }
+
+    public init(nameOverride: String?) {
+        self.idField = .init(nameOverride: nameOverride)
+    }
+
+    public var isEagerLoaded: Bool {
+        return self.eagerLoadedValue != nil
+    }
+
+    public func eagerLoaded() throws -> Value {
+        guard let eagerLoaded = self.eagerLoadedValue else {
+            throw FluentError.missingEagerLoad(name: Value.entity.self)
         }
-        return try cache.get(id: row.storage.get(self.name, as: Value.ID.self))
-            .map { $0 as! Row<Value> }
-            .first!
+        return eagerLoaded
+    }
+
+    public func query(on database: Database) -> QueryBuilder<Value> {
+        return Value.query(on: database)
+            .filter(self.name, .equal, self.id)
+    }
+
+
+    public func get(on database: Database) -> EventLoopFuture<Value> {
+        return self.query(on: database).first().map { parent in
+            guard let parent = parent else {
+                fatalError()
+            }
+            return parent
+        }
+    }
+
+    func load(from storage: Storage) throws {
+        try self.idField.load(from: storage)
+        if let eagerLoad = storage.eagerLoads[Value.entity] {
+            self.eagerLoadedValue = try eagerLoad.get(id: self.id)
+                .map { $0 as! Value }
+                .first!
+        }
     }
     
-    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
-        if let parent = try self.eagerLoaded(for: row) {
+    func encode(to encoder: inout ModelEncoder) throws {
+        if let parent = self.eagerLoadedValue {
             try encoder.encode(parent, forKey: Value.name)
         } else {
-            try encoder.encode(row.storage.get(self.name, as: Value.ID.self), forKey: self.name)
+            try encoder.encode(self.id, forKey: self.name)
         }
     }
     
-    func decode(from decoder: ModelDecoder, to row: AnyRow) throws {
-        try row.storage.set(self.name, to: decoder.decode(Value.ID.self, forKey: self.name))
+    func decode(from decoder: ModelDecoder) throws {
+        self.id = try decoder.decode(Value.ID.self, forKey: self.name)
     }
 }

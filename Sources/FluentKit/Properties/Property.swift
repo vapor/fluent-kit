@@ -1,14 +1,13 @@
 protocol AnyProperty {
-    var name: String { get }
-    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws
-    func decode(from decoder: ModelDecoder, to row: AnyRow) throws
+    func encode(to encoder: inout ModelEncoder) throws
+    func decode(from decoder: ModelDecoder) throws
+    func load(from storage: Storage) throws
 }
 
 protocol AnyField: AnyProperty {
+    var name: String { get }
     var type: Any.Type { get }
-    func cached(from output: DatabaseOutput) throws -> Any?
-    var dataType: DatabaseSchema.DataType? { get }
-    var constraints: [DatabaseSchema.FieldConstraint] { get }
+    var input: DatabaseQuery.Value? { get }
 }
 
 extension Model {

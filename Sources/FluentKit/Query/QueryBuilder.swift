@@ -22,7 +22,7 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = [:]
-        self.query.fields = Model.shared.fields.map { .field(
+        self.query.fields = Model._reference.fields.map { .field(
             path: [$0.name],
             entity: Model.entity,
             alias: nil
@@ -37,7 +37,7 @@ public final class QueryBuilder<Model>
     public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
         switch method {
         case .subquery:
-            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>(Model.shared[keyPath: field].name)
+            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>(Model._reference[keyPath: field].name)
         case .join:
             fatalError("Join not yet supported for eager-loading children.")
         }
@@ -48,12 +48,19 @@ public final class QueryBuilder<Model>
     public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
         switch method {
         case .subquery:
-            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.shared[keyPath: field].name)
+            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model._reference[keyPath: field].name)
             return self
         case .join:
             self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
             return self.join(field)
         }
+    }
+
+    // MARK: Soft Delete
+
+    public func withSoftDeleted() -> Self {
+        self.includeSoftDeleted = true
+        return self
     }
 
     // MARK: Join
@@ -63,8 +70,8 @@ public final class QueryBuilder<Model>
         where Value: FluentKit.Model
     {
         return self.join(
-            Value.self, Value.shared.id.name,
-            to: Model.self, Model.shared[keyPath: field].name,
+            Value.self, Value._reference._idField.name,
+            to: Model.self, Model._reference[keyPath: field].name,
             method: .inner
         )
     }
@@ -78,8 +85,8 @@ public final class QueryBuilder<Model>
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.shared[keyPath: foreign].name,
-            to: Local.self, Local.shared[keyPath: local].name,
+            Foreign.self, Foreign._reference[keyPath: foreign].name,
+            to: Local.self, Local._reference[keyPath: local].name,
             method: .inner
         )
     }
@@ -93,8 +100,8 @@ public final class QueryBuilder<Model>
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.shared[keyPath: foreign].name,
-            to: Local.self, Local.shared[keyPath: local].name,
+            Foreign.self, Foreign._reference[keyPath: foreign].name,
+            to: Local.self, Local._reference[keyPath: local].name,
             method: .inner
         )
     }
@@ -108,8 +115,8 @@ public final class QueryBuilder<Model>
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.shared[keyPath: foreign].name,
-            to: Local.self, Local.shared[keyPath: local].name,
+            Foreign.self, Foreign._reference[keyPath: foreign].name,
+            to: Local.self, Local._reference[keyPath: local].name,
             method: .inner
         )
     }
@@ -124,14 +131,14 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign.shared.fields.map {
+        self.query.fields += Foreign._reference.fields.map {
             return .field(
                 path: [$0.name],
                 entity: Foreign.entity,
                 alias: Foreign.entity + "_" + $0.name
             )
         }
-        self.joinedModels.append(Foreign.shared)
+        self.joinedModels.append(Foreign._reference)
         self.query.joins.append(.model(
             foreign: .field(path: [foreignField], entity: Foreign.entity, alias: nil),
             local: .field(path: [localField], entity: Local.entity, alias: nil),
@@ -156,7 +163,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, in values: [Value]) -> Self {
-        return self.filter(Model.shared[keyPath: field].name, in: values)
+        return self.filter(Model._reference[keyPath: field].name, in: values)
     }
     
     @discardableResult
@@ -169,7 +176,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self {
-        return self.filter(Model.shared[keyPath: field].name, method, value)
+        return self.filter(Model._reference[keyPath: field].name, method, value)
     }
     
     @discardableResult
@@ -202,7 +209,7 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
         self.query.fields = []
-        query.fields.append(.field(path: [Model.shared[keyPath: field].name], entity: nil, alias: nil))
+        query.fields.append(.field(path: [Model._reference[keyPath: field].name], entity: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -221,7 +228,7 @@ public final class QueryBuilder<Model>
     ///     - direction: Direction to sort the fields, ascending or descending.
     /// - returns: Query builder for chaining.
     public func sort<Value>(_ field: KeyPath<Model, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
-        return self.sort(Model.self, Model.shared[keyPath: field].name, direction)
+        return self.sort(Model.self, Model._reference[keyPath: field].name, direction)
     }
 
     /// Add a sort to the query builder for a field.
@@ -235,7 +242,7 @@ public final class QueryBuilder<Model>
     public func sort<Joined, Value>(_ field: KeyPath<Joined, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
         where Joined: FluentKit.Model
     {
-        return self.sort(Joined.self, Joined.shared[keyPath: field].name, direction)
+        return self.sort(Joined.self, Joined._reference[keyPath: field].name, direction)
     }
 
     public func sort(_ field: String, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
@@ -259,7 +266,7 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Value: Codable, NestedValue: Codable
     {
-        return self.filter(Model.shared[keyPath: field].name, path, method, value)
+        return self.filter(Model._reference[keyPath: field].name, path, method, value)
     }
 
     public func filter<NestedValue>(
@@ -295,7 +302,7 @@ public final class QueryBuilder<Model>
     // MARK: Aggregate
     
     public func count() -> EventLoopFuture<Int> {
-        return self.aggregate(.count, \.id)
+        return self.aggregate(.count, Model._reference._idField.name, as: Int.self)
     }
 
     public func sum<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
@@ -354,7 +361,7 @@ public final class QueryBuilder<Model>
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
-        return self.aggregate(method, Model.shared[keyPath: field].name, as: Result.self)
+        return self.aggregate(method, Model._reference[keyPath: field].name, as: Result.self)
     }
     
     public func aggregate<Result>(
@@ -373,7 +380,7 @@ public final class QueryBuilder<Model>
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.storage.output!.decode(field: "fluentAggregate", as: Result.self)
+            return try res.storage!.output!.decode(field: "fluentAggregate", as: Result.self)
         }
     }
     
@@ -398,8 +405,8 @@ public final class QueryBuilder<Model>
     
     // MARK: Fetch
     
-    public func chunk(max: Int, closure: @escaping ([Row<Model>]) throws -> ()) -> EventLoopFuture<Void> {
-        var partial: [Row<Model>] = []
+    public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
+        var partial: [Model] = []
         partial.reserveCapacity(max)
         return self.run { row in
             partial.append(row)
@@ -416,8 +423,8 @@ public final class QueryBuilder<Model>
         }
     }
     
-    public func first() -> EventLoopFuture<Row<Model>?> {
-        var model: Row<Model>? = nil
+    public func first() -> EventLoopFuture<Model?> {
+        var model: Model? = nil
         return self.limit(1)
             .run { result in
                 assert(model == nil, "unexpected database output")
@@ -426,8 +433,8 @@ public final class QueryBuilder<Model>
             .map { model }
     }
     
-    public func all() -> EventLoopFuture<[Row<Model>]> {
-        var models: [Row<Model>] = []
+    public func all() -> EventLoopFuture<[Model]> {
+        var models: [Model] = []
         return self.run { model in
             models.append(model)
         }.map { models }
@@ -442,15 +449,15 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
     
-    public func run(_ onOutput: @escaping (Row<Model>) throws -> ()) -> EventLoopFuture<Void> {
-        var all: [Row<Model>] = []
+    public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
+        var all: [Model] = []
         
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
 
         // check if model is soft-deletable and should be excluded
-        if let softDeletable = Model.shared as? _AnySoftDeletable, !self.includeSoftDeleted {
+        if let softDeletable = Model._reference as? _AnySoftDeletable, !self.includeSoftDeleted {
             softDeletable._excludeSoftDeleted(&query)
             self.joinedModels
                 .compactMap { $0 as? _AnySoftDeletable }
@@ -458,7 +465,7 @@ public final class QueryBuilder<Model>
         }
 
         return self.database.execute(query) { output in
-            let model = try Row<Model>(storage: DefaultStorage(
+            let model = try Model(storage: DefaultStorage(
                 output: output,
                 eagerLoads: self.eagerLoads,
                 exists: true
@@ -570,7 +577,7 @@ public func !=~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) ->
 public struct ModelFilter<Model> where Model: FluentKit.Model {
     static func make<Value>(_ lhs: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ rhs: DatabaseQuery.Value) -> ModelFilter {
         return .init(filter: .basic(
-            .field(path: [Model.shared[keyPath: lhs].name], entity: Model.entity, alias: nil),
+            .field(path: [Model._reference[keyPath: lhs].name], entity: Model.entity, alias: nil),
             method,
             rhs
         ))

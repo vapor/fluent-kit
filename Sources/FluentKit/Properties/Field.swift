@@ -1,42 +1,76 @@
-public struct Field<Value>: AnyField
+@propertyWrapper
+public final class Field<Value>: AnyField
     where Value: Codable
 {
+    private let nameOverride: String?
+    private var label: String?
+    private var output: Value?
+    private var _input: Value?
+    private var didLoad: Bool
+
+    var input: DatabaseQuery.Value? {
+        return self._input.flatMap { .bind($0) }
+    }
+
     public var type: Any.Type {
         return Value.self
     }
-
-    public let name: String
-    public let dataType: DatabaseSchema.DataType?
-    public var constraints: [DatabaseSchema.FieldConstraint]
     
-    public init(
-        _ name: String,
-        dataType: DatabaseSchema.DataType? = nil,
-        constraints: DatabaseSchema.FieldConstraint...
-    ) {
-        self.name = name
-        self.dataType = dataType
-        self.constraints = constraints
-    }
-
-    func cached(from output: DatabaseOutput) throws -> Any? {
-        guard output.contains(field: self.name) else {
-            return nil
+    public var wrappedValue: Value {
+        get {
+            if let input = self._input {
+                return input
+            } else if let output = self.output {
+                return output
+            } else {
+                if self.didLoad {
+                    fatalError("Field \(self.name) was not fetched during query")
+                } else {
+                    fatalError("Cannot access \(self.name) before it is initialized")
+                }
+            }
         }
-        return try output.decode(field: self.name, as: Value.self)
+        set {
+            self._input = newValue
+        }
+    }
+
+    public var name: String {
+        guard let name = self.nameOverride ?? self.label else {
+            fatalError("No label or name override set for \(self)")
+        }
+        return name
+    }
+
+    public convenience init() {
+        self.init(nameOverride: nil)
+    }
+
+    public convenience init(_ nameOverride: String) {
+        self.init(nameOverride: nameOverride)
     }
     
-    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
-        try encoder.encode(row.storage.get(self.name, as: Value.self), forKey: self.name)
+    internal init(nameOverride: String?) {
+        self.nameOverride = nameOverride
+        self.didLoad = false
     }
 
-    func decode(from decoder: ModelDecoder, to row: AnyRow) throws {
-        try row.storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
+    func load(from storage: Storage) throws {
+        self.didLoad = true
+        guard let output = storage.output else {
+            return
+        }
+        guard output.contains(field: self.name) else {
+            return
+        }
+        self.output = try output.decode(field: self.name, as: Value.self)
     }
-}
+    
+    func encode(to encoder: inout ModelEncoder) throws {
+        try encoder.encode(self.wrappedValue, forKey: self.name)
+    }
 
-extension Field: ExpressibleByStringLiteral {
-    public init(stringLiteral value: String) {
-        self.init(value)
+    func decode(from decoder: ModelDecoder) throws {
+        self.wrappedValue = try decoder.decode(Value.self, forKey: self.name)
     }
 }
