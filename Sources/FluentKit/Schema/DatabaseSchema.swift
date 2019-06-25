@@ -1,5 +1,6 @@
 import struct Foundation.Date
 import struct Foundation.UUID
+import struct Foundation.Data
 
 private protocol _OptionalType {
     static var _wrappedType: Any.Type { get }
@@ -35,6 +36,7 @@ public struct DatabaseSchema {
             case id(UUID.self): return .uuid
             case id(Date.self): return .datetime
             case id(Bool.self): return .bool
+            case id(Data.self): return .data
             default: return .json
             }
         }
