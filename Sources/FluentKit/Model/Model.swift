@@ -33,16 +33,14 @@ extension Model {
     public init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        for property in self.properties {
-            try property.decode(from: decoder)
-        }
+        self.setLabels()
+        try self.properties.forEach { try $0.decode(from: decoder) }
     }
 
     public func encode(to encoder: Encoder) throws {
+        self.setLabels()
         var encoder = ModelEncoder(encoder: encoder)
-        for property in self.properties {
-            try property.encode(to: &encoder)
-        }
+        try self.properties.forEach { try $0.encode(to: &encoder) }
     }
 
     // MARK: Joined
@@ -77,15 +75,17 @@ extension Model {
 }
 
 extension Model {
-    static var _reference: Self {
-        return .init()
+    static var reference: Self {
+        let reference = Self.init()
+        reference.setLabels()
+        return reference
     }
 
-    var _idField: FluentKit.ID<Self.ID?> {
+    var idField: Field<Self.ID?> {
         guard let id = Mirror(reflecting: self).descendant("$$id") else {
             fatalError("id property must be declared using @ID")
         }
-        return id as! FluentKit.ID<Self.ID?>
+        return id as! Field<Self.ID?>
     }
 }
 
@@ -96,26 +96,42 @@ extension Model {
 
     var storage: Storage? {
         get {
-            return self._idField.storage
+            return self.idField.storage
         }
         set {
-            self._idField.storage = newValue
+            self.idField.storage = newValue
         }
     }
 
     internal var input: [String: DatabaseQuery.Value] {
+        self.setLabels()
         var input = [String: DatabaseQuery.Value]()
-        for field in self.fields {
-            input[field.name] = field.input
-        }
+        self.fields.forEach { $0.setInput(to: &input) }
         return input
     }
 
     internal init(storage: Storage) throws {
         self.init()
-        for property in self.properties {
-            try property.load(from: storage)
+        self.setLabels()
+        try self.properties.forEach { try $0.setOutput(from: storage) }
+    }
+
+    private func setLabels() {
+        Mirror(reflecting: self).children.forEach { child in
+            if let property = child.value as? AnyProperty, let label = child.label {
+                // remove underscore
+                property.label = .init(label.dropFirst())
+            }
         }
+    }
+}
+
+extension Model {
+    public func requireID() throws -> ID {
+        guard let id = self.id else {
+            throw FluentError.idRequired
+        }
+        return id
     }
 }
 
@@ -135,7 +151,7 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database)
-            .filter(self._reference._idField.name, .equal, id)
+            .filter(self.reference.idField.name, .equal, id)
             .first()
     }
 }

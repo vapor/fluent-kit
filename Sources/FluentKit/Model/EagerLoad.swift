@@ -47,7 +47,7 @@ final class SubqueryParentEagerLoad<Child, Parent>: EagerLoad
 
         let uniqueIDs = Array(Set(ids))
         return Parent.query(on: database)
-            .filter(Parent._reference._idField.name, in: uniqueIDs)
+            .filter(Parent.reference.idField.name, in: uniqueIDs)
             .all()
             .map { self.storage = $0 }
     }

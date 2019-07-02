@@ -1,20 +1,31 @@
-protocol AnyProperty {
+protocol AnyProperty: class {
     func encode(to encoder: inout ModelEncoder) throws
     func decode(from decoder: ModelDecoder) throws
-    func load(from storage: Storage) throws
+    func setOutput(from storage: Storage) throws
+    var label: String? { get set }
 }
 
 protocol AnyField: AnyProperty {
-    var name: String { get }
+    var nameOverride: String? { get }
     var type: Any.Type { get }
-    var input: DatabaseQuery.Value? { get }
+    func setInput(to input: inout [String: DatabaseQuery.Value])
+}
+
+extension AnyField {
+    var name: String {
+        if let name = self.nameOverride {
+            return name
+        } else if let label = self.label {
+            return label.convertedToSnakeCase()
+        } else {
+            fatalError("No label or name override set.")
+        }
+    }
 }
 
 extension Model {
     var fields: [AnyField] {
-        return Mirror(reflecting: self)
-            .children
-            .compactMap { $0.value as? AnyField }
+        return self.properties.compactMap { $0 as? AnyField }
     }
     
     var properties: [AnyProperty] {

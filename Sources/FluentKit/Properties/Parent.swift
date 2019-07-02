@@ -17,16 +17,21 @@ public final class Parent<Value>: RelationValue, AnyField
         return self.idField.type
     }
 
-    var name: String {
-        return self.idField.name
+    var nameOverride: String? {
+        return self.idField.nameOverride
     }
 
-    var input: DatabaseQuery.Value? {
-        return self.idField.input
+    var label: String? {
+        get {
+            return self.idField.label
+        }
+        set {
+            self.idField.label = newValue
+        }
     }
 
-    public init(nameOverride: String?) {
-        self.idField = .init(nameOverride: nameOverride)
+    public init(_ key: String) {
+        self.idField = .init(key)
     }
 
     public var isEagerLoaded: Bool {
@@ -55,8 +60,12 @@ public final class Parent<Value>: RelationValue, AnyField
         }
     }
 
-    func load(from storage: Storage) throws {
-        try self.idField.load(from: storage)
+    func setInput(to input: inout [String : DatabaseQuery.Value]) {
+        self.idField.setInput(to: &input)
+    }
+
+    func setOutput(from storage: Storage) throws {
+        try self.idField.setOutput(from: storage)
         if let eagerLoad = storage.eagerLoads[Value.entity] {
             self.eagerLoadedValue = try eagerLoad.get(id: self.id)
                 .map { $0 as! Value }
@@ -66,13 +75,15 @@ public final class Parent<Value>: RelationValue, AnyField
     
     func encode(to encoder: inout ModelEncoder) throws {
         if let parent = self.eagerLoadedValue {
-            try encoder.encode(parent, forKey: Value.name)
+            try encoder.encode(parent, forKey: self.label!)
         } else {
-            try encoder.encode(self.id, forKey: self.name)
+            try encoder.encode([
+                Value.reference.idField.name: self.id
+            ], forKey: self.label!)
         }
     }
     
     func decode(from decoder: ModelDecoder) throws {
-        self.id = try decoder.decode(Value.ID.self, forKey: self.name)
+        self.id = try decoder.decode(Value.ID.self, forKey: self.label!)
     }
 }

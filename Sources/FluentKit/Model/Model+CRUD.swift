@@ -39,7 +39,7 @@ extension Model {
         precondition(self.exists)
         return self.willUpdate(on: database).flatMap {
             return Self.query(on: database)
-                .filter(self._idField.name, .equal, self.id)
+                .filter(self.idField.name, .equal, self.id)
                 .set(self.input)
                 .action(.update)
                 .run()
@@ -59,7 +59,7 @@ extension Model {
         } else {
             return self.willDelete(on: database).flatMap {
                 return Self.query(on: database)
-                    .filter(self._idField.name, .equal, self.id)
+                    .filter(self.idField.name, .equal, self.id)
                     .action(.delete)
                     .run()
                     .map {
@@ -77,7 +77,7 @@ extension Model where Self: SoftDeletable {
         return self.willDelete(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(self._idField.name, .equal, self.id)
+                .filter(self.idField.name, .equal, self.id)
                 .action(.delete)
                 .run()
                 .map {
@@ -94,7 +94,7 @@ extension Model where Self: SoftDeletable {
         return self.willRestore(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(self._idField.name, .equal, self.id)
+                .filter(self.idField.name, .equal, self.id)
                 .set(self.input)
                 .action(.update)
                 .run()

@@ -2,61 +2,54 @@
 public final class Field<Value>: AnyField
     where Value: Codable
 {
-    private let nameOverride: String?
-    private var label: String?
-    private var output: Value?
-    private var _input: Value?
-    private var didLoad: Bool
+    let nameOverride: String?
+    var storage: Storage?
+    var label: String?
 
-    var input: DatabaseQuery.Value? {
-        return self._input.flatMap { .bind($0) }
-    }
+    private var output: Value?
+    private var input: Value?
 
     public var type: Any.Type {
         return Value.self
     }
+
+    public var projectedValue: Field<Value> {
+        return self
+    }
     
     public var wrappedValue: Value {
         get {
-            if let input = self._input {
+            if let input = self.input {
                 return input
             } else if let output = self.output {
                 return output
             } else {
-                if self.didLoad {
-                    fatalError("Field \(self.name) was not fetched during query")
+                if let label = self.label {
+                    fatalError("Field \(label) was not fetched during query")
                 } else {
-                    fatalError("Cannot access \(self.name) before it is initialized")
+                    fatalError("Cannot access field before it is initialized")
                 }
             }
         }
         set {
-            self._input = newValue
+            self.input = newValue
         }
     }
 
-    public var name: String {
-        guard let name = self.nameOverride ?? self.label else {
-            fatalError("No label or name override set for \(self)")
-        }
-        return name
+    public init() {
+        self.nameOverride = nil
     }
 
-    public convenience init() {
-        self.init(nameOverride: nil)
-    }
-
-    public convenience init(_ nameOverride: String) {
-        self.init(nameOverride: nameOverride)
-    }
-    
-    internal init(nameOverride: String?) {
+    public init(_ nameOverride: String) {
         self.nameOverride = nameOverride
-        self.didLoad = false
     }
 
-    func load(from storage: Storage) throws {
-        self.didLoad = true
+    func setInput(to input: inout [String : DatabaseQuery.Value]) {
+        input[self.name] = self.input.flatMap { .bind($0) }
+    }
+
+    func setOutput(from storage: Storage) throws {
+        self.storage = storage
         guard let output = storage.output else {
             return
         }
@@ -67,10 +60,10 @@ public final class Field<Value>: AnyField
     }
     
     func encode(to encoder: inout ModelEncoder) throws {
-        try encoder.encode(self.wrappedValue, forKey: self.name)
+        try encoder.encode(self.wrappedValue, forKey: self.label!)
     }
 
     func decode(from decoder: ModelDecoder) throws {
-        self.wrappedValue = try decoder.decode(Value.self, forKey: self.name)
+        self.wrappedValue = try decoder.decode(Value.self, forKey: self.label!)
     }
 }

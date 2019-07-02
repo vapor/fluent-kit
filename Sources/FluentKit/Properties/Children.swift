@@ -1,19 +1,13 @@
 public final class Children<Value>: RelationValue, AnyProperty
     where Value: Model
 {
-    private let nameOverride: String?
-    private var label: String?
+    let nameOverride: String?
+    var label: String?
+
     private var eagerLoadedValue: [Value]?
     private var id: Value.ID?
 
-    var name: String {
-        guard let name = self.nameOverride ?? self.label else {
-            fatalError("No label or name override set for \(self)")
-        }
-        return name
-    }
-
-    public init(nameOverride: String?) {
+    public init(_ nameOverride: String) {
         self.nameOverride = nameOverride
     }
 
@@ -24,14 +18,21 @@ public final class Children<Value>: RelationValue, AnyProperty
         return rows
     }
 
-    public func query(on database: Database) -> QueryBuilder<Value> {
-        #warning("FIXME: pass correct id")
-        return Value.query(on: database)
-            .filter(self.name, .equal, self.id!)
+    var childName: String {
+        #warning("FIXME: use model entity + id")
+        return "self_id"
     }
 
-    func load(from storage: Storage) throws {
-        #warning("FIXME: pass correct id")
+    public func query(on database: Database) -> QueryBuilder<Value> {
+        guard let id = self.id else {
+            fatalError("Cannot form children query without model id")
+        }
+        return Value.query(on: database)
+            .filter(self.childName, .equal, id)
+    }
+
+    func setOutput(from storage: Storage) throws {
+        #warning("FIXME: pass correct id using Model info")
         self.id = try storage.output!.decode(field: "id", as: Value.ID.self)
         if let eagerLoad = storage.eagerLoads[Value.entity] {
             self.eagerLoadedValue = try eagerLoad.get(id: self.id!)
@@ -41,7 +42,7 @@ public final class Children<Value>: RelationValue, AnyProperty
 
     func encode(to encoder: inout ModelEncoder) throws {
         if let rows = self.eagerLoadedValue {
-            try encoder.encode(rows, forKey: Value.entity)
+            try encoder.encode(rows, forKey: self.label!)
         }
     }
     

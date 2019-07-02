@@ -4,7 +4,7 @@ import Foundation
 public final class MigrationLog: Model, Timestampable {
     public static let entity = "fluent"
 
-    @ID public var id: Int?
+    @Field public var id: Int?
     @Field public var name: String
     @Field public var batch: Int
     @Field public var createdAt: Date?
@@ -12,7 +12,8 @@ public final class MigrationLog: Model, Timestampable {
 
     public init() { }
 
-    public init(name: String, batch: Int) {
+    public init(id: Int? = nil, name: String, batch: Int) {
+        self.id = id
         self.name = name
         self.batch = batch
         self.createdAt = nil

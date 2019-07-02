@@ -13,17 +13,15 @@ final class PlanetSeed: Migration {
     
     private func add(_ planets: [String], to galaxy: String, on database: Database) -> EventLoopFuture<Void> {
         return Galaxy.query(on: database)
-            .filter(\.name == galaxy)
+            .filter(\.$name == galaxy)
             .first()
             .flatMap { galaxy -> EventLoopFuture<Void> in
                 guard let galaxy = galaxy else {
                     return database.eventLoop.makeSucceededFuture(())
                 }
                 let saves = planets.map { name -> EventLoopFuture<Void> in
-                    let planet = Planet.row()
-                    planet.name = name
-                    planet.galaxy.id = galaxy.id!
-                    return planet.save(on: database)
+                    return Planet(name: name, galaxyID: galaxy.id!)
+                        .save(on: database)
                 }
                 return .andAllSucceed(saves, on: database.eventLoop)
             }

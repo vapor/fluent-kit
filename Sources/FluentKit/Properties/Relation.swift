@@ -1,6 +1,6 @@
 public protocol RelationValue {
     associatedtype Value: Model
-    init(nameOverride: String?)
+    init(_ name: String)
 }
 
 @propertyWrapper
@@ -9,16 +9,21 @@ public final class Relation<Value>
 {
     public var wrappedValue: Value
 
-    public init() {
-        self.wrappedValue = .init(nameOverride: nil)
-    }
-
-    public init(_ nameOverride: String) {
-        self.wrappedValue = .init(nameOverride: nameOverride)
+    public init(_ name: String) {
+        self.wrappedValue = .init(name)
     }
 }
 
 extension Relation: AnyProperty where Value: AnyProperty {
+    var label: String? {
+        get {
+            return self.wrappedValue.label
+        }
+        set {
+            self.wrappedValue.label = newValue
+        }
+    }
+
     func encode(to encoder: inout ModelEncoder) throws {
         try self.wrappedValue.encode(to: &encoder)
     }
@@ -27,21 +32,21 @@ extension Relation: AnyProperty where Value: AnyProperty {
         try self.wrappedValue.decode(from: decoder)
     }
 
-    func load(from storage: Storage) throws {
-        try wrappedValue.load(from: storage)
+    func setOutput(from storage: Storage) throws {
+        try self.wrappedValue.setOutput(from: storage)
     }
 }
 
 extension Relation: AnyField where Value: AnyField {
-    var name: String {
-        return self.wrappedValue.name
+    var nameOverride: String? {
+        return self.wrappedValue.nameOverride
     }
 
     var type: Any.Type {
         return self.wrappedValue.type
     }
 
-    var input: DatabaseQuery.Value? {
-        return self.wrappedValue.input
+    func setInput(to input: inout [String : DatabaseQuery.Value]) {
+        self.wrappedValue.setInput(to: &input)
     }
 }
