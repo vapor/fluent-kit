@@ -50,7 +50,7 @@ extension Model {
     {
         return try Joined(storage: DefaultStorage(
             output: self.storage!.output!.prefixed(by: Joined.entity + "_"),
-            eagerLoads: [:],
+            eagerLoadStorage: .init(),
             exists: true
         ))
     }

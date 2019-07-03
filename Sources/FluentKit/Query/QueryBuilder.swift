@@ -14,14 +14,14 @@ public final class QueryBuilder<Model>
     public var query: DatabaseQuery
 
     public let database: Database
-    internal var eagerLoads: [String: EagerLoad]
+    internal var eagerLoadStorage: EagerLoadStorage
     internal var includeSoftDeleted: Bool
     internal var joinedModels: [AnyModel]
     
     public init(database: Database) {
         self.database = database
         self.query = .init(entity: Model.entity)
-        self.eagerLoads = [:]
+        self.eagerLoadStorage = .init()
         self.query.fields = Model.reference.fields.map { field in
             return .field(
                 path: [field.name],
@@ -36,28 +36,17 @@ public final class QueryBuilder<Model>
     // MARK: Eager Load
     
     @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        switch method {
-        case .subquery:
-            self.eagerLoads[Value.entity] = SubqueryChildEagerLoad<Model, Value>(
-                Model.reference[keyPath: field].childName
-            )
-        case .join:
-            fatalError("Join not yet supported for eager-loading children.")
-        }
+    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
+        Model.reference[keyPath: field]
+            .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
         return self
     }
 
     @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        switch method {
-        case .subquery:
-            self.eagerLoads[Value.entity] = SubqueryParentEagerLoad<Model, Value>(Model.reference[keyPath: field].name)
-            return self
-        case .join:
-            self.eagerLoads[Value.entity] = JoinParentEagerLoad<Model, Value>()
-            return self.join(field)
-        }
+    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
+        Model.reference[keyPath: field]
+            .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
+        return self
     }
 
     // MARK: Soft Delete
@@ -70,7 +59,7 @@ public final class QueryBuilder<Model>
     // MARK: Join
     
     @discardableResult
-    public func join<Value>(_ field: KeyPath<Model, Parent<Value>>) -> Self
+    public func join<Value>(_ field: KeyPath<Model, Parent<Model, Value>>) -> Self
         where Value: FluentKit.Model
     {
         return self.join(
@@ -387,11 +376,6 @@ public final class QueryBuilder<Model>
             return try res.storage!.output!.decode(field: "fluentAggregate", as: Result.self)
         }
     }
-    
-    public enum EagerLoadMethod {
-        case subquery
-        case join
-    }
 
     // MARK: Limit
 
@@ -460,6 +444,9 @@ public final class QueryBuilder<Model>
         // so that run can be called multiple times
         var query = self.query
 
+        // prepare all eager load requests
+        self.eagerLoadStorage.requests.values.forEach { $0.prepare(&query) }
+
         // check if model is soft-deletable and should be excluded
         if let softDeletable = Model.reference as? _AnySoftDeletable, !self.includeSoftDeleted {
             softDeletable._excludeSoftDeleted(&query)
@@ -471,13 +458,13 @@ public final class QueryBuilder<Model>
         return self.database.execute(query) { output in
             let model = try Model(storage: DefaultStorage(
                 output: output,
-                eagerLoads: self.eagerLoads,
+                eagerLoadStorage: self.eagerLoadStorage,
                 exists: true
             ))
             all.append(model)
             try onOutput(model)
         }.flatMap {
-            return .andAllSucceed(self.eagerLoads.values.map { eagerLoad in
+            return .andAllSucceed(self.eagerLoadStorage.requests.values.map { eagerLoad in
                 return eagerLoad.run(all, on: self.database)
             }, on: self.database.eventLoop)
         }

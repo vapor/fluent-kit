@@ -126,16 +126,16 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
-                .eagerLoad(\.planets)
+                .eagerLoad(\.$planets)
                 .all().wait()
 
             for galaxy in galaxies {
                 switch galaxy.name {
                 case "Milky Way":
-                    guard try galaxy.planets.eagerLoaded().contains(where: { $0.name == "Earth" }) else {
+                    guard try galaxy.$planets.eagerLoaded().contains(where: { $0.name == "Earth" }) else {
                         throw Failure("unexpected missing planet")
                     }
-                    guard try !galaxy.planets.eagerLoaded().contains(where: { $0.name == "PA-99-N2"}) else {
+                    guard try !galaxy.$planets.eagerLoaded().contains(where: { $0.name == "PA-99-N2"}) else {
                         throw Failure("unexpected planet")
                     }
                 default: break
@@ -152,17 +152,17 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .eagerLoad(\.galaxy)
+                .eagerLoad(\.$galaxy)
                 .all().wait()
             
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard try planet.galaxy.eagerLoaded().name == "Milky Way" else {
+                    guard try planet.$galaxy.eagerLoaded().name == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 case "PA-99-N2":
-                    guard try planet.galaxy.eagerLoaded().name == "Andromeda" else {
+                    guard try planet.$galaxy.eagerLoaded().name == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 default: break
@@ -179,17 +179,17 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .eagerLoad(\.galaxy, method: .join)
+                .eagerLoad(\.$galaxy, method: .join)
                 .all().wait()
             
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard try planet.galaxy.eagerLoaded().name == "Milky Way" else {
+                    guard try planet.$galaxy.eagerLoaded().name == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 case "PA-99-N2":
-                    guard try planet.galaxy.eagerLoaded().name == "Andromeda" else {
+                    guard try planet.$galaxy.eagerLoaded().name == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 default: break
@@ -232,7 +232,7 @@ public final class FluentBenchmarker {
             // subquery
             do {
                 let planets = try Planet.query(on: self.database)
-                    .eagerLoad(\.galaxy, method: .subquery)
+                    .eagerLoad(\.$galaxy, method: .subquery)
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
@@ -244,7 +244,7 @@ public final class FluentBenchmarker {
             // join
             do {
                 let planets = try Planet.query(on: self.database)
-                    .eagerLoad(\.galaxy, method: .join)
+                    .eagerLoad(\.$galaxy, method: .join)
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
@@ -291,7 +291,7 @@ public final class FluentBenchmarker {
             let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
 
             let galaxies = try Galaxy.query(on: self.database)
-                .eagerLoad(\.planets, method: .subquery)
+                .eagerLoad(\.$planets, method: .subquery)
                 .all().wait()
 
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
@@ -366,7 +366,7 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .join(\.galaxy)
+                .join(\.$galaxy)
                 .all().wait()
             for planet in planets {
                 let galaxy = try planet.joined(Galaxy.self)

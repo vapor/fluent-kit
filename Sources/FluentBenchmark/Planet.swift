@@ -1,9 +1,9 @@
 import FluentKit
 
 final class Planet: Model {
-    @Field("id") var id: Int?
-    @Field("name") var name: String
-    @Relation("galaxy_id") var galaxy: Parent<Galaxy>
+    @Field var id: Int?
+    @Field var name: String
+    @Parent var galaxy: Galaxy
 
     init() { }
 

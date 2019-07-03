@@ -1,6 +1,6 @@
 protocol Storage {
     var output: DatabaseOutput? { get }
-    var eagerLoads: [String: EagerLoad] { get set }
+    var eagerLoadStorage: EagerLoadStorage { get set }
     var exists: Bool { get set }
     var path: [String] { get }
 }
@@ -8,20 +8,20 @@ protocol Storage {
 struct DefaultStorage: Storage {
     static let empty: DefaultStorage = .init(
         output: nil,
-        eagerLoads: [:],
+        eagerLoadStorage: .init(),
         exists: false
     )
     
     var output: DatabaseOutput?
-    var eagerLoads: [String: EagerLoad]
+    var eagerLoadStorage: EagerLoadStorage
     var exists: Bool
     var path: [String] {
         return []
     }
 
-    init(output: DatabaseOutput?, eagerLoads: [String: EagerLoad], exists: Bool) {
+    init(output: DatabaseOutput?, eagerLoadStorage: EagerLoadStorage, exists: Bool) {
         self.output = output
-        self.eagerLoads = eagerLoads
+        self.eagerLoadStorage = eagerLoadStorage
         self.exists = exists
     }
 }
