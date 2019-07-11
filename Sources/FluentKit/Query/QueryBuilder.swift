@@ -37,8 +37,8 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        Model.reference[keyPath: field]
-            .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
+//        Model.reference[keyPath: field]
+//            .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
         return self
     }
 
