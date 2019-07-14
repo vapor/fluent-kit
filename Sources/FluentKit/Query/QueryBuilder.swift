@@ -190,14 +190,14 @@ public final class QueryBuilder<Model>
         return self
     }
     
+    // MARK: Set
+    
     @discardableResult
     public func set(_ data: [String: DatabaseQuery.Value]) -> Self {
         query.fields = data.keys.map { .field(path: [$0], entity: nil, alias: nil) }
         query.input.append(.init(data.values))
         return self
     }
-
-    // MARK: Set
     
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
