@@ -111,10 +111,30 @@ extension Array {
         where Model: FluentKit.Model, Element == Row<Model>
     {
         let builder = Model.query(on: database)
+        
+        var keys: [String] = []
+        var values: [[DatabaseQuery.Value]] = []
+        
         self.forEach { model in
             precondition(!model.exists)
-            builder.set(model.storage.input)
+            if let timestampable = Model.shared as? _AnyTimestampable {
+                timestampable._touchCreated(&model.storage.input)
+            }
+            let sortedInput = model.storage.input.sorted(by: { $0.key < $1.key })
+            if keys.isEmpty {
+                keys = sortedInput.map({ $0.key })
+            } else {
+                precondition(keys == sortedInput.map({ $0.key }))
+            }
+            values.append(sortedInput.map({ $0.value }))
         }
+        
+        precondition(!keys.isEmpty)
+        builder.query.fields = keys.map { .field(path: [$0], entity: nil, alias: nil) }
+        values.forEach { input in
+            builder.query.input.append(.init(input))
+        }
+        
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { created in
