@@ -145,5 +145,8 @@ final class ModelTests: XCTestCase {
         
         //
         XCTAssertNoThrow(try [row1, row2].create(on: database).wait())
+        
+        XCTAssertEqual(row1.get(\.id), 1)
+        XCTAssertEqual(row2.get(\.id), 2)
     }
 }

@@ -140,6 +140,9 @@ extension Array {
         return builder.run { created in
             let next = it.next()!
             next.storage.exists = true
+            if created.has(\.id) {
+                next.set(\.id, to: created.get(\.id))
+            }
         }
     }
 }
