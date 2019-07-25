@@ -6,7 +6,8 @@ extension FluentKitTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__FluentKitTests = [
-        ("testStub", testStub),
+        ("testGalaxyPlanetNames", testGalaxyPlanetNames),
+        ("testMigrationLogNames", testMigrationLogNames),
     ]
 }
 
