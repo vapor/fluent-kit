@@ -35,7 +35,6 @@ public final class Field<Value>: AnyField
                 }
             } else {
                 if let label = self.label {
-                    print(self.storage.output)
                     fatalError("Field was not fetched during query: \(label)")
                 } else {
                     fatalError("Cannot access field before it is initialized")

@@ -22,7 +22,7 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(modelType: Model.self)
         self.eagerLoadStorage = .init()
-        self.query.fields = Model.reference.fields.map { field in
+        self.query.fields = Model().fields.map { field in
             return .field(
                 path: [field.name],
                 entity: Model.entity,
@@ -37,14 +37,14 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        Model.reference[keyPath: field]
+        Model()[keyPath: field]
             .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
         return self
     }
 
     @discardableResult
     public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
-        Model.reference[keyPath: field]
+        Model()[keyPath: field]
             .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
         return self
     }
@@ -63,8 +63,8 @@ public final class QueryBuilder<Model>
         where Value: FluentKit.Model
     {
         return self.join(
-            Value.self, Value.reference.idField.name,
-            to: Model.self, Model.reference[keyPath: field].name,
+            Value.self, Value().idField.name,
+            to: Model.self, Model()[keyPath: field].name,
             method: .inner
         )
     }
@@ -78,8 +78,8 @@ public final class QueryBuilder<Model>
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.reference[keyPath: foreign].name,
-            to: Local.self, Local.reference[keyPath: local].name,
+            Foreign.self, Foreign()[keyPath: foreign].name,
+            to: Local.self, Local()[keyPath: local].name,
             method: .inner
         )
     }
@@ -93,8 +93,8 @@ public final class QueryBuilder<Model>
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.reference[keyPath: foreign].name,
-            to: Local.self, Local.reference[keyPath: local].name,
+            Foreign.self, Foreign()[keyPath: foreign].name,
+            to: Local.self, Local()[keyPath: local].name,
             method: .inner
         )
     }
@@ -108,8 +108,8 @@ public final class QueryBuilder<Model>
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
-            Foreign.self, Foreign.reference[keyPath: foreign].name,
-            to: Local.self, Local.reference[keyPath: local].name,
+            Foreign.self, Foreign()[keyPath: foreign].name,
+            to: Local.self, Local()[keyPath: local].name,
             method: .inner
         )
     }
@@ -124,14 +124,14 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign.reference.fields.map { field in
+        self.query.fields += Foreign().fields.map { field in
             return .field(
                 path: [field.name],
                 entity: Foreign.entity,
                 alias: Foreign.entity + "_" + field.name
             )
         }
-        self.joinedModels.append(Foreign.reference)
+        self.joinedModels.append(Foreign())
         self.query.joins.append(.model(
             foreign: .field(path: [foreignField], entity: Foreign.entity, alias: nil),
             local: .field(path: [localField], entity: Local.entity, alias: nil),
@@ -156,7 +156,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, in values: [Value]) -> Self {
-        return self.filter(Model.reference[keyPath: field].name, in: values)
+        return self.filter(Model()[keyPath: field].name, in: values)
     }
     
     @discardableResult
@@ -169,7 +169,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self {
-        return self.filter(Model.reference[keyPath: field].name, method, value)
+        return self.filter(Model()[keyPath: field].name, method, value)
     }
     
     @discardableResult
@@ -217,7 +217,7 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
         self.query.fields = []
-        query.fields.append(.field(path: [Model.reference[keyPath: field].name], entity: nil, alias: nil))
+        query.fields.append(.field(path: [Model()[keyPath: field].name], entity: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -236,7 +236,7 @@ public final class QueryBuilder<Model>
     ///     - direction: Direction to sort the fields, ascending or descending.
     /// - returns: Query builder for chaining.
     public func sort<Value>(_ field: KeyPath<Model, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
-        return self.sort(Model.self, Model.reference[keyPath: field].name, direction)
+        return self.sort(Model.self, Model()[keyPath: field].name, direction)
     }
 
     /// Add a sort to the query builder for a field.
@@ -250,7 +250,7 @@ public final class QueryBuilder<Model>
     public func sort<Joined, Value>(_ field: KeyPath<Joined, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
         where Joined: FluentKit.Model
     {
-        return self.sort(Joined.self, Joined.reference[keyPath: field].name, direction)
+        return self.sort(Joined.self, Joined()[keyPath: field].name, direction)
     }
 
     public func sort(_ field: String, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
@@ -274,7 +274,7 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Value: Codable, NestedValue: Codable
     {
-        return self.filter(Model.reference[keyPath: field].name, path, method, value)
+        return self.filter(Model()[keyPath: field].name, path, method, value)
     }
 
     public func filter<NestedValue>(
@@ -310,7 +310,7 @@ public final class QueryBuilder<Model>
     // MARK: Aggregate
     
     public func count() -> EventLoopFuture<Int> {
-        return self.aggregate(.count, Model.reference.idField.name, as: Int.self)
+        return self.aggregate(.count, Model().idField.name, as: Int.self)
     }
 
     public func sum<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
@@ -595,7 +595,7 @@ public func !=~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) ->
 public struct ModelFilter<Model> where Model: FluentKit.Model {
     static func make<Value>(_ lhs: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ rhs: DatabaseQuery.Value) -> ModelFilter {
         return .init(filter: .basic(
-            .field(path: [Model.reference[keyPath: lhs].name], entity: Model.entity, alias: nil),
+            .field(path: [Model()[keyPath: lhs].name], entity: Model.entity, alias: nil),
             method,
             rhs
         ))

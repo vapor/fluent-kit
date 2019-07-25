@@ -5,7 +5,7 @@ public protocol AnyModel: class, CustomStringConvertible {
 }
 
 extension AnyModel {
-    public func initialize() {
+    public func new() {
         let storage = Storage()
         Mirror(reflecting: self).children.forEach { child in
             if let property = child.value as? AnyProperty, let label = child.label {
@@ -138,7 +138,7 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database)
-            .filter(self.reference.idField.name, .equal, id)
+            .filter(self.init().idField.name, .equal, id)
             .first()
     }
 }

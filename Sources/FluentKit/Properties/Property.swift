@@ -9,7 +9,7 @@ protocol AnyProperty: class {
 extension AnyProperty {
     var storage: Storage {
         guard let storage = self._storage else {
-            fatalError("Model.initialize() has not been called")
+            fatalError("Model.new() has not been called")
         }
         return storage
     }

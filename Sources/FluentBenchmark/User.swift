@@ -15,7 +15,7 @@ final class User: Model {
     @Field("pet") var pet: Pet
 
     init() {
-        self.initialize()
+        self.new()
     }
 
     convenience init(id: Int? = nil, name: String, pet: Pet) {

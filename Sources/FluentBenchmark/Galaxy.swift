@@ -6,7 +6,7 @@ final class Galaxy: Model {
     @Children(\.$galaxy) var planets: [Planet]
 
     init() {
-        self.initialize()
+        self.new()
     }
 
     convenience init(id: Int? = nil, name: String) {

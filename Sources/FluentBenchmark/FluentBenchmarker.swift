@@ -547,7 +547,7 @@ public final class FluentBenchmarker {
             @Field("bar") var bar: String?
 
             init() {
-                self.initialize()
+                self.new()
             }
 
             convenience init(id: Int? = nil, bar: String?) {
@@ -627,7 +627,7 @@ public final class FluentBenchmarker {
             @Field var bar: String
             @Field var baz: Int
             init() {
-                self.initialize()
+                self.new()
             }
             convenience init(id: Int? = nil, bar: String, baz: Int) {
                 self.init()
@@ -682,7 +682,7 @@ public final class FluentBenchmarker {
             @Field var name: String
             @Field var deletedAt: Date?
             init() {
-                self.initialize()
+                self.new()
             }
             convenience init(id: Int? = nil, name: String) {
                 self.init()
@@ -733,7 +733,7 @@ public final class FluentBenchmarker {
             @Field("updated_at") var updatedAt: Date?
 
             init() {
-                self.initialize()
+                self.new()
             }
 
             convenience init(id: Int? = nil, name: String) {
@@ -772,7 +772,7 @@ public final class FluentBenchmarker {
             @Field var name: String
 
             init() {
-                self.initialize()
+                self.new()
             }
 
             convenience init(id: Int? = nil, name: String) {
@@ -860,7 +860,7 @@ public final class FluentBenchmarker {
             @Field var name: String
 
             init() {
-                self.initialize()
+                self.new()
             }
 
             convenience init(id: UUID? = nil, name: String) {

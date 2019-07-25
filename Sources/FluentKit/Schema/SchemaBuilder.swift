@@ -47,7 +47,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     }
     
     public func auto() -> Self {
-        self.schema.createFields = Model.reference.fields.map { field in
+        self.schema.createFields = Model().fields.map { field in
             var constraints = [DatabaseSchema.FieldConstraint]()
             let type: Any.Type
 
@@ -60,7 +60,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
                 type = field.type
             }
 
-            if field.name == Model.reference.idField.name {
+            if field.name == Model().idField.name {
                 constraints.append(.identifier(
                     auto: !(type is AnyGeneratableID.Type)
                 ))
@@ -84,7 +84,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     ) -> Self
         where Value: Codable
     {
-        let field = Model.reference[keyPath: keyPath]
+        let field = Model()[keyPath: keyPath]
         return self.field(.definition(
             name: .string(field.name),
             dataType: dataType,
@@ -112,7 +112,7 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A>(on a: KeyPath<Model, Field<A>>) -> Self
         where A: Codable
     {
-        let a = Model.reference[keyPath: a]
+        let a = Model()[keyPath: a]
         self.schema.constraints.append(.unique(fields: [
             .string(a.name)
         ]))
@@ -122,8 +122,8 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A, B>(on a: KeyPath<Model, Field<A>>, _ b: KeyPath<Model, Field<B>>) -> Self
         where A: Codable, B: Codable
     {
-        let a = Model.reference[keyPath: a]
-        let b = Model.reference[keyPath: b]
+        let a = Model()[keyPath: a]
+        let b = Model()[keyPath: b]
         self.schema.constraints.append(.unique(fields: [
             .string(a.name), .string(b.name)
         ]))
@@ -133,9 +133,9 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
     public func unique<A, B, C>(on a: KeyPath<Model, Field<A>>, _ b: KeyPath<Model, Field<B>>,_ c: KeyPath<Model, Field<C>>) -> Self
         where A: Codable, B: Codable, C: Codable
     {
-        let a = Model.reference[keyPath: a]
-        let b = Model.reference[keyPath: b]
-        let c = Model.reference[keyPath: c]
+        let a = Model()[keyPath: a]
+        let b = Model()[keyPath: b]
+        let c = Model()[keyPath: c]
         self.schema.constraints.append(.unique(fields: [
             .string(a.name), .string(b.name), .string(c.name)
         ]))
