@@ -266,9 +266,12 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             struct PlanetJSON: Codable, Equatable {
+                struct GalaxyID: Codable, Equatable {
+                    var id: Int
+                }
                 var id: Int
                 var name: String
-                var galaxyID: Int
+                var galaxy: GalaxyID
             }
             struct GalaxyJSON: Codable, Equatable {
                 var id: Int
@@ -277,17 +280,17 @@ public final class FluentBenchmarker {
             }
 
             let andromeda = GalaxyJSON(id: 1, name: "Andromeda", planets: [
-                .init(id: 9, name: "PA-99-N2", galaxyID: 1),
+                .init(id: 9, name: "PA-99-N2", galaxy: .init(id: 1)),
             ])
             let milkyWay = GalaxyJSON(id: 2, name: "Milky Way", planets: [
-                .init(id: 1, name: "Mercury", galaxyID: 2),
-                .init(id: 2, name: "Venus", galaxyID: 2),
-                .init(id: 3, name: "Earth", galaxyID: 2),
-                .init(id: 4, name: "Mars", galaxyID: 2),
-                .init(id: 5, name: "Jupiter", galaxyID: 2),
-                .init(id: 6, name: "Saturn", galaxyID: 2),
-                .init(id: 7, name: "Uranus", galaxyID: 2),
-                .init(id: 8, name: "Neptune", galaxyID: 2),
+                .init(id: 1, name: "Mercury", galaxy: .init(id: 2)),
+                .init(id: 2, name: "Venus", galaxy: .init(id: 2)),
+                .init(id: 3, name: "Earth", galaxy: .init(id: 2)),
+                .init(id: 4, name: "Mars", galaxy: .init(id: 2)),
+                .init(id: 5, name: "Jupiter", galaxy: .init(id: 2)),
+                .init(id: 6, name: "Saturn", galaxy: .init(id: 2)),
+                .init(id: 7, name: "Uranus", galaxy: .init(id: 2)),
+                .init(id: 8, name: "Neptune", galaxy: .init(id: 2)),
             ])
             let messier82 = GalaxyJSON(id: 3, name: "Messier 82", planets: [])
             let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
@@ -296,7 +299,6 @@ public final class FluentBenchmarker {
                 .eagerLoad(\.$planets, method: .subquery)
                 .all().wait()
 
-            try print(String(decoding: JSONEncoder().encode(galaxies), as: UTF8.self))
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
             guard decoded == expected else {
                 throw Failure("unexpected output")
