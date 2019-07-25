@@ -192,8 +192,23 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func set(_ data: [String: DatabaseQuery.Value]) -> Self {
-        query.fields = data.keys.map { .field(path: [$0], entity: nil, alias: nil) }
-        query.input.append(.init(data.values))
+        self.query.fields = data.keys.map { .field(path: [$0], entity: nil, alias: nil) }
+        self.query.input.append(.init(data.values))
+        return self
+    }
+
+    @discardableResult
+    public func set(_ data: [[String: DatabaseQuery.Value]]) -> Self {
+        // ensure there is at least one
+        guard let keys = data.first?.keys else {
+            return self
+        }
+        // use first copy of keys to ensure correct ordering
+        self.query.fields = keys.map { .field(path: [$0], entity: nil, alias: nil) }
+        for item in data {
+            let input = keys.map { item[$0]! }
+            self.query.input.append(input)
+        }
         return self
     }
 
@@ -459,7 +474,6 @@ public final class QueryBuilder<Model>
     }
 
     func _run(_ onOutput: @escaping (Storage) throws -> ()) -> EventLoopFuture<Void> {
-        
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query

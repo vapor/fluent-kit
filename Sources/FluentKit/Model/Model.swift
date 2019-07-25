@@ -221,13 +221,13 @@ extension Array where Element: FluentKit.Model {
         let builder = Element.query(on: database)
         self.forEach { model in
             precondition(!model.exists)
-            builder.set(model.input)
         }
+        builder.set(self.map { $0.input })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { created in
             let next = it.next()!
-            next.storage!.exists = true
+            next.storage = DefaultStorage(output: nil, eagerLoadStorage: .init(), exists: true)
         }
     }
 }

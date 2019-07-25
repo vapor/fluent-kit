@@ -40,7 +40,9 @@ public final class Children<P, C>: AnyProperty
     var label: String?
 
     func setOutput(from storage: Storage) throws {
-        self.parentID = try storage.output!.decode(field: P.reference.idField.name, as: P.ID.self)
+        if storage.output!.contains(field: P.reference.idField.name) {
+            self.parentID = try storage.output!.decode(field: P.reference.idField.name, as: P.ID.self)
+        }
         try self.setEagerLoaded(from: storage)
     }
 
