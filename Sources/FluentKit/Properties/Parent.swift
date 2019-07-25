@@ -1,10 +1,20 @@
 @propertyWrapper
-public final class Parent<C, P>: AnyField
-    where P: Model, C: Model
+public final class Parent<P>: AnyField
+    where P: Model
 {
     // MARK: ID
 
     let idField: Field<P.ID>
+
+    var modelType: AnyModel.Type? {
+        get { return self.idField.modelType }
+        set { self.idField.modelType = newValue }
+    }
+
+    var storage: Storage? {
+        get { return self.idField.storage }
+        set { self.idField.storage = newValue }
+    }
 
     public var id: P.ID {
         get {
@@ -17,11 +27,12 @@ public final class Parent<C, P>: AnyField
 
     // MARK: Wrapper
 
-    public var wrappedValue: C {
-        fatalError("use $ prefix to access")
+    public var wrappedValue: P {
+        get { fatalError("use $ prefix to access") }
+        set { fatalError("use $ prefix to access") }
     }
 
-    public var projectedValue: Parent<C, P> {
+    public var projectedValue: Parent<P> {
         return self
     }
 
@@ -44,7 +55,7 @@ public final class Parent<C, P>: AnyField
     public func get(on database: Database) -> EventLoopFuture<P> {
         return self.query(on: database).first().map { parent in
             guard let parent = parent else {
-                fatalError()
+                fatalError("no parent found")
             }
             return parent
         }
@@ -84,33 +95,52 @@ public final class Parent<C, P>: AnyField
         self.idField.setInput(to: &input)
     }
 
+    func clearInput() {
+        self.idField.clearInput()
+    }
+
     // MARK: Codable
     
     func encode(to encoder: inout ModelEncoder) throws {
-        if let parent = self.eagerLoadedValue {
-            try encoder.encode(parent, forKey: self.label!)
+        // drop _id suffix
+        let key = String(self.label!.dropLast(3))
+        if let parent = try self.eagerLoadedValue() {
+            try encoder.encode(parent, forKey: key)
         } else {
             try encoder.encode([
-                C.reference.idField.name: self.id
-            ], forKey: self.label!)
+                P.reference.idField.name: self.id
+            ], forKey: key)
         }
     }
     
     func decode(from decoder: ModelDecoder) throws {
-        self.id = try decoder.decode(P.ID.self, forKey: self.label!)
+        // drop _id suffix
+        #warning("TODO: allow for nested decoding")
+        // let key = String(self.label!.dropLast(3))
+        // self.id = try decoder.decode(<#T##value: Decodable.Protocol##Decodable.Protocol#>, forKey: <#T##String#>)
     }
 
     // MARK: Eager Load
 
-    var eagerLoadedValue: P?
+    private var eagerLoadRequest: EagerLoadRequest?
 
-    public var isEagerLoaded: Bool {
-        return self.eagerLoadedValue != nil
+    private func eagerLoadedValue() throws -> P? {
+        guard let request = self.eagerLoadRequest else {
+            return nil
+        }
+
+        if let join = request as? JoinEagerLoad {
+            return try join.get(id: self.idField.wrappedValue)
+        } else if let subquery = request as? SubqueryEagerLoad {
+            return try subquery.get(id: self.idField.wrappedValue)
+        } else {
+            fatalError("unsupported eagerload request: \(request)")
+        }
     }
 
     public func eagerLoaded() throws -> P {
-        guard let eagerLoaded = self.eagerLoadedValue else {
-            throw FluentError.missingEagerLoad(name: C.entity.self)
+        guard let eagerLoaded = try self.eagerLoadedValue() else {
+            throw FluentError.missingEagerLoad(name: P.entity.self)
         }
         return eagerLoaded
     }
@@ -126,18 +156,17 @@ public final class Parent<C, P>: AnyField
 
     func setEagerLoad(from storage: Storage) throws {
         if let eagerLoad = storage.eagerLoadStorage.requests[P.entity] {
-            if let join = eagerLoad as? JoinEagerLoad {
-                self.eagerLoadedValue = try join.get(id: self.idField.wrappedValue)
-            }
-            if let subquery = eagerLoad as? SubqueryEagerLoad {
-                self.eagerLoadedValue = try subquery.get(id: self.idField.wrappedValue)
-            }
+            self.eagerLoadRequest = eagerLoad
         }
     }
 
     private final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [P]
         let idField: Field<P.ID>
+
+        var description: String {
+            return "\(self.idField.name): \(self.storage)"
+        }
 
         init(_ idField: Field<P.ID>) {
             self.storage = []
@@ -150,7 +179,7 @@ public final class Parent<C, P>: AnyField
 
         func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
             let ids: [P.ID] = models
-                .map { $0 as! C }
+                .map { $0 as! AnyModel }
                 .map { try! $0.storage!.output!.decode(field: self.idField.name, as: P.ID.self) }
 
             let uniqueIDs = Array(Set(ids))
@@ -171,6 +200,10 @@ public final class Parent<C, P>: AnyField
         var parents: [P.ID: P]
         let idField: Field<P.ID>
 
+        var description: String {
+            return "\(self.idField.name): \(self.parents)"
+        }
+
         init(_ idField: Field<P.ID>) {
             self.parents = [:]
             self.idField = idField
@@ -179,15 +212,22 @@ public final class Parent<C, P>: AnyField
         func prepare(_ query: inout DatabaseQuery) {
             query.joins.append(.model(
                 foreign: .field(path: [P.reference.idField.name], entity: P.entity, alias: nil),
-                local: .field(path: [self.idField.name], entity: C.entity, alias: nil),
+                local: .field(path: [self.idField.name], entity: self.idField.modelType!.entity, alias: nil),
                 method: .inner
             ))
+            query.fields += P.reference.fields.map { field in
+                return .field(
+                    path: [field.name],
+                    entity: P.entity,
+                    alias: P.entity + "_" + field.name
+                )
+            }
         }
 
         func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
             do {
                 var res: [P.ID: P] = [:]
-                try models.map { $0 as! C }.forEach { child in
+                try models.map { $0 as! AnyModel }.forEach { child in
                     let parent = try child.joined(P.self)
                     try res[parent.requireID()] = parent
                 }

@@ -3,11 +3,14 @@ protocol AnyProperty: class {
     func decode(from decoder: ModelDecoder) throws
     func setOutput(from storage: Storage) throws
     var label: String? { get set }
+    var modelType: AnyModel.Type? { get set }
 }
 
 protocol AnyField: AnyProperty {
+    var storage: Storage? { get set }
     var nameOverride: String? { get }
     var type: Any.Type { get }
+    func clearInput()
     func setInput(to input: inout [String: DatabaseQuery.Value])
 }
 
@@ -23,7 +26,7 @@ extension AnyField {
     }
 }
 
-extension Model {
+extension AnyModel {
     var fields: [AnyField] {
         return self.properties.compactMap { $0 as? AnyField }
     }

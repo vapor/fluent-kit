@@ -6,6 +6,8 @@ public final class Field<Value>: AnyField
     var storage: Storage?
     var label: String?
 
+    var modelType: AnyModel.Type?
+
     private var output: Value?
     private var input: Value?
 
@@ -25,7 +27,7 @@ public final class Field<Value>: AnyField
                 return output
             } else {
                 if let label = self.label {
-                    fatalError("Field \(label) was not fetched during query")
+                    fatalError("Field was not fetched during query: \(label)")
                 } else {
                     fatalError("Cannot access field before it is initialized")
                 }
@@ -46,6 +48,10 @@ public final class Field<Value>: AnyField
 
     func setInput(to input: inout [String : DatabaseQuery.Value]) {
         input[self.name] = self.input.flatMap { .bind($0) }
+    }
+
+    func clearInput() {
+        self.input = nil
     }
 
     func setOutput(from storage: Storage) throws {

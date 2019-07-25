@@ -20,7 +20,7 @@ public final class QueryBuilder<Model>
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(entity: Model.entity)
+        self.query = .init(modelType: Model.self)
         self.eagerLoadStorage = .init()
         self.query.fields = Model.reference.fields.map { field in
             return .field(
@@ -37,13 +37,13 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
-//        Model.reference[keyPath: field]
-//            .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
+        Model.reference[keyPath: field]
+            .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
         return self
     }
 
     @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
+    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
         Model.reference[keyPath: field]
             .addEagerLoadRequest(method: method, to: self.eagerLoadStorage)
         return self
@@ -59,7 +59,7 @@ public final class QueryBuilder<Model>
     // MARK: Join
     
     @discardableResult
-    public func join<Value>(_ field: KeyPath<Model, Parent<Model, Value>>) -> Self
+    public func join<Value>(_ field: KeyPath<Model, Parent<Value>>) -> Self
         where Value: FluentKit.Model
     {
         return self.join(
@@ -439,6 +439,26 @@ public final class QueryBuilder<Model>
     
     public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
+
+        // make a copy of this query before mutating it
+        // so that run can be called multiple times
+        var query = self.query
+
+        // prepare all eager load requests
+        self.eagerLoadStorage.requests.values.forEach { $0.prepare(&query) }
+
+        return self._run { storage in
+            let model = try Model(storage: storage)
+            all.append(model)
+            try onOutput(model)
+        }.flatMap {
+            return .andAllSucceed(self.eagerLoadStorage.requests.values.map { eagerLoad in
+                return eagerLoad.run(all, on: self.database)
+            }, on: self.database.eventLoop)
+        }
+    }
+
+    func _run(_ onOutput: @escaping (Storage) throws -> ()) -> EventLoopFuture<Void> {
         
         // make a copy of this query before mutating it
         // so that run can be called multiple times
@@ -456,17 +476,12 @@ public final class QueryBuilder<Model>
         }
 
         return self.database.execute(query) { output in
-            let model = try Model(storage: DefaultStorage(
+            let storage = DefaultStorage(
                 output: output,
                 eagerLoadStorage: self.eagerLoadStorage,
                 exists: true
-            ))
-            all.append(model)
-            try onOutput(model)
-        }.flatMap {
-            return .andAllSucceed(self.eagerLoadStorage.requests.values.map { eagerLoad in
-                return eagerLoad.run(all, on: self.database)
-            }, on: self.database.eventLoop)
+            )
+            try onOutput(storage)
         }
     }
 }

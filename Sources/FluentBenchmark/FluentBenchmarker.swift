@@ -48,6 +48,7 @@ public final class FluentBenchmarker {
             guard galaxy.id == 1 else {
                 throw Failure("unexpected galaxy id: \(galaxy)")
             }
+            print(galaxy)
             
             guard let fetched = try Galaxy.query(on: self.database)
                 .filter(\.$name == "Messier 82")
@@ -55,6 +56,7 @@ public final class FluentBenchmarker {
                 .wait() else {
                     throw Failure("unexpected empty result set")
                 }
+            print(fetched)
             
             if fetched.name != galaxy.name {
                 throw Failure("unexpected name: \(galaxy) \(fetched)")
@@ -294,6 +296,7 @@ public final class FluentBenchmarker {
                 .eagerLoad(\.$planets, method: .subquery)
                 .all().wait()
 
+            try print(String(decoding: JSONEncoder().encode(galaxies), as: UTF8.self))
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
             guard decoded == expected else {
                 throw Failure("unexpected output")
@@ -723,6 +726,8 @@ public final class FluentBenchmarker {
             init(id: Int? = nil, name: String) {
                 self.id = id
                 self.name = name
+                self.createdAt = nil
+                self.updatedAt = nil
             }
         }
 

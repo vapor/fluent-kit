@@ -10,6 +10,6 @@ final class Planet: Model {
     init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
         self.id = id
         self.name = name
-        self.galaxy.id = galaxyID
+        self.$galaxy.id = galaxyID
     }
 }

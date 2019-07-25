@@ -21,12 +21,13 @@ extension Model {
             return Self.query(on: database)
                 .set(self.input)
                 .action(.create)
-                .run { created in
+                ._run { storage in
                     if Self.ID.self is AnyGeneratableID.Type { } else {
-                        self.id = try created.storage!.output!.decode(field: "fluentID", as: Self.ID.self)
+                        // set id if not generated
+                        self.idField.clearInput()
+                        try self.idField.setOutput(from: storage)
                     }
-                    self.storage!.exists = true
-            }
+                }
         }.flatMap {
             return self.didCreate(on: database)
         }

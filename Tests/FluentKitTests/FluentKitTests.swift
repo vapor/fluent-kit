@@ -15,7 +15,7 @@ final class FluentKitTests: XCTestCase {
     func testGalaxyPlanetNames() throws {
         XCTAssertEqual(Galaxy.reference.$id.name, "id")
         XCTAssertEqual(Galaxy.reference.$name.name, "name")
-        XCTAssertEqual(Galaxy.reference.$planets.childIDField.name, "galaxy_id")
+        XCTAssertEqual(Galaxy.reference.$planets.idField.name, "galaxy_id")
 
 
         let galaxy = Galaxy(id: 1, name: "Milky Way")

@@ -8,14 +8,17 @@ public final class Children<P, C>: AnyProperty
 
     var parentID: P.ID?
 
+    var modelType: AnyModel.Type?
+
     // MARK: Wrapper
 
-    public init(_ keyPath: KeyPath<C, Parent<C, P>>) {
+    public init(_ keyPath: KeyPath<C, Parent<P>>) {
         self.idField = C.reference[keyPath: keyPath].idField
     }
 
     public var wrappedValue: [C] {
-        fatalError("Use $ prefix to access")
+        get { fatalError("Use $ prefix to access") }
+        set { fatalError("Use $ prefix to access") }
     }
 
     public var projectedValue: Children<P, C> {
@@ -44,7 +47,7 @@ public final class Children<P, C>: AnyProperty
     // MARK: Codable
 
     func encode(to encoder: inout ModelEncoder) throws {
-        if let rows = self.eagerLoadedValue {
+        if let rows = try self.eagerLoadedValue() {
             try encoder.encode(rows, forKey: self.label!)
         }
     }
@@ -55,10 +58,21 @@ public final class Children<P, C>: AnyProperty
 
     // MARK: Eager Load
 
-    private var eagerLoadedValue: [C]?
+    private var eagerLoadRequest: EagerLoadRequest?
+
+    private func eagerLoadedValue() throws -> [C]? {
+        guard let request = self.eagerLoadRequest else {
+            return nil
+        }
+        if let subquery = request as? SubqueryEagerLoad {
+            return try subquery.get(id: self.parentID!)
+        } else {
+            fatalError("unsupported eagerload request: \(request)")
+        }
+    }
 
     public func eagerLoaded() throws -> [C] {
-        guard let rows = self.eagerLoadedValue else {
+        guard let rows = try self.eagerLoadedValue() else {
             throw FluentError.missingEagerLoad(name: C.entity.self)
         }
         return rows
@@ -75,15 +89,17 @@ public final class Children<P, C>: AnyProperty
 
     func setEagerLoaded(from storage: Storage) throws {
         if let eagerLoad = storage.eagerLoadStorage.requests[C.entity] {
-            if let subquery = eagerLoad as? SubqueryEagerLoad {
-                self.eagerLoadedValue = try subquery.get(id: self.parentID!)
-            }
+            self.eagerLoadRequest = eagerLoad
         }
     }
 
     private final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [C]
         let idField: Field<P.ID>
+
+        var description: String {
+            return "\(self.idField.name): \(self.storage)"
+        }
 
         init(_ idField: Field<P.ID>) {
             self.storage = []
@@ -98,28 +114,26 @@ public final class Children<P, C>: AnyProperty
             let ids: [P.ID] = models
                 .map { $0 as! P }
                 .map { $0.id! }
-
             let uniqueIDs = Array(Set(ids))
             return C.query(on: database)
                 .filter(
                     DatabaseQuery.Filter.basic(
-                        .field(path: [self.idField.name], entity: nil, alias: nil),
-                        .equal,
+                        .field(path: [self.idField.name], entity: self.idField.modelType!.entity, alias: nil),
+                        .subset(inverse: false),
                         .array(uniqueIDs.map { .bind($0) })
                     )
                 )
                 .all()
                 .map { (children: [C]) -> Void in
                     self.storage = children
-            }
-
+                }
         }
 
         func get(id: P.ID) throws -> [C] {
             return try self.storage.filter { child in
                 return try child.storage!.output!.decode(
                     field: self.idField.name, as: P.ID.self
-                    ) == id
+                ) == id
             }
         }
     }

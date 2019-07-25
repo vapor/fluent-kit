@@ -11,14 +11,14 @@ public protocol _AnyTimestampable {
 
 extension Timestampable {
     public var _createdAtField: Field<Date?> {
-        guard let createdAt = Mirror(reflecting: self).descendant("$$createdAt") else {
+        guard let createdAt = Mirror(reflecting: self).descendant("_createdAt") else {
             fatalError("createdAt must be declared using @Field")
         }
         return createdAt as! Field<Date?>
     }
 
     public var _updatedAtField: Field<Date?> {
-        guard let updatedAt = Mirror(reflecting: self).descendant("$$updatedAt") else {
+        guard let updatedAt = Mirror(reflecting: self).descendant("_updatedAt") else {
             fatalError("updatedAt must be declared using @Field")
         }
         return updatedAt as! Field<Date?>

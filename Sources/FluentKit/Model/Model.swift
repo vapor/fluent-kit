@@ -1,13 +1,13 @@
-public protocol AnyModel: class {
+public protocol AnyModel: class, CustomStringConvertible {
     static var name: String { get }
     static var entity: String { get }
+    init()
 }
 
 public protocol Model: AnyModel, Codable {
     associatedtype ID: Codable, Hashable
 
     var id: ID? { get set }
-    init()
 
     // MARK: Lifecycle
 
@@ -42,19 +42,9 @@ extension Model {
         var encoder = ModelEncoder(encoder: encoder)
         try self.properties.forEach { try $0.encode(to: &encoder) }
     }
+}
 
-    // MARK: Joined
-
-    public func joined<Joined>(_ model: Joined.Type) throws -> Joined
-        where Joined: FluentKit.Model
-    {
-        return try Joined(storage: DefaultStorage(
-            output: self.storage!.output!.prefixed(by: Joined.entity + "_"),
-            eagerLoadStorage: .init(),
-            exists: true
-        ))
-    }
-
+extension AnyModel {
     // MARK: Description
 
     public var description: String {
@@ -75,31 +65,51 @@ extension Model {
 }
 
 extension Model {
+    var idField: Field<Self.ID?> {
+        self.anyIDField as! Field<Self.ID?>
+    }
+
     static var reference: Self {
+        return self.anyReference as! Self
+    }
+}
+
+extension AnyModel {
+    // MARK: Joined
+
+    public func joined<Joined>(_ model: Joined.Type) throws -> Joined
+        where Joined: FluentKit.Model
+    {
+        return try Joined(storage: DefaultStorage(
+            output: self.storage!.output!.prefixed(by: Joined.entity + "_"),
+            eagerLoadStorage: .init(),
+            exists: true
+        ))
+    }
+
+    static var anyReference: AnyModel {
         let reference = Self.init()
         reference.setLabels()
         return reference
     }
 
-    var idField: Field<Self.ID?> {
-        guard let id = Mirror(reflecting: self).descendant("$$id") else {
+    var anyIDField: AnyField {
+        guard let id = Mirror(reflecting: self).descendant("_id") else {
             fatalError("id property must be declared using @ID")
         }
-        return id as! Field<Self.ID?>
+        return id as! AnyField
     }
-}
 
-extension Model {
     var exists: Bool {
         return self.storage?.exists ?? false
     }
 
     var storage: Storage? {
         get {
-            return self.idField.storage
+            return self.anyIDField.storage
         }
         set {
-            self.idField.storage = newValue
+            self.anyIDField.storage = newValue
         }
     }
 
@@ -113,14 +123,21 @@ extension Model {
     internal init(storage: Storage) throws {
         self.init()
         self.setLabels()
+        try self.setStorage(to: storage)
+    }
+
+    internal func setStorage(to storage: Storage) throws {
+        self.fields.forEach { $0.clearInput() }
         try self.properties.forEach { try $0.setOutput(from: storage) }
     }
 
-    private func setLabels() {
+    internal func setLabels() {
         Mirror(reflecting: self).children.forEach { child in
             if let property = child.value as? AnyProperty, let label = child.label {
                 // remove underscore
                 property.label = .init(label.dropFirst())
+                // set root model type
+                property.modelType = Self.self
             }
         }
     }

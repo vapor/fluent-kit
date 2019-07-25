@@ -9,7 +9,7 @@ public protocol _AnySoftDeletable {
 
 extension SoftDeletable {
     public var _deletedAtField: Field<Date?> {
-        guard let deletedAt = Mirror(reflecting: self).descendant("$$deletedAt") else {
+        guard let deletedAt = Mirror(reflecting: self).descendant("_deletedAt") else {
             fatalError("deletedAt must be declared using @Field")
         }
         return deletedAt as! Field<Date?>
