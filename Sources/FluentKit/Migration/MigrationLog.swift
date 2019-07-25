@@ -10,9 +10,12 @@ public final class MigrationLog: Model, Timestampable {
     @Field public var createdAt: Date?
     @Field public var updatedAt: Date?
 
-    public init() { }
+    public init() {
+        self.initialize()
+    }
 
-    public init(id: Int? = nil, name: String, batch: Int) {
+    public convenience init(id: Int? = nil, name: String, batch: Int) {
+        self.init()
         self.id = id
         self.name = name
         self.batch = batch

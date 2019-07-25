@@ -11,9 +11,9 @@ public final class Parent<P>: AnyField
         set { self.idField.modelType = newValue }
     }
 
-    var storage: Storage? {
-        get { return self.idField.storage }
-        set { self.idField.storage = newValue }
+    var _storage: Storage? {
+        get { return self.idField._storage }
+        set { self.idField._storage = newValue }
     }
 
     public var id: P.ID {
@@ -48,7 +48,7 @@ public final class Parent<P>: AnyField
 
     public func query(on database: Database) -> QueryBuilder<P> {
         return P.query(on: database)
-            .filter(P.reference.idField.name, .equal, self.id)
+            .filter(P().idField.name, .equal, self.id)
     }
 
 
@@ -64,11 +64,8 @@ public final class Parent<P>: AnyField
     // MARK: Property
 
     var label: String? {
-        get {
-            return self.idField.label
-        }
-        set {
-            if let label = newValue {
+        didSet {
+            if let label = self.label {
                 self.idField.label = label + "_id"
             } else {
                 self.idField.label = nil
@@ -76,12 +73,11 @@ public final class Parent<P>: AnyField
         }
     }
 
-    func setOutput(from storage: Storage) throws {
-        try self.idField.setOutput(from: storage)
-        try self.setEagerLoad(from: storage)
-    }
-
     // MARK: Field
+
+    var name: String {
+        return self.idField.name
+    }
 
     var type: Any.Type {
         return self.idField.type
@@ -91,41 +87,34 @@ public final class Parent<P>: AnyField
         return self.idField.nameOverride
     }
 
-    func setInput(to input: inout [String : DatabaseQuery.Value]) {
-        self.idField.setInput(to: &input)
-    }
-
-    func clearInput() {
-        self.idField.clearInput()
-    }
-
     // MARK: Codable
     
     func encode(to encoder: inout ModelEncoder) throws {
-        // drop _id suffix
-        let key = String(self.label!.dropLast(3))
         if let parent = try self.eagerLoadedValue() {
-            try encoder.encode(parent, forKey: key)
+            try encoder.encode(parent, forKey: self.label!)
         } else {
             try encoder.encode([
-                P.reference.idField.name: self.id
-            ], forKey: key)
+                P().idField.name: self.id
+            ], forKey: self.label!)
         }
     }
     
     func decode(from decoder: ModelDecoder) throws {
-        // drop _id suffix
         #warning("TODO: allow for nested decoding")
-        // let key = String(self.label!.dropLast(3))
         // self.id = try decoder.decode(<#T##value: Decodable.Protocol##Decodable.Protocol#>, forKey: <#T##String#>)
     }
 
     // MARK: Eager Load
 
-    private var eagerLoadRequest: EagerLoadRequest?
+    public func eagerLoaded() throws -> P {
+        guard let eagerLoaded = try self.eagerLoadedValue() else {
+            throw FluentError.missingEagerLoad(name: P.entity.self)
+        }
+        return eagerLoaded
+    }
 
     private func eagerLoadedValue() throws -> P? {
-        guard let request = self.eagerLoadRequest else {
+        guard let request = self.storage.eagerLoadStorage.requests[P.entity] else {
             return nil
         }
 
@@ -138,25 +127,12 @@ public final class Parent<P>: AnyField
         }
     }
 
-    public func eagerLoaded() throws -> P {
-        guard let eagerLoaded = try self.eagerLoadedValue() else {
-            throw FluentError.missingEagerLoad(name: P.entity.self)
-        }
-        return eagerLoaded
-    }
-
     func addEagerLoadRequest(method: EagerLoadMethod, to storage: EagerLoadStorage) {
         switch method {
         case .subquery:
             storage.requests[P.entity] = SubqueryEagerLoad(self.idField)
         case .join:
             storage.requests[P.entity] = JoinEagerLoad(self.idField)
-        }
-    }
-
-    func setEagerLoad(from storage: Storage) throws {
-        if let eagerLoad = storage.eagerLoadStorage.requests[P.entity] {
-            self.eagerLoadRequest = eagerLoad
         }
     }
 
@@ -180,11 +156,11 @@ public final class Parent<P>: AnyField
         func run(_ models: [Any], on database: Database) -> EventLoopFuture<Void> {
             let ids: [P.ID] = models
                 .map { $0 as! AnyModel }
-                .map { try! $0.storage!.output!.decode(field: self.idField.name, as: P.ID.self) }
+                .map { try! $0.storage.output!.decode(field: self.idField.name, as: P.ID.self) }
 
             let uniqueIDs = Array(Set(ids))
             return P.query(on: database)
-                .filter(P.reference.idField.name, in: uniqueIDs)
+                .filter(P().idField.name, in: uniqueIDs)
                 .all()
                 .map { self.storage = $0 }
         }
@@ -211,11 +187,11 @@ public final class Parent<P>: AnyField
 
         func prepare(_ query: inout DatabaseQuery) {
             query.joins.append(.model(
-                foreign: .field(path: [P.reference.idField.name], entity: P.entity, alias: nil),
+                foreign: .field(path: [P().idField.name], entity: P.entity, alias: nil),
                 local: .field(path: [self.idField.name], entity: self.idField.modelType!.entity, alias: nil),
                 method: .inner
             ))
-            query.fields += P.reference.fields.map { field in
+            query.fields += P().fields.map { field in
                 return .field(
                     path: [field.name],
                     entity: P.entity,

@@ -4,16 +4,14 @@ public final class Children<P, C>: AnyProperty
 {
     // MARK: ID
 
-    let idField: Field<P.ID>
-
-    var parentID: P.ID?
-
+    let foreignIDName: String
     var modelType: AnyModel.Type?
+    var _storage: Storage?
 
     // MARK: Wrapper
 
-    public init(_ keyPath: KeyPath<C, Parent<P>>) {
-        self.idField = C.reference[keyPath: keyPath].idField
+    public init(_ parent: KeyPath<C, Parent<P>>) {
+        self.foreignIDName = C()[keyPath: parent].idField.name
     }
 
     public var wrappedValue: [C] {
@@ -25,26 +23,20 @@ public final class Children<P, C>: AnyProperty
         return self
     }
 
+    private var parentID: P.ID {
+        return try! self.storage.output!.decode(field: P().idField.name, as: P.ID.self)
+    }
+
     // MARK: Query
 
     public func query(on database: Database) -> QueryBuilder<C> {
-        guard let id = self.parentID else {
-            fatalError("Cannot form children query without model id")
-        }
         return C.query(on: database)
-            .filter(self.idField.name, .equal, id)
+            .filter(self.foreignIDName, .equal, self.parentID)
     }
 
     // MARK: Property
 
     var label: String?
-
-    func setOutput(from storage: Storage) throws {
-        if storage.output!.contains(field: P.reference.idField.name) {
-            self.parentID = try storage.output!.decode(field: P.reference.idField.name, as: P.ID.self)
-        }
-        try self.setEagerLoaded(from: storage)
-    }
 
     // MARK: Codable
 
@@ -60,14 +52,12 @@ public final class Children<P, C>: AnyProperty
 
     // MARK: Eager Load
 
-    private var eagerLoadRequest: EagerLoadRequest?
-
     private func eagerLoadedValue() throws -> [C]? {
-        guard let request = self.eagerLoadRequest else {
+        guard let request = self.storage.eagerLoadStorage.requests[C.entity] else {
             return nil
         }
         if let subquery = request as? SubqueryEagerLoad {
-            return try subquery.get(id: self.parentID!)
+            return try subquery.get(id: self.parentID)
         } else {
             fatalError("unsupported eagerload request: \(request)")
         }
@@ -83,29 +73,23 @@ public final class Children<P, C>: AnyProperty
     func addEagerLoadRequest(method: EagerLoadMethod, to storage: EagerLoadStorage) {
         switch method {
         case .subquery:
-            storage.requests[C.entity] = SubqueryEagerLoad(self.idField)
+            storage.requests[C.entity] = SubqueryEagerLoad(self.foreignIDName)
         case .join:
             fatalError("Eager loading children using join is not yet supported")
         }
     }
 
-    func setEagerLoaded(from storage: Storage) throws {
-        if let eagerLoad = storage.eagerLoadStorage.requests[C.entity] {
-            self.eagerLoadRequest = eagerLoad
-        }
-    }
-
     private final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [C]
-        let idField: Field<P.ID>
+        let foreignIDName: String
 
         var description: String {
-            return "\(self.idField.name): \(self.storage)"
+            return "\(self.foreignIDName): \(self.storage)"
         }
 
-        init(_ idField: Field<P.ID>) {
+        init(_ foreignIDName: String) {
             self.storage = []
-            self.idField = idField
+            self.foreignIDName = foreignIDName
         }
 
         func prepare(_ query: inout DatabaseQuery) {
@@ -120,7 +104,7 @@ public final class Children<P, C>: AnyProperty
             return C.query(on: database)
                 .filter(
                     DatabaseQuery.Filter.basic(
-                        .field(path: [self.idField.name], entity: self.idField.modelType!.entity, alias: nil),
+                        .field(path: [self.foreignIDName], entity: C.entity, alias: nil),
                         .subset(inverse: false),
                         .array(uniqueIDs.map { .bind($0) })
                     )
@@ -133,8 +117,8 @@ public final class Children<P, C>: AnyProperty
 
         func get(id: P.ID) throws -> [C] {
             return try self.storage.filter { child in
-                return try child.storage!.output!.decode(
-                    field: self.idField.name, as: P.ID.self
+                return try child.storage.output!.decode(
+                    field: self.foreignIDName, as: P.ID.self
                 ) == id
             }
         }

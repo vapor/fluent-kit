@@ -14,9 +14,12 @@ final class User: Model {
     @Field("name") var name: String
     @Field("pet") var pet: Pet
 
-    init() { }
+    init() {
+        self.initialize()
+    }
 
-    init(id: Int? = nil, name: String, pet: Pet) {
+    convenience init(id: Int? = nil, name: String, pet: Pet) {
+        self.init()
         self.id = id
         self.name = name
         self.pet = pet

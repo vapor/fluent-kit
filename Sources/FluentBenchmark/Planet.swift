@@ -5,9 +5,12 @@ final class Planet: Model {
     @Field var name: String
     @Parent var galaxy: Galaxy
 
-    init() { }
+    init() {
+        self.initialize()
+    }
 
-    init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
+    convenience init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
+        self.init()
         self.id = id
         self.name = name
         self.$galaxy.id = galaxyID

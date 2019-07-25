@@ -155,7 +155,7 @@ public struct DatabaseQuery {
     }
 
     public var idFieldName: String {
-        return self.modelType.anyReference.anyIDField.name
+        return self.modelType.init().anyIDField.name
     }
 
     internal let modelType: AnyModel.Type

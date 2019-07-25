@@ -1,25 +1,16 @@
-protocol Storage {
-    var output: DatabaseOutput? { get }
-    var eagerLoadStorage: EagerLoadStorage { get set }
-    var exists: Bool { get set }
-    var path: [String] { get }
-}
-
-struct DefaultStorage: Storage {
-    static let empty: DefaultStorage = .init(
-        output: nil,
-        eagerLoadStorage: .init(),
-        exists: false
-    )
-    
+final class Storage {
+    var input: [String: DatabaseQuery.Value]
     var output: DatabaseOutput?
     var eagerLoadStorage: EagerLoadStorage
     var exists: Bool
-    var path: [String] {
-        return []
-    }
 
-    init(output: DatabaseOutput?, eagerLoadStorage: EagerLoadStorage, exists: Bool) {
+    init(
+        input: [String: DatabaseQuery.Value] = [:],
+        output: DatabaseOutput? = nil,
+        eagerLoadStorage: EagerLoadStorage = .init(),
+        exists: Bool = false
+    ) {
+        self.input = input
         self.output = output
         self.eagerLoadStorage = eagerLoadStorage
         self.exists = exists

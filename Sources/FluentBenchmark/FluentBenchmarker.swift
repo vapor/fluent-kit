@@ -546,9 +546,12 @@ public final class FluentBenchmarker {
             @Field("id") var id: Int?
             @Field("bar") var bar: String?
 
-            init() { }
+            init() {
+                self.initialize()
+            }
 
-            init(id: Int? = nil, bar: String?) {
+            convenience init(id: Int? = nil, bar: String?) {
+                self.init()
                 self.id = id
                 self.bar = bar
             }
@@ -620,11 +623,14 @@ public final class FluentBenchmarker {
     
     public func testUniqueFields() throws {
         final class Foo: Model {
-            @Field("id") var id: Int?
-            @Field("bar") var bar: String
-            @Field("baz") var baz: Int
-            init() { }
-            init(id: Int? = nil, bar: String, baz: Int) {
+            @Field var id: Int?
+            @Field var bar: String
+            @Field var baz: Int
+            init() {
+                self.initialize()
+            }
+            convenience init(id: Int? = nil, bar: String, baz: Int) {
+                self.init()
                 self.id = id
                 self.bar = bar
                 self.baz = baz
@@ -672,11 +678,14 @@ public final class FluentBenchmarker {
 
     public func testSoftDelete() throws {
         final class User: Model, SoftDeletable {
-            @Field("id") var id: Int?
-            @Field("name") var name: String
-            @Field("deleted_at") var deletedAt: Date?
-            init() { }
-            init(id: Int? = nil, name: String) {
+            @Field var id: Int?
+            @Field var name: String
+            @Field var deletedAt: Date?
+            init() {
+                self.initialize()
+            }
+            convenience init(id: Int? = nil, name: String) {
+                self.init()
                 self.id = id
                 self.name = name
             }
@@ -723,9 +732,12 @@ public final class FluentBenchmarker {
             @Field("created_at") var createdAt: Date?
             @Field("updated_at") var updatedAt: Date?
 
-            init() { }
+            init() {
+                self.initialize()
+            }
 
-            init(id: Int? = nil, name: String) {
+            convenience init(id: Int? = nil, name: String) {
+                self.init()
                 self.id = id
                 self.name = name
                 self.createdAt = nil
@@ -756,12 +768,15 @@ public final class FluentBenchmarker {
             var string: String
         }
         final class User: Model {
-            @Field("id") var id: Int?
-            @Field("name") var name: String
+            @Field var id: Int?
+            @Field var name: String
 
-            init() { }
+            init() {
+                self.initialize()
+            }
 
-            init(id: Int? = nil, name: String) {
+            convenience init(id: Int? = nil, name: String) {
+                self.init()
                 self.id = id
                 self.name = name
             }
@@ -841,12 +856,15 @@ public final class FluentBenchmarker {
 
     public func testUUIDModel() throws {
         final class User: Model {
-            @Field("id") var id: UUID?
-            @Field("name") var name: String
+            @Field var id: UUID?
+            @Field var name: String
 
-            init() { }
+            init() {
+                self.initialize()
+            }
 
-            init(id: UUID? = nil, name: String) {
+            convenience init(id: UUID? = nil, name: String) {
+                self.init()
                 self.id = id
                 self.name = name
             }

@@ -369,7 +369,7 @@ public final class QueryBuilder<Model>
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
-        return self.aggregate(method, Model.reference[keyPath: field].name, as: Result.self)
+        return self.aggregate(method, Model()[keyPath: field].name, as: Result.self)
     }
     
     public func aggregate<Result>(
@@ -388,7 +388,7 @@ public final class QueryBuilder<Model>
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.storage!.output!.decode(field: "fluentAggregate", as: Result.self)
+            return try res.storage.output!.decode(field: "fluentAggregate", as: Result.self)
         }
     }
 
@@ -411,7 +411,7 @@ public final class QueryBuilder<Model>
     public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
         var partial: [Model] = []
         partial.reserveCapacity(max)
-        return self.run { row in
+        return self.all { row in
             partial.append(row)
             if partial.count >= max {
                 try closure(partial)
@@ -429,7 +429,7 @@ public final class QueryBuilder<Model>
     public func first() -> EventLoopFuture<Model?> {
         var model: Model? = nil
         return self.limit(1)
-            .run { result in
+            .all { result in
                 assert(model == nil, "unexpected database output")
                 model = result
             }
@@ -438,7 +438,7 @@ public final class QueryBuilder<Model>
     
     public func all() -> EventLoopFuture<[Model]> {
         var models: [Model] = []
-        return self.run { model in
+        return self.all { model in
             models.append(model)
         }.map { models }
     }
@@ -452,7 +452,7 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
     
-    public func run(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
+    public func all(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
 
         // make a copy of this query before mutating it
@@ -462,8 +462,11 @@ public final class QueryBuilder<Model>
         // prepare all eager load requests
         self.eagerLoadStorage.requests.values.forEach { $0.prepare(&query) }
 
-        return self._run { storage in
-            let model = try Model(storage: storage)
+        return self.run { output in
+            let model = Model()
+            model.storage.output = output
+            model.storage.eagerLoadStorage = self.eagerLoadStorage
+            model.storage.exists = true
             all.append(model)
             try onOutput(model)
         }.flatMap {
@@ -473,7 +476,7 @@ public final class QueryBuilder<Model>
         }
     }
 
-    func _run(_ onOutput: @escaping (Storage) throws -> ()) -> EventLoopFuture<Void> {
+    func run(_ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -482,7 +485,7 @@ public final class QueryBuilder<Model>
         self.eagerLoadStorage.requests.values.forEach { $0.prepare(&query) }
 
         // check if model is soft-deletable and should be excluded
-        if let softDeletable = Model.reference as? _AnySoftDeletable, !self.includeSoftDeleted {
+        if let softDeletable = Model() as? _AnySoftDeletable, !self.includeSoftDeleted {
             softDeletable._excludeSoftDeleted(&query)
             self.joinedModels
                 .compactMap { $0 as? _AnySoftDeletable }
@@ -490,12 +493,7 @@ public final class QueryBuilder<Model>
         }
 
         return self.database.execute(query) { output in
-            let storage = DefaultStorage(
-                output: output,
-                eagerLoadStorage: self.eagerLoadStorage,
-                exists: true
-            )
-            try onOutput(storage)
+            try onOutput(output)
         }
     }
 }

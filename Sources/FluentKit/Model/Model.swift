@@ -4,6 +4,22 @@ public protocol AnyModel: class, CustomStringConvertible {
     init()
 }
 
+extension AnyModel {
+    public func initialize() {
+        let storage = Storage()
+        Mirror(reflecting: self).children.forEach { child in
+            if let property = child.value as? AnyProperty, let label = child.label {
+                // remove underscore
+                property.label = .init(label.dropFirst())
+                // set root model type
+                property.modelType = Self.self
+                // set shared storage
+                property._storage = storage
+            }
+        }
+    }
+}
+
 public protocol Model: AnyModel, Codable {
     associatedtype ID: Codable, Hashable
 
@@ -33,12 +49,10 @@ extension Model {
     public init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        self.setLabels()
         try self.properties.forEach { try $0.decode(from: decoder) }
     }
 
     public func encode(to encoder: Encoder) throws {
-        self.setLabels()
         var encoder = ModelEncoder(encoder: encoder)
         try self.properties.forEach { try $0.encode(to: &encoder) }
     }
@@ -49,13 +63,13 @@ extension AnyModel {
 
     public var description: String {
         let input: String
-        if self.input.isEmpty {
+        if self.storage.input.isEmpty {
             input = "nil"
         } else {
-            input = self.input.description
+            input = self.storage.input.description
         }
         let output: String
-        if let o = self.storage?.output {
+        if let o = self.storage.output {
             output = o.description
         } else {
             output = "nil"
@@ -69,8 +83,9 @@ extension Model {
         self.anyIDField as! Field<Self.ID?>
     }
 
+    @available(*, deprecated, message: "use init")
     static var reference: Self {
-        return self.anyReference as! Self
+        return self.init()
     }
 }
 
@@ -80,17 +95,10 @@ extension AnyModel {
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
         where Joined: FluentKit.Model
     {
-        return try Joined(storage: DefaultStorage(
-            output: self.storage!.output!.prefixed(by: Joined.entity + "_"),
-            eagerLoadStorage: .init(),
-            exists: true
-        ))
-    }
-
-    static var anyReference: AnyModel {
-        let reference = Self.init()
-        reference.setLabels()
-        return reference
+        let joined = Joined()
+        joined.storage.output = self.storage.output?.prefixed(by: Joined.entity + "_")
+        joined.storage.exists = true
+        return joined
     }
 
     var anyIDField: AnyField {
@@ -100,46 +108,8 @@ extension AnyModel {
         return id as! AnyField
     }
 
-    var exists: Bool {
-        return self.storage?.exists ?? false
-    }
-
-    var storage: Storage? {
-        get {
-            return self.anyIDField.storage
-        }
-        set {
-            self.anyIDField.storage = newValue
-        }
-    }
-
-    internal var input: [String: DatabaseQuery.Value] {
-        self.setLabels()
-        var input = [String: DatabaseQuery.Value]()
-        self.fields.forEach { $0.setInput(to: &input) }
-        return input
-    }
-
-    internal init(storage: Storage) throws {
-        self.init()
-        self.setLabels()
-        try self.setStorage(to: storage)
-    }
-
-    internal func setStorage(to storage: Storage) throws {
-        self.fields.forEach { $0.clearInput() }
-        try self.properties.forEach { try $0.setOutput(from: storage) }
-    }
-
-    internal func setLabels() {
-        Mirror(reflecting: self).children.forEach { child in
-            if let property = child.value as? AnyProperty, let label = child.label {
-                // remove underscore
-                property.label = .init(label.dropFirst())
-                // set root model type
-                property.modelType = Self.self
-            }
-        }
+    var storage: Storage {
+        return self.anyIDField.storage
     }
 }
 
@@ -220,14 +190,14 @@ extension Array where Element: FluentKit.Model {
     public func create(on database: Database) -> EventLoopFuture<Void> {
         let builder = Element.query(on: database)
         self.forEach { model in
-            precondition(!model.exists)
+            precondition(!model.storage.exists)
         }
-        builder.set(self.map { $0.input })
+        builder.set(self.map { $0.storage.input })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { created in
             let next = it.next()!
-            next.storage = DefaultStorage(output: nil, eagerLoadStorage: .init(), exists: true)
+            next.storage.exists = true
         }
     }
 }
