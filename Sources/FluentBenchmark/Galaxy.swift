@@ -9,8 +9,8 @@ final class Galaxy: Model {
         self.new()
     }
 
-    convenience init(id: Int? = nil, name: String) {
-        self.init()
+    init(id: Int? = nil, name: String) {
+        self.new()
         self.id = id
         self.name = name
     }

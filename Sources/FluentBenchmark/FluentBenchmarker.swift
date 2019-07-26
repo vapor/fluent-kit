@@ -543,15 +543,15 @@ public final class FluentBenchmarker {
     
     public func testNullifyField() throws {
         final class Foo: Model {
-            @Field("id") var id: Int?
-            @Field("bar") var bar: String?
+            @Field var id: Int?
+            @Field var bar: String?
 
             init() {
                 self.new()
             }
 
-            convenience init(id: Int? = nil, bar: String?) {
-                self.init()
+            init(id: Int? = nil, bar: String?) {
+                self.new()
                 self.id = id
                 self.bar = bar
             }

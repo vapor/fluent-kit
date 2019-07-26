@@ -20,28 +20,34 @@ extension AnyModel {
     }
 }
 
-public protocol Model: AnyModel, Codable {
-    associatedtype ID: Codable, Hashable
+open class Model: AnyModel, Codable {
+    public required init() {
 
-    var id: ID? { get set }
-
-    // MARK: Lifecycle
-
-    func willCreate(on database: Database) -> EventLoopFuture<Void>
-    func didCreate(on database: Database) -> EventLoopFuture<Void>
-
-    func willUpdate(on database: Database) -> EventLoopFuture<Void>
-    func didUpdate(on database: Database) -> EventLoopFuture<Void>
-
-    func willDelete(on database: Database) -> EventLoopFuture<Void>
-    func didDelete(on database: Database) -> EventLoopFuture<Void>
-
-    func willRestore(on database: Database) -> EventLoopFuture<Void>
-    func didRestore(on database: Database) -> EventLoopFuture<Void>
-
-    func willSoftDelete(on database: Database) -> EventLoopFuture<Void>
-    func didSoftDelete(on database: Database) -> EventLoopFuture<Void>
+    }
 }
+
+//public protocol Model: AnyModel, Codable {
+//    associatedtype ID: Codable, Hashable
+//
+//    var id: ID? { get set }
+//
+//    // MARK: Lifecycle
+//
+//    func willCreate(on database: Database) -> EventLoopFuture<Void>
+//    func didCreate(on database: Database) -> EventLoopFuture<Void>
+//
+//    func willUpdate(on database: Database) -> EventLoopFuture<Void>
+//    func didUpdate(on database: Database) -> EventLoopFuture<Void>
+//
+//    func willDelete(on database: Database) -> EventLoopFuture<Void>
+//    func didDelete(on database: Database) -> EventLoopFuture<Void>
+//
+//    func willRestore(on database: Database) -> EventLoopFuture<Void>
+//    func didRestore(on database: Database) -> EventLoopFuture<Void>
+//
+//    func willSoftDelete(on database: Database) -> EventLoopFuture<Void>
+//    func didSoftDelete(on database: Database) -> EventLoopFuture<Void>
+//}
 
 extension Model {
     // MARK: Codable

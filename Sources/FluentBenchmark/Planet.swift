@@ -9,8 +9,8 @@ final class Planet: Model {
         self.new()
     }
 
-    convenience init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
-        self.init()
+    init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
+        self.new()
         self.id = id
         self.name = name
         self.$galaxy.id = galaxyID

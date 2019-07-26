@@ -2,14 +2,9 @@
 public final class Field<Value>: AnyField
     where Value: Codable
 {
-    let nameOverride: String?
-    var _storage: Storage?
-    var label: String?
-    var modelType: AnyModel.Type?
-
-    public var type: Any.Type {
-        return Value.self
-    }
+    let key: String?
+    var output: Value?
+    var input: Value?
 
     public var projectedValue: Field<Value> {
         return self
@@ -17,48 +12,48 @@ public final class Field<Value>: AnyField
     
     public var wrappedValue: Value {
         get {
-            if let input = self.storage.input[self.name] {
-                switch input {
-                case .bind(let encodable):
-                    guard let value = encodable as? Value else {
-                        fatalError("Unexpected input value type: \(Swift.type(of: encodable))")
-                    }
-                    return value
-                default:
-                    fatalError("Unexpected input value case: \(input)")
-                }
-            } else if let output = self.storage.output, output.contains(field: self.name) {
-                do {
-                    return try output.decode(field: self.name, as: Value.self)
-                } catch {
-                    fatalError("Failed to decode output: \(error)")
-                }
+            if let input = self.input {
+                return input
+            } else if let output = self.output {
+                return output
             } else {
-                if let label = self.label {
-                    fatalError("Field was not fetched during query: \(label)")
-                } else {
-                    fatalError("Cannot access field before it is initialized")
-                }
+                fatalError("Cannot access field before it is initialized or fetched")
             }
         }
         set {
-            self.storage.input[self.name] = .bind(newValue)
+            self.input = newValue
         }
     }
 
     public init() {
-        self.nameOverride = nil
+        self.key = nil
     }
 
-    public init(_ nameOverride: String) {
-        self.nameOverride = nameOverride
+    public init(_ key: String) {
+        self.key = key
     }
 
-    func encode(to encoder: inout ModelEncoder) throws {
-        try encoder.encode(self.wrappedValue, forKey: self.label!)
+    // MARK: Field
+
+    func key(label: String) -> String {
+        return self.key ?? label.convertedToSnakeCase()
     }
 
-    func decode(from decoder: ModelDecoder) throws {
-        self.wrappedValue = try decoder.decode(Value.self, forKey: self.label!)
+    // MARK: Property
+
+    func setOutput(from output: DatabaseOutput, label: String) throws {
+        self.output = try output.decode(field: self.key(label: label), as: Value.self)
+    }
+
+    func getInput() -> DatabaseQuery.Value? {
+        return self.input.flatMap { .bind($0) }
+    }
+
+    func encode(to encoder: inout ModelEncoder, label: String) throws {
+        try encoder.encode(self.wrappedValue, forKey: label)
+    }
+
+    func decode(from decoder: ModelDecoder, label: String) throws {
+        self.wrappedValue = try decoder.decode(Value.self, forKey: label)
     }
 }

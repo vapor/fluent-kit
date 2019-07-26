@@ -6,16 +6,6 @@ public final class Parent<P>: AnyField
 
     let idField: Field<P.ID>
 
-    var modelType: AnyModel.Type? {
-        get { return self.idField.modelType }
-        set { self.idField.modelType = newValue }
-    }
-
-    var _storage: Storage? {
-        get { return self.idField._storage }
-        set { self.idField._storage = newValue }
-    }
-
     public var id: P.ID {
         get {
             return self.idField.wrappedValue

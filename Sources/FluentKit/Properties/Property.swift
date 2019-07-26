@@ -1,36 +1,44 @@
+#warning("TODO: remove storage, add property methods for parsing output, eager loads, etc")
+
 protocol AnyProperty: class {
-    func encode(to encoder: inout ModelEncoder) throws
-    func decode(from decoder: ModelDecoder) throws
-    var _storage: Storage? { get set }
-    var label: String? { get set }
-    var modelType: AnyModel.Type? { get set }
+    func setOutput(from output: DatabaseOutput, label: String) throws
+    func getInput() -> DatabaseQuery.Value?
+
+    func encode(to encoder: inout ModelEncoder, label: String) throws
+    func decode(from decoder: ModelDecoder, label: String) throws
+//    var _storage: Storage? { get set }
+//    var label: String? { get set }
+//    var modelType: AnyModel.Type? { get set }
+
 }
 
 extension AnyProperty {
-    var storage: Storage {
-        guard let storage = self._storage else {
-            fatalError("Model.new() has not been called")
-        }
-        return storage
-    }
+//    var storage: Storage {
+//        guard let storage = self._storage else {
+//            fatalError("Model.new() has not been called")
+//        }
+//        return storage
+//    }
 }
 
 protocol AnyField: AnyProperty {
-    var name: String { get }
-    var nameOverride: String? { get }
-    var type: Any.Type { get }
+
+    func key(label: String) -> String
+//    var name: String { get }
+//    var nameOverride: String? { get }
+//    var type: Any.Type { get }
 }
 
 extension AnyField {
-    var name: String {
-        if let name = self.nameOverride {
-            return name
-        } else if let label = self.label {
-            return label.convertedToSnakeCase()
-        } else {
-            fatalError("No label or name override set.")
-        }
-    }
+//    var name: String {
+//        if let name = self.nameOverride {
+//            return name
+//        } else if let label = self.label {
+//            return label.convertedToSnakeCase()
+//        } else {
+//            fatalError("No label or name override set.")
+//        }
+//    }
 }
 
 extension AnyModel {
