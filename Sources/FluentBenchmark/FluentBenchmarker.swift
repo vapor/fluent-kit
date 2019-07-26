@@ -40,7 +40,7 @@ public final class FluentBenchmarker {
     
     public func testCreate() throws {
         try self.runTest(#function, [
-            Galaxy.autoMigration()
+            GalaxyMigration()
         ]) {
             let galaxy = Galaxy(name: "Messier")
             galaxy.name += " 82"
@@ -48,7 +48,6 @@ public final class FluentBenchmarker {
             guard galaxy.id == 1 else {
                 throw Failure("unexpected galaxy id: \(galaxy)")
             }
-            print(galaxy)
             
             guard let fetched = try Galaxy.query(on: self.database)
                 .filter(\.$name == "Messier 82")
@@ -56,7 +55,6 @@ public final class FluentBenchmarker {
                 .wait() else {
                     throw Failure("unexpected empty result set")
                 }
-            print(fetched)
             
             if fetched.name != galaxy.name {
                 throw Failure("unexpected name: \(galaxy) \(fetched)")
@@ -69,7 +67,7 @@ public final class FluentBenchmarker {
     
     public func testRead() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
+            GalaxyMigration(),
             GalaxySeed()
         ]) {
             guard let milkyWay = try Galaxy.query(on: self.database)
@@ -86,15 +84,15 @@ public final class FluentBenchmarker {
     
     public func testUpdate() throws {
         try runTest(#function, [
-            Galaxy.autoMigration()
+            GalaxyMigration()
         ]) {
             let galaxy = Galaxy(name: "Milkey Way")
-            try galaxy.save(on: self.database).wait()
+            try! galaxy.save(on: self.database).wait()
             galaxy.name = "Milky Way"
-            try galaxy.save(on: self.database).wait()
+            try! galaxy.save(on: self.database).wait()
             
             // verify
-            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
+            let galaxies = try! Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
             guard galaxies.count == 1 else {
                 throw Failure("unexpected galaxy count: \(galaxies)")
             }
@@ -106,7 +104,7 @@ public final class FluentBenchmarker {
     
     public func testDelete() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
+            GalaxyMigration(),
         ]) {
             let galaxy = Galaxy(name: "Milky Way")
             try galaxy.save(on: self.database).wait()
@@ -122,8 +120,8 @@ public final class FluentBenchmarker {
     
     public func testEagerLoadChildren() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -148,8 +146,8 @@ public final class FluentBenchmarker {
     
     public func testEagerLoadParent() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -175,8 +173,8 @@ public final class FluentBenchmarker {
     
     public func testEagerLoadParentJoin() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -202,8 +200,8 @@ public final class FluentBenchmarker {
     
     public func testEagerLoadParentJSON() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -260,8 +258,8 @@ public final class FluentBenchmarker {
 
     public func testEagerLoadChildrenJSON() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -309,8 +307,8 @@ public final class FluentBenchmarker {
     public func testMigrator() throws {
         try self.runTest(#function, []) {
             var migrations = Migrations()
-            migrations.add(Galaxy.autoMigration())
-            migrations.add(Planet.autoMigration())
+            migrations.add(GalaxyMigration())
+            migrations.add(PlanetMigration())
             
             var databases = Databases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
@@ -339,9 +337,9 @@ public final class FluentBenchmarker {
     public func testMigratorError() throws {
         try self.runTest(#function, []) {
             var migrations = Migrations()
-            migrations.add(Galaxy.autoMigration())
+            migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
-            migrations.add(Planet.autoMigration())
+            migrations.add(PlanetMigration())
             
             var databases = Databases(on: self.database.eventLoop)
             databases.add(self.database, as: .init(string: "main"))
@@ -365,8 +363,8 @@ public final class FluentBenchmarker {
     
     public func testJoin() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -392,7 +390,7 @@ public final class FluentBenchmarker {
     
     public func testBatchCreate() throws {
         try runTest(#function, [
-            Galaxy.autoMigration()
+            GalaxyMigration()
         ]) {
             let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter in
                 return Galaxy(name: .init(letter))
@@ -408,7 +406,7 @@ public final class FluentBenchmarker {
     
     public func testBatchUpdate() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
+            GalaxyMigration(),
             GalaxySeed()
         ]) {
             try Galaxy.query(on: self.database).set(\.$name, to: "Foo")
@@ -425,7 +423,7 @@ public final class FluentBenchmarker {
     
     public func testNestedModel() throws {
         try runTest(#function, [
-            User.autoMigration(),
+            UserMigration(),
             UserSeed()
         ]) {
             let users = try User.query(on: self.database)
@@ -467,8 +465,8 @@ public final class FluentBenchmarker {
     public func testAggregates() throws {
         // seeded db
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -501,8 +499,8 @@ public final class FluentBenchmarker {
         }
         // empty db
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
         ]) {
             // whole table
             let count = try Planet.query(on: self.database)
@@ -521,7 +519,7 @@ public final class FluentBenchmarker {
     
     public func testIdentifierGeneration() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
+            GalaxyMigration(),
         ]) {
             let galaxy = Galaxy(name: "Milky Way")
             guard galaxy.id == nil else {
@@ -546,18 +544,27 @@ public final class FluentBenchmarker {
             @Field var id: Int?
             @Field var bar: String?
 
-            init() {
-                self.new()
-            }
+            init() { }
 
             init(id: Int? = nil, bar: String?) {
-                self.new()
                 self.id = id
                 self.bar = bar
             }
         }
+        struct FooMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return Foo.schema(on: database)
+                    .field(\.$id, .int, .identifier(auto: true))
+                    .field(\.$bar, .string)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return Foo.schema(on: database).delete()
+            }
+        }
         try runTest(#function, [
-            Foo.autoMigration(),
+            FooMigration(),
         ]) {
             let foo = Foo(bar: "test")
             try foo.save(on: self.database).wait()
@@ -584,7 +591,7 @@ public final class FluentBenchmarker {
     
     public func testChunkedFetch() throws {
         try runTest(#function, [
-            Galaxy.autoMigration(),
+            GalaxyMigration(),
         ]) {
             var fetched64: [Galaxy] = []
             var fetched2047: [Galaxy] = []
@@ -626,11 +633,8 @@ public final class FluentBenchmarker {
             @Field var id: Int?
             @Field var bar: String
             @Field var baz: Int
-            init() {
-                self.new()
-            }
-            convenience init(id: Int? = nil, bar: String, baz: Int) {
-                self.init()
+            init() { }
+            init(id: Int? = nil, bar: String, baz: Int) {
                 self.id = id
                 self.bar = bar
                 self.baz = baz
@@ -638,14 +642,16 @@ public final class FluentBenchmarker {
         }
         struct FooMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema(Foo.self)
-                    .auto()
+                return Foo.schema(on: database)
+                    .field(\.$id, .int, .identifier(auto: true))
+                    .field(\.$bar, .string, .required)
+                    .field(\.$baz, .int, .required)
                     .unique(on: \.$bar, \.$baz)
                     .create()
             }
             
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema(Foo.self).delete()
+                return Foo.schema(on: database).delete()
             }
         }
         try runTest(#function, [
@@ -664,7 +670,7 @@ public final class FluentBenchmarker {
 
     public func testAsyncCreate() throws {
         try runTest(#function, [
-            Galaxy.autoMigration()
+            GalaxyMigration()
         ]) {
             let a = Galaxy(name: "a")
             let b = Galaxy(name: "b")
@@ -681,15 +687,26 @@ public final class FluentBenchmarker {
             @Field var id: Int?
             @Field var name: String
             @Field var deletedAt: Date?
-            init() {
-                self.new()
-            }
-            convenience init(id: Int? = nil, name: String) {
-                self.init()
+            init() { }
+            init(id: Int? = nil, name: String) {
                 self.id = id
                 self.name = name
             }
         }
+        struct UserMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database)
+                    .field(\.$id, .int, .identifier(auto: true))
+                    .field(\.$name, .string, .required)
+                    .field(\.$deletedAt, .date)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database).delete()
+            }
+        }
+
 
         func testCounts(allCount: Int, realCount: Int) throws {
             let all = try User.query(on: self.database).all().wait()
@@ -703,7 +720,7 @@ public final class FluentBenchmarker {
         }
 
         try runTest(#function, [
-            User.autoMigration(),
+            UserMigration(),
         ]) {
             // save two users
             try User(name: "A").save(on: self.database).wait()
@@ -727,17 +744,13 @@ public final class FluentBenchmarker {
 
     public func testTimestampable() throws {
         final class User: Model, Timestampable {
-            @Field("id") var id: Int?
-            @Field("name") var name: String
-            @Field("created_at") var createdAt: Date?
-            @Field("updated_at") var updatedAt: Date?
+            @Field var id: Int?
+            @Field var name: String
+            @Field var createdAt: Date?
+            @Field var updatedAt: Date?
 
-            init() {
-                self.new()
-            }
-
-            convenience init(id: Int? = nil, name: String) {
-                self.init()
+            init() { }
+            init(id: Int? = nil, name: String) {
                 self.id = id
                 self.name = name
                 self.createdAt = nil
@@ -745,8 +758,24 @@ public final class FluentBenchmarker {
             }
         }
 
+        struct UserMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database)
+                    .field(\.$id, .int, .identifier(auto: true))
+                    .field(\.$name, .string, .required)
+                    .field(\.$createdAt, .date)
+                    .field(\.$updatedAt, .date)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database).delete()
+            }
+        }
+
+
         try runTest(#function, [
-            User.autoMigration(),
+            UserMigration(),
         ]) {
             let user = User(name: "A")
             XCTAssertEqual(user.createdAt, nil)
@@ -771,12 +800,8 @@ public final class FluentBenchmarker {
             @Field var id: Int?
             @Field var name: String
 
-            init() {
-                self.new()
-            }
-
-            convenience init(id: Int? = nil, name: String) {
-                self.init()
+            init() { }
+            init(id: Int? = nil, name: String) {
                 self.id = id
                 self.name = name
             }
@@ -809,8 +834,22 @@ public final class FluentBenchmarker {
             }
         }
 
+
+        struct UserMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database)
+                    .field(\.$id, .int, .identifier(auto: true))
+                    .field(\.$name, .string, .required)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database).delete()
+            }
+        }
+
         try runTest(#function, [
-            User.autoMigration(),
+            UserMigration(),
         ]) {
             let user = User(name: "A")
             // create
@@ -843,8 +882,8 @@ public final class FluentBenchmarker {
     public func testSort() throws {
         // seeded db
         try runTest(#function, [
-            Galaxy.autoMigration(),
-            Planet.autoMigration(),
+            GalaxyMigration(),
+            PlanetMigration(),
             GalaxySeed(),
             PlanetSeed()
         ]) {
@@ -859,19 +898,29 @@ public final class FluentBenchmarker {
             @Field var id: UUID?
             @Field var name: String
 
-            init() {
-                self.new()
-            }
-
-            convenience init(id: UUID? = nil, name: String) {
-                self.init()
+            init() { }
+            init(id: UUID? = nil, name: String) {
                 self.id = id
                 self.name = name
             }
         }
+
+        struct UserMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database)
+                    .field(\.$id, .uuid, .identifier(auto: false))
+                    .field(\.$name, .string, .required)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return User.schema(on: database).delete()
+            }
+        }
+
         // seeded db
         try runTest(#function, [
-            User.autoMigration(),
+            UserMigration(),
         ]) {
             try User(name: "Vapor")
                 .save(on: self.database).wait()

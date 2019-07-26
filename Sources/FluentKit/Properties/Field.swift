@@ -3,8 +3,10 @@ public final class Field<Value>: AnyField
     where Value: Codable
 {
     let key: String?
-    var output: Value?
-    var input: Value?
+    var outputValue: Value?
+    var inputValue: Value?
+    var cachedOutput: DatabaseOutput?
+    var exists: Bool
 
     public var projectedValue: Field<Value> {
         return self
@@ -12,25 +14,27 @@ public final class Field<Value>: AnyField
     
     public var wrappedValue: Value {
         get {
-            if let input = self.input {
-                return input
-            } else if let output = self.output {
-                return output
+            if let value = self.inputValue {
+                return value
+            } else if let value = self.outputValue {
+                return value
             } else {
                 fatalError("Cannot access field before it is initialized or fetched")
             }
         }
         set {
-            self.input = newValue
+            self.inputValue = newValue
         }
     }
 
     public init() {
         self.key = nil
+        self.exists = false
     }
 
     public init(_ key: String) {
         self.key = key
+        self.exists = false
     }
 
     // MARK: Field
@@ -39,14 +43,21 @@ public final class Field<Value>: AnyField
         return self.key ?? label.convertedToSnakeCase()
     }
 
-    // MARK: Property
-
-    func setOutput(from output: DatabaseOutput, label: String) throws {
-        self.output = try output.decode(field: self.key(label: label), as: Value.self)
+    func input() -> DatabaseQuery.Value? {
+        return self.inputValue.flatMap { .bind($0) }
     }
 
-    func getInput() -> DatabaseQuery.Value? {
-        return self.input.flatMap { .bind($0) }
+    // MARK: Property
+
+    func output(from output: DatabaseOutput, label: String) throws {
+        self.exists = true
+        self.cachedOutput = output
+        
+        let key = self.key(label: label)
+        if output.contains(field: key) {
+            self.inputValue = nil
+            self.outputValue = try output.decode(field: key, as: Value.self)
+        }
     }
 
     func encode(to encoder: inout ModelEncoder, label: String) throws {

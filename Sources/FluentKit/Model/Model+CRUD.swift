@@ -1,6 +1,6 @@
 extension Model {
     public func save(on database: Database) -> EventLoopFuture<Void> {
-        if self.storage.exists {
+        if self.idField.exists {
             return self.update(on: database)
         } else {
             return self.create(on: database)
@@ -13,21 +13,21 @@ extension Model {
             timestampable._createdAtField.wrappedValue = date
             timestampable._updatedAtField.wrappedValue = date
         }
-        precondition(!self.storage.exists)
+        precondition(!self.idField.exists)
         if let generatedIDType = Self.ID.self as? AnyGeneratableID.Type {
             self.id = (generatedIDType.anyGenerateID() as! Self.ID)
         }
         return self.willCreate(on: database).flatMap {
-            var output: DatabaseOutput?
+            var input = self.input
             return Self.query(on: database)
-                .set(self.storage.input)
+                .set(input)
                 .action(.create)
-                .run { output = $0 }
-                .map {
-                    self.storage.output = output!
-                        .cascading(to: SavedInput(self.storage.input))
-                    self.storage.input = [:]
-                    self.storage.exists = true
+                .run { output in
+                    if Self.ID.self is GeneratableID.Type { } else {
+                        let id = try output.decode(field: "fluentID", as: Self.ID.self)
+                        input[Self.key(for: \.idField)] = .bind(id)
+                    }
+                    try self.output(from: SavedInput(input))
                 }
         }.flatMap {
             return self.didCreate(on: database)
@@ -38,19 +38,17 @@ extension Model {
         if let timestampable = self as? _AnyTimestampable {
             timestampable._updatedAtField.wrappedValue = Date()
         }
-        precondition(self.storage.exists)
+        precondition(self.idField.exists)
 
         return self.willUpdate(on: database).flatMap {
+            let input = self.input
             return Self.query(on: database)
-                .filter(self.idField.name, .equal, self.id)
-                .set(self.storage.input)
+                .filter(\.idField == self.id)
+                .set(input)
                 .action(.update)
                 .run()
-                .map {
-                    self.storage.output = SavedInput(self.storage.input)
-                        .cascading(to: self.storage.output!)
-                    self.storage.input = [:]
-                    self.storage.exists = true
+                .flatMapThrowing {
+                    try self.output(from: SavedInput(input))
                 }
         }.flatMap {
             return self.didUpdate(on: database)
@@ -68,11 +66,11 @@ extension Model {
         } else {
             return self.willDelete(on: database).flatMap {
                 return Self.query(on: database)
-                    .filter(self.idField.name, .equal, self.id)
+                    .filter(\.idField == self.id)
                     .action(.delete)
                     .run()
-                    .map {
-                        self.storage.exists = false
+                    .flatMapThrowing {
+                        self.idField.exists = false
                     }
             }.flatMap {
                 return self.didDelete(on: database)
@@ -86,11 +84,11 @@ extension Model where Self: SoftDeletable {
         return self.willDelete(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(self.idField.name, .equal, self.id)
+                .filter(\.idField == self.id)
                 .action(.delete)
                 .run()
                 .map {
-                    self.storage.exists = false
+                    self.idField.exists = false
                 }
         }.flatMap {
             return self.didDelete(on: database)
@@ -99,51 +97,21 @@ extension Model where Self: SoftDeletable {
 
     public func restore(on database: Database) -> EventLoopFuture<Void> {
         self.deletedAt = nil
-        precondition(self.storage.exists)
+        precondition(self.idField.exists)
         return self.willRestore(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(self.idField.name, .equal, self.id)
-                .set(self.storage.input)
+                .filter(\.idField == self.id)
+                .set(self.input)
                 .action(.update)
                 .run()
-                .map {
-                    self.storage.output = SavedInput(self.storage.input)
-                        .cascading(to: self.storage.output!)
-                    self.storage.input = [:]
-                    self.storage.exists = true
+                .flatMapThrowing {
+                    try self.output(from: SavedInput(self.input))
+                    self.idField.exists = true
                 }
         }.flatMap {
             return self.didRestore(on: database)
         }
-    }
-}
-
-extension DatabaseOutput {
-    func cascading(to output: DatabaseOutput) -> DatabaseOutput {
-        return CombinedOutput(first: self, second: output)
-    }
-}
-private struct CombinedOutput: DatabaseOutput {
-    var first: DatabaseOutput
-    var second: DatabaseOutput
-
-    func contains(field: String) -> Bool {
-        return self.first.contains(field: field) || self.second.contains(field: field)
-    }
-
-    func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
-        if self.first.contains(field: field) {
-            return try self.first.decode(field: field, as: T.self)
-        } else if self.second.contains(field: field) {
-            return try self.second.decode(field: field, as: T.self)
-        } else {
-            throw FluentError.missingField(name: field)
-        }
-    }
-
-    var description: String {
-        return self.first.description + " -> " + self.second.description
     }
 }
 
@@ -168,6 +136,7 @@ private struct SavedInput: DatabaseOutput {
                 fatalError("Invalid input type: \(value)")
             }
         } else {
+            fatalError("not found in saved input: \(field)")
             throw FluentError.missingField(name: field)
         }
     }

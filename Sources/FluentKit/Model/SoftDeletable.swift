@@ -17,7 +17,7 @@ extension SoftDeletable {
 
     public func _excludeSoftDeleted(_ query: inout DatabaseQuery) {
         let deletedAtField = DatabaseQuery.Field.field(
-            path: [self._deletedAtField.name],
+            path: [Self.key(for: \._deletedAtField)],
             entity: Self.entity,
             alias: nil
         )

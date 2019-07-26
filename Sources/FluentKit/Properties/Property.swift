@@ -1,15 +1,17 @@
 #warning("TODO: remove storage, add property methods for parsing output, eager loads, etc")
 
 protocol AnyProperty: class {
-    func setOutput(from output: DatabaseOutput, label: String) throws
-    func getInput() -> DatabaseQuery.Value?
-
+    func output(from output: DatabaseOutput, label: String) throws
     func encode(to encoder: inout ModelEncoder, label: String) throws
     func decode(from decoder: ModelDecoder, label: String) throws
 //    var _storage: Storage? { get set }
 //    var label: String? { get set }
 //    var modelType: AnyModel.Type? { get set }
+}
 
+protocol AnyEagerLoadable: AnyProperty {
+    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws
+    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String)
 }
 
 extension AnyProperty {
@@ -22,8 +24,10 @@ extension AnyProperty {
 }
 
 protocol AnyField: AnyProperty {
-
     func key(label: String) -> String
+    func input() -> DatabaseQuery.Value?
+    var cachedOutput: DatabaseOutput? { get }
+    var exists: Bool { get set }
 //    var name: String { get }
 //    var nameOverride: String? { get }
 //    var type: Any.Type { get }
@@ -42,14 +46,37 @@ extension AnyField {
 }
 
 extension AnyModel {
-    var fields: [AnyField] {
-        return self.properties.compactMap { $0 as? AnyField }
+    var eagerLoadables: [(String, AnyEagerLoadable)] {
+        return self.properties.compactMap { (label, property) in
+            guard let eagerLoadable = property as? AnyEagerLoadable else {
+                return nil
+            }
+            return (label, eagerLoadable)
+        }
+    }
+
+    var fields: [(String, AnyField)] {
+        return self.properties.compactMap { (label, property) in
+            guard let field = property as? AnyField else {
+                return nil
+            }
+            return (label, field)
+        }
     }
     
-    var properties: [AnyProperty] {
+    var properties: [(String, AnyProperty)] {
         return Mirror(reflecting: self)
             .children
-            .compactMap { $0.value as? AnyProperty }
+            .compactMap { child in
+                guard let label = child.label else {
+                    return nil
+                }
+                guard let value = child.value as? AnyProperty else {
+                    return nil
+                }
+                // remove underscore
+                return (String(label.dropFirst()), value)
+            }
     }
 }
 
