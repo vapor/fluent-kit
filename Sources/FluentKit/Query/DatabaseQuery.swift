@@ -149,19 +149,10 @@ public struct DatabaseQuery {
     public var sorts: [Sort]
     public var limits: [Limit]
     public var offsets: [Offset]
+    public var entity: String
 
-    public var entity: String {
-        return self.modelType.entity
-    }
-
-    public var idFieldName: String {
-        return self.modelType.init().anyIDField.name
-    }
-
-    internal let modelType: AnyModel.Type
-
-    init(modelType: AnyModel.Type) {
-        self.modelType = modelType
+    init(entity: String) {
+        self.entity = entity
         self.fields = []
         self.action = .read
         self.filters = []

@@ -1,26 +1,10 @@
-public protocol AnyModel: class, CustomStringConvertible {
+public protocol AnyModel: class, CustomStringConvertible, Codable {
     static var name: String { get }
     static var entity: String { get }
     init()
 }
 
-extension AnyModel {
-    public func new() {
-        let storage = Storage()
-        Mirror(reflecting: self).children.forEach { child in
-            if let property = child.value as? AnyProperty, let label = child.label {
-                // remove underscore
-                property.label = .init(label.dropFirst())
-                // set root model type
-                property.modelType = Self.self
-                // set shared storage
-                property._storage = storage
-            }
-        }
-    }
-}
-
-public protocol Model: AnyModel, Codable {
+public protocol Model: AnyModel {
     associatedtype ID: Codable, Hashable
 
     var id: ID? { get set }
@@ -43,37 +27,69 @@ public protocol Model: AnyModel, Codable {
     func didSoftDelete(on database: Database) -> EventLoopFuture<Void>
 }
 
-extension Model {
+extension AnyModel {
     // MARK: Codable
 
     public init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        try self.properties.forEach { try $0.decode(from: decoder) }
+        try self.properties.forEach { try $1.decode(from: decoder, label: $0) }
     }
 
     public func encode(to encoder: Encoder) throws {
         var encoder = ModelEncoder(encoder: encoder)
-        try self.properties.forEach { try $0.encode(to: &encoder) }
+        try self.properties.forEach { try $1.encode(to: &encoder, label: $0) }
+    }
+}
+
+extension Model {
+    static func key<Field>(for field: KeyPath<Self, Field>) -> String
+        where Field: AnyField
+    {
+        let ref = Self.init()
+        return ref.key(for: ref[keyPath: field])
     }
 }
 
 extension AnyModel {
     // MARK: Description
 
+    func label(for property: AnyProperty) -> String {
+        for (label, p) in self.properties {
+            if property === p {
+                return label
+            }
+        }
+        fatalError("Property not found on model.")
+    }
+
+    func key(for field: AnyField) -> String {
+        return field.key(label: self.label(for: field))
+    }
+
+    var input: [String: DatabaseQuery.Value] {
+        var input: [String: DatabaseQuery.Value] = [:]
+        for (label, field) in self.fields {
+            input[field.key(label: label)] = field.input()
+        }
+        return input
+    }
+
     public var description: String {
         let input: String
-        if self.storage.input.isEmpty {
+        if self.input.isEmpty {
             input = "nil"
         } else {
-            input = self.storage.input.description
+            input = self.input.description
         }
+
         let output: String
-        if let o = self.storage.output {
+        if let o = self.anyIDField.cachedOutput {
             output = o.description
         } else {
-            output = "nil"
+            output = "[:]"
         }
+
         return "\(Self.self)(input: \(input), output: \(output))"
     }
 }
@@ -90,14 +106,29 @@ extension Model {
 }
 
 extension AnyModel {
+    func output(from output: DatabaseOutput) throws {
+        try self.properties.forEach { (label, property) in
+            try property.output(from: output, label: label)
+        }
+    }
+
+    func eagerLoad(from eagerLoads: EagerLoads) throws {
+        try self.eagerLoadables.forEach { (label, eagerLoadable) in
+            try eagerLoadable.eagerLoad(from: eagerLoads, label: label)
+        }
+
+    }
+
     // MARK: Joined
 
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
         where Joined: FluentKit.Model
     {
+        guard let output = self.anyIDField.cachedOutput else {
+            fatalError("Can only access joined models using models fetched from database.")
+        }
         let joined = Joined()
-        joined.storage.output = self.storage.output?.prefixed(by: Joined.entity + "_")
-        joined.storage.exists = true
+        try joined.output(from: output.prefixed(by: Joined.entity + "_"))
         return joined
     }
 
@@ -106,10 +137,6 @@ extension AnyModel {
             fatalError("id property must be declared using @ID")
         }
         return id as! AnyField
-    }
-
-    var storage: Storage {
-        return self.anyIDField.storage
     }
 }
 
@@ -133,12 +160,20 @@ extension AnyModel {
 }
 
 extension Model {
+    public static func schema(on database: Database) -> SchemaBuilder<Self> {
+        return .init(database: database)
+    }
+
+    public static func query(on database: Database) -> QueryBuilder<Self> {
+        return .init(database: database)
+    }
+
     public static func find(_ id: Self.ID?, on database: Database) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database)
-            .filter(self.init().idField.name, .equal, id)
+            .filter(self.init().idField.key(label: "id"), .equal, id)
             .first()
     }
 }
@@ -180,24 +215,18 @@ extension Model {
     }
 }
 
-extension Model {
-    public static func query(on database: Database) -> QueryBuilder<Self> {
-        return .init(database: database)
-    }
-}
-
 extension Array where Element: FluentKit.Model {
     public func create(on database: Database) -> EventLoopFuture<Void> {
         let builder = Element.query(on: database)
         self.forEach { model in
-            precondition(!model.storage.exists)
+            precondition(!model.idField.exists)
         }
-        builder.set(self.map { $0.storage.input })
+        builder.set(self.map { $0.input })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { created in
             let next = it.next()!
-            next.storage.exists = true
+            next.idField.exists = true
         }
     }
 }

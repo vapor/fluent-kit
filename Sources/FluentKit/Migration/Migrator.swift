@@ -17,7 +17,7 @@ public struct Migrator {
         return MigrationLog.query(on: self.databases.default()).all().map { migrations in
             return ()
         }.flatMapError { error in
-            return MigrationLog.autoMigration().prepare(on: self.databases.default())
+            return MigrationLog.migration.prepare(on: self.databases.default())
         }
     }
     
@@ -124,7 +124,7 @@ public struct Migrator {
     }
     
     private func revertMigrationLog() -> EventLoopFuture<Void> {
-        return MigrationLog.autoMigration().revert(on: self.databases.default())
+        return MigrationLog.migration.revert(on: self.databases.default())
     }
     
     private func lastBatchNumber() -> EventLoopFuture<Int> {

@@ -5,25 +5,19 @@ import Foundation
 
 final class FluentKitTests: XCTestCase {
     func testMigrationLogNames() throws {
-        XCTAssertEqual(MigrationLog().$id.name, "id")
-        XCTAssertEqual(MigrationLog().$name.name, "name")
-        XCTAssertEqual(MigrationLog().$batch.name, "batch")
-        XCTAssertEqual(MigrationLog().$createdAt.name, "created_at")
-        XCTAssertEqual(MigrationLog().$updatedAt.name, "updated_at")
+        XCTAssertEqual(MigrationLog.key(for: \.$id), "id")
+        XCTAssertEqual(MigrationLog.key(for: \.$name), "name")
+        XCTAssertEqual(MigrationLog.key(for: \.$batch), "batch")
+        XCTAssertEqual(MigrationLog.key(for: \.$createdAt), "created_at")
+        XCTAssertEqual(MigrationLog.key(for: \.$updatedAt), "updated_at")
     }
 
     func testGalaxyPlanetNames() throws {
-        XCTAssertEqual(Galaxy().$id.name, "id")
-        XCTAssertEqual(Galaxy().$name.name, "name")
-        XCTAssertEqual(Galaxy().$planets.idField.name, "galaxy_id")
+        XCTAssertEqual(Galaxy.key(for: \.$id), "id")
+        XCTAssertEqual(Galaxy.key(for: \.$name), "name")
 
-
-        let galaxy = Galaxy(id: 1, name: "Milky Way")
-        // test json encoding
-
-        XCTAssertEqual(Planet().$id.name, "id")
-        XCTAssertEqual(Planet().$name.name, "name")
-        XCTAssertEqual(Planet().$galaxy.idField.name, "galaxy_id")
+        XCTAssertEqual(Planet.key(for: \.$id), "id")
+        XCTAssertEqual(Planet.key(for: \.$name), "name")
+        XCTAssertEqual(Planet.key(for: \.$galaxy), "galaxy_id")
     }
 }
-

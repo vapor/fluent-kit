@@ -4,6 +4,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
     case idRequired
     case missingField(name: String)
     case missingEagerLoad(name: String)
+    case missingParent
 
     public var description: String {
         switch self {
@@ -13,6 +14,8 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
             return "field missing: \(name)"
         case .missingEagerLoad(let name):
             return "eager load missing: \(name)"
+        case .missingParent:
+            return "parent missing"
         }
     }
 

@@ -10,19 +10,30 @@ final class User: Model {
     }
     static let entity = "users"
     
-    @Field("id") var id: Int?
-    @Field("name") var name: String
-    @Field("pet") var pet: Pet
+    @Field var id: Int?
+    @Field var name: String
+    @Field var pet: Pet
 
-    init() {
-        self.new()
-    }
+    init() { }
 
-    convenience init(id: Int? = nil, name: String, pet: Pet) {
-        self.init()
+    init(id: Int? = nil, name: String, pet: Pet) {
         self.id = id
         self.name = name
         self.pet = pet
+    }
+}
+
+struct UserMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return User.schema(on: database)
+            .field(\.$id, .int, .identifier(auto: true))
+            .field(\.$name, .string, .required)
+            .field(\.$pet, .json, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return User.schema(on: database).delete()
     }
 }
 
