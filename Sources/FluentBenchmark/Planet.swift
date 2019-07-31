@@ -18,7 +18,7 @@ struct PlanetMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return Planet.schema(on: database)
             .field(\.$id, .int, .identifier(auto: true))
-            .field(\.$name, .int, .required)
+            .field(\.$name, .string, .required)
             .field("galaxy_id", .int, .required)
             .create()
     }

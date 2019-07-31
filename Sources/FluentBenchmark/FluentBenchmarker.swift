@@ -698,7 +698,7 @@ public final class FluentBenchmarker {
                 return User.schema(on: database)
                     .field(\.$id, .int, .identifier(auto: true))
                     .field(\.$name, .string, .required)
-                    .field(\.$deletedAt, .date)
+                    .field(\.$deletedAt, .datetime)
                     .create()
             }
 
@@ -763,8 +763,8 @@ public final class FluentBenchmarker {
                 return User.schema(on: database)
                     .field(\.$id, .int, .identifier(auto: true))
                     .field(\.$name, .string, .required)
-                    .field(\.$createdAt, .date)
-                    .field(\.$updatedAt, .date)
+                    .field(\.$createdAt, .datetime)
+                    .field(\.$updatedAt, .datetime)
                     .create()
             }
 

@@ -89,6 +89,7 @@ public struct DatabaseQuery {
         case dictionary([String: Value])
         case array([Value])
         case null
+        case `default`
         case custom(Any)
 
         public var description: String {
@@ -105,6 +106,8 @@ public struct DatabaseQuery {
                 return array.description
             case .null:
                 return "nil"
+            case .default:
+                return "<default>"
             case .custom(let custom):
                 return "\(custom)"
             }

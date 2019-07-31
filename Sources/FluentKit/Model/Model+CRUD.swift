@@ -14,11 +14,8 @@ extension Model {
             timestampable._updatedAtField.wrappedValue = date
         }
         precondition(!self.idField.exists)
-        if let generatedIDType = Self.ID.self as? AnyGeneratableID.Type {
-            self.id = (generatedIDType.anyGenerateID() as! Self.ID)
-        }
         return self.willCreate(on: database).flatMap {
-            var input = self.input
+            var input = self.creationInput
             return Self.query(on: database)
                 .set(input)
                 .action(.create)
@@ -115,6 +112,49 @@ extension Model where Self: SoftDeletable {
     }
 }
 
+extension Array where Element: FluentKit.Model {
+    public func create(on database: Database) -> EventLoopFuture<Void> {
+        let builder = Element.query(on: database)
+        self.forEach { model in
+            precondition(!model.idField.exists)
+        }
+        return EventLoopFuture<Void>.andAllSucceed(
+            self.map { $0.willCreate(on: database) },
+            on: database.eventLoop
+        ).flatMap {
+            builder.set(self.map { $0.creationInput })
+            builder.query.action = .create
+            var it = self.makeIterator()
+            return builder.run { created in
+                let next = it.next()!
+                next.idField.exists = true
+            }
+        }.flatMap {
+            return EventLoopFuture<Void>.andAllSucceed(
+                self.map { $0.didCreate(on: database) },
+                on: database.eventLoop
+            )
+        }
+    }
+}
+
+
+// MARK: Private
+
+extension Model {
+    var creationInput: [String: DatabaseQuery.Value] {
+        var id: DatabaseQuery.Value
+        if let generatedIDType = Self.ID.self as? AnyGeneratableID.Type {
+            id = .bind(generatedIDType.anyGenerateID() as! Self.ID)
+        } else {
+            id = .default
+        }
+        var input = self.input
+        input[Self.key(for: \.idField)] = id
+        return input
+    }
+}
+
 private struct SavedInput: DatabaseOutput {
     var input: [String: DatabaseQuery.Value]
 
@@ -136,7 +176,6 @@ private struct SavedInput: DatabaseOutput {
                 fatalError("Invalid input type: \(value)")
             }
         } else {
-            fatalError("not found in saved input: \(field)")
             throw FluentError.missingField(name: field)
         }
     }

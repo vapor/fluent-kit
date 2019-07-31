@@ -155,7 +155,11 @@ extension AnyModel {
     }
 
     public static var entity: String {
-        return self.name + "s"
+        if self.name.hasSuffix("y") {
+            return self.name.dropLast(1) + "ies"
+        } else {
+            return self.name + "s"
+        }
     }
 }
 
@@ -212,21 +216,5 @@ extension Model {
     }
     public func didSoftDelete(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
-    }
-}
-
-extension Array where Element: FluentKit.Model {
-    public func create(on database: Database) -> EventLoopFuture<Void> {
-        let builder = Element.query(on: database)
-        self.forEach { model in
-            precondition(!model.idField.exists)
-        }
-        builder.set(self.map { $0.input })
-        builder.query.action = .create
-        var it = self.makeIterator()
-        return builder.run { created in
-            let next = it.next()!
-            next.idField.exists = true
-        }
     }
 }

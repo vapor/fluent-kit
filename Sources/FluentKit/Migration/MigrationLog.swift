@@ -31,8 +31,8 @@ private final class MigrationLogMigration: Migration {
             .field(\.$id, .int, .identifier(auto: true))
             .field(\.$name, .string, .required)
             .field(\.$batch, .int, .required)
-            .field(\.$createdAt, .date)
-            .field(\.$updatedAt, .date)
+            .field(\.$createdAt, .datetime)
+            .field(\.$updatedAt, .datetime)
             .create()
     }
 
