@@ -143,15 +143,14 @@ extension Array where Element: FluentKit.Model {
 
 extension Model {
     var creationInput: [String: DatabaseQuery.Value] {
-        var id: DatabaseQuery.Value
         if let generatedIDType = Self.ID.self as? AnyGeneratableID.Type {
-            id = .bind(generatedIDType.anyGenerateID() as! Self.ID)
+            self.id = (generatedIDType.anyGenerateID() as! Self.ID)
+            return self.input
         } else {
-            id = .default
+            var input = self.input
+            input.removeValue(forKey: Self.key(for: \.idField))
+            return input
         }
-        var input = self.input
-        input[Self.key(for: \.idField)] = id
-        return input
     }
 }
 
