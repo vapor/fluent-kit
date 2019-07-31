@@ -8,13 +8,33 @@ final class User: Model {
         var name: String
         var type: Animal
     }
-    
     static let entity = "users"
-    static let shared = User()
     
-    let id = Field<Int?>("id")
-    let name = Field<String>("name")
-    let pet = Field<Pet>("pet", dataType: .json)
+    @Field var id: Int?
+    @Field var name: String
+    @Field var pet: Pet
+
+    init() { }
+
+    init(id: Int? = nil, name: String, pet: Pet) {
+        self.id = id
+        self.name = name
+        self.pet = pet
+    }
+}
+
+struct UserMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return User.schema(on: database)
+            .field(\.$id, .int, .identifier(auto: true))
+            .field(\.$name, .string, .required)
+            .field(\.$pet, .json, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return User.schema(on: database).delete()
+    }
 }
 
 
@@ -22,14 +42,8 @@ final class UserSeed: Migration {
     init() { }
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let tanner = User.row()
-        tanner.name = "Tanner"
-        tanner.pet = .init(name: "Ziz", type: .cat)
-
-        let logan = User.row()
-        logan.name = "Logan"
-        logan.pet = .init(name: "Runa", type: .dog)
-        
+        let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
+        let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog))
         return logan.save(on: database)
             .and(tanner.save(on: database))
             .map { _ in }

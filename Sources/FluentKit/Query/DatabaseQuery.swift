@@ -84,12 +84,34 @@ public struct DatabaseQuery {
         case custom(Any)
     }
     
-    public enum Value {
+    public enum Value: CustomStringConvertible {
         case bind(Encodable)
         case dictionary([String: Value])
         case array([Value])
         case null
+        case `default`
         case custom(Any)
+
+        public var description: String {
+            switch self {
+            case .bind(let encodable):
+                if let convertible = encodable as? CustomDebugStringConvertible {
+                    return convertible.debugDescription
+                } else {
+                    return "\(encodable)"
+                }
+            case .dictionary(let dictionary):
+                return dictionary.description
+            case .array(let array):
+                return array.description
+            case .null:
+                return "nil"
+            case .default:
+                return "<default>"
+            case .custom(let custom):
+                return "\(custom)"
+            }
+        }
     }
     
     public enum Join {
@@ -124,18 +146,18 @@ public struct DatabaseQuery {
     
     public var fields: [Field]
     public var action: Action
-    public var entity: String
     public var filters: [Filter]
     public var input: [[Value]]
     public var joins: [Join]
     public var sorts: [Sort]
     public var limits: [Limit]
     public var offsets: [Offset]
+    public var entity: String
 
-    public init(entity: String) {
+    init(entity: String) {
+        self.entity = entity
         self.fields = []
         self.action = .read
-        self.entity = entity
         self.filters = []
         self.input = []
         self.joins = []

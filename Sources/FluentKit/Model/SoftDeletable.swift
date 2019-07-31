@@ -1,36 +1,28 @@
 public protocol SoftDeletable: Model, _AnySoftDeletable {
-    var deletedAt: Field<Date?> { get }
+    var deletedAt: Date? { get set }
 }
 
 public protocol _AnySoftDeletable {
-    func _clearDeletedAt(_ input: inout [String: DatabaseQuery.Value])
+    var _deletedAtField: Field<Date?> { get }
     func _excludeSoftDeleted(_ query: inout DatabaseQuery)
-    func _initializeSoftDeletable(_ input: inout [String: DatabaseQuery.Value])
 }
 
 extension SoftDeletable {
-    public func _clearDeletedAt(_ input: inout [String: DatabaseQuery.Value]) {
-        input[self.deletedAt.name] = .bind(Date())
+    public var _deletedAtField: Field<Date?> {
+        guard let deletedAt = Mirror(reflecting: self).descendant("_deletedAt") else {
+            fatalError("deletedAt must be declared using @Field")
+        }
+        return deletedAt as! Field<Date?>
     }
-    
+
     public func _excludeSoftDeleted(_ query: inout DatabaseQuery) {
         let deletedAtField = DatabaseQuery.Field.field(
-            path: [self.deletedAt.name],
+            path: [Self.key(for: \._deletedAtField)],
             entity: Self.entity,
             alias: nil
         )
         let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equal, .null)
         let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
         query.filters.append(.group([isNull, isFuture], .or))
-    }
-    public func _initializeSoftDeletable(_ input: inout [String: DatabaseQuery.Value]) {
-        input[self.deletedAt.name] = .bind(Date?.none)
-    }
-}
-
-extension QueryBuilder {
-    public func withSoftDeleted() -> Self {
-        self.includeSoftDeleted = true
-        return self
     }
 }

@@ -32,3 +32,33 @@ private struct PrefixingOutput: DatabaseOutput {
         return try self.wrapped.decode(field: self.prefix + field, as: T.self)
     }
 }
+
+extension DatabaseOutput {
+    func cascading(to output: DatabaseOutput) -> DatabaseOutput {
+        return CombinedOutput(first: self, second: output)
+    }
+}
+
+private struct CombinedOutput: DatabaseOutput {
+    var first: DatabaseOutput
+    var second: DatabaseOutput
+
+    func contains(field: String) -> Bool {
+        return self.first.contains(field: field) || self.second.contains(field: field)
+    }
+
+    func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
+        if self.first.contains(field: field) {
+            return try self.first.decode(field: field, as: T.self)
+        } else if self.second.contains(field: field) {
+            return try self.second.decode(field: field, as: T.self)
+        } else {
+            throw FluentError.missingField(name: field)
+        }
+    }
+
+    var description: String {
+        return self.first.description + " -> " + self.second.description
+    }
+}
+

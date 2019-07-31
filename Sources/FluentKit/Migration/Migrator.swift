@@ -17,7 +17,7 @@ public struct Migrator {
         return MigrationLog.query(on: self.databases.default()).all().map { migrations in
             return ()
         }.flatMapError { error in
-            return MigrationLog.autoMigration().prepare(on: self.databases.default())
+            return MigrationLog.migration.prepare(on: self.databases.default())
         }
     }
     
@@ -104,10 +104,8 @@ public struct Migrator {
             database = self.databases.default()
         }
         return item.migration.prepare(on: database).flatMap {
-            let log = MigrationLog.row()
-            log.name = item.migration.name
-            log.batch = batch
-            return log.save(on: self.databases.default())
+            return MigrationLog(name: item.migration.name, batch: batch)
+                .save(on: self.databases.default())
         }
     }
     
@@ -120,17 +118,17 @@ public struct Migrator {
         }
         return item.migration.revert(on: database).flatMap { _ -> EventLoopFuture<Void> in
             return MigrationLog.query(on: self.databases.default())
-                .filter(\.name == item.migration.name)
+                .filter(\.$name == item.migration.name)
                 .delete()
         }
     }
     
     private func revertMigrationLog() -> EventLoopFuture<Void> {
-        return MigrationLog.autoMigration().revert(on: self.databases.default())
+        return MigrationLog.migration.revert(on: self.databases.default())
     }
     
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        return MigrationLog.query(on: self.databases.default()).sort(\.batch, .descending).first().map { log in
+        return MigrationLog.query(on: self.databases.default()).sort(\.$batch, .descending).first().map { log in
             return log?.batch ?? 0
         }
     }
@@ -149,7 +147,7 @@ public struct Migrator {
     }
     
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migrations.Item]> {
-        return MigrationLog.query(on: self.databases.default()).filter(\.batch == batch).all().map { logs -> [Migrations.Item] in
+        return MigrationLog.query(on: self.databases.default()).filter(\.$batch == batch).all().map { logs -> [Migrations.Item] in
             return logs.compactMap { log in
                 if let item = self.migrations.storage.filter({ $0.migration.name == log.name }).first {
                     return item

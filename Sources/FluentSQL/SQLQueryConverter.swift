@@ -270,6 +270,8 @@ public struct SQLQueryConverter {
             return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(", ")))
         case .dictionary(let dict):
             return SQLBind(DictValues(dict: dict))
+        case .default:
+            return SQLLiteral.default
         case .custom(let any):
             return custom(any)
         }

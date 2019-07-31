@@ -1,42 +1,70 @@
-public struct Field<Value>: AnyField
+@propertyWrapper
+public final class Field<Value>: AnyField
     where Value: Codable
 {
-    public var type: Any.Type {
-        return Value.self
-    }
+    let key: String?
+    var outputValue: Value?
+    var inputValue: Value?
+    var cachedOutput: DatabaseOutput?
+    var exists: Bool
 
-    public let name: String
-    public let dataType: DatabaseSchema.DataType?
-    public var constraints: [DatabaseSchema.FieldConstraint]
+    public var projectedValue: Field<Value> {
+        return self
+    }
     
-    public init(
-        _ name: String,
-        dataType: DatabaseSchema.DataType? = nil,
-        constraints: DatabaseSchema.FieldConstraint...
-    ) {
-        self.name = name
-        self.dataType = dataType
-        self.constraints = constraints
-    }
-
-    func cached(from output: DatabaseOutput) throws -> Any? {
-        guard output.contains(field: self.name) else {
-            return nil
+    public var wrappedValue: Value {
+        get {
+            if let value = self.inputValue {
+                return value
+            } else if let value = self.outputValue {
+                return value
+            } else {
+                fatalError("Cannot access field before it is initialized or fetched")
+            }
         }
-        return try output.decode(field: self.name, as: Value.self)
-    }
-    
-    func encode(to encoder: inout ModelEncoder, from row: AnyRow) throws {
-        try encoder.encode(row.storage.get(self.name, as: Value.self), forKey: self.name)
+        set {
+            self.inputValue = newValue
+        }
     }
 
-    func decode(from decoder: ModelDecoder, to row: AnyRow) throws {
-        try row.storage.set(self.name, to: decoder.decode(Value.self, forKey: self.name))
+    public init() {
+        self.key = nil
+        self.exists = false
     }
-}
 
-extension Field: ExpressibleByStringLiteral {
-    public init(stringLiteral value: String) {
-        self.init(value)
+    public init(_ key: String) {
+        self.key = key
+        self.exists = false
+    }
+
+    // MARK: Field
+
+    func key(label: String) -> String {
+        return self.key ?? label.convertedToSnakeCase()
+    }
+
+    func input() -> DatabaseQuery.Value? {
+        return self.inputValue.flatMap { .bind($0) }
+    }
+
+    // MARK: Property
+
+    func output(from output: DatabaseOutput, label: String) throws {
+        self.exists = true
+        self.cachedOutput = output
+        
+        let key = self.key(label: label)
+        if output.contains(field: key) {
+            self.inputValue = nil
+            self.outputValue = try output.decode(field: key, as: Value.self)
+        }
+    }
+
+    func encode(to encoder: inout ModelEncoder, label: String) throws {
+        try encoder.encode(self.wrappedValue, forKey: label)
+    }
+
+    func decode(from decoder: ModelDecoder, label: String) throws {
+        self.wrappedValue = try decoder.decode(Value.self, forKey: label)
     }
 }
