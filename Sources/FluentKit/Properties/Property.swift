@@ -1,12 +1,7 @@
-#warning("TODO: remove storage, add property methods for parsing output, eager loads, etc")
-
 protocol AnyProperty: class {
     func output(from output: DatabaseOutput, label: String) throws
     func encode(to encoder: inout ModelEncoder, label: String) throws
     func decode(from decoder: ModelDecoder, label: String) throws
-//    var _storage: Storage? { get set }
-//    var label: String? { get set }
-//    var modelType: AnyModel.Type? { get set }
 }
 
 protocol AnyEagerLoadable: AnyProperty {
@@ -14,36 +9,14 @@ protocol AnyEagerLoadable: AnyProperty {
     func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String)
 }
 
-extension AnyProperty {
-//    var storage: Storage {
-//        guard let storage = self._storage else {
-//            fatalError("Model.new() has not been called")
-//        }
-//        return storage
-//    }
-}
-
 protocol AnyField: AnyProperty {
     func key(label: String) -> String
     func input() -> DatabaseQuery.Value?
     var cachedOutput: DatabaseOutput? { get }
     var exists: Bool { get set }
-//    var name: String { get }
-//    var nameOverride: String? { get }
-//    var type: Any.Type { get }
 }
 
-extension AnyField {
-//    var name: String {
-//        if let name = self.nameOverride {
-//            return name
-//        } else if let label = self.label {
-//            return label.convertedToSnakeCase()
-//        } else {
-//            fatalError("No label or name override set.")
-//        }
-//    }
-}
+extension AnyField { }
 
 extension AnyModel {
     var eagerLoadables: [(String, AnyEagerLoadable)] {
