@@ -128,7 +128,7 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
     }
     
     func decode(from decoder: ModelDecoder, label: String) throws {
-        #warning("TODO: allow for nested decoding")
+        // TODO: allow for nested decoding
     }
 
     // MARK: Eager Load
