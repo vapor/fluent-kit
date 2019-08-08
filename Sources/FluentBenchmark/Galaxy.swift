@@ -1,8 +1,8 @@
 import FluentKit
 
 final class Galaxy: Model {
-    @Field var id: Int?
-    @Field var name: String
+    @ID("id") var id: Int?
+    @Field("name") var name: String
     @Children(\.$galaxy) var planets: [Planet]
 
     init() { }
@@ -16,8 +16,8 @@ final class Galaxy: Model {
 struct GalaxyMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return Galaxy.schema(on: database)
-            .field(\.$id, .int, .identifier(auto: true))
-            .field(\.$name, .string, .required)
+            .field("id", .int, .identifier(auto: true))
+            .field("name", .string, .required)
             .create()
     }
 

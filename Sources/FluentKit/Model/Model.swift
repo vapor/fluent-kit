@@ -5,9 +5,9 @@ public protocol AnyModel: class, CustomStringConvertible, Codable {
 }
 
 public protocol Model: AnyModel {
-    associatedtype ID: Codable, Hashable
+    associatedtype IDValue: Codable, Hashable
 
-    var id: ID? { get set }
+    var id: IDValue? { get set }
 
     // MARK: Lifecycle
 
@@ -31,16 +31,20 @@ extension AnyModel {
     // MARK: Codable
 
     public init(from decoder: Decoder) throws {
-        let decoder = try ModelDecoder(decoder: decoder)
         self.init()
+        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            try property.decode(from: decoder, label: label)
+            let decoder = try container.superDecoder(forKey: .string(label))
+            try property.decode(from: decoder)
         }
     }
 
     public func encode(to encoder: Encoder) throws {
-        var encoder = ModelEncoder(encoder: encoder)
-        try self.properties.forEach { try $1.encode(to: &encoder, label: $0) }
+        var container = encoder.container(keyedBy: _ModelCodingKey.self)
+        try self.properties.forEach { label, property in
+            let encoder = container.superEncoder(forKey: .string(label))
+            try property.encode(to: encoder)
+        }
     }
 }
 
@@ -48,8 +52,7 @@ extension Model {
     static func key<Field>(for field: KeyPath<Self, Field>) -> String
         where Field: AnyField
     {
-        let ref = Self.init()
-        return ref.key(for: ref[keyPath: field])
+        return Self.init()[keyPath: field].key
     }
 }
 
@@ -65,14 +68,10 @@ extension AnyModel {
         fatalError("Property not found on model.")
     }
 
-    func key(for field: AnyField) -> String {
-        return field.key(label: self.label(for: field))
-    }
-
     var input: [String: DatabaseQuery.Value] {
         var input: [String: DatabaseQuery.Value] = [:]
-        for (label, field) in self.fields {
-            input[field.key(label: label)] = field.inputValue
+        for (_, field) in self.fields {
+            input[field.key] = field.inputValue
         }
         return input
     }
@@ -86,7 +85,7 @@ extension AnyModel {
         }
 
         let output: String
-        if let o = self.anyIDField.cachedOutput {
+        if let o = self.anyID.cachedOutput {
             output = o.description
         } else {
             output = "[:]"
@@ -97,8 +96,8 @@ extension AnyModel {
 }
 
 extension Model {
-    var _$id: Field<Self.ID?> {
-        self.anyIDField as! Field<Self.ID?>
+    var _$id: ID<IDValue> {
+        self.anyID as! ID<IDValue>
     }
 
     @available(*, deprecated, message: "use init")
@@ -109,8 +108,8 @@ extension Model {
 
 extension AnyModel {
     func output(from output: DatabaseOutput) throws {
-        try self.properties.forEach { (label, property) in
-            try property.output(from: output, label: label)
+        try self.properties.forEach { (_, property) in
+            try property.output(from: output)
         }
     }
 
@@ -126,7 +125,7 @@ extension AnyModel {
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
         where Joined: FluentKit.Model
     {
-        guard let output = self.anyIDField.cachedOutput else {
+        guard let output = self.anyID.cachedOutput else {
             fatalError("Can only access joined models using models fetched from database.")
         }
         let joined = Joined()
@@ -134,16 +133,16 @@ extension AnyModel {
         return joined
     }
 
-    var anyIDField: AnyField {
+    var anyID: AnyID {
         guard let id = Mirror(reflecting: self).descendant("_id") else {
             fatalError("id property must be declared using @ID")
         }
-        return id as! AnyField
+        return id as! AnyID
     }
 }
 
 extension Model {
-    public func requireID() throws -> ID {
+    public func requireID() throws -> IDValue {
         guard let id = self.id else {
             throw FluentError.idRequired
         }
@@ -174,7 +173,7 @@ extension Model {
         return .init(database: database)
     }
 
-    public static func find(_ id: Self.ID?, on database: Database) -> EventLoopFuture<Self?> {
+    public static func find(_ id: Self.IDValue?, on database: Database) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)
         }

@@ -37,51 +37,6 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         self.database = database
         self.schema = .init(entity: Model.entity)
     }
-    
-//    public func auto() -> Self {
-//        self.schema.createFields = Model().fields.map { field in
-//            var constraints = [DatabaseSchema.FieldConstraint]()
-//            let type: Any.Type
-//
-//            let isOptional: Bool
-//            if let optionalType = field.type as? OptionalType.Type {
-//                isOptional = true
-//                type = optionalType.wrappedType
-//            } else {
-//                isOptional = false
-//                type = field.type
-//            }
-//
-//            if field.name == Model().idField.name {
-//                constraints.append(.identifier(
-//                    auto: !(type is AnyGeneratableID.Type)
-//                ))
-//            } else if !isOptional {
-//                constraints.append(.required)
-//            }
-//
-//            return .definition(
-//                name: .string(field.name),
-//                dataType: .bestFor(type: type),
-//                constraints: constraints
-//            )
-//        }
-//        return self
-//    }
-    
-    public func field<Value>(
-        _ field: KeyPath<Model, Field<Value>>,
-        _ dataType: DatabaseSchema.DataType,
-        _ constraints: DatabaseSchema.FieldConstraint...
-    ) -> Self
-        where Value: Codable
-    {
-        return self.field(.definition(
-            name: .string(Model.key(for: field)),
-            dataType: dataType,
-            constraints: constraints
-        ))
-    }
 
     public func field(
         _ name: String,

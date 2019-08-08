@@ -4,18 +4,13 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
 {
     // MARK: ID
 
-    public let field: Field<P.ID>
+    public typealias Value = P.IDValue
+
     private var cachedLabel: String?
     private var eagerLoadedValue: P?
 
-    public var id: P.ID {
-        get {
-            return self.field.wrappedValue
-        }
-        set {
-            self.field.wrappedValue = newValue
-        }
-    }
+    @Field
+    public var id: P.IDValue
 
     // MARK: Wrapper
 
@@ -28,29 +23,21 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
         return self
     }
 
-    public init() {
-        self.field = .init()
+    public init(_ key: String) {
+        self._id = .init(key)
     }
 
-    public init(_ key: String) {
-        self.field = .init(key)
+    // MARK: Field
+
+    public var key: String {
+        return self.$id.key
     }
 
     // MARK: Query
 
     public func query(on database: Database) -> QueryBuilder<P> {
-        let name: String
-
-        if let key = self.field.key {
-            name = key
-        } else if let label = self.cachedLabel {
-            name = label.convertedToSnakeCase() + "_id"
-        } else {
-            fatalError("Cannot query parent relation before saving model")
-        }
-
         return P.query(on: database)
-            .filter(name, .equal, self.id)
+            .filter(self.key, .equal, self.id)
     }
 
     public func get(on database: Database) -> EventLoopFuture<P> {
@@ -65,36 +52,19 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
 
     // MARK: Field
 
-    func key(label: String) -> String {
-        return self.field.key(label: label + "_id")
-    }
-
-    var cachedOutput: DatabaseOutput? {
-        return self.field.cachedOutput
-    }
-
-    var exists: Bool {
-        get {
-            return self.field.exists
-        }
-        set {
-            self.field.exists = newValue
-        }
-    }
-
     var inputValue: DatabaseQuery.Value? {
         get {
-            return self.field.inputValue
+            return self.$id.inputValue
         }
         set {
-            self.field.inputValue = newValue
+            self.$id.inputValue = newValue
         }
     }
 
     // MARK: Property
 
-    func output(from output: DatabaseOutput, label: String) throws {
-        try self.field.output(from: output, label: self.key(label: label))
+    func output(from output: DatabaseOutput) throws {
+        try self.$id.output(from: output)
     }
 
     // MARK: Eager Loadable
@@ -105,9 +75,9 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
         }
 
         if let join = request as? JoinEagerLoad {
-            self.eagerLoadedValue = try join.get(id: self.field.wrappedValue)
+            self.eagerLoadedValue = try join.get(id: self.id)
         } else if let subquery = request as? SubqueryEagerLoad {
-            self.eagerLoadedValue = try subquery.get(id: self.field.wrappedValue)
+            self.eagerLoadedValue = try subquery.get(id: self.id)
         } else {
             fatalError("unsupported eagerload request: \(request)")
         }
@@ -116,23 +86,25 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
     func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
         switch method {
         case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad(key: self.key(label: label))
+            eagerLoads.requests[label] = SubqueryEagerLoad(key: self.key)
         case .join:
-            eagerLoads.requests[label] = JoinEagerLoad(key: self.key(label: label))
+            eagerLoads.requests[label] = JoinEagerLoad(key: self.key)
         }
     }
-    
-    func encode(to encoder: inout ModelEncoder, label: String) throws {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
         if let parent = self.eagerLoadedValue {
-            try encoder.encode(parent, forKey: label)
+            try container.encode(parent)
         } else {
-            try encoder.encode([
+            try container.encode([
                 P.key(for: \._$id): self.id
-            ], forKey: label)
+            ])
         }
     }
     
-    func decode(from decoder: ModelDecoder, label: String) throws {
+    func decode(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .string(P.key(for: \._$id))))
         // TODO: allow for nested decoding
     }
 
@@ -163,8 +135,8 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [P.ID] = models
-                .map { try! $0.anyIDField.cachedOutput!.decode(field: self.key, as: P.ID.self) }
+            let ids: [P.IDValue] = models
+                .map { try! $0.anyID.cachedOutput!.decode(field: self.key, as: P.IDValue.self) }
 
             let uniqueIDs = Array(Set(ids))
             return P.query(on: database)
@@ -173,7 +145,7 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
                 .map { self.storage = $0 }
         }
 
-        func get(id: P.ID) throws -> P? {
+        func get(id: P.IDValue) throws -> P? {
             return self.storage.filter { parent in
                 return parent.id == id
             }.first
@@ -201,11 +173,11 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
                 local: .field(path: [self.key], entity: query.entity, alias: nil),
                 method: .inner
             ))
-            query.fields += P().fields.map { (label, field) in
+            query.fields += P().fields.map { (_, field) in
                 return .field(
-                    path: [field.key(label: label)],
+                    path: [field.key],
                     entity: P.entity,
-                    alias: P.entity + "_" + field.key(label: label)
+                    alias: P.entity + "_" + field.key
                 )
             }
         }
@@ -221,7 +193,7 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
             }
         }
 
-        func get(id: P.ID) throws -> P? {
+        func get(id: P.IDValue) throws -> P? {
             return self.storage.filter { parent in
                 return parent.id == id
             }.first

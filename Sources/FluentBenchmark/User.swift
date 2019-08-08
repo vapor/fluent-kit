@@ -10,9 +10,9 @@ final class User: Model {
     }
     static let entity = "users"
     
-    @Field var id: Int?
-    @Field var name: String
-    @Field var pet: Pet
+    @ID("id") var id: Int?
+    @Field("name") var name: String
+    @Field("pet") var pet: Pet
 
     init() { }
 
@@ -26,9 +26,9 @@ final class User: Model {
 struct UserMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return User.schema(on: database)
-            .field(\.$id, .int, .identifier(auto: true))
-            .field(\.$name, .string, .required)
-            .field(\.$pet, .json, .required)
+            .field("id", .int, .identifier(auto: true))
+            .field("name", .string, .required)
+            .field("pet", .json, .required)
             .create()
     }
 

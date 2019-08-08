@@ -1,14 +1,14 @@
 import FluentKit
 
 final class Planet: Model {
-    @Field var id: Int?
-    @Field var name: String
-    @Parent var galaxy: Galaxy
+    @ID("id") var id: Int?
+    @Field("name") var name: String
+    @Parent("galaxy_id") var galaxy: Galaxy
     @Siblings(PlanetTag.self) var tags: [Tag]
 
     init() { }
 
-    init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
+    init(id: Int? = nil, name: String, galaxyID: Galaxy.IDValue) {
         self.id = id
         self.name = name
         self.$galaxy.id = galaxyID

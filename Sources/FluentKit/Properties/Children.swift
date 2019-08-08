@@ -6,7 +6,7 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
 
     let foreignIDName: String
     private var eagerLoadedValue: [C]?
-    private var idValue: P.ID?
+    private var idValue: P.IDValue?
 
     // MARK: Wrapper
 
@@ -36,22 +36,22 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
 
     // MARK: Property
 
-    func output(from output: DatabaseOutput, label: String) throws {
+    func output(from output: DatabaseOutput) throws {
         let key = P.key(for: \._$id)
         if output.contains(field: key) {
-            self.idValue = try output.decode(field: key, as: P.ID.self)
+            self.idValue = try output.decode(field: key, as: P.IDValue.self)
         }
     }
 
     // MARK: Codable
-
-    func encode(to encoder: inout ModelEncoder, label: String) throws {
+    func encode(to encoder: Encoder) throws {
         if let rows = self.eagerLoadedValue {
-            try encoder.encode(rows, forKey: label)
+            var container = encoder.singleValueContainer()
+            try container.encode(rows)
         }
     }
-    
-    func decode(from decoder: ModelDecoder, label: String) throws {
+
+    func decode(from decoder: Decoder) throws {
         // don't decode
     }
 
@@ -102,7 +102,7 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [P.ID] = models
+            let ids: [P.IDValue] = models
                 .map { $0 as! P }
                 .map { $0.id! }
             let uniqueIDs = Array(Set(ids))
@@ -120,10 +120,10 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
                 }
         }
 
-        func get(id: P.ID) throws -> [C] {
+        func get(id: P.IDValue) throws -> [C] {
             return try self.storage.filter { child in
-                return try child.anyIDField.cachedOutput!.decode(
-                    field: self.foreignIDName, as: P.ID.self
+                return try child.anyID.cachedOutput!.decode(
+                    field: self.foreignIDName, as: P.IDValue.self
                 ) == id
             }
         }

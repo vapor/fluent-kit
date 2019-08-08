@@ -1,9 +1,9 @@
 import FluentKit
 
 final class PlanetTag: Model {
-    @Field var id: Int?
-    @Field var planetID: Int
-    @Field var tagID: Int
+    @ID("id") var id: Int?
+    @Field("planet_id") var planetID: Int
+    @Field("tag_id") var tagID: Int
 
     init() { }
 

@@ -1,8 +1,8 @@
 import FluentKit
 
 final class Tag: Model {
-    @Field var id: Int?
-    @Field var name: String
+    @ID("id") var id: Int?
+    @Field("name") var name: String
     @Siblings(PlanetTag.self) var planets: [Planet]
 
     init() { }

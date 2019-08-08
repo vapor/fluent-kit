@@ -20,8 +20,8 @@ extension Model {
                 .set(input)
                 .action(.create)
                 .run { output in
-                    if Self.ID.self is GeneratableID.Type { } else {
-                        let id = try output.decode(field: "fluentID", as: Self.ID.self)
+                    if Self.IDValue.self is GeneratableID.Type { } else {
+                        let id = try output.decode(field: "fluentID", as: Self.IDValue.self)
                         input[Self.key(for: \._$id)] = .bind(id)
                     }
                     try self.output(from: SavedInput(input))
@@ -40,7 +40,7 @@ extension Model {
         return self.willUpdate(on: database).flatMap {
             let input = self.input
             return Self.query(on: database)
-                .filter(\._$id == self.id)
+                .filter(\._$id == self.id!)
                 .set(input)
                 .action(.update)
                 .run()
@@ -63,7 +63,7 @@ extension Model {
         } else {
             return self.willDelete(on: database).flatMap {
                 return Self.query(on: database)
-                    .filter(\._$id == self.id)
+                    .filter(\._$id == self.id!)
                     .action(.delete)
                     .run()
                     .flatMapThrowing {
@@ -81,7 +81,7 @@ extension Model where Self: SoftDeletable {
         return self.willDelete(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(\._$id == self.id)
+                .filter(\._$id == self.id!)
                 .action(.delete)
                 .run()
                 .map {
@@ -98,7 +98,7 @@ extension Model where Self: SoftDeletable {
         return self.willRestore(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(\._$id == self.id)
+                .filter(\._$id == self.id!)
                 .set(self.input)
                 .action(.update)
                 .run()
@@ -143,8 +143,8 @@ extension Array where Element: FluentKit.Model {
 
 extension Model {
     var creationInput: [String: DatabaseQuery.Value] {
-        if let generatedIDType = Self.ID.self as? AnyGeneratableID.Type {
-            self.id = (generatedIDType.anyGenerateID() as! Self.ID)
+        if let generatedIDType = Self.IDValue.self as? AnyGeneratableID.Type {
+            self.id = (generatedIDType.anyGenerateID() as! Self.IDValue)
             return self.input
         } else {
             var input = self.input

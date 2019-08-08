@@ -1,13 +1,5 @@
 import NIO
 
-//extension Database {
-//    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
-//        where Model: FluentKit.Model
-//    {
-//        return .init(database: self)
-//    }
-//}
-
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model
 {
@@ -22,9 +14,9 @@ public final class QueryBuilder<Model>
         self.database = database
         self.query = .init(entity: Model.entity)
         self.eagerLoads = .init()
-        self.query.fields = Model().fields.map { (label, field) in
+        self.query.fields = Model().fields.map { (_, field) in
             return .field(
-                path: [field.key(label: label)],
+                path: [field.key],
                 entity: Model.entity,
                 alias: nil
             )
@@ -126,11 +118,11 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign().fields.map { (label, field) in
+        self.query.fields += Foreign().fields.map { (_, field) in
             return .field(
-                path: [field.key(label: label)],
+                path: [field.key],
                 entity: Foreign.entity,
-                alias: Foreign.entity + "_" + field.key(label: label)
+                alias: Foreign.entity + "_" + field.key
             )
         }
         self.joinedModels.append(Foreign())
@@ -310,9 +302,9 @@ public final class QueryBuilder<Model>
     
     
     // MARK: Aggregate
-    
+
     public func count() -> EventLoopFuture<Int> {
-        return self.aggregate(.count, Model.key(for: \._$id), as: Int.self)
+        return self.aggregate(.count, Model.key(for: \Model._$id), as: Int.self)
     }
 
     public func sum<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
@@ -320,7 +312,7 @@ public final class QueryBuilder<Model>
     {
         return self.aggregate(.sum, key)
     }
-    
+
     public func sum<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
@@ -332,7 +324,7 @@ public final class QueryBuilder<Model>
     {
         return self.aggregate(.average, key)
     }
-    
+
     public func average<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
@@ -344,8 +336,14 @@ public final class QueryBuilder<Model>
     {
         return self.aggregate(.minimum, key)
     }
-    
+
     public func min<Value>(_ key:KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.minimum, key)
+    }
+
+    public func min<Value>(_ key:KeyPath<Model, ID<Value>>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.minimum, key)
@@ -356,24 +354,29 @@ public final class QueryBuilder<Model>
     {
         return self.aggregate(.maximum, key)
     }
-    
+
     public func max<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
         where Value: Codable
     {
         return self.aggregate(.maximum, key)
     }
 
+    public func max<Value>(_ key: KeyPath<Model, ID<Value>>) -> EventLoopFuture<Value?>
+        where Value: Codable
+    {
+        return self.aggregate(.maximum, key)
+    }
 
-    public func aggregate<Value, Result>(
+    public func aggregate<Field, Result>(
         _ method: DatabaseQuery.Field.Aggregate.Method,
-        _ field: KeyPath<Model, Field<Value>>,
+        _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Result: Codable
+        where Field: Filterable, Result: Codable
     {
-        return self.aggregate(method, Model.key(for: field), as: Result.self)
+        return self.aggregate(method, Model()[keyPath: field].key, as: Result.self)
     }
-    
+
     public func aggregate<Result>(
         _ method: DatabaseQuery.Field.Aggregate.Method,
         _ fieldName: String,
@@ -388,7 +391,7 @@ public final class QueryBuilder<Model>
         
         return self.first().flatMapThrowing { res in
             guard let res = res else {
-                fatalError("No model")
+                throw FluentError.noResults
             }
             return try res._$id.cachedOutput!.decode(field: "fluentAggregate", as: Result.self)
         }
@@ -505,102 +508,108 @@ public final class QueryBuilder<Model>
 
 // MARK: Operators
 
-public func == <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .equal, .bind(rhs))
 }
 
-public func != <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .notEqual, .bind(rhs))
 }
 
-public func >= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .greaterThanOrEqual, .bind(rhs))
 }
 
-public func > <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .greaterThan, .bind(rhs))
 }
 
-public func < <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .lessThan, .bind(rhs))
 }
 
-public func <= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .lessThanOrEqual, .bind(rhs))
 }
 
 infix operator ~~
-public func ~~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: [Value]) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .subset(inverse: false), .array(rhs.map { .bind($0) }))
 }
 
 infix operator !~
-public func !~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: [Value]) -> ModelFilter<Model>
-    where Model: FluentKit.Model
+public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable
 {
     return .make(lhs, .subset(inverse: true), .array(rhs.map { .bind($0) }))
 }
 
 
-public func ~= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Value: CustomStringConvertible
+public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable, Field.Value: CustomStringConvertible
 {
     return .make(lhs, .contains(inverse: false, .suffix), .bind(rhs))
 }
 
-public func ~~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Value: CustomStringConvertible
+public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable, Field.Value: CustomStringConvertible
 {
     return .make(lhs, .contains(inverse: false, .anywhere), .bind(rhs))
 }
 
 infix operator =~
-public func =~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Value: CustomStringConvertible
+public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable, Field.Value: CustomStringConvertible
 {
     return .make(lhs, .contains(inverse: false, .prefix), .bind(rhs))
 }
 
 
 infix operator !~=
-public func !~= <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Value: CustomStringConvertible
+public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable, Field.Value: CustomStringConvertible
 {
     return .make(lhs, .contains(inverse: true, .suffix), .bind(rhs))
 }
 
 infix operator !~~
-public func !~~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Value: CustomStringConvertible
+public func !~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable, Field.Value: CustomStringConvertible
 {
     return .make(lhs, .contains(inverse: true, .anywhere), .bind(rhs))
 }
 
 infix operator !=~
-public func !=~ <Model, Value>(lhs: KeyPath<Model, Field<Value>>, rhs: Value) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Value: CustomStringConvertible
+public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+    where Model: FluentKit.Model, Field: Filterable, Field.Value: CustomStringConvertible
 {
     return .make(lhs, .contains(inverse: true, .prefix), .bind(rhs))
 }
 
 public struct ModelFilter<Model> where Model: FluentKit.Model {
-    static func make<Value>(_ lhs: KeyPath<Model, Field<Value>>, _ method: DatabaseQuery.Filter.Method, _ rhs: DatabaseQuery.Value) -> ModelFilter {
+    static func make<Field>(
+        _ lhs: KeyPath<Model, Field>,
+        _ method: DatabaseQuery.Filter.Method,
+        _ rhs: DatabaseQuery.Value
+    ) -> ModelFilter
+        where Field: Filterable
+    {
         return .init(filter: .basic(
-            .field(path: [Model.key(for: lhs)], entity: Model.entity, alias: nil),
+            .field(path: [Model.init()[keyPath: lhs].key], entity: Model.entity, alias: nil),
             method,
             rhs
         ))

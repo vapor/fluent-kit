@@ -1,8 +1,8 @@
 public protocol Pivot: Model {
     associatedtype Left: Model
     associatedtype Right: Model
-    var leftID: Field<Left.ID> { get }
-    var rightID: Field<Right.ID> { get }
+    var leftID: Field<Left.IDValue> { get }
+    var rightID: Field<Right.IDValue> { get }
 }
 
 @propertyWrapper
@@ -54,11 +54,11 @@ public final class Siblings<To, Via>: AnyProperty
 
         let query = Via.query(on: database)
         if Via.Right.self == To.self {
-            query.filter(\.rightID == toID as! Via.Right.ID)
-                .filter(\.leftID == fromID as! Via.Left.ID)
+            query.filter(\.rightID == toID as! Via.Right.IDValue)
+                .filter(\.leftID == fromID as! Via.Left.IDValue)
         } else {
-            query.filter(\.rightID == fromID as! Via.Right.ID)
-                .filter(\.leftID == toID as! Via.Left.ID)
+            query.filter(\.rightID == fromID as! Via.Right.IDValue)
+                .filter(\.leftID == toID as! Via.Left.IDValue)
         }
         return query.delete()
     }
@@ -101,25 +101,25 @@ public final class Siblings<To, Via>: AnyProperty
             )
     }
 
-    func output(from output: DatabaseOutput, label: String) throws {
+    func output(from output: DatabaseOutput) throws {
         if Via.Right.self == To.self {
             let key = Via.Left.key(for: \._$id)
             if output.contains(field: key) {
-                self.idValue = try output.decode(field: key, as: Via.Left.ID.self)
+                self.idValue = try output.decode(field: key, as: Via.Left.IDValue.self)
             }
         } else {
             let key = Via.Right.key(for: \._$id)
             if output.contains(field: key) {
-                self.idValue = try output.decode(field: key, as: Via.Right.ID.self)
+                self.idValue = try output.decode(field: key, as: Via.Right.IDValue.self)
             }
         }
     }
 
-    func encode(to encoder: inout ModelEncoder, label: String) throws {
+    func encode(to encoder: Encoder) throws {
 
     }
 
-    func decode(from decoder: ModelDecoder, label: String) throws {
+    func decode(from decoder: Decoder) throws {
         
     }
 }

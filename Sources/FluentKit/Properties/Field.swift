@@ -1,12 +1,10 @@
 @propertyWrapper
-public final class Field<Value>: AnyField
+public final class Field<Value>: AnyField, Filterable
     where Value: Codable
 {
-    let key: String?
+    public let key: String
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-    var cachedOutput: DatabaseOutput?
-    var exists: Bool
 
     public var projectedValue: Field<Value> {
         return self
@@ -30,48 +28,38 @@ public final class Field<Value>: AnyField
         }
     }
 
-    public init() {
-        self.key = nil
-        self.exists = false
-    }
-
     public init(_ key: String) {
         self.key = key
-        self.exists = false
-    }
-
-    // MARK: Field
-
-    func key(label: String) -> String {
-        return self.key ?? label.convertedToSnakeCase()
     }
 
     // MARK: Property
 
-    func output(from output: DatabaseOutput, label: String) throws {
-        self.exists = true
-        self.cachedOutput = output
-        
-        let key = self.key(label: label)
-        if output.contains(field: key) {
+    func output(from output: DatabaseOutput) throws {
+        if output.contains(field: self.key) {
             self.inputValue = nil
-            self.outputValue = try output.decode(field: key, as: Value.self)
+            do {
+                self.outputValue = try output.decode(field: self.key, as: Value.self)
+            } catch {
+                throw FluentError.invalidField(name: self.key, valueType: Value.self)
+            }
         }
     }
 
-    func encode(to encoder: inout ModelEncoder, label: String) throws {
-        try encoder.encode(self.wrappedValue, forKey: label)
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.wrappedValue)
     }
 
-    func decode(from decoder: ModelDecoder, label: String) throws {
+    func decode(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
         if let valueType = Value.self as? _Optional.Type {
-            if decoder.has(key: label) {
-                self.wrappedValue = try decoder.decode(Value.self, forKey: label)
-            } else {
+            if container.decodeNil() {
                 self.wrappedValue = (valueType._none as! Value)
+            } else {
+                self.wrappedValue = try container.decode(Value.self)
             }
         } else {
-            self.wrappedValue = try decoder.decode(Value.self, forKey: label)
+            self.wrappedValue = try container.decode(Value.self)
         }
     }
 }
