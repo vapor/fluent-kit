@@ -82,14 +82,19 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
         }
     }
 
+    var inputValue: DatabaseQuery.Value? {
+        get {
+            return self.field.inputValue
+        }
+        set {
+            self.field.inputValue = newValue
+        }
+    }
+
     // MARK: Property
 
     func output(from output: DatabaseOutput, label: String) throws {
         try self.field.output(from: output, label: self.key(label: label))
-    }
-
-    func input() -> DatabaseQuery.Value? {
-        return self.field.input()
     }
 
     // MARK: Eager Loadable
@@ -122,7 +127,7 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
             try encoder.encode(parent, forKey: label)
         } else {
             try encoder.encode([
-                P().idField.key(label: "id"): self.id
+                P.key(for: \._$id): self.id
             ], forKey: label)
         }
     }
@@ -163,7 +168,7 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
 
             let uniqueIDs = Array(Set(ids))
             return P.query(on: database)
-                .filter(P().idField.key(label: "id"), in: uniqueIDs)
+                .filter(P.key(for: \._$id), in: uniqueIDs)
                 .all()
                 .map { self.storage = $0 }
         }
@@ -192,7 +197,7 @@ public final class Parent<P>: AnyField, AnyEagerLoadable
             // we can assume query.entity since eager loading
             // is only allowed on the base entity
             query.joins.append(.model(
-                foreign: .field(path: [P().idField.key(label: "id")], entity: P.entity, alias: nil),
+                foreign: .field(path: [P.key(for: \._$id)], entity: P.entity, alias: nil),
                 local: .field(path: [self.key], entity: query.entity, alias: nil),
                 method: .inner
             ))

@@ -1,31 +1,27 @@
 import FluentKit
 
-final class Planet: Model {
+final class Tag: Model {
     @Field var id: Int?
     @Field var name: String
-    @Parent var galaxy: Galaxy
-    @Siblings(PlanetTag.self) var tags: [Tag]
-
+    @Siblings(PlanetTag.self) var planets: [Planet]
+    
     init() { }
 
-    init(id: Int? = nil, name: String, galaxyID: Galaxy.ID) {
+    init(id: Int? = nil, name: String) {
         self.id = id
         self.name = name
-        self.$galaxy.id = galaxyID
     }
 }
 
-struct PlanetMigration: Migration {
+struct TagMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return Planet.schema(on: database)
+        return Tag.schema(on: database)
             .field(\.$id, .int, .identifier(auto: true))
             .field(\.$name, .string, .required)
-            .field("galaxy_id", .int, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return Planet.schema(on: database).delete()
+        return Tag.schema(on: database).delete()
     }
 }
-

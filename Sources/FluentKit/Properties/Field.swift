@@ -4,7 +4,7 @@ public final class Field<Value>: AnyField
 {
     let key: String?
     var outputValue: Value?
-    var inputValue: Value?
+    var inputValue: DatabaseQuery.Value?
     var cachedOutput: DatabaseOutput?
     var exists: Bool
 
@@ -15,7 +15,10 @@ public final class Field<Value>: AnyField
     public var wrappedValue: Value {
         get {
             if let value = self.inputValue {
-                return value
+                guard case .bind(let bind) = value else {
+                    fatalError("Unexpected input value type")
+                }
+                return bind as! Value
             } else if let value = self.outputValue {
                 return value
             } else {
@@ -23,7 +26,7 @@ public final class Field<Value>: AnyField
             }
         }
         set {
-            self.inputValue = newValue
+            self.inputValue = .bind(newValue)
         }
     }
 
@@ -41,10 +44,6 @@ public final class Field<Value>: AnyField
 
     func key(label: String) -> String {
         return self.key ?? label.convertedToSnakeCase()
-    }
-
-    func input() -> DatabaseQuery.Value? {
-        return self.inputValue.flatMap { .bind($0) }
     }
 
     // MARK: Property

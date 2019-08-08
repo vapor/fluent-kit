@@ -11,7 +11,7 @@ protocol AnyEagerLoadable: AnyProperty {
 
 protocol AnyField: AnyProperty {
     func key(label: String) -> String
-    func input() -> DatabaseQuery.Value?
+    var inputValue: DatabaseQuery.Value? { get set }
     var cachedOutput: DatabaseOutput? { get }
     var exists: Bool { get set }
 }

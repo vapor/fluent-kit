@@ -1,6 +1,6 @@
 extension Model {
     public func save(on database: Database) -> EventLoopFuture<Void> {
-        if self.idField.exists {
+        if self._$id.exists {
             return self.update(on: database)
         } else {
             return self.create(on: database)
@@ -13,7 +13,7 @@ extension Model {
             timestampable._createdAtField.wrappedValue = date
             timestampable._updatedAtField.wrappedValue = date
         }
-        precondition(!self.idField.exists)
+        precondition(!self._$id.exists)
         return self.willCreate(on: database).flatMap {
             var input = self.creationInput
             return Self.query(on: database)
@@ -22,7 +22,7 @@ extension Model {
                 .run { output in
                     if Self.ID.self is GeneratableID.Type { } else {
                         let id = try output.decode(field: "fluentID", as: Self.ID.self)
-                        input[Self.key(for: \.idField)] = .bind(id)
+                        input[Self.key(for: \._$id)] = .bind(id)
                     }
                     try self.output(from: SavedInput(input))
                 }
@@ -35,12 +35,12 @@ extension Model {
         if let timestampable = self as? _AnyTimestampable {
             timestampable._updatedAtField.wrappedValue = Date()
         }
-        precondition(self.idField.exists)
+        precondition(self._$id.exists)
 
         return self.willUpdate(on: database).flatMap {
             let input = self.input
             return Self.query(on: database)
-                .filter(\.idField == self.id)
+                .filter(\._$id == self.id)
                 .set(input)
                 .action(.update)
                 .run()
@@ -63,11 +63,11 @@ extension Model {
         } else {
             return self.willDelete(on: database).flatMap {
                 return Self.query(on: database)
-                    .filter(\.idField == self.id)
+                    .filter(\._$id == self.id)
                     .action(.delete)
                     .run()
                     .flatMapThrowing {
-                        self.idField.exists = false
+                        self._$id.exists = false
                     }
             }.flatMap {
                 return self.didDelete(on: database)
@@ -81,11 +81,11 @@ extension Model where Self: SoftDeletable {
         return self.willDelete(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(\.idField == self.id)
+                .filter(\._$id == self.id)
                 .action(.delete)
                 .run()
                 .map {
-                    self.idField.exists = false
+                    self._$id.exists = false
                 }
         }.flatMap {
             return self.didDelete(on: database)
@@ -94,17 +94,17 @@ extension Model where Self: SoftDeletable {
 
     public func restore(on database: Database) -> EventLoopFuture<Void> {
         self.deletedAt = nil
-        precondition(self.idField.exists)
+        precondition(self._$id.exists)
         return self.willRestore(on: database).flatMap {
             return Self.query(on: database)
                 .withSoftDeleted()
-                .filter(\.idField == self.id)
+                .filter(\._$id == self.id)
                 .set(self.input)
                 .action(.update)
                 .run()
                 .flatMapThrowing {
                     try self.output(from: SavedInput(self.input))
-                    self.idField.exists = true
+                    self._$id.exists = true
                 }
         }.flatMap {
             return self.didRestore(on: database)
@@ -116,7 +116,7 @@ extension Array where Element: FluentKit.Model {
     public func create(on database: Database) -> EventLoopFuture<Void> {
         let builder = Element.query(on: database)
         self.forEach { model in
-            precondition(!model.idField.exists)
+            precondition(!model._$id.exists)
         }
         return EventLoopFuture<Void>.andAllSucceed(
             self.map { $0.willCreate(on: database) },
@@ -127,7 +127,7 @@ extension Array where Element: FluentKit.Model {
             var it = self.makeIterator()
             return builder.run { created in
                 let next = it.next()!
-                next.idField.exists = true
+                next._$id.exists = true
             }
         }.flatMap {
             return EventLoopFuture<Void>.andAllSucceed(
@@ -148,7 +148,7 @@ extension Model {
             return self.input
         } else {
             var input = self.input
-            input.removeValue(forKey: Self.key(for: \.idField))
+            input.removeValue(forKey: Self.key(for: \._$id))
             return input
         }
     }

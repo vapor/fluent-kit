@@ -65,7 +65,7 @@ public final class QueryBuilder<Model>
         where Value: FluentKit.Model
     {
         return self.join(
-            Value.self, Value.key(for: \Value.idField),
+            Value.self, Value.key(for: \._$id),
             to: Model.self, Model.key(for: field),
             method: .inner
         )
@@ -312,7 +312,7 @@ public final class QueryBuilder<Model>
     // MARK: Aggregate
     
     public func count() -> EventLoopFuture<Int> {
-        return self.aggregate(.count, Model.key(for: \Model.idField), as: Int.self)
+        return self.aggregate(.count, Model.key(for: \._$id), as: Int.self)
     }
 
     public func sum<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
@@ -390,7 +390,7 @@ public final class QueryBuilder<Model>
             guard let res = res else {
                 fatalError("No model")
             }
-            return try res.idField.cachedOutput!.decode(field: "fluentAggregate", as: Result.self)
+            return try res._$id.cachedOutput!.decode(field: "fluentAggregate", as: Result.self)
         }
     }
 

@@ -48,8 +48,12 @@ extension Model {
     static func key<Field>(for field: KeyPath<Self, Field>) -> String
         where Field: AnyField
     {
+        return self.key(for: field as PartialKeyPath<Self>)
+    }
+    
+    static func key(for field: PartialKeyPath<Self>) -> String {
         let ref = Self.init()
-        return ref.key(for: ref[keyPath: field])
+        return ref.key(for: ref[keyPath: field] as! AnyField)
     }
 }
 
@@ -72,7 +76,7 @@ extension AnyModel {
     var input: [String: DatabaseQuery.Value] {
         var input: [String: DatabaseQuery.Value] = [:]
         for (label, field) in self.fields {
-            input[field.key(label: label)] = field.input()
+            input[field.key(label: label)] = field.inputValue
         }
         return input
     }
@@ -97,7 +101,7 @@ extension AnyModel {
 }
 
 extension Model {
-    var idField: Field<Self.ID?> {
+    var _$id: Field<Self.ID?> {
         self.anyIDField as! Field<Self.ID?>
     }
 
@@ -153,7 +157,7 @@ extension Model {
 
 extension AnyModel {
     public static var name: String {
-        return "\(Self.self)".lowercased()
+        return "\(Self.self)".convertedToSnakeCase()
     }
 
     public static var entity: String {
@@ -179,7 +183,7 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database)
-            .filter(self.init().idField.key(label: "id"), .equal, id)
+            .filter(\._$id == id)
             .first()
     }
 }

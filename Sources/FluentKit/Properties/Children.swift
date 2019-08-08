@@ -37,7 +37,7 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
     // MARK: Property
 
     func output(from output: DatabaseOutput, label: String) throws {
-        let key = P.key(for: \.idField)
+        let key = P.key(for: \._$id)
         if output.contains(field: key) {
             self.idValue = try output.decode(field: key, as: P.ID.self)
         }
