@@ -49,7 +49,7 @@ jobs:
           command: git clone -b master https://github.com/vapor/fluent-sqlite-driver.git
           working_directory: ~/
       - run:
-          command: swift package edit FluentKit --revision $CIRCLE_SHA1
+          command: swift package edit fluent-kit --revision $CIRCLE_SHA1
           working_directory: ~/fluent-sqlite-driver
       - run:
           command: swift test
