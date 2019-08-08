@@ -45,6 +45,7 @@ jobs:
     docker:
       - image: vapor/swift:5.1-bionic
     steps:
+      - run: apt-get -y install sqlite3 libsqlite3-dev
       - run:
           command: git clone -b master https://github.com/vapor/fluent-sqlite-driver.git
           working_directory: ~/
