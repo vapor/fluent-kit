@@ -36,6 +36,7 @@ public final class FluentBenchmarker {
         try self.testLifecycleHooks()
         try self.testSort()
         try self.testUUIDModel()
+        try self.testNewModelDecode()
     }
     
     public func testCreate() throws {
@@ -926,6 +927,46 @@ public final class FluentBenchmarker {
                 .save(on: self.database).wait()
             guard try User.query(on: self.database).count().wait() == 1 else {
                 throw Failure("User did not save")
+            }
+        }
+    }
+
+    public func testNewModelDecode() throws {
+        final class Todo: Model {
+            @Field var id: UUID?
+            @Field var title: String
+
+            init() { }
+            init(id: UUID? = nil, title: String) {
+                self.id = id
+                self.title = title
+            }
+        }
+
+        struct TodoMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                return Todo.schema(on: database)
+                    .field(\.$id, .uuid, .identifier(auto: false))
+                    .field(\.$title, .string, .required)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                return Todo.schema(on: database).delete()
+            }
+        }
+
+        // seeded db
+        try runTest(#function, [
+            TodoMigration(),
+        ]) {
+            let todo = """
+            {"title": "Finish Vapor 4"}
+            """
+            try JSONDecoder().decode(Todo.self, from: todo.data(using: .utf8)!)
+                .save(on: self.database).wait()
+            guard try Todo.query(on: self.database).count().wait() == 1 else {
+                throw Failure("Todo did not save")
             }
         }
     }

@@ -65,6 +65,10 @@ struct ModelDecoder {
     {
         return try self.container.decode(Value.self, forKey: .string(key))
     }
+
+    public func has(key: String) -> Bool {
+        return self.container.contains(.string(key))
+    }
 }
 
 struct ModelEncoder {
