@@ -33,7 +33,9 @@ extension AnyModel {
     public init(from decoder: Decoder) throws {
         let decoder = try ModelDecoder(decoder: decoder)
         self.init()
-        try self.properties.forEach { try $1.decode(from: decoder, label: $0) }
+        try self.properties.forEach { label, property in
+            try property.decode(from: decoder, label: label)
+        }
     }
 
     public func encode(to encoder: Encoder) throws {

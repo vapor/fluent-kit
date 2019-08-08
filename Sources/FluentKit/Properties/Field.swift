@@ -65,6 +65,24 @@ public final class Field<Value>: AnyField
     }
 
     func decode(from decoder: ModelDecoder, label: String) throws {
-        self.wrappedValue = try decoder.decode(Value.self, forKey: label)
+        if let valueType = Value.self as? _Optional.Type {
+            if decoder.has(key: label) {
+                self.wrappedValue = try decoder.decode(Value.self, forKey: label)
+            } else {
+                self.wrappedValue = (valueType._none as! Value)
+            }
+        } else {
+            self.wrappedValue = try decoder.decode(Value.self, forKey: label)
+        }
+    }
+}
+
+
+private protocol _Optional {
+    static var _none: Any { get }
+}
+extension Optional: _Optional {
+    static var _none: Any {
+        return Self.none as Any
     }
 }
