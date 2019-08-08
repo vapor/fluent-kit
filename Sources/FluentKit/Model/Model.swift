@@ -48,12 +48,8 @@ extension Model {
     static func key<Field>(for field: KeyPath<Self, Field>) -> String
         where Field: AnyField
     {
-        return self.key(for: field as PartialKeyPath<Self>)
-    }
-    
-    static func key(for field: PartialKeyPath<Self>) -> String {
         let ref = Self.init()
-        return ref.key(for: ref[keyPath: field] as! AnyField)
+        return ref.key(for: ref[keyPath: field])
     }
 }
 

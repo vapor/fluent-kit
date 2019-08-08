@@ -1,17 +1,6 @@
 import FluentKit
 
-final class PlanetTag: Pivot {
-    typealias Left = Planet
-    static var leftID: PartialKeyPath<PlanetTag> {
-        return \.$planetID
-    }
-
-    typealias Right = Tag
-    static var rightID: PartialKeyPath<PlanetTag> {
-        return \.$tagID
-    }
-
-
+final class PlanetTag: Model {
     @Field var id: Int?
     @Field var planetID: Int
     @Field var tagID: Int
@@ -21,6 +10,17 @@ final class PlanetTag: Pivot {
     init(planetID: Int, tagID: Int) {
         self.planetID = planetID
         self.tagID = tagID
+    }
+}
+
+extension PlanetTag: Pivot {
+    typealias Left = Planet
+    var leftID: Field<Int> {
+        return self.$planetID
+    }
+    typealias Right = Tag
+    var rightID: Field<Int> {
+        return self.$tagID
     }
 }
 

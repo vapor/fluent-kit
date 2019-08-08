@@ -1,17 +1,8 @@
 public protocol Pivot: Model {
     associatedtype Left: Model
     associatedtype Right: Model
-    static var leftID: PartialKeyPath<Self> { get }
-    static var rightID: PartialKeyPath<Self> { get }
-}
-
-extension Pivot {
-    var _$leftID: AnyField {
-        return self[keyPath: Self.leftID] as! AnyField
-    }
-    var _$rightID: AnyField {
-        return self[keyPath: Self.rightID] as! AnyField
-    }
+    var leftID: Field<Left.ID> { get }
+    var rightID: Field<Right.ID> { get }
 }
 
 @propertyWrapper
@@ -32,22 +23,6 @@ public final class Siblings<To, Via>: AnyProperty
         return self
     }
 
-    private var toForeignKeyName: String {
-        if Via.Right.self == To.self {
-            return Via.key(for: \Via._$rightID)
-        } else {
-            return Via.key(for: \Via._$leftID)
-        }
-    }
-
-    private var fromForeignKeyName: String {
-        if Via.Right.self == To.self {
-            return Via.key(for: \Via._$leftID)
-        } else {
-            return Via.key(for: \Via._$rightID)
-        }
-    }
-
     // MARK: Operations
 
     public func attach(_ to: To, on database: Database) -> EventLoopFuture<Void> {
@@ -60,11 +35,11 @@ public final class Siblings<To, Via>: AnyProperty
 
         let pivot = Via()
         if Via.Right.self == To.self {
-            pivot._$leftID.inputValue = .bind(fromID)
-            pivot._$rightID.inputValue = .bind(toID)
+            pivot.leftID.inputValue = .bind(fromID)
+            pivot.rightID.inputValue = .bind(toID)
         } else {
-            pivot._$leftID.inputValue = .bind(toID)
-            pivot._$rightID.inputValue = .bind(fromID)
+            pivot.leftID.inputValue = .bind(toID)
+            pivot.rightID.inputValue = .bind(fromID)
         }
         return pivot.save(on: database)
     }
@@ -79,25 +54,11 @@ public final class Siblings<To, Via>: AnyProperty
 
         let query = Via.query(on: database)
         if Via.Right.self == To.self {
-            query.filter(
-                .field(path: [Via.key(for: \Via._$leftID)], entity: Via.entity, alias: nil),
-                .equal,
-                .bind(fromID)
-            ).filter(
-            .field(path: [Via.key(for: \Via._$rightID)], entity: Via.entity, alias: nil),
-                .equal,
-                .bind(toID)
-            )
+            query.filter(\.rightID == toID as! Via.Right.ID)
+                .filter(\.leftID == fromID as! Via.Left.ID)
         } else {
-            query.filter(
-                .field(path: [Via.key(for: \Via._$rightID)], entity: Via.entity, alias: nil),
-                .equal,
-                .bind(fromID)
-            ).filter(
-            .field(path: [Via.key(for: \Via._$leftID)], entity: Via.entity, alias: nil),
-                .equal,
-                .bind(toID)
-            )
+            query.filter(\.rightID == fromID as! Via.Right.ID)
+                .filter(\.leftID == toID as! Via.Left.ID)
         }
         return query.delete()
     }
@@ -108,13 +69,30 @@ public final class Siblings<To, Via>: AnyProperty
         guard let id = self.idValue else {
             fatalError("Cannot query siblings relation from unsaved model.")
         }
+
+        var toForeignKeyName: String {
+            if Via.Right.self == To.self {
+                return Via.key(for: \.rightID)
+            } else {
+                return Via.key(for: \.leftID)
+            }
+        }
+
+        var fromForeignKeyName: String {
+            if Via.Right.self == To.self {
+                return Via.key(for: \.leftID)
+            } else {
+                return Via.key(for: \.rightID)
+            }
+        }
+
         return To.query(on: database)
-            .join(Via.self, self.toForeignKeyName,
+            .join(Via.self, toForeignKeyName,
                   to: To.self, To.key(for: \._$id),
                   method: .inner)
             .filter(
                 .field(
-                    path: [self.fromForeignKeyName],
+                    path: [fromForeignKeyName],
                     entity: Via.entity,
                     alias: nil
                 ),
