@@ -138,10 +138,10 @@ public final class Siblings<To, Via>: AnyProperty
     }
 
     func encode(to encoder: inout ModelEncoder, label: String) throws {
-        fatalError()
+
     }
 
     func decode(from decoder: ModelDecoder, label: String) throws {
-        fatalError()
+        
     }
 }

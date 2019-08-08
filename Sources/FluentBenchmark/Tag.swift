@@ -4,7 +4,7 @@ final class Tag: Model {
     @Field var id: Int?
     @Field var name: String
     @Siblings(PlanetTag.self) var planets: [Planet]
-    
+
     init() { }
 
     init(id: Int? = nil, name: String) {
@@ -16,8 +16,8 @@ final class Tag: Model {
 struct TagMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return Tag.schema(on: database)
-            .field(\.$id, .int, .identifier(auto: true))
-            .field(\.$name, .string, .required)
+            .field("id", .int, .identifier(auto: true))
+            .field("name", .string, .required)
             .create()
     }
 

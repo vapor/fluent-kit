@@ -36,6 +36,4 @@ struct PlanetTagMigration: Migration {
     func revert(on database: Database) -> EventLoopFuture<Void> {
         return PlanetTag.schema(on: database).delete()
     }
-
-
 }
