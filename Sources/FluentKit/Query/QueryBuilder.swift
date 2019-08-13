@@ -7,28 +7,41 @@ public final class QueryBuilder<Model>
 
     public let database: Database
     internal var eagerLoads: EagerLoads
-    internal var includeSoftDeleted: Bool
+    internal var includeDeleted: Bool
     internal var joinedModels: [AnyModel]
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(entity: Model.entity)
+        self.query = .init(schema: Model.schema)
         self.eagerLoads = .init()
         self.query.fields = Model().fields.map { (_, field) in
             return .field(
                 path: [field.key],
-                entity: Model.entity,
+                schema: Model.schema,
                 alias: nil
             )
         }
-        self.includeSoftDeleted = false
+        self.includeDeleted = false
         self.joinedModels = []
     }
 
     // MARK: Eager Load
     
     @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Children<Model, Value>>, method: EagerLoadMethod = .subquery) -> Self {
+    public func with<Value>(
+        _ field: KeyPath<Model, Children<Model, Value>>
+    ) -> Self {
+        let ref = Model()
+        let property = ref[keyPath: field]
+        property.eagerLoad(to: self.eagerLoads, method: .subquery, label: ref.label(for: property))
+        return self
+    }
+
+    @discardableResult
+    public func with<Value>(
+        _ field: KeyPath<Model, Parent<Value>>,
+        method: EagerLoadMethod = .subquery
+    ) -> Self {
         let ref = Model()
         let property = ref[keyPath: field]
         property.eagerLoad(to: self.eagerLoads, method: method, label: ref.label(for: property))
@@ -36,17 +49,19 @@ public final class QueryBuilder<Model>
     }
 
     @discardableResult
-    public func eagerLoad<Value>(_ field: KeyPath<Model, Parent<Value>>, method: EagerLoadMethod = .subquery) -> Self {
+    public func with<To, Through>(
+        _ field: KeyPath<Model, Siblings<Model, To, Through>>
+    ) -> Self {
         let ref = Model()
         let property = ref[keyPath: field]
-        property.eagerLoad(to: self.eagerLoads, method: method, label: ref.label(for: property))
+        property.eagerLoad(to: self.eagerLoads, method: .subquery, label: ref.label(for: property))
         return self
     }
 
     // MARK: Soft Delete
 
-    public func withSoftDeleted() -> Self {
-        self.includeSoftDeleted = true
+    public func withDeleted() -> Self {
+        self.includeDeleted = true
         return self
     }
 
@@ -58,7 +73,18 @@ public final class QueryBuilder<Model>
     {
         return self.join(
             Value.self, Value.key(for: \._$id),
-            to: Model.self, Model.key(for: field),
+            to: Model.self, Model.key(for: field.appending(path: \.$id)),
+            method: .inner
+        )
+    }
+
+    @discardableResult
+    public func join<Value>(_ field: KeyPath<Value, Parent<Model>>) -> Self
+        where Value: FluentKit.Model
+    {
+        return self.join(
+            Value.self, Value.key(for: field.appending(path: \.$id)),
+            to: Model.self, Model.key(for: \._$id),
             method: .inner
         )
     }
@@ -121,14 +147,14 @@ public final class QueryBuilder<Model>
         self.query.fields += Foreign().fields.map { (_, field) in
             return .field(
                 path: [field.key],
-                entity: Foreign.entity,
-                alias: Foreign.entity + "_" + field.key
+                schema: Foreign.schema,
+                alias: Foreign.schema + "_" + field.key
             )
         }
         self.joinedModels.append(Foreign())
         self.query.joins.append(.model(
-            foreign: .field(path: [foreignField], entity: Foreign.entity, alias: nil),
-            local: .field(path: [localField], entity: Local.entity, alias: nil),
+            foreign: .field(path: [foreignField], schema: Foreign.schema, alias: nil),
+            local: .field(path: [localField], schema: Local.schema, alias: nil),
             method: method
         ))
         return self
@@ -147,17 +173,26 @@ public final class QueryBuilder<Model>
     {
         return self.filter(filter.filter)
     }
+
+    @discardableResult
+    public func filter<Joined, Values>(_ field: KeyPath<Joined, Field<Values.Element>>, in values: Values) -> Self
+        where Joined: FluentKit.Model, Values: Collection, Values.Element: Codable
+    {
+        return self.filter(Joined.key(for: field), in: values)
+    }
     
     @discardableResult
-    public func filter<Value>(_ field: KeyPath<Model, Field<Value>>, in values: [Value]) -> Self {
+    public func filter<Values>(_ field: KeyPath<Model, Field<Values.Element>>, in values: Values) -> Self
+        where Values: Collection, Values.Element: Codable
+    {
         return self.filter(Model.key(for: field), in: values)
     }
     
     @discardableResult
-    public func filter<Value>(_ fieldName: String, in values: [Value]) -> Self
-        where Value: Codable
+    public func filter<Values>(_ fieldName: String, in values: Values) -> Self
+        where Values: Collection, Values.Element: Codable
     {
-        return self.filter(.field(path: [fieldName], entity: Model.entity, alias: nil), .subset(inverse: false), .array(values.map { .bind($0) })
+        return self.filter(.field(path: [fieldName], schema: Model.schema, alias: nil), .subset(inverse: false), .array(values.map { .bind($0) })
         )
     }
     
@@ -170,7 +205,7 @@ public final class QueryBuilder<Model>
     public func filter<Value>(_ fieldName: String, _ method: DatabaseQuery.Filter.Method, _ value: Value) -> Self
         where Value: Codable
     {
-        return self.filter(.field(path: [fieldName], entity: Model.entity, alias: nil), method, .bind(value))
+        return self.filter(.field(path: [fieldName], schema: Model.schema, alias: nil), method, .bind(value))
     }
 
     @discardableResult
@@ -186,7 +221,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func set(_ data: [String: DatabaseQuery.Value]) -> Self {
-        self.query.fields = data.keys.map { .field(path: [$0], entity: nil, alias: nil) }
+        self.query.fields = data.keys.map { .field(path: [$0], schema: nil, alias: nil) }
         self.query.input.append(.init(data.values))
         return self
     }
@@ -198,7 +233,7 @@ public final class QueryBuilder<Model>
             return self
         }
         // use first copy of keys to ensure correct ordering
-        self.query.fields = keys.map { .field(path: [$0], entity: nil, alias: nil) }
+        self.query.fields = keys.map { .field(path: [$0], schema: nil, alias: nil) }
         for item in data {
             let input = keys.map { item[$0]! }
             self.query.input.append(input)
@@ -211,7 +246,7 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
         self.query.fields = []
-        query.fields.append(.field(path: [Model.key(for: field)], entity: nil, alias: nil))
+        query.fields.append(.field(path: [Model.key(for: field)], schema: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -254,7 +289,7 @@ public final class QueryBuilder<Model>
     public func sort<Joined>(_ model: Joined.Type, _ field: String, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
         where Joined: FluentKit.Model
     {
-        self.query.sorts.append(.sort(field: .field(path: [field], entity: Joined.entity, alias: nil), direction: direction))
+        self.query.sorts.append(.sort(field: .field(path: [field], schema: Joined.schema, alias: nil), direction: direction))
         return self
     }
 
@@ -279,7 +314,7 @@ public final class QueryBuilder<Model>
     ) -> Self
         where NestedValue: Codable
     {
-        let field: DatabaseQuery.Field = .field(path: [fieldName] + path.path, entity: Model.entity, alias: nil)
+        let field: DatabaseQuery.Field = .field(path: [fieldName] + path.path, schema: Model.schema, alias: nil)
         return self.filter(field, method, .bind(value))
     }
     
@@ -307,62 +342,50 @@ public final class QueryBuilder<Model>
         return self.aggregate(.count, Model.key(for: \Model._$id), as: Int.self)
     }
 
-    public func sum<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: Filterable
     {
         return self.aggregate(.sum, key)
     }
 
-    public func sum<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: Filterable, Field.Value: OptionalType
     {
         return self.aggregate(.sum, key)
     }
 
-    public func average<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: Filterable
     {
         return self.aggregate(.average, key)
     }
 
-    public func average<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: Filterable, Field.Value: OptionalType
     {
         return self.aggregate(.average, key)
     }
 
-    public func min<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: Filterable
     {
         return self.aggregate(.minimum, key)
     }
 
-    public func min<Value>(_ key:KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: Filterable, Field.Value: OptionalType
     {
         return self.aggregate(.minimum, key)
     }
 
-    public func min<Value>(_ key:KeyPath<Model, ID<Value>>) -> EventLoopFuture<Value?>
-        where Value: Codable
-    {
-        return self.aggregate(.minimum, key)
-    }
-
-    public func max<Value>(_ key: KeyPath<Model, Field<Value?>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: Filterable
     {
         return self.aggregate(.maximum, key)
     }
 
-    public func max<Value>(_ key: KeyPath<Model, Field<Value>>) -> EventLoopFuture<Value?>
-        where Value: Codable
-    {
-        return self.aggregate(.maximum, key)
-    }
-
-    public func max<Value>(_ key: KeyPath<Model, ID<Value>>) -> EventLoopFuture<Value?>
-        where Value: Codable
+    public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: Filterable, Field.Value: OptionalType
     {
         return self.aggregate(.maximum, key)
     }
@@ -386,7 +409,7 @@ public final class QueryBuilder<Model>
     {
         self.query.fields = [.aggregate(.fields(
             method: method,
-            fields: [.field(path: [fieldName], entity: Model.entity, alias: nil)]
+            fields: [.field(path: [fieldName], schema: Model.schema, alias: nil)]
         ))]
         
         return self.first().flatMapThrowing { res in
@@ -484,7 +507,6 @@ public final class QueryBuilder<Model>
     }
 
     func run(_ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
-
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -493,11 +515,10 @@ public final class QueryBuilder<Model>
         self.eagerLoads.requests.values.forEach { $0.prepare(query: &query) }
         
         // check if model is soft-deletable and should be excluded
-        if let softDeletable = Model() as? _AnySoftDeletable, !self.includeSoftDeleted {
-            softDeletable._excludeSoftDeleted(&query)
+        if !self.includeDeleted {
+            Model().excludeDeleted(from: &query)
             self.joinedModels
-                .compactMap { $0 as? _AnySoftDeletable }
-                .forEach { $0._excludeSoftDeleted(&query) }
+                .forEach { $0.excludeDeleted(from: &query) }
         }
 
         return self.database.execute(query) { output in
@@ -609,7 +630,7 @@ public struct ModelFilter<Model> where Model: FluentKit.Model {
         where Field: Filterable
     {
         return .init(filter: .basic(
-            .field(path: [Model.init()[keyPath: lhs].key], entity: Model.entity, alias: nil),
+            .field(path: [Model.init()[keyPath: lhs].key], schema: Model.schema, alias: nil),
             method,
             rhs
         ))

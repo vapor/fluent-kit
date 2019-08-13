@@ -1,32 +1,28 @@
 import FluentKit
 
 final class PlanetTag: Model {
-    @ID("id") var id: Int?
-    @Field("planet_id") var planetID: Int
-    @Field("tag_id") var tagID: Int
+    static let schema = "planet+tag"
+    
+    @ID(key: "id")
+    var id: Int?
+
+    @Parent(key: "planet_id")
+    var planet: Planet
+
+    @Parent(key: "tag_id")
+    var tag: Tag
 
     init() { }
 
     init(planetID: Int, tagID: Int) {
-        self.planetID = planetID
-        self.tagID = tagID
-    }
-}
-
-extension PlanetTag: Pivot {
-    typealias Left = Planet
-    var leftID: Field<Int> {
-        return self.$planetID
-    }
-    typealias Right = Tag
-    var rightID: Field<Int> {
-        return self.$tagID
+        self.planet.id = planetID
+        self.tag.id = tagID
     }
 }
 
 struct PlanetTagMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return PlanetTag.schema(on: database)
+        return database.schema("planet+tag")
             .field("id", .int, .identifier(auto: true))
             .field("planet_id", .int, .required)
             .field("tag_id", .int, .required)
@@ -34,6 +30,6 @@ struct PlanetTagMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return PlanetTag.schema(on: database).delete()
+        return database.schema("planet+tag").delete()
     }
 }

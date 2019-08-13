@@ -1,9 +1,16 @@
 import FluentKit
 
 final class Galaxy: Model {
-    @ID("id") var id: Int?
-    @Field("name") var name: String
-    @Children(\.$galaxy) var planets: [Planet]
+    static let schema = "galaxies"
+    
+    @ID(key: "id")
+    var id: Int?
+
+    @Field(key: "name")
+    var name: String
+
+    @Children(from: \.$galaxy)
+    var planets: [Planet]
 
     init() { }
 
@@ -15,13 +22,13 @@ final class Galaxy: Model {
 
 struct GalaxyMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return Galaxy.schema(on: database)
+        return database.schema("galaxies")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return Galaxy.schema(on: database).delete()
+        return database.schema("galaxies").delete()
     }
 }

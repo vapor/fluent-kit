@@ -28,7 +28,7 @@ public final class Field<Value>: AnyField, Filterable
         }
     }
 
-    public init(_ key: String) {
+    public init(key: String) {
         self.key = key
     }
 

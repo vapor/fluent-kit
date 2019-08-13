@@ -1,45 +1,45 @@
 @propertyWrapper
-public final class Children<P, C>: AnyProperty, AnyEagerLoadable
-    where P: Model, C: Model
+public final class Children<From, To>: AnyProperty, AnyEagerLoadable
+    where From: Model, To: Model
 {
     // MARK: ID
 
-    let foreignIDName: String
-    private var eagerLoadedValue: [C]?
-    private var idValue: P.IDValue?
+    let parentKey: KeyPath<To, Parent<From>>
+    private var eagerLoadedValue: [To]?
+    private var idValue: From.IDValue?
 
     // MARK: Wrapper
 
-    public init(_ parent: KeyPath<C, Parent<P>>) {
-        self.foreignIDName = C.key(for: parent)
+    public init(from parentKey: KeyPath<To, Parent<From>>) {
+        self.parentKey = parentKey
     }
 
-    public var wrappedValue: [C] {
+    public var wrappedValue: [To] {
         get { fatalError("Use $ prefix to access") }
         set { fatalError("Use $ prefix to access") }
     }
 
-    public var projectedValue: Children<P, C> {
+    public var projectedValue: Children<From, To> {
         return self
     }
 
 
     // MARK: Query
 
-    public func query(on database: Database) throws -> QueryBuilder<C> {
+    public func query(on database: Database) throws -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query children relation from unsaved model.")
         }
-        return C.query(on: database)
-            .filter(self.foreignIDName, .equal, id)
+        return To.query(on: database)
+            .filter(self.parentKey.appending(path: \.$id) == id)
     }
 
     // MARK: Property
 
     func output(from output: DatabaseOutput) throws {
-        let key = P.key(for: \._$id)
+        let key = From.key(for: \._$id)
         if output.contains(field: key) {
-            self.idValue = try output.decode(field: key, as: P.IDValue.self)
+            self.idValue = try output.decode(field: key, as: From.IDValue.self)
         }
     }
 
@@ -57,9 +57,9 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
 
     // MARK: Eager Load
 
-    public func eagerLoaded() throws -> [C] {
+    public func eagerLoaded() throws -> [To] {
         guard let rows = self.eagerLoadedValue else {
-            throw FluentError.missingEagerLoad(name: C.entity.self)
+            throw FluentError.missingEagerLoad(name: To.schema.self)
         }
         return rows
     }
@@ -78,23 +78,23 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
     func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
         switch method {
         case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad(self.foreignIDName)
+            eagerLoads.requests[label] = SubqueryEagerLoad(self.parentKey)
         case .join:
             fatalError("Eager loading children using join is not yet supported")
         }
     }
 
     private final class SubqueryEagerLoad: EagerLoadRequest {
-        var storage: [C]
-        let foreignIDName: String
+        var storage: [To]
+        let parentKey: KeyPath<To, Parent<From>>
 
         var description: String {
-            return "\(self.foreignIDName): \(self.storage)"
+            return self.storage.description
         }
 
-        init(_ foreignIDName: String) {
+        init(_ parentKey: KeyPath<To, Parent<From>>) {
             self.storage = []
-            self.foreignIDName = foreignIDName
+            self.parentKey = parentKey
         }
 
         func prepare(query: inout DatabaseQuery) {
@@ -102,29 +102,21 @@ public final class Children<P, C>: AnyProperty, AnyEagerLoadable
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [P.IDValue] = models
-                .map { $0 as! P }
+            let ids: [From.IDValue] = models
+                .map { $0 as! From }
                 .map { $0.id! }
-            let uniqueIDs = Array(Set(ids))
-            return C.query(on: database)
-                .filter(
-                    DatabaseQuery.Filter.basic(
-                        .field(path: [self.foreignIDName], entity: C.entity, alias: nil),
-                        .subset(inverse: false),
-                        .array(uniqueIDs.map { .bind($0) })
-                    )
-                )
+
+            return To.query(on: database)
+                .filter(self.parentKey.appending(path: \.$id), in: Set(ids))
                 .all()
-                .map { (children: [C]) -> Void in
+                .map { (children: [To]) -> Void in
                     self.storage = children
                 }
         }
 
-        func get(id: P.IDValue) throws -> [C] {
-            return try self.storage.filter { child in
-                return try child.anyID.cachedOutput!.decode(
-                    field: self.foreignIDName, as: P.IDValue.self
-                ) == id
+        func get(id: From.IDValue) throws -> [To] {
+            return self.storage.filter { child in
+                return child[keyPath: self.parentKey].id == id
             }
         }
     }

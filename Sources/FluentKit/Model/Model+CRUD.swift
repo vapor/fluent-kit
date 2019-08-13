@@ -8,19 +8,16 @@ extension Model {
     }
 
     public func create(on database: Database) -> EventLoopFuture<Void> {
-        if let timestampable = self as? _AnyTimestampable {
-            let date = Date()
-            timestampable._createdAtField.wrappedValue = date
-            timestampable._updatedAtField.wrappedValue = date
-        }
+        self.touchTimestamps(.create, .update)
         precondition(!self._$id.exists)
         return self.willCreate(on: database).flatMap {
-            var input = self.creationInput
+            self._$id.generate()
             return Self.query(on: database)
-                .set(input)
+                .set(self.input)
                 .action(.create)
                 .run { output in
-                    if Self.IDValue.self is GeneratableID.Type { } else {
+                    var input = self.input
+                    if output.contains(field: "fluentID") {
                         let id = try output.decode(field: "fluentID", as: Self.IDValue.self)
                         input[Self.key(for: \._$id)] = .bind(id)
                     }
@@ -32,9 +29,7 @@ extension Model {
     }
 
     public func update(on database: Database) -> EventLoopFuture<Void> {
-        if let timestampable = self as? _AnyTimestampable {
-            timestampable._updatedAtField.wrappedValue = Date()
-        }
+        self.touchTimestamps(.update)
         precondition(self._$id.exists)
 
         return self.willUpdate(on: database).flatMap {
@@ -52,9 +47,9 @@ extension Model {
         }
     }
 
-    public func delete(on database: Database) -> EventLoopFuture<Void> {
-        if let softDeletable = self as? _AnySoftDeletable {
-            softDeletable._deletedAtField.wrappedValue = Date()
+    public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
+        if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
+            timestamp.1.touch()
             return self.willSoftDelete(on: database).flatMap {
                 return self.update(on: database)
             }.flatMap {
@@ -62,11 +57,15 @@ extension Model {
             }
         } else {
             return self.willDelete(on: database).flatMap {
-                return Self.query(on: database)
+                let query = Self.query(on: database)
+                if force {
+                    _ = query.withDeleted()
+                }
+                return query
                     .filter(\._$id == self.id!)
                     .action(.delete)
                     .run()
-                    .flatMapThrowing {
+                    .map {
                         self._$id.exists = false
                     }
             }.flatMap {
@@ -74,30 +73,16 @@ extension Model {
             }
         }
     }
-}
-
-extension Model where Self: SoftDeletable {
-    public func forceDelete(on database: Database) -> EventLoopFuture<Void> {
-        return self.willDelete(on: database).flatMap {
-            return Self.query(on: database)
-                .withSoftDeleted()
-                .filter(\._$id == self.id!)
-                .action(.delete)
-                .run()
-                .map {
-                    self._$id.exists = false
-                }
-        }.flatMap {
-            return self.didDelete(on: database)
-        }
-    }
 
     public func restore(on database: Database) -> EventLoopFuture<Void> {
-        self.deletedAt = nil
+        guard let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first else {
+            fatalError("no delete timestamp on this model")
+        }
+        timestamp.1.touch(date: nil)
         precondition(self._$id.exists)
         return self.willRestore(on: database).flatMap {
             return Self.query(on: database)
-                .withSoftDeleted()
+                .withDeleted()
                 .filter(\._$id == self.id!)
                 .set(self.input)
                 .action(.update)
@@ -122,7 +107,12 @@ extension Array where Element: FluentKit.Model {
             self.map { $0.willCreate(on: database) },
             on: database.eventLoop
         ).flatMap {
-            builder.set(self.map { $0.creationInput })
+            self.forEach {
+                $0._$id.generate()
+                $0.touchTimestamps(.create)
+                $0.touchTimestamps(.update)
+            }
+            builder.set(self.map { $0.input })
             builder.query.action = .create
             var it = self.makeIterator()
             return builder.run { created in
@@ -140,19 +130,6 @@ extension Array where Element: FluentKit.Model {
 
 
 // MARK: Private
-
-extension Model {
-    var creationInput: [String: DatabaseQuery.Value] {
-        if let generatedIDType = Self.IDValue.self as? AnyGeneratableID.Type {
-            self.id = (generatedIDType.anyGenerateID() as! Self.IDValue)
-            return self.input
-        } else {
-            var input = self.input
-            input.removeValue(forKey: Self.key(for: \._$id))
-            return input
-        }
-    }
-}
 
 private struct SavedInput: DatabaseOutput {
     var input: [String: DatabaseQuery.Value]

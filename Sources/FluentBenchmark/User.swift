@@ -8,11 +8,16 @@ final class User: Model {
         var name: String
         var type: Animal
     }
-    static let entity = "users"
+    static let schema = "users"
     
-    @ID("id") var id: Int?
-    @Field("name") var name: String
-    @Field("pet") var pet: Pet
+    @ID(key: "id")
+    var id: Int?
+
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "pet")
+    var pet: Pet
 
     init() { }
 
@@ -25,7 +30,7 @@ final class User: Model {
 
 struct UserMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return User.schema(on: database)
+        return database.schema("users")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .field("pet", .json, .required)
@@ -33,7 +38,7 @@ struct UserMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return User.schema(on: database).delete()
+        return database.schema("users").delete()
     }
 }
 

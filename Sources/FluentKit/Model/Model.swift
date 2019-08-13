@@ -1,6 +1,5 @@
 public protocol AnyModel: class, CustomStringConvertible, Codable {
-    static var name: String { get }
-    static var entity: String { get }
+    static var schema: String { get }
     init()
 }
 
@@ -50,7 +49,7 @@ extension AnyModel {
 
 extension Model {
     static func key<Field>(for field: KeyPath<Self, Field>) -> String
-        where Field: AnyField
+        where Field: Filterable
     {
         return Self.init()[keyPath: field].key
     }
@@ -129,7 +128,7 @@ extension AnyModel {
             fatalError("Can only access joined models using models fetched from database.")
         }
         let joined = Joined()
-        try joined.output(from: output.prefixed(by: Joined.entity + "_"))
+        try joined.output(from: output.prefixed(by: Joined.schema + "_"))
         return joined
     }
 
@@ -150,25 +149,7 @@ extension Model {
     }
 }
 
-extension AnyModel {
-    public static var name: String {
-        return "\(Self.self)".convertedToSnakeCase()
-    }
-
-    public static var entity: String {
-        if self.name.hasSuffix("y") {
-            return self.name.dropLast(1) + "ies"
-        } else {
-            return self.name + "s"
-        }
-    }
-}
-
 extension Model {
-    public static func schema(on database: Database) -> SchemaBuilder<Self> {
-        return .init(database: database)
-    }
-
     public static func query(on database: Database) -> QueryBuilder<Self> {
         return .init(database: database)
     }

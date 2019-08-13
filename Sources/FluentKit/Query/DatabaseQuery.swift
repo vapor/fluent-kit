@@ -22,7 +22,7 @@ public struct DatabaseQuery {
         }
         
         case aggregate(Aggregate)
-        case field(path: [String], entity: String?, alias: String?)
+        case field(path: [String], schema: String?, alias: String?)
         case custom(Any)
     }
     
@@ -152,10 +152,10 @@ public struct DatabaseQuery {
     public var sorts: [Sort]
     public var limits: [Limit]
     public var offsets: [Offset]
-    public var entity: String
+    public var schema: String
 
-    init(entity: String) {
-        self.entity = entity
+    init(schema: String) {
+        self.schema = schema
         self.fields = []
         self.action = .read
         self.filters = []

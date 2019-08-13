@@ -20,13 +20,13 @@ public struct SQLQueryConverter {
     // MARK: Private
     
     private func delete(_ query: DatabaseQuery) -> SQLExpression {
-        var delete = SQLDelete(table: SQLIdentifier(query.entity))
+        var delete = SQLDelete(table: SQLIdentifier(query.schema))
         delete.predicate = self.filters(query.filters)
         return delete
     }
     
     private func update(_ query: DatabaseQuery) -> SQLExpression {
-        var update = SQLUpdate(table: SQLIdentifier(query.entity))
+        var update = SQLUpdate(table: SQLIdentifier(query.schema))
         for (i, field) in query.fields.enumerated() {
             update.values.append(SQLBinaryExpression(
                 left: self.field(field),
@@ -40,7 +40,7 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        select.tables.append(SQLIdentifier(query.entity))
+        select.tables.append(SQLIdentifier(query.schema))
         select.columns = query.fields.map(self.field)
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
@@ -65,7 +65,7 @@ public struct SQLQueryConverter {
     }
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
-        var insert = SQLInsert(table: SQLIdentifier(query.entity))
+        var insert = SQLInsert(table: SQLIdentifier(query.schema))
         insert.columns = query.fields.map(self.field)
         insert.values = query.input.map { row in
             return row.map(self.value)
@@ -113,8 +113,8 @@ public struct SQLQueryConverter {
             switch foreign {
             case .custom(let any):
                 table = custom(any)
-            case .field(_, let entity, _):
-                table = SQLIdentifier(entity!)
+            case .field(_, let schema, _):
+                table = SQLIdentifier(schema!)
             case .aggregate:
                 fatalError("Joining on an aggregate field is not supported.")
             }
@@ -145,13 +145,13 @@ public struct SQLQueryConverter {
         switch field {
         case .custom(let any):
             return custom(any)
-        case .field(let path, let entity, let alias):
+        case .field(let path, let schema, let alias):
             // TODO: if joins don't exist, use short column name
             switch path.count {
             case 1:
                 let name = path[0]
-                if let entity = entity {
-                    let id = SQLColumn(SQLIdentifier(name), table: SQLIdentifier(entity))
+                if let schema = schema {
+                    let id = SQLColumn(SQLIdentifier(name), table: SQLIdentifier(schema))
                     if let alias = alias {
                         return SQLAlias(id, as: SQLIdentifier(alias))
                     } else {

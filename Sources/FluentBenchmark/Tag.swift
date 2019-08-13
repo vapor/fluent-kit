@@ -1,9 +1,16 @@
 import FluentKit
 
 final class Tag: Model {
-    @ID("id") var id: Int?
-    @Field("name") var name: String
-    @Siblings(PlanetTag.self) var planets: [Planet]
+    static let schema = "tags"
+
+    @ID(key: "id")
+    var id: Int?
+
+    @Field(key: "name")
+    var name: String
+
+    @Siblings(through: PlanetTag.self, from: \.$tag, to: \.$planet)
+    var planets: [Planet]
 
     init() { }
 
@@ -15,13 +22,13 @@ final class Tag: Model {
 
 struct TagMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return Tag.schema(on: database)
+        return database.schema("tags")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return Tag.schema(on: database).delete()
+        return database.schema("tags").delete()
     }
 }

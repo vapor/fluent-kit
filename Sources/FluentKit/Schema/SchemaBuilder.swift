@@ -1,41 +1,18 @@
 import NIO
 
-private protocol OptionalType {
-    static var wrappedType: Any.Type { get }
-}
-extension Optional: OptionalType {
-    static var wrappedType: Any.Type {
-        return Wrapped.self
+extension Database {
+    public func schema(_ schema: String) -> SchemaBuilder {
+        return .init(database: self, schema: schema)
     }
 }
 
-protocol AnyGeneratableID {
-    static func anyGenerateID() -> Any
-}
-
-protocol GeneratableID: AnyGeneratableID {
-    static func generateID() -> Self
-}
-
-extension GeneratableID {
-    static func anyGenerateID() -> Any {
-        self.generateID()
-    }
-}
-
-extension UUID: GeneratableID {
-    static func generateID() -> UUID {
-        .init()
-    }
-}
-
-public final class SchemaBuilder<Model> where Model: FluentKit.Model {
+public final class SchemaBuilder {
     let database: Database
     public var schema: DatabaseSchema
     
-    public init(database: Database) {
+    init(database: Database, schema: String) {
         self.database = database
-        self.schema = .init(entity: Model.entity)
+        self.schema = .init(schema: schema)
     }
 
     public func field(
@@ -55,30 +32,10 @@ public final class SchemaBuilder<Model> where Model: FluentKit.Model {
         return self
     }
     
-    public func unique<A>(on a: KeyPath<Model, Field<A>>) -> Self
-        where A: Codable
-    {
-        self.schema.constraints.append(.unique(fields: [
-            .string(Model.key(for: a))
-        ]))
-        return self
-    }
-    
-    public func unique<A, B>(on a: KeyPath<Model, Field<A>>, _ b: KeyPath<Model, Field<B>>) -> Self
-        where A: Codable, B: Codable
-    {
-        self.schema.constraints.append(.unique(fields: [
-            .string(Model.key(for: a)), .string(Model.key(for: b))
-        ]))
-        return self
-    }
-    
-    public func unique<A, B, C>(on a: KeyPath<Model, Field<A>>, _ b: KeyPath<Model, Field<B>>,_ c: KeyPath<Model, Field<C>>) -> Self
-        where A: Codable, B: Codable, C: Codable
-    {
-        self.schema.constraints.append(.unique(fields: [
-            .string(Model.key(for: a)), .string(Model.key(for: b)), .string(Model.key(for: c))
-        ]))
+    public func unique(on fields: String...) -> Self {
+        self.schema.constraints.append(.unique(
+            fields: fields.map { .string($0) }
+        ))
         return self
     }
     

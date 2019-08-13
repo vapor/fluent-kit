@@ -1,18 +1,27 @@
 import Foundation
 
 /// Stores information about `Migration`s that have been run.
-public final class MigrationLog: Model, Timestampable {
-    public static let entity = "fluent"
+public final class MigrationLog: Model {
+    public static let schema = "fluent"
 
     public static var migration: Migration {
         return MigrationLogMigration()
     }
 
-    @ID("id") public var id: Int?
-    @Field("name") public var name: String
-    @Field("batch") public var batch: Int
-    @Field("created_at") public var createdAt: Date?
-    @Field("updated_at") public var updatedAt: Date?
+    @ID(key: "id")
+    public var id: Int?
+
+    @Field(key: "name")
+    public var name: String
+
+    @Field(key: "batch")
+    public var batch: Int
+
+    @Timestamp(key: "created_at", on: .create)
+    public var createdAt: Date?
+
+    @Timestamp(key: "updated_at", on: .update)
+    public var updatedAt: Date?
 
     public init() { }
 
@@ -27,7 +36,7 @@ public final class MigrationLog: Model, Timestampable {
 
 private final class MigrationLogMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return MigrationLog.schema(on: database)
+        return database.schema("fluent")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .field("batch", .int, .required)
@@ -37,6 +46,6 @@ private final class MigrationLogMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return MigrationLog.schema(on: database).delete()
+        return database.schema("fluent").delete()
     }
 }

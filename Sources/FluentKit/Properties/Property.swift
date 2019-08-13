@@ -15,10 +15,12 @@ protocol AnyField: AnyProperty {
 }
 
 protocol AnyID: AnyField {
+    func generate()
     var exists: Bool { get set }
     var cachedOutput: DatabaseOutput? { get set }
 }
 
+#warning("TODO: consider naming")
 public protocol Filterable {
     associatedtype Value: Codable
     var key: String { get }
