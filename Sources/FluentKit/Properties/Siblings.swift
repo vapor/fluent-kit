@@ -18,8 +18,13 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
     }
 
     public var wrappedValue: [To] {
-        get { fatalError("Use $ prefix to access") }
-        set { fatalError("Use $ prefix to access") }
+        get {
+            guard let eagerLoaded = self.eagerLoadedValue else {
+                fatalError("Siblings relation not eager loaded, use $ prefix to access")
+            }
+            return eagerLoaded
+        }
+        set { fatalError("Use $ prefix to modify siblings relation") }
     }
 
     public var projectedValue: Siblings<From, To, Through> {

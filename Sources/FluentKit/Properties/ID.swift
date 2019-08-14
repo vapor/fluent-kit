@@ -13,10 +13,19 @@ public final class ID<Value>: AnyID, Filterable
     where Value: Codable
 {
     public enum Generator {
-        case automatic
         case user
         case random
         case database
+
+        static func `default`<T>(for type: T.Type) -> Generator {
+            if T.self is RandomGeneratable.Type {
+                return .random
+            } else if T.self == Int.self {
+                return .database
+            } else {
+                return .user
+            }
+        }
     }
 
     let field: Field<Value?>
@@ -50,23 +59,15 @@ public final class ID<Value>: AnyID, Filterable
         }
     }
 
-    public init(key: String, generatedBy generator: Generator = .automatic) {
+    public init(key: String, generatedBy generator: Generator? = nil) {
         self.field = .init(key: key)
-        self.generator = generator
+        self.generator = generator ?? Generator.default(for: Value.self)
         self.exists = false
         self.cachedOutput = nil
     }
 
     func generate() {
         switch self.generator {
-        case .automatic:
-            if let generatable = Value.self as? (RandomGeneratable & Encodable).Type {
-                self.inputValue = .bind(generatable.generateRandom())
-            } else if Value.self is Int.Type {
-                self.inputValue = .default
-            } else {
-                // do nothing
-            }
         case .database:
             self.inputValue = .default
         case .random:

@@ -267,7 +267,7 @@ public struct SQLQueryConverter {
         case .null:
             return SQLLiteral.null
         case .array(let values):
-            return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(", ")))
+            return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(",")))
         case .dictionary(let dict):
             return SQLBind(DictValues(dict: dict))
         case .default:

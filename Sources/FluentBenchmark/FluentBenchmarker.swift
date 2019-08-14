@@ -89,12 +89,12 @@ public final class FluentBenchmarker {
             GalaxyMigration()
         ]) {
             let galaxy = Galaxy(name: "Milkey Way")
-            try! galaxy.save(on: self.database).wait()
+            try galaxy.save(on: self.database).wait()
             galaxy.name = "Milky Way"
-            try! galaxy.save(on: self.database).wait()
+            try galaxy.save(on: self.database).wait()
             
             // verify
-            let galaxies = try! Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
+            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
             guard galaxies.count == 1 else {
                 throw Failure("unexpected galaxy count: \(galaxies)")
             }
@@ -1100,6 +1100,40 @@ public final class FluentBenchmarker {
                     .all().wait()
                 guard planets.count == 0 else {
                     throw Failure("expected 0 planets")
+                }
+            }
+        }
+    }
+
+    public func testSiblingsEagerLoad() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+            TagMigration(),
+            TagSeed(),
+            PlanetTagMigration(),
+            PlanetTagSeed()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .with(\.$galaxy)
+                .with(\.$tags)
+                .all().wait()
+
+            for planet in planets {
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(planet.galaxy.name, "Milky Way")
+                    XCTAssertEqual(planet.tags.map { $0.name }, ["Small Rocky", "Inhabited"])
+                case "PA-99-N2":
+                    XCTAssertEqual(planet.galaxy.name, "Andromeda")
+                    XCTAssertEqual(planet.tags.map { $0.name }, [])
+                case "Jupiter":
+                    XCTAssertEqual(planet.galaxy.name, "Milky Way")
+                    XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
+                default: break
                 }
             }
         }

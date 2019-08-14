@@ -178,21 +178,31 @@ public final class QueryBuilder<Model>
     public func filter<Joined, Values>(_ field: KeyPath<Joined, Field<Values.Element>>, in values: Values) -> Self
         where Joined: FluentKit.Model, Values: Collection, Values.Element: Codable
     {
-        return self.filter(Joined.key(for: field), in: values)
+        return self.filter(Joined.self, Joined.key(for: field), in: values)
     }
     
     @discardableResult
     public func filter<Values>(_ field: KeyPath<Model, Field<Values.Element>>, in values: Values) -> Self
         where Values: Collection, Values.Element: Codable
     {
-        return self.filter(Model.key(for: field), in: values)
+        return self.filter(Model.self, Model.key(for: field), in: values)
     }
-    
+
     @discardableResult
     public func filter<Values>(_ fieldName: String, in values: Values) -> Self
         where Values: Collection, Values.Element: Codable
     {
-        return self.filter(.field(path: [fieldName], schema: Model.schema, alias: nil), .subset(inverse: false), .array(values.map { .bind($0) })
+        return self.filter(Model.self, fieldName, in: values)
+    }
+
+    @discardableResult
+    public func filter<Joined, Values>(_ joined: Joined.Type, _ fieldName: String, in values: Values) -> Self
+        where Joined: FluentKit.Model, Values: Collection, Values.Element: Codable
+    {
+        return self.filter(
+            .field(path: [fieldName], schema: Joined.schema, alias: nil),
+            .subset(inverse: false),
+            .array(values.map { .bind($0) })
         )
     }
     

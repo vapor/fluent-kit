@@ -15,7 +15,12 @@ public final class Parent<To>: AnyField, AnyEagerLoadable
     // MARK: Wrapper
 
     public var wrappedValue: To {
-        get { fatalError("use $ prefix to access") }
+        get {
+            guard let eagerLoaded = self.eagerLoadedValue else {
+                fatalError("Parent relation not eager loaded, use $ prefix to access")
+            }
+            return eagerLoaded
+        }
         set { fatalError("use $ prefix to access") }
     }
 

@@ -17,7 +17,7 @@ extension Model {
                 .action(.create)
                 .run { output in
                     var input = self.input
-                    if output.contains(field: "fluentID") {
+                    if self._$id.generator == .database {
                         let id = try output.decode(field: "fluentID", as: Self.IDValue.self)
                         input[Self.key(for: \._$id)] = .bind(id)
                     }
