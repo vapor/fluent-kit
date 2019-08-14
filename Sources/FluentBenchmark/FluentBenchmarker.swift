@@ -37,6 +37,7 @@ public final class FluentBenchmarker {
         try self.testSort()
         try self.testUUIDModel()
         try self.testNewModelDecode()
+        try self.testSiblingsAttach()
     }
     
     public func testCreate() throws {
@@ -74,8 +75,8 @@ public final class FluentBenchmarker {
             guard let milkyWay = try Galaxy.query(on: self.database)
                 .filter(\.$name == "Milky Way")
                 .first().wait()
-                else {
-                    throw Failure("unpexected missing galaxy")
+            else {
+                throw Failure("unpexected missing galaxy")
             }
             guard milkyWay.name == "Milky Way" else {
                 throw Failure("unexpected name")
@@ -88,12 +89,12 @@ public final class FluentBenchmarker {
             GalaxyMigration()
         ]) {
             let galaxy = Galaxy(name: "Milkey Way")
-            try! galaxy.save(on: self.database).wait()
+            try galaxy.save(on: self.database).wait()
             galaxy.name = "Milky Way"
-            try! galaxy.save(on: self.database).wait()
+            try galaxy.save(on: self.database).wait()
             
             // verify
-            let galaxies = try! Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
+            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
             guard galaxies.count == 1 else {
                 throw Failure("unexpected galaxy count: \(galaxies)")
             }
@@ -127,7 +128,7 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
-                .eagerLoad(\.$planets)
+                .with(\.$planets)
                 .all().wait()
 
             for galaxy in galaxies {
@@ -153,7 +154,7 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .eagerLoad(\.$galaxy)
+                .with(\.$galaxy)
                 .all().wait()
             
             for planet in planets {
@@ -180,7 +181,7 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .eagerLoad(\.$galaxy, method: .join)
+                .with(\.$galaxy, method: .join)
                 .all().wait()
             
             for planet in planets {
@@ -233,7 +234,7 @@ public final class FluentBenchmarker {
             // subquery
             do {
                 let planets = try Planet.query(on: self.database)
-                    .eagerLoad(\.$galaxy, method: .subquery)
+                    .with(\.$galaxy, method: .subquery)
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
@@ -245,7 +246,7 @@ public final class FluentBenchmarker {
             // join
             do {
                 let planets = try Planet.query(on: self.database)
-                    .eagerLoad(\.$galaxy, method: .join)
+                    .with(\.$galaxy, method: .join)
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
@@ -295,7 +296,7 @@ public final class FluentBenchmarker {
             let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
 
             let galaxies = try Galaxy.query(on: self.database)
-                .eagerLoad(\.$planets, method: .subquery)
+                .with(\.$planets)
                 .all().wait()
 
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
@@ -495,7 +496,7 @@ public final class FluentBenchmarker {
             let maxID = try Planet.query(on: self.database)
                 .max(\.$id).wait()
             guard maxID == 9 else {
-                throw Failure("unexpected maxID: \(maxID ?? -1)")
+                throw Failure("unexpected maxID: \(maxID ?? 0)")
             }
         }
         // empty db
@@ -512,6 +513,7 @@ public final class FluentBenchmarker {
             // maxid
             let maxID = try Planet.query(on: self.database)
                 .max(\.$id).wait()
+            // expect error?
             guard maxID == nil else {
                 throw Failure("unexpected maxID: \(maxID!)")
             }
@@ -542,8 +544,13 @@ public final class FluentBenchmarker {
     
     public func testNullifyField() throws {
         final class Foo: Model {
-            @Field var id: Int?
-            @Field var bar: String?
+            static let schema = "foos"
+
+            @ID(key: "id")
+            var id: Int?
+
+            @Field(key: "bar")
+            var bar: String?
 
             init() { }
 
@@ -554,14 +561,14 @@ public final class FluentBenchmarker {
         }
         struct FooMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return Foo.schema(on: database)
-                    .field(\.$id, .int, .identifier(auto: true))
-                    .field(\.$bar, .string)
+                return database.schema("foos")
+                    .field("id", .int, .identifier(auto: true))
+                    .field("bar", .string)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return Foo.schema(on: database).delete()
+                return database.schema("foos").delete()
             }
         }
         try runTest(#function, [
@@ -579,7 +586,7 @@ public final class FluentBenchmarker {
             }
             
             guard let fetched = try Foo.query(on: self.database)
-                .filter(\.$id == foo.id)
+                .filter(\.$id == foo.id!)
                 .first().wait()
             else {
                 throw Failure("no model returned")
@@ -631,9 +638,17 @@ public final class FluentBenchmarker {
     
     public func testUniqueFields() throws {
         final class Foo: Model {
-            @Field var id: Int?
-            @Field var bar: String
-            @Field var baz: Int
+            static let schema = "foos"
+
+            @ID(key: "id")
+            var id: Int?
+
+            @Field(key: "bar")
+            var bar: String
+
+            @Field(key: "baz")
+            var baz: Int
+
             init() { }
             init(id: Int? = nil, bar: String, baz: Int) {
                 self.id = id
@@ -643,16 +658,16 @@ public final class FluentBenchmarker {
         }
         struct FooMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return Foo.schema(on: database)
-                    .field(\.$id, .int, .identifier(auto: true))
-                    .field(\.$bar, .string, .required)
-                    .field(\.$baz, .int, .required)
-                    .unique(on: \.$bar, \.$baz)
+                return database.schema("foos")
+                    .field("id", .int, .identifier(auto: true))
+                    .field("bar", .string, .required)
+                    .field("baz", .int, .required)
+                    .unique(on: "bar", "baz")
                     .create()
             }
             
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return Foo.schema(on: database).delete()
+                return database.schema("foos").delete()
             }
         }
         try runTest(#function, [
@@ -684,10 +699,18 @@ public final class FluentBenchmarker {
     }
 
     public func testSoftDelete() throws {
-        final class User: Model, SoftDeletable {
-            @Field var id: Int?
-            @Field var name: String
-            @Field var deletedAt: Date?
+        final class User: Model {
+            static let schema = "users"
+
+            @ID(key: "id")
+            var id: Int?
+
+            @Field(key: "name")
+            var name: String
+
+            @Timestamp(key: "deleted_at", on: .delete)
+            var deletedAt: Date?
+
             init() { }
             init(id: Int? = nil, name: String) {
                 self.id = id
@@ -696,15 +719,15 @@ public final class FluentBenchmarker {
         }
         struct UserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database)
-                    .field(\.$id, .int, .identifier(auto: true))
-                    .field(\.$name, .string, .required)
-                    .field(\.$deletedAt, .datetime)
+                return database.schema("users")
+                    .field("id", .int, .identifier(auto: true))
+                    .field("name", .string, .required)
+                    .field("deleted_at", .datetime)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database).delete()
+                return database.schema("users").delete()
             }
         }
 
@@ -714,7 +737,7 @@ public final class FluentBenchmarker {
             guard all.count == allCount else {
                 throw Failure("all count should be \(allCount)")
             }
-            let real = try User.query(on: self.database).withSoftDeleted().all().wait()
+            let real = try User.query(on: self.database).withDeleted().all().wait()
             guard real.count == realCount else {
                 throw Failure("real count should be \(realCount)")
             }
@@ -738,17 +761,26 @@ public final class FluentBenchmarker {
             try testCounts(allCount: 2, realCount: 2)
 
             // force-delete a user
-            try a.forceDelete(on: self.database).wait()
+            try a.delete(force: true, on: self.database).wait()
             try testCounts(allCount: 1, realCount: 1)
         }
     }
 
     public func testTimestampable() throws {
-        final class User: Model, Timestampable {
-            @Field var id: Int?
-            @Field var name: String
-            @Field var createdAt: Date?
-            @Field var updatedAt: Date?
+        final class User: Model {
+            static let schema = "users"
+
+            @ID(key: "id")
+            var id: Int?
+
+            @Field(key: "name")
+            var name: String
+
+            @Timestamp(key: "created_at", on: .create)
+            var createdAt: Date?
+
+            @Timestamp(key: "updated_at", on: .update)
+            var updatedAt: Date?
 
             init() { }
             init(id: Int? = nil, name: String) {
@@ -761,16 +793,16 @@ public final class FluentBenchmarker {
 
         struct UserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database)
-                    .field(\.$id, .int, .identifier(auto: true))
-                    .field(\.$name, .string, .required)
-                    .field(\.$createdAt, .datetime)
-                    .field(\.$updatedAt, .datetime)
+                return database.schema("users")
+                    .field("id", .int, .identifier(auto: true))
+                    .field("name", .string, .required)
+                    .field("created_at", .datetime)
+                    .field("updated_at", .datetime)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database).delete()
+                return database.schema("users").delete()
             }
         }
 
@@ -798,8 +830,13 @@ public final class FluentBenchmarker {
             var string: String
         }
         final class User: Model {
-            @Field var id: Int?
-            @Field var name: String
+            static let schema = "users"
+
+            @ID(key: "id")
+            var id: Int?
+
+            @Field(key: "name")
+            var name: String
 
             init() { }
             init(id: Int? = nil, name: String) {
@@ -838,14 +875,14 @@ public final class FluentBenchmarker {
 
         struct UserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database)
-                    .field(\.$id, .int, .identifier(auto: true))
-                    .field(\.$name, .string, .required)
+                return database.schema("users")
+                    .field("id", .int, .identifier(auto: true))
+                    .field("name", .string, .required)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database).delete()
+                return database.schema("users").delete()
             }
         }
 
@@ -896,8 +933,13 @@ public final class FluentBenchmarker {
 
     public func testUUIDModel() throws {
         final class User: Model {
-            @Field var id: UUID?
-            @Field var name: String
+            static let schema = "users"
+
+            @ID(key: "id")
+            var id: UUID?
+
+            @Field(key: "name")
+            var name: String
 
             init() { }
             init(id: UUID? = nil, name: String) {
@@ -908,14 +950,14 @@ public final class FluentBenchmarker {
 
         struct UserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database)
-                    .field(\.$id, .uuid, .identifier(auto: false))
-                    .field(\.$name, .string, .required)
+                return database.schema("users")
+                    .field("id", .uuid, .identifier(auto: false))
+                    .field("name", .string, .required)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return User.schema(on: database).delete()
+                return database.schema("users").delete()
             }
         }
 
@@ -933,8 +975,13 @@ public final class FluentBenchmarker {
 
     public func testNewModelDecode() throws {
         final class Todo: Model {
-            @Field var id: UUID?
-            @Field var title: String
+            static let schema = "todos"
+
+            @ID(key: "id")
+            var id: UUID?
+
+            @Field(key: "title")
+            var title: String
 
             init() { }
             init(id: UUID? = nil, title: String) {
@@ -945,14 +992,14 @@ public final class FluentBenchmarker {
 
         struct TodoMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return Todo.schema(on: database)
-                    .field(\.$id, .uuid, .identifier(auto: false))
-                    .field(\.$title, .string, .required)
+                return database.schema("todos")
+                    .field("id", .uuid, .identifier(auto: false))
+                    .field("title", .string, .required)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return Todo.schema(on: database).delete()
+                return database.schema("todos").delete()
             }
         }
 
@@ -967,6 +1014,127 @@ public final class FluentBenchmarker {
                 .save(on: self.database).wait()
             guard try Todo.query(on: self.database).count().wait() == 1 else {
                 throw Failure("Todo did not save")
+            }
+        }
+    }
+
+    public func testSiblingsAttach() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+            TagMigration(),
+            TagSeed(),
+            PlanetTagMigration()
+        ]) {
+            let inhabited = try Tag.query(on: self.database)
+                .filter(\.$name == "Inhabited")
+                .first().wait()!
+            let smallRocky = try Tag.query(on: self.database)
+                .filter(\.$name == "Small Rocky")
+                .first().wait()!
+            let gasGiant = try Tag.query(on: self.database)
+                .filter(\.$name == "Gas Giant")
+                .first().wait()!
+            let earth = try Planet.query(on: self.database)
+                .filter(\.$name == "Earth")
+                .first().wait()!
+
+            try earth.$tags.attach(inhabited, on: self.database).wait()
+            try earth.$tags.attach(smallRocky, on: self.database).wait()
+
+            // check tag has expected planet
+            do {
+                let planets = try inhabited.$planets.query(on: self.database)
+                    .all().wait()
+                guard planets.count == 1 else {
+                    throw Failure("expected 1 planet")
+                }
+                guard planets[0].name == "Earth" else {
+                    throw Failure("expected earth")
+                }
+            }
+
+            // check unused tag has no planets
+            do {
+                let planets = try gasGiant.$planets.query(on: self.database)
+                    .all().wait()
+                guard planets.count == 0 else {
+                    throw Failure("expected 0 planets")
+                }
+            }
+
+            // check earth has tags
+            do {
+                let tags = try earth.$tags.query(on: self.database)
+                    .sort(\.$name)
+                    .all().wait()
+
+                guard tags.count == 2 else {
+                    throw Failure("expected 2 tags")
+                }
+                guard tags[0].name == "Inhabited" else {
+                    throw Failure("expected inhabited tag")
+                }
+                guard tags[1].name == "Small Rocky" else {
+                    throw Failure("expected small rocky tag")
+                }
+            }
+
+            try earth.$tags.detach(smallRocky, on: self.database).wait()
+
+            // check earth has a tag removed
+            do {
+                let tags = try earth.$tags.query(on: self.database)
+                    .all().wait()
+
+                guard tags.count == 1 else {
+                    throw Failure("expected 2 tags")
+                }
+                guard tags[0].name == "Inhabited" else {
+                    throw Failure("expected inhabited tag")
+                }
+                let planets = try smallRocky.$planets.query(on: self.database)
+                    .all().wait()
+                guard planets.count == 0 else {
+                    throw Failure("expected 0 planets")
+                }
+            }
+        }
+    }
+
+    public func testSiblingsEagerLoad() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+            TagMigration(),
+            TagSeed(),
+            PlanetTagMigration(),
+            PlanetTagSeed()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .with(\.$galaxy)
+                .with(\.$tags)
+                .all().wait()
+
+            for planet in planets {
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(planet.galaxy.name, "Milky Way")
+                    XCTAssertEqual(planet.tags.map { $0.name }, ["Small Rocky", "Inhabited"])
+                case "PA-99-N2":
+                    XCTAssertEqual(planet.galaxy.name, "Andromeda")
+                    XCTAssertEqual(planet.tags.map { $0.name }, [])
+                case "Jupiter":
+                    XCTAssertEqual(planet.galaxy.name, "Milky Way")
+                    XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
+                default: break
+                }
             }
         }
     }
@@ -1005,7 +1173,7 @@ public final class FluentBenchmarker {
         } catch {
             e = error
         }
-        for migration in migrations {
+        for migration in migrations.reversed() {
             try migration.revert(on: self.database).wait()
         }
         if let error = e {

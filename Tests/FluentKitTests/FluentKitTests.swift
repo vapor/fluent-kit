@@ -18,6 +18,6 @@ final class FluentKitTests: XCTestCase {
 
         XCTAssertEqual(Planet.key(for: \.$id), "id")
         XCTAssertEqual(Planet.key(for: \.$name), "name")
-        XCTAssertEqual(Planet.key(for: \.$galaxy), "galaxy_id")
+        XCTAssertEqual(Planet.key(for: \.$galaxy.$id), "galaxy_id")
     }
 }

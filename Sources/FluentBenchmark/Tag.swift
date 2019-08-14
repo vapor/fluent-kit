@@ -1,15 +1,15 @@
 import FluentKit
 
-final class Galaxy: Model {
-    static let schema = "galaxies"
-    
+final class Tag: Model {
+    static let schema = "tags"
+
     @ID(key: "id")
     var id: Int?
 
     @Field(key: "name")
     var name: String
 
-    @Children(from: \.$galaxy)
+    @Siblings(through: PlanetTag.self, from: \.$tag, to: \.$planet)
     var planets: [Planet]
 
     init() { }
@@ -20,15 +20,15 @@ final class Galaxy: Model {
     }
 }
 
-struct GalaxyMigration: Migration {
+struct TagMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("galaxies")
+        return database.schema("tags")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("galaxies").delete()
+        return database.schema("tags").delete()
     }
 }

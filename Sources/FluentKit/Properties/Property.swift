@@ -1,7 +1,7 @@
 protocol AnyProperty: class {
-    func output(from output: DatabaseOutput, label: String) throws
-    func encode(to encoder: inout ModelEncoder, label: String) throws
-    func decode(from decoder: ModelDecoder, label: String) throws
+    func output(from output: DatabaseOutput) throws
+    func encode(to encoder: Encoder) throws
+    func decode(from decoder: Decoder) throws
 }
 
 protocol AnyEagerLoadable: AnyProperty {
@@ -10,10 +10,19 @@ protocol AnyEagerLoadable: AnyProperty {
 }
 
 protocol AnyField: AnyProperty {
-    func key(label: String) -> String
-    func input() -> DatabaseQuery.Value?
-    var cachedOutput: DatabaseOutput? { get }
+    var key: String { get }
+    var inputValue: DatabaseQuery.Value? { get set }
+}
+
+protocol AnyID: AnyField {
+    func generate()
     var exists: Bool { get set }
+    var cachedOutput: DatabaseOutput? { get set }
+}
+
+public protocol Filterable {
+    associatedtype Value: Codable
+    var key: String { get }
 }
 
 extension AnyField { }
@@ -85,7 +94,7 @@ struct ModelEncoder {
     }
 }
 
-private enum _ModelCodingKey: CodingKey {
+enum _ModelCodingKey: CodingKey {
     case string(String)
     case int(Int)
     

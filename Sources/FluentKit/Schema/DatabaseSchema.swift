@@ -100,14 +100,14 @@ public struct DatabaseSchema {
     }
     
     public var action: Action
-    public var entity: String
+    public var schema: String
     public var createFields: [FieldDefinition]
     public var deleteFields: [FieldName]
     public var constraints: [Constraint]
     
-    public init(entity: String) {
+    public init(schema: String) {
         self.action = .create
-        self.entity = entity
+        self.schema = schema
         self.createFields = []
         self.deleteFields = []
         self.constraints = []

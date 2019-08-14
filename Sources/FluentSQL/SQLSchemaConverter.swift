@@ -23,12 +23,12 @@ public struct SQLSchemaConverter {
     // MARK: Private
     
     private func delete(_ schema: DatabaseSchema) -> SQLExpression {
-        let delete = SQLDropTable(table: self.name(schema.entity))
+        let delete = SQLDropTable(table: self.name(schema.schema))
         return delete
     }
     
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
-        var create = SQLCreateTable(name: self.name(schema.entity))
+        var create = SQLCreateTable(name: self.name(schema.schema))
         create.columns = schema.createFields.map(self.fieldDefinition)
         create.tableConstraints = schema.constraints.map(self.constraint)
         return create
