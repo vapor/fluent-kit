@@ -20,7 +20,6 @@ protocol AnyID: AnyField {
     var cachedOutput: DatabaseOutput? { get set }
 }
 
-#warning("TODO: consider naming")
 public protocol Filterable {
     associatedtype Value: Codable
     var key: String { get }

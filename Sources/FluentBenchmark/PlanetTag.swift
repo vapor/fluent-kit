@@ -15,7 +15,6 @@ final class PlanetTag: Model {
     init() { }
 
     init(planetID: Int, tagID: Int) {
-        #warning("simplify field access")
         self.$planet.id = planetID
         self.$tag.id = tagID
     }
