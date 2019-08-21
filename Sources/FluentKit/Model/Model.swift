@@ -1,13 +1,8 @@
-public protocol AnyModel: class, CustomStringConvertible, Codable {
+public protocol AnyModel: AnySchema, CustomStringConvertible {
     static var schema: String { get }
-    init()
 }
 
-public protocol Model: AnyModel {
-    associatedtype IDValue: Codable, Hashable
-
-    var id: IDValue? { get set }
-
+public protocol Model: AnyModel, Schema {
     // MARK: Lifecycle
 
     func willCreate(on database: Database) -> EventLoopFuture<Void>
@@ -24,35 +19,6 @@ public protocol Model: AnyModel {
 
     func willSoftDelete(on database: Database) -> EventLoopFuture<Void>
     func didSoftDelete(on database: Database) -> EventLoopFuture<Void>
-}
-
-extension AnyModel {
-    // MARK: Codable
-
-    public init(from decoder: Decoder) throws {
-        self.init()
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
-        try self.properties.forEach { label, property in
-            let decoder = try container.superDecoder(forKey: .string(label))
-            try property.decode(from: decoder)
-        }
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: _ModelCodingKey.self)
-        try self.properties.forEach { label, property in
-            let encoder = container.superEncoder(forKey: .string(label))
-            try property.encode(to: encoder)
-        }
-    }
-}
-
-extension Model {
-    static func key<Field>(for field: KeyPath<Self, Field>) -> String
-        where Field: Filterable
-    {
-        return Self.init()[keyPath: field].key
-    }
 }
 
 extension AnyModel {
@@ -94,17 +60,6 @@ extension AnyModel {
     }
 }
 
-extension Model {
-    var _$id: ID<IDValue> {
-        self.anyID as! ID<IDValue>
-    }
-
-    @available(*, deprecated, message: "use init")
-    static var reference: Self {
-        return self.init()
-    }
-}
-
 extension AnyModel {
     func output(from output: DatabaseOutput) throws {
         try self.properties.forEach { (_, property) in
@@ -130,22 +85,6 @@ extension AnyModel {
         let joined = Joined()
         try joined.output(from: output.prefixed(by: Joined.schema + "_"))
         return joined
-    }
-
-    var anyID: AnyID {
-        guard let id = Mirror(reflecting: self).descendant("_id") else {
-            fatalError("id property must be declared using @ID")
-        }
-        return id as! AnyID
-    }
-}
-
-extension Model {
-    public func requireID() throws -> IDValue {
-        guard let id = self.id else {
-            throw FluentError.idRequired
-        }
-        return id
     }
 }
 

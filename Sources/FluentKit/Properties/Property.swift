@@ -45,7 +45,9 @@ extension AnyModel {
             return (label, field)
         }
     }
-    
+}
+
+extension AnySchema {
     var properties: [(String, AnyProperty)] {
         return Mirror(reflecting: self)
             .children
