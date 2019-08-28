@@ -19,7 +19,7 @@ final class User: Model {
     @Field(key: "pet")
     var pet: Pet
 
-    @Parent(key: "agency")
+    @Parent(key: "agency_id")
     var agency: Agency?
 
     init() { }
@@ -38,6 +38,7 @@ struct UserMigration: Migration {
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .field("pet", .json, .required)
+            .field("agency_id", .int)
             .create()
     }
 
