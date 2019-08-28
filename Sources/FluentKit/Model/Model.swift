@@ -3,13 +3,13 @@ public protocol AnyModel: class, CustomStringConvertible, Codable {
     init()
 }
 
-public protocol Model: AnyModel {
+public protocol ModelIdentifiable {
     associatedtype IDValue: Codable, Hashable
 
     var id: IDValue? { get set }
+}
 
-    // MARK: Lifecycle
-
+public protocol Model: AnyModel, ModelIdentifiable {
     func willCreate(on database: Database) -> EventLoopFuture<Void>
     func didCreate(on database: Database) -> EventLoopFuture<Void>
 
