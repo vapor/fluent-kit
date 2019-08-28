@@ -19,12 +19,16 @@ final class User: Model {
     @Field(key: "pet")
     var pet: Pet
 
+    @Parent(key: "agency")
+    var agency: Agency?
+
     init() { }
 
-    init(id: Int? = nil, name: String, pet: Pet) {
+    init(id: Int? = nil, name: String, pet: Pet, agency: Agency?) {
         self.id = id
         self.name = name
         self.pet = pet
+        self.$agency.id = agency?.id
     }
 }
 
@@ -47,8 +51,8 @@ final class UserSeed: Migration {
     init() { }
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
-        let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog))
+        let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat), agency: .qutheory)
+        let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog), agency: nil)
         return logan.save(on: database)
             .and(tanner.save(on: database))
             .map { _ in }

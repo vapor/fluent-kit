@@ -314,10 +314,10 @@ private final class JoinEagerLoad<To>: EagerLoadRequest where To: Model {
 // MARK: - Optional Model Identifiable
 
 extension Optional: ModelIdentifiable where Wrapped: ModelIdentifiable {
-    public typealias IDValue = Wrapped.IDValue
+    public typealias IDValue = Wrapped.IDValue?
 
-    public var id: Wrapped.IDValue? {
+    public var id: Wrapped.IDValue?? {
         get { self?.id }
-        set { self?.id = newValue }
+        set { self?.id = newValue ?? nil }
     }
 }
