@@ -1,8 +1,11 @@
 @propertyWrapper
 public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentifiable {
+    typealias Implementation = AnyProperty & AnyEagerLoadable
+
     @Field public var id: To.IDValue
 
     private var eagerLoadedValue: To?
+    private var implemntation: ParentImplementation!
 
     var key: String { return self.$id.key }
     var inputValue: DatabaseQuery.Value? {
@@ -20,8 +23,11 @@ public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentif
 
     public var projectedValue: Parent<To> { self }
 
-    private init(id: Field<To.IDValue>) {
+    private init(id: Field<To.IDValue>, implemntation: (Parent<To>) -> ParentImplementation) {
         self._id = id
+        self.implemntation = nil
+
+        self.implemntation = implemntation(self)
     }
 
     func output(from output: DatabaseOutput) throws {
@@ -31,94 +37,111 @@ public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentif
     public func eagerLoaded() throws -> To {
         guard let eagerLoaded = self.eagerLoadedValue else {
             if _isOptional(To.self) { return Void?.none as! To }
-            throw FluentError.missingEagerLoad(name: self.parentSchema)
+            throw FluentError.missingEagerLoad(name: self.implemntation.schema)
         }
         return eagerLoaded
     }
 
     // MARK: - Override
 
-    var parentSchema: String { fatalError("\(Self.self).To type must be Model or Optional<Model>") }
-
     public func get(on database: Database) -> EventLoopFuture<To> {
-        fatalError("\(Self.self).To type must be Model or Optional<Model>")
+        return self.implemntation.get(on: database).map { $0 as! To }
     }
 
     func encode(to encoder: Encoder) throws {
-        fatalError("\(Self.self).To type must be Model or Optional<Model>")
+        try self.implemntation.encode(to: encoder)
     }
 
     func decode(from decoder: Decoder) throws {
-        fatalError("\(Self.self).To type must be Model or Optional<Model>")
+        try self.implemntation.decode(from: decoder)
     }
 
     func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-        fatalError("\(Self.self).To type must be Model or Optional<Model>")
+        try self.implemntation.eagerLoad(from: eagerLoads, label: label)
     }
 
     func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
-        fatalError("\(Self.self).To type must be Model or Optional<Model>")
+        self.implemntation.eagerLoad(to: eagerLoads, method: method, label: label)
     }
 }
 
+protocol ParentImplementation: AnyEagerLoadable {
+    var schema: String { get }
+
+    func get(on database: Database) -> EventLoopFuture<Any>
+}
 
 // MARK: - Required
 
 extension Parent where To: Model {
-    var parentSchema: String { To.schema.self }
-
     public convenience init(key: String) {
-        self.init(id: Field<To.IDValue>(key: key))
+        self.init(id: Field<To.IDValue>(key: key), implemntation: Required.init(parent:))
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
-        return To.query(on: database).filter(self.key, .equal, self.id)
-    }
+    private final class Required: ParentImplementation {
+        let parent: Parent<To>
 
-    public func get(on database: Database) -> EventLoopFuture<To> {
-        return self.query(on: database).first().flatMapThrowing { parent in
-            guard let parent = parent else { throw FluentError.missingParent }
-            return parent
-        }
-    }
+        var schema: String { To.schema }
+        var key: String { self.parent.key }
+        var id: To.IDValue { self.parent.id }
 
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        if let parent = self.eagerLoadedValue {
-            try container.encode(parent)
-        } else {
-            try container.encode([
-                To.key(for: \._$id): self.id
-            ])
-        }
-    }
-
-    func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
-        try self._id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
-        // TODO: allow for nested decoding
-    }
-
-    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-        guard let request = eagerLoads.requests[label] else {
-            return
+        init(parent: Parent<To>) {
+            self.parent = parent
         }
 
-        if let join = request as? JoinEagerLoad<To> {
-            self.eagerLoadedValue = try join.get(id: self.id)
-        } else if let subquery = request as? SubqueryEagerLoad<To> {
-            self.eagerLoadedValue = try subquery.get(id: self.id)
-        } else {
-            fatalError("unsupported eagerload request: \(request)")
+        private func query(on database: Database) -> QueryBuilder<To> {
+            return To.query(on: database).filter(self.key, .equal, self.id)
         }
-    }
 
-    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
-        switch method {
-        case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad<To>(key: self.key)
-        case .join:
-            eagerLoads.requests[label] = JoinEagerLoad<To>(key: self.key)
+        internal func get(on database: Database) -> EventLoopFuture<Any> {
+            return self.query(on: database).first().flatMapThrowing { parent in
+                guard let parent = parent else { throw FluentError.missingParent }
+                return parent
+            }
+        }
+
+        func output(from output: DatabaseOutput) throws {
+            try self.parent._id.output(from: output)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            if let parent = self.parent.eagerLoadedValue {
+                try container.encode(parent)
+            } else {
+                try container.encode([
+                    To.key(for: \._$id): self.id
+                ])
+            }
+        }
+
+        func decode(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+            try self.parent._id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
+            // TODO: allow for nested decoding
+        }
+
+        func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
+            guard let request = eagerLoads.requests[label] else {
+                return
+            }
+
+            if let join = request as? JoinEagerLoad<To> {
+                self.parent.eagerLoadedValue = try join.get(id: self.id)
+            } else if let subquery = request as? SubqueryEagerLoad<To> {
+                self.parent.eagerLoadedValue = try subquery.get(id: self.id)
+            } else {
+                fatalError("unsupported eagerload request: \(request)")
+            }
+        }
+
+        func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
+            switch method {
+            case .subquery:
+                eagerLoads.requests[label] = SubqueryEagerLoad<To>(key: self.key)
+            case .join:
+                eagerLoads.requests[label] = JoinEagerLoad<To>(key: self.key)
+            }
         }
     }
 }
@@ -127,61 +150,79 @@ extension Parent where To: Model {
 // MARK: - Optional
 
 extension Parent where To: OptionalType, To.Wrapped: Model {
-    var parentSchema: String { To.Wrapped.schema.self }
-
     public convenience init(key: String) {
-        self.init(id: Field<To.IDValue>(key: key))
+        self.init(id: Field<To.IDValue>(key: key), implemntation: Optional.init(parent:))
     }
 
-    public func query(on database: Database) -> QueryBuilder<To.Wrapped> {
-        return To.Wrapped.query(on: database).filter(self.key, .equal, self.id)
-    }
+    private final class Optional: ParentImplementation {
+        let parent: Parent<To>
 
-    public func get(on database: Database) -> EventLoopFuture<To> {
-        return self.query(on: database).first().map { model in model as! To }
-    }
+        var schema: String { To.Wrapped.schema }
+        var key: String { self.parent.key }
+        var id: To.IDValue { self.parent.id }
 
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        if let optional = self.eagerLoadedValue as? Optional<To.Wrapped>, let parent = optional {
-            try container.encode(parent)
-        } else {
-            try container.encode([
-                To.Wrapped.key(for: \._$id): self.id
-            ])
-        }
-    }
-
-    func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
-        try self._id.decode(from: container.superDecoder(forKey: .string(To.Wrapped.key(for: \._$id))))
-        // TODO: allow for nested decoding
-    }
-
-    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-        guard let id = self.id as? To.Wrapped.IDValue, let request = eagerLoads.requests[label] else {
-            return
+        init(parent: Parent<To>) {
+            self.parent = parent
         }
 
-        if let join = request as? JoinEagerLoad<To.Wrapped> {
-            self.eagerLoadedValue = try join.get(id: id) as? To
-        } else if let subquery = request as? SubqueryEagerLoad<To.Wrapped> {
-            self.eagerLoadedValue = try subquery.get(id: id) as? To
-        } else {
-            fatalError("unsupported eagerload request: \(request)")
+        private func query(on database: Database) -> QueryBuilder<To.Wrapped> {
+            return To.Wrapped.query(on: database).filter(self.key, .equal, self.id)
         }
-    }
 
-    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
-        switch method {
-        case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad<To.Wrapped>(key: self.key)
-        case .join:
-            eagerLoads.requests[label] = JoinEagerLoad<To.Wrapped>(key: self.key)
+        func get(on database: Database) -> EventLoopFuture<Any> {
+            return self.query(on: database).first().map { $0 as Any }
+        }
+
+        func output(from output: DatabaseOutput) throws {
+            try self.parent._id.output(from: output)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            if
+                let optional = self.parent.eagerLoadedValue as? Swift.Optional<To.Wrapped>,
+                let parent = optional
+            {
+                try container.encode(parent)
+            } else {
+                try container.encode([
+                    To.Wrapped.key(for: \._$id): self.id
+                ])
+            }
+        }
+
+        func decode(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+            try self.parent._id.decode(from:
+                container.superDecoder(forKey: .string(To.Wrapped.key(for: \._$id)))
+            )
+            // TODO: allow for nested decoding
+        }
+
+        func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
+            guard let id = self.id as? To.Wrapped.IDValue, let request = eagerLoads.requests[label] else {
+                return
+            }
+
+            if let join = request as? JoinEagerLoad<To.Wrapped> {
+                self.parent.eagerLoadedValue = try join.get(id: id) as? To
+            } else if let subquery = request as? SubqueryEagerLoad<To.Wrapped> {
+                self.parent.eagerLoadedValue = try subquery.get(id: id) as? To
+            } else {
+                fatalError("unsupported eagerload request: \(request)")
+            }
+        }
+
+        func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
+            switch method {
+            case .subquery:
+                eagerLoads.requests[label] = SubqueryEagerLoad<To.Wrapped>(key: self.key)
+            case .join:
+                eagerLoads.requests[label] = JoinEagerLoad<To.Wrapped>(key: self.key)
+            }
         }
     }
 }
-
 
 
 // MARK: - Eager Loaders
