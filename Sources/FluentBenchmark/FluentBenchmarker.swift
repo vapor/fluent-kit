@@ -273,11 +273,11 @@ public final class FluentBenchmarker {
             for user in users {
                 switch user.name {
                 case "Tanner":
-                    guard user.agency?.name == "Qutheory LLC." else {
+                    guard try user.$agency.eagerLoaded()?.name == "Qutheory LLC." else {
                         throw Failure("Existing parent not loaded")
                     }
                 case "Logan":
-                    guard user.agency == nil else {
+                    guard try user.$agency.eagerLoaded() == nil else {
                         throw Failure("Loaded a parent when there shouldn't have been one 🤔")
                     }
                 default: break
