@@ -1,5 +1,6 @@
 @propertyWrapper
-public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentifiable {
+public final class Parent<T>: AnyField, AnyEagerLoadable where T: ModelIdentifiable {
+    public typealias To = T
     typealias Implementation = AnyProperty & AnyEagerLoadable
 
     @Field public var id: To.IDValue
@@ -126,9 +127,9 @@ extension Parent where To: Model {
                 return
             }
 
-            if let join = request as? JoinEagerLoad<To> {
+            if let join = request as? JoinEagerLoad {
                 self.parent.eagerLoadedValue = try join.get(id: self.id)
-            } else if let subquery = request as? SubqueryEagerLoad<To> {
+            } else if let subquery = request as? SubqueryEagerLoad {
                 self.parent.eagerLoadedValue = try subquery.get(id: self.id)
             } else {
                 fatalError("unsupported eagerload request: \(request)")
@@ -138,9 +139,9 @@ extension Parent where To: Model {
         func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
             switch method {
             case .subquery:
-                eagerLoads.requests[label] = SubqueryEagerLoad<To>(key: self.key)
+                eagerLoads.requests[label] = SubqueryEagerLoad(key: self.key)
             case .join:
-                eagerLoads.requests[label] = JoinEagerLoad<To>(key: self.key)
+                eagerLoads.requests[label] = JoinEagerLoad(key: self.key)
             }
         }
     }
@@ -200,14 +201,14 @@ extension Parent where To: OptionalType, To.Wrapped: Model {
         }
 
         func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-            guard let id = self.id as? To.Wrapped.IDValue, let request = eagerLoads.requests[label] else {
+            guard let request = eagerLoads.requests[label] else {
                 return
             }
 
-            if let join = request as? JoinEagerLoad<To.Wrapped> {
-                self.parent.eagerLoadedValue = try join.get(id: id) as? To
-            } else if let subquery = request as? SubqueryEagerLoad<To.Wrapped> {
-                self.parent.eagerLoadedValue = try subquery.get(id: id) as? To
+            if let join = request as? JoinEagerLoad {
+                self.parent.eagerLoadedValue = try join.get(id: self.id)
+            } else if let subquery = request as? SubqueryEagerLoad {
+                self.parent.eagerLoadedValue = try subquery.get(id: self.id)
             } else {
                 fatalError("unsupported eagerload request: \(request)")
             }
@@ -216,100 +217,13 @@ extension Parent where To: OptionalType, To.Wrapped: Model {
         func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
             switch method {
             case .subquery:
-                eagerLoads.requests[label] = SubqueryEagerLoad<To.Wrapped>(key: self.key)
+                eagerLoads.requests[label] = SubqueryEagerLoad(key: self.key)
             case .join:
-                eagerLoads.requests[label] = JoinEagerLoad<To.Wrapped>(key: self.key)
+                eagerLoads.requests[label] = JoinEagerLoad(key: self.key)
             }
         }
     }
 }
-
-
-// MARK: - Eager Loaders
-
-private final class SubqueryEagerLoad<To>: EagerLoadRequest where To: Model {
-    let key: String
-    var storage: [To]
-
-    var description: String {
-        return "\(self.key): \(self.storage)"
-    }
-
-    init(key: String) {
-        self.storage = []
-        self.key = key
-    }
-
-    func prepare(query: inout DatabaseQuery) {
-        // no preparation needed
-    }
-
-    func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-        let ids: [To.IDValue] = models
-            .map { try! $0.anyID.cachedOutput!.decode(field: self.key, as: To.IDValue.self) }
-
-        let uniqueIDs = Array(Set(ids))
-        return To.query(on: database)
-            .filter(To.key(for: \._$id), in: uniqueIDs)
-            .all()
-            .map { self.storage = $0 }
-    }
-
-    func get(id: To.IDValue) throws -> To? {
-        return self.storage.filter { parent in
-            return parent.id == id
-        }.first
-    }
-}
-
-private final class JoinEagerLoad<To>: EagerLoadRequest where To: Model {
-    let key: String
-    var storage: [To]
-
-    var description: String {
-        return "\(self.key): \(self.storage)"
-    }
-
-    init(key: String) {
-        self.storage = []
-        self.key = key
-    }
-
-    func prepare(query: inout DatabaseQuery) {
-        // we can assume query.schema since eager loading
-        // is only allowed on the base schema
-        query.joins.append(.model(
-            foreign: .field(path: [To.key(for: \._$id)], schema: To.schema, alias: nil),
-            local: .field(path: [self.key], schema: query.schema, alias: nil),
-            method: .inner
-        ))
-        query.fields += To().fields.map { (_, field) in
-            return .field(
-                path: [field.key],
-                schema: To.schema,
-                alias: To.schema + "_" + field.key
-            )
-        }
-    }
-
-    func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-        do {
-            self.storage = try models.map { child in
-                return try child.joined(To.self)
-            }
-            return database.eventLoop.makeSucceededFuture(())
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
-    }
-
-    func get(id: To.IDValue) throws -> To? {
-        return self.storage.filter { parent in
-            return parent.id == id
-        }.first
-    }
-}
-
 
 // MARK: - Optional Model Identifiable
 
