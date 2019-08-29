@@ -273,7 +273,7 @@ public final class FluentBenchmarker {
             for user in users {
                 switch user.name {
                 case "Tanner":
-                    guard try user.agency?.name == "Qutheory LLC" else {
+                    guard try user.agency?.name == Agency.qutheory.name else {
                         throw Failure("Existing parent not loaded")
                     }
                 case "Logan":
