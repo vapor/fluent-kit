@@ -17,7 +17,7 @@ extension SubqueryLoader {
 
     func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
         let ids: [ParentModel.IDValue] = models
-            .map { try! $0.anyID.cachedOutput!.decode(field: self.key, as: ParentModel.IDValue.self) }
+            .compactMap { try! $0.anyID.cachedOutput!.decode(field: self.key, as: ParentModel.IDValue.self) as Optional<ParentModel.IDValue> }
 
         let uniqueIDs = Array(Set(ids))
         return Model.query(on: database)

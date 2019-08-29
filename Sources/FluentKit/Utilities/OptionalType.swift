@@ -4,12 +4,14 @@ public protocol AnyOptionalType {
 
 public protocol OptionalType: AnyOptionalType {
     associatedtype Wrapped
+
+    var value: Optional<Wrapped> { get }
 }
 
 extension OptionalType {
-    public static var wrappedType: Any.Type {
-        return Wrapped.self
-    }
+    public static var wrappedType: Any.Type { Wrapped.self }
 }
 
-extension Optional: OptionalType { }
+extension Optional: OptionalType {
+    public var value: Optional<Wrapped> { self }
+}
