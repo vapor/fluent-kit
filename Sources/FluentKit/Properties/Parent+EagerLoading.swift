@@ -27,7 +27,7 @@ extension SubqueryLoader {
     }
 }
 
-extension Parent where To: ModelIdentifiable {
+extension Parent {
     final class SubqueryEagerLoad: EagerLoadRequest {
         let key: String
         var storage: [To]
