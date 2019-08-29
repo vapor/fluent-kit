@@ -273,11 +273,38 @@ public final class FluentBenchmarker {
             for user in users {
                 switch user.name {
                 case "Tanner":
-                    guard try user.agency?.name == Agency.qutheory.name else {
+                    guard user.agency?.name == Agency.qutheory.name else {
                         throw Failure("Existing parent not loaded")
                     }
                 case "Logan":
-                    guard try user.agency == nil else {
+                    guard user.agency == nil else {
+                        throw Failure("Loaded a parent when there shouldn't have been one 🤔")
+                    }
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testEagerLoadOptionalJoinParent() throws {
+        try runTest(#function, [
+            AgencyMigration(),
+            UserMigration(),
+            AgencySeed(),
+            UserSeed()
+        ]) {
+            let users = try User.query(on: self.database)
+                .with(\.$agency, method: .join)
+                .all().wait()
+
+            for user in users {
+                switch user.name {
+                case "Tanner":
+                    guard user.agency?.name == Agency.qutheory.name else {
+                        throw Failure("Existing parent not loaded")
+                    }
+                case "Logan":
+                    guard user.agency == nil else {
                         throw Failure("Loaded a parent when there shouldn't have been one 🤔")
                     }
                 default: break
