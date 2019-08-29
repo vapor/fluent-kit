@@ -45,10 +45,6 @@ public final class Parent<T>: AnyField, AnyEagerLoadable where T: ModelIdentifia
 
     // MARK: - Override
 
-    public func get(on database: Database) -> EventLoopFuture<To> {
-        return self.implemntation.get(on: database).map { $0 as! To }
-    }
-
     func encode(to encoder: Encoder) throws {
         try self.implemntation.encode(to: encoder)
     }
@@ -68,8 +64,6 @@ public final class Parent<T>: AnyField, AnyEagerLoadable where T: ModelIdentifia
 
 protocol ParentImplementation: AnyEagerLoadable {
     var schema: String { get }
-
-    func get(on database: Database) -> EventLoopFuture<Any>
 }
 
 // MARK: - Required
@@ -77,6 +71,17 @@ protocol ParentImplementation: AnyEagerLoadable {
 extension Parent where To: Model {
     public convenience init(key: String) {
         self.init(id: Field<To.IDValue>(key: key), implemntation: Required.init(parent:))
+    }
+
+    public func query(on database: Database) -> QueryBuilder<To> {
+        return To.query(on: database).filter(self.key, .equal, self.id)
+    }
+
+    public func get(on database: Database) -> EventLoopFuture<To> {
+        return self.query(on: database).first().flatMapThrowing { parent in
+            guard let parent = parent else { throw FluentError.missingParent }
+            return parent
+        }
     }
 
     private final class Required: ParentImplementation {
@@ -88,17 +93,6 @@ extension Parent where To: Model {
 
         init(parent: Parent<To>) {
             self.parent = parent
-        }
-
-        private func query(on database: Database) -> QueryBuilder<To> {
-            return To.query(on: database).filter(self.key, .equal, self.id)
-        }
-
-        internal func get(on database: Database) -> EventLoopFuture<Any> {
-            return self.query(on: database).first().flatMapThrowing { parent in
-                guard let parent = parent else { throw FluentError.missingParent }
-                return parent
-            }
         }
 
         func output(from output: DatabaseOutput) throws {
@@ -155,6 +149,14 @@ extension Parent where To: OptionalType, To.Wrapped: Model {
         self.init(id: Field<To.IDValue>(key: key), implemntation: Optional.init(parent:))
     }
 
+    public func query(on database: Database) -> QueryBuilder<To.Wrapped> {
+        return To.Wrapped.query(on: database).filter(self.key, .equal, self.id)
+    }
+
+    public func get(on database: Database) -> EventLoopFuture<To> {
+        return self.query(on: database).first().map { $0 as! To }
+    }
+
     private final class Optional: ParentImplementation {
         let parent: Parent<To>
 
@@ -164,14 +166,6 @@ extension Parent where To: OptionalType, To.Wrapped: Model {
 
         init(parent: Parent<To>) {
             self.parent = parent
-        }
-
-        private func query(on database: Database) -> QueryBuilder<To.Wrapped> {
-            return To.Wrapped.query(on: database).filter(self.key, .equal, self.id)
-        }
-
-        func get(on database: Database) -> EventLoopFuture<Any> {
-            return self.query(on: database).first().map { $0 as Any }
         }
 
         func output(from output: DatabaseOutput) throws {
