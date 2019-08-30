@@ -23,7 +23,12 @@ public final class Children<F, T>: AnyProperty, AnyEagerLoadable
     }
 
     public var wrappedValue: [To] {
-        get { fatalError("Use $ prefix to access") }
+        get {
+            guard let values = self.eagerLoadedValue else {
+                fatalError("Child relations not eager loaded, use $ prefix to access")
+            }
+            return values
+        }
         set { fatalError("Use $ prefix to access") }
     }
 
