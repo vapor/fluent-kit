@@ -2,7 +2,7 @@ import FluentKit
 
 final class Agency: Model {
     static let schema: String = "agencies"
-    static let qutheory: Agency = Agency(id: 1, name: "Qutheory, LLC")
+    static var qutheory: Agency { Agency(id: 1, name: "Qutheory, LLC") }
 
     @ID(key: "id")
     var id: Int?
