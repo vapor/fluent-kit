@@ -39,6 +39,16 @@ public final class QueryBuilder<Model>
 
     @discardableResult
     public func with<Value>(
+        _ field: KeyPath<Model, Children<Model?, Value>>
+    ) -> Self {
+        let ref = Model()
+        let property = ref[keyPath: field]
+        property.eagerLoad(to: self.eagerLoads, method: .subquery, label: ref.label(for: property))
+        return self
+    }
+
+    @discardableResult
+    public func with<Value>(
         _ field: KeyPath<Model, Parent<Value>>,
         method: EagerLoadMethod = .subquery
     ) -> Self {
