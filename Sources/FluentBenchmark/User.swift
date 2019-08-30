@@ -52,11 +52,15 @@ final class UserSeed: Migration {
     init() { }
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat), agency: .qutheory)
-        let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog), agency: nil)
-        return logan.save(on: database)
-            .and(tanner.save(on: database))
-            .map { _ in }
+        Agency.query(on: database).first().flatMap { agency in
+            guard agency != nil else { return database.eventLoop.makeFailedFuture(FluentError.missingParent) }
+
+            let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat), agency: agency)
+            let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog), agency: nil)
+            return logan.save(on: database)
+                .and(tanner.save(on: database))
+                .map { _ in }
+        }
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
