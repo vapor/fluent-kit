@@ -10,9 +10,9 @@ final class Agency: Model {
     @Field(key: "name")
     var name: String
 
-    #warning("Implement @Children for optional parents")
-//    @Children(from: \.$agency)
-//    var users: [User]
+    // KeyPath<User, Parent<Agency?>>
+    @Children(from: \.$agency)
+    var users: [User]
 
     init() { }
 

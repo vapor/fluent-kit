@@ -1,6 +1,6 @@
 @propertyWrapper
 public final class Children<F, T>: AnyProperty, AnyEagerLoadable
-    where F: Model, T: ModelIdentifiable
+    where F: ModelIdentifiable, T: Model
 {
     public typealias From = F
     public typealias To = T
@@ -14,6 +14,7 @@ public final class Children<F, T>: AnyProperty, AnyEagerLoadable
 
     // MARK: Wrapper
 
+    // KeyPath<User, Parent<Agency?>>
     private init(from parentKey: KeyPath<To, Parent<From>>, implementation: (Children<From, To>) -> ChildrenImplentation) {
         self.parentKey = parentKey
         self.implementation = nil
@@ -36,6 +37,15 @@ public final class Children<F, T>: AnyProperty, AnyEagerLoadable
             throw FluentError.missingEagerLoad(name: self.implementation.schema)
         }
         return rows
+    }
+
+    public func query(on database: Database) throws -> QueryBuilder<To> {
+        guard let id = self.idValue else {
+            fatalError("Cannot query children relation from unsaved model.")
+        }
+
+        return To.query(on: database)
+            .filter(self.parentKey.appending(path: \.$id) == id)
     }
 
     // MARK: - Override
@@ -69,18 +79,9 @@ extension ChildrenImplentation {
     func decode(from decoder: Decoder) throws { /* don't decode */ }
 }
 
-extension Children where To: Model {
+extension Children where From: Model {
     public convenience init(from parentKey: KeyPath<To, Parent<From>>) {
         self.init(from: parentKey, implementation: Required.init(children:))
-    }
-
-    public func query(on database: Database) throws -> QueryBuilder<To> {
-        guard let id = self.idValue else {
-            fatalError("Cannot query children relation from unsaved model.")
-        }
-
-        return To.query(on: database)
-            .filter(self.parentKey.appending(path: \.$id) == id)
     }
 
     private final class Required: ChildrenImplentation {
@@ -131,32 +132,22 @@ extension Children where To: Model {
     }
 }
 
-extension Children where To: OptionalType & Encodable, To.Wrapped: Model {
+extension Children where From: OptionalType & Encodable, From.Wrapped: Model {
     public convenience init(from parentKey: KeyPath<To, Parent<From>>) {
         self.init(from: parentKey, implementation: Optional.init(children:))
-    }
-
-    public func query(on database: Database) throws -> QueryBuilder<To.Wrapped> {
-        fatalError()
-//        guard let id = self.idValue else {
-//            fatalError("Cannot query children relation from unsaved model.")
-//        }
-//
-//        return To.Wrapped.query(on: database)
-//            .filter(self.parentKey.appending(path: \.$id) == id)
     }
 
     private final class Optional: ChildrenImplentation {
         let children: Children<From, To>
 
-        var schema: String { To.Wrapped.schema }
+        var schema: String { To.schema }
 
         init(children: Children<From, To>) {
             self.children = children
         }
 
         func output(from output: DatabaseOutput) throws {
-            let key = From.key(for: \._$id)
+            let key = From.Wrapped.key(for: \._$id)
             if output.contains(field: key) {
                 self.children.idValue = try output.decode(field: key, as: From.IDValue.self)
             }

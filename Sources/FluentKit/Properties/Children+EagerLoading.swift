@@ -1,11 +1,9 @@
 private protocol SubqueryLoader: EagerLoadRequest {
+    associatedtype FromParent: ModelIdentifiable
     associatedtype FromModel: Model
-    associatedtype ToParent: ModelIdentifiable
     associatedtype ToModel: Model
 
-    var loader: Children<FromModel, ToParent>.SubqueryEagerLoad { get }
-
-    func map(model: ToModel) -> ToParent
+    var loader: Children<FromParent, ToModel>.SubqueryEagerLoad { get }
 }
 
 extension SubqueryLoader {
@@ -14,15 +12,15 @@ extension SubqueryLoader {
     func prepare(query: inout DatabaseQuery) { /* Do nothing */ }
 
     func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-        let ids: [FromModel.IDValue] = models
-            .map { $0 as! FromModel }
+        let ids: [FromParent.IDValue] = models
+            .map { $0 as! FromParent }
             .map { $0.id! }
 
         return ToModel.query(on: database)
             .filter(self.loader.parentKey.appending(path: \.$id), in: Set(ids))
             .all()
             .map { (children: [ToModel]) -> Void in
-                self.loader.storage = children.map(self.map(model:))
+                self.loader.storage = children
             }
     }
 }
@@ -50,7 +48,7 @@ extension Children {
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            return self.run(models: models, on: database)
+            return self.request.run(models: models, on: database)
         }
 
         func get(id: From.IDValue) throws -> [To] {
@@ -59,12 +57,14 @@ extension Children {
     }
 }
 
-extension Children.SubqueryEagerLoad where Children.To: Model {
+extension Children.SubqueryEagerLoad where Children.From: Model {
     internal convenience init(_ parentKey: KeyPath<T, Parent<F>>) {
         self.init(parentKey, request: Required.init(loader:))
     }
 
     private final class Required: SubqueryLoader {
+        typealias FromParent = F
+        typealias FromModel = F
         typealias ToModel = T
 
         let loader: Children.SubqueryEagerLoad
@@ -72,25 +72,23 @@ extension Children.SubqueryEagerLoad where Children.To: Model {
         init(loader: Children.SubqueryEagerLoad) {
             self.loader = loader
         }
-
-        func map(model: T) -> T { model }
     }
 }
 
-extension Children.SubqueryEagerLoad where Children.To: OptionalType, Children.To.Wrapped: Model {
+extension Children.SubqueryEagerLoad where Children.From: OptionalType, Children.From.Wrapped: Model {
     internal convenience init(_ parentKey: KeyPath<T, Parent<F>>) {
         self.init(parentKey, request: Optional.init(loader:))
     }
 
     private final class Optional: SubqueryLoader {
-        typealias ToModel = T.Wrapped
+        typealias FromParent = F
+        typealias FromModel = F.Wrapped
+        typealias ToModel = T
 
         let loader: Children.SubqueryEagerLoad
 
         init(loader: Children.SubqueryEagerLoad) {
             self.loader = loader
         }
-
-        func map(model: T.Wrapped) -> T { model as! T }
     }
 }
