@@ -10,7 +10,6 @@ final class Agency: Model {
     @Field(key: "name")
     var name: String
 
-    // KeyPath<User, Parent<Agency?>>
     @Children(from: \.$agency)
     var users: [User]
 

@@ -19,6 +19,8 @@ public final class FluentBenchmarker {
         try self.testEagerLoadParentJoin()
         try self.testEagerLoadParentJSON()
         try self.testEagerLoadOptionalParent()
+        try self.testEagerLoadOptionalJoinParent()
+        try self.testEagerLoadOptionalChildren()
         try self.testEagerLoadChildrenJSON()
         try self.testMigrator()
         try self.testMigratorError()
@@ -306,6 +308,29 @@ public final class FluentBenchmarker {
                 case "Logan":
                     guard user.agency == nil else {
                         throw Failure("Loaded a parent when there shouldn't have been one 🤔")
+                    }
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testEagerLoadOptionalChildren() throws {
+        try runTest(#function, [
+            AgencyMigration(),
+            UserMigration(),
+            AgencySeed(),
+            UserSeed()
+        ]) {
+            let agencies = try Agency.query(on: self.database)
+                .with(\.$users)
+                .all().wait()
+
+            for agency in agencies {
+                switch agency.name {
+                case Agency.qutheory.name:
+                    guard agency.users.map({ $0.name }) == ["Tanner"] else {
+                        throw Failure("Failed to load child for optional parent")
                     }
                 default: break
                 }
