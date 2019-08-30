@@ -505,7 +505,9 @@ public final class FluentBenchmarker {
     
     public func testNestedModel() throws {
         try runTest(#function, [
+            AgencyMigration(),
             UserMigration(),
+            AgencySeed(),
             UserSeed()
         ]) {
             let users = try User.query(on: self.database)
