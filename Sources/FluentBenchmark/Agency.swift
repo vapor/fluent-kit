@@ -2,7 +2,7 @@ import FluentKit
 
 final class Agency: Model {
     static let schema: String = "agencies"
-    static var qutheory: Agency { Agency(id: 1, name: "Qutheory, LLC") }
+    static var qutheory: Agency { Agency(name: "Qutheory, LLC") }
 
     @ID(key: "id")
     var id: Int?
@@ -24,7 +24,7 @@ final class Agency: Model {
 struct AgencyMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Agency.schema)
-            .field("id", .int, .identifier(auto: false))
+            .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .create()
     }
