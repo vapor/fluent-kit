@@ -9,6 +9,8 @@ private protocol SubqueryLoader: EagerLoadRequest {
 }
 
 extension SubqueryLoader {
+    var description: String { self.loader.storage.description }
+
     func prepare(query: inout DatabaseQuery) { /* Do nothing */ }
 
     func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
