@@ -1,5 +1,5 @@
 @propertyWrapper
-public final class Parent<To>: AnyField, AnyEagerLoadable
+public final class Parent<To>: AnyField, AnyEagerLoadable, Filterable
     where To: Model
 {
     // MARK: ID
