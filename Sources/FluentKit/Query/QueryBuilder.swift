@@ -268,26 +268,28 @@ public final class QueryBuilder<Model>
 
     /// Add a sort to the query builder for a field.
     ///
-    ///     Planet.query(on: db).sort(\.name, .descending)
+    ///     Planet.query(on: db).sort(\.$name, .descending)
     ///
     /// - parameters:
     ///     - key: Swift `KeyPath` to field on model to sort.
     ///     - direction: Direction to sort the fields, ascending or descending.
     /// - returns: Query builder for chaining.
-    public func sort<Value>(_ field: KeyPath<Model, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self {
+    public func sort<Field>(_ field: KeyPath<Model, Field>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
+        where Field: Filterable
+    {
         return self.sort(Model.self, Model.key(for: field), direction)
     }
 
     /// Add a sort to the query builder for a field.
     ///
-    ///     Planet.query(on: db).join(\.galaxy).sort(\Galaxy.name, .ascending)
+    ///     Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$name, .ascending)
     ///
     /// - parameters:
     ///     - key: Swift `KeyPath` to field on model to sort.
     ///     - direction: Direction to sort the fields, ascending or descending.
     /// - returns: Query builder for chaining.
-    public func sort<Joined, Value>(_ field: KeyPath<Joined, Field<Value>>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
-        where Joined: FluentKit.Model
+    public func sort<Joined, Field>(_ field: KeyPath<Joined, Field>, _ direction: DatabaseQuery.Sort.Direction = .ascending) -> Self
+        where Joined: FluentKit.Model, Field: Filterable
     {
         return self.sort(Joined.self, Joined.key(for: field), direction)
     }
