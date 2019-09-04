@@ -1,11 +1,11 @@
 import FluentKit
+import FluentSQL
 import NIO
 import SQLKit
-import FluentSQL
 
 public class DummyDatabaseForTestSQLSerializer: Database {
     public var sqlSerializers: [SQLSerializer]
-    
+
     /// See `FluentDatabase`.
     public var eventLoop: EventLoop {
         return EmbeddedEventLoop()
@@ -14,26 +14,25 @@ public class DummyDatabaseForTestSQLSerializer: Database {
     public init() {
         self.sqlSerializers = []
     }
-    
+
     /// See `FluentDatabase`.
-    public func execute(_ query: DatabaseQuery, _ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
+    public func execute(_ query: DatabaseQuery, _: @escaping (DatabaseOutput) throws -> Void) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        
         return self.eventLoop.makeSucceededFuture(())
     }
-    
+
     /// See `FluentDatabase`.
-    public func execute(_ schema: DatabaseSchema) -> EventLoopFuture<Void> {
+    public func execute(_: DatabaseSchema) -> EventLoopFuture<Void> {
         return self.eventLoop.makeSucceededFuture(())
     }
-    
+
     public func close() -> EventLoopFuture<Void> {
         return self.eventLoop.makeSucceededFuture(())
     }
-    
+
     public func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         return closure(self)
     }
