@@ -37,7 +37,6 @@ public final class Parent<T>: AnyField, AnyEagerLoadable where T: ModelIdentifia
 
     public func eagerLoaded() throws -> To {
         guard let eagerLoaded = self.eagerLoadedValue else {
-            if _isOptional(To.self) { return Void?.none as! To }
             throw FluentError.missingEagerLoad(name: self.implemntation.schema)
         }
         return eagerLoaded
