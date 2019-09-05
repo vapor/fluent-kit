@@ -10,12 +10,12 @@ public final class Children<F, T>: AnyProperty, AnyEagerLoadable
     let parentKey: KeyPath<To, Parent<From>>
     private var eagerLoadedValue: [To]?
     private var idValue: From.IDValue?
-    private var implementation: ChildrenImplentation!
+    private var implementation: ChildrenImplementation!
 
     // MARK: Wrapper
 
     // KeyPath<User, Parent<Agency?>>
-    private init(from parentKey: KeyPath<To, Parent<From>>, implementation: (Children<From, To>) -> ChildrenImplentation) {
+    private init(from parentKey: KeyPath<To, Parent<From>>, implementation: (Children<From, To>) -> ChildrenImplementation) {
         self.parentKey = parentKey
         self.implementation = nil
 
@@ -76,11 +76,11 @@ public final class Children<F, T>: AnyProperty, AnyEagerLoadable
     }
 }
 
-private protocol ChildrenImplentation: AnyEagerLoadable {
+private protocol ChildrenImplementation: AnyEagerLoadable {
     var schema: String { get }
 }
 
-extension ChildrenImplentation {
+extension ChildrenImplementation {
     func decode(from decoder: Decoder) throws { /* don't decode */ }
 }
 
@@ -89,7 +89,7 @@ extension Children where From: Model {
         self.init(from: parentKey, implementation: Required.init(children:))
     }
 
-    private final class Required: ChildrenImplentation {
+    private final class Required: ChildrenImplementation {
         let children: Children<From, To>
 
         var schema: String { To.schema }
@@ -142,7 +142,7 @@ extension Children where From: OptionalType & Encodable, From.Wrapped: Model {
         self.init(from: parentKey, implementation: Optional.init(children:))
     }
 
-    private final class Optional: ChildrenImplentation {
+    private final class Optional: ChildrenImplementation {
         let children: Children<From, To>
 
         var schema: String { To.schema }
