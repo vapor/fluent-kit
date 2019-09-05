@@ -1,10 +1,7 @@
 @propertyWrapper
-public final class Children<F, T>: AnyProperty, AnyEagerLoadable
-    where F: ModelIdentifiable, T: Model
+public final class Children<From, To>: AnyProperty, AnyEagerLoadable
+    where From: ModelIdentifiable, To: Model
 {
-    public typealias From = F
-    public typealias To = T
-
     // MARK: ID
 
     let parentKey: KeyPath<To, Parent<From>>

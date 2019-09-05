@@ -57,15 +57,15 @@ extension Children {
     }
 }
 
-extension Children.SubqueryEagerLoad where Children.From: Model {
-    internal convenience init(_ parentKey: KeyPath<T, Parent<F>>) {
+extension Children.SubqueryEagerLoad where From: Model {
+    internal convenience init(_ parentKey: KeyPath<To, Parent<From>>) {
         self.init(parentKey, request: Required.init(loader:))
     }
 
     private final class Required: SubqueryLoader {
-        typealias FromParent = F
-        typealias FromModel = F
-        typealias ToModel = T
+        typealias FromParent = From
+        typealias FromModel = From
+        typealias ToModel = To
 
         let loader: Children.SubqueryEagerLoad
 
@@ -75,15 +75,15 @@ extension Children.SubqueryEagerLoad where Children.From: Model {
     }
 }
 
-extension Children.SubqueryEagerLoad where Children.From: OptionalType, Children.From.Wrapped: Model {
-    internal convenience init(_ parentKey: KeyPath<T, Parent<F>>) {
+extension Children.SubqueryEagerLoad where From: OptionalType, From.Wrapped: Model {
+    internal convenience init(_ parentKey: KeyPath<To, Parent<From>>) {
         self.init(parentKey, request: Optional.init(loader:))
     }
 
     private final class Optional: SubqueryLoader {
-        typealias FromParent = F
-        typealias FromModel = F.Wrapped
-        typealias ToModel = T
+        typealias FromParent = From
+        typealias FromModel = From.Wrapped
+        typealias ToModel = To
 
         let loader: Children.SubqueryEagerLoad
 
