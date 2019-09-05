@@ -1,6 +1,5 @@
 @propertyWrapper
-public final class Parent<T>: AnyField, AnyEagerLoadable where T: ModelIdentifiable {
-    public typealias To = T
+public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentifiable {
     typealias Implementation = AnyProperty & AnyEagerLoadable
 
     @Field public var id: To.IDValue

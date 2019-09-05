@@ -57,14 +57,14 @@ extension Parent {
     }
 }
 
-extension Parent.SubqueryEagerLoad where Parent.To: Model {
+extension Parent.SubqueryEagerLoad where To: Model {
     internal convenience init(key: String) {
         self.init(key: key, request: Required.init(loader:))
     }
 
     private final class Required: SubqueryLoader {
-        typealias ParentModel = Parent.To
-        typealias Model = Parent.To
+        typealias ParentModel = To
+        typealias Model = To
 
         let loader: Parent.SubqueryEagerLoad
 
@@ -76,14 +76,14 @@ extension Parent.SubqueryEagerLoad where Parent.To: Model {
     }
 }
 
-extension Parent.SubqueryEagerLoad where Parent.To: OptionalType, Parent.To.Wrapped: Model {
+extension Parent.SubqueryEagerLoad where To: OptionalType, To.Wrapped: Model {
     internal convenience init(key: String) {
         self.init(key: key, request: Optional.init(loader:))
     }
 
     private final class Optional: SubqueryLoader {
-        typealias ParentModel = Parent.To
-        typealias Model = Parent.To.Wrapped
+        typealias ParentModel = To
+        typealias Model = To.Wrapped
 
         let loader: Parent.SubqueryEagerLoad
 
@@ -91,7 +91,7 @@ extension Parent.SubqueryEagerLoad where Parent.To: OptionalType, Parent.To.Wrap
             self.loader = loader
         }
 
-        func map(model: T.Wrapped) -> T { model as! T }
+        func map(model: To.Wrapped) -> To { model as! To }
     }
 }
 
@@ -169,14 +169,14 @@ extension JoinLoader {
     }
 }
 
-extension Parent.JoinEagerLoad where Parent.To: Model {
+extension Parent.JoinEagerLoad where To: Model {
     internal convenience init(key: String) {
         self.init(key: key, request: Required.init(loader:))
     }
 
     private final class Required: JoinLoader {
-        typealias ParentModel = Parent.To
-        typealias Model = Parent.To
+        typealias ParentModel = To
+        typealias Model = To
 
         let loader: Parent.JoinEagerLoad
 
@@ -188,14 +188,14 @@ extension Parent.JoinEagerLoad where Parent.To: Model {
     }
 }
 
-extension Parent.JoinEagerLoad where Parent.To: OptionalType, Parent.To.Wrapped: Model {
+extension Parent.JoinEagerLoad where To: OptionalType, To.Wrapped: Model {
     internal convenience init(key: String) {
         self.init(key: key, request: Optional.init(loader:))
     }
 
     private final class Optional: JoinLoader {
-        typealias ParentModel = Parent.To
-        typealias Model = Parent.To.Wrapped
+        typealias ParentModel = To
+        typealias Model = To.Wrapped
 
         let loader: Parent.JoinEagerLoad
 
@@ -203,6 +203,6 @@ extension Parent.JoinEagerLoad where Parent.To: OptionalType, Parent.To.Wrapped:
             self.loader = loader
         }
 
-        func map(model: T.Wrapped) -> T { model as! T }
+        func map(model: To.Wrapped) -> To { model as! To }
     }
 }
