@@ -3,11 +3,11 @@ public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentif
     typealias Implementation = AnyProperty & AnyEagerLoadable
 
     @Field public var id: To.IDValue
+    public var key: String { return self.$id.key }
 
     private var eagerLoadedValue: To?
     private var implemntation: ParentImplementation!
 
-    var key: String { return self.$id.key }
     var inputValue: DatabaseQuery.Value? {
         get { self.$id.inputValue }
         set { self.$id.inputValue = newValue }
