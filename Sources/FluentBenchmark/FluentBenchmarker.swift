@@ -1166,6 +1166,23 @@ public final class FluentBenchmarker {
         }
     }
 
+    public func testParentSerialization() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+        ]) {
+            let galaxies = try Galaxy.query(on: self.database)
+                .all().wait()
+
+            let json = try JSONEncoder().encode(galaxies)
+            let string = String(decoding: json, as: UTF8.self)
+            print(string)
+        }
+    }
+
     // MARK: Utilities
     
     struct Failure: Error {
