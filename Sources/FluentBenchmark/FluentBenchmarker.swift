@@ -39,6 +39,7 @@ public final class FluentBenchmarker {
         try self.testNewModelDecode()
         try self.testSiblingsAttach()
         try self.testParentGet()
+        try self.testParentSerialization()
     }
     
     public func testCreate() throws {
@@ -1176,10 +1177,43 @@ public final class FluentBenchmarker {
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
                 .all().wait()
+            
+            struct GalaxyKey: CodingKey, ExpressibleByStringLiteral {
+                var stringValue: String
+                var intValue: Int? {
+                    return Int(self.stringValue)
+                }
+                
+                init(stringLiteral value: String) {
+                    self.stringValue = value
+                }
+                
+                init?(stringValue: String) {
+                    self.stringValue = stringValue
+                }
+                
+                init?(intValue: Int) {
+                    self.stringValue = intValue.description
+                }
+            }
+            
+            struct GalaxyJSON: Codable {
+                var id: Int
+                var name: String
+                
+                init(from decoder: Decoder) throws {
+                    let keyed = try decoder.container(keyedBy: GalaxyKey.self)
+                    self.id = try keyed.decode(Int.self, forKey: "id")
+                    self.name = try keyed.decode(String.self, forKey: "name")
+                    XCTAssertEqual(keyed.allKeys.count, 2)
+                }
+            }
 
-            let json = try JSONEncoder().encode(galaxies)
-            let string = String(decoding: json, as: UTF8.self)
-            print(string)
+            let encoded = try JSONEncoder().encode(galaxies)
+            print(String(decoding: encoded, as: UTF8.self))
+            let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: encoded)
+            XCTAssertEqual(galaxies.map { $0.id }, decoded.map { $0.id })
+            XCTAssertEqual(galaxies.map { $0.name }, decoded.map { $0.name })
         }
     }
 
