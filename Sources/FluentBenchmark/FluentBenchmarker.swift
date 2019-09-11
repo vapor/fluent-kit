@@ -38,6 +38,7 @@ public final class FluentBenchmarker {
         try self.testUUIDModel()
         try self.testNewModelDecode()
         try self.testSiblingsAttach()
+        try self.testParentGet()
     }
     
     public func testCreate() throws {
@@ -1133,6 +1134,32 @@ public final class FluentBenchmarker {
                 case "Jupiter":
                     XCTAssertEqual(planet.galaxy.name, "Milky Way")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testParentGet() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .all().wait()
+
+            for planet in planets {
+                let galaxy = try planet.$galaxy.get(on: self.database).wait()
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(galaxy.name, "Milky Way")
+                case "PA-99-N2":
+                    XCTAssertEqual(galaxy.name, "Andromeda")
+                case "Jupiter":
+                    XCTAssertEqual(galaxy.name, "Milky Way")
                 default: break
                 }
             }

@@ -42,7 +42,7 @@ public final class Parent<To>: AnyField, AnyEagerLoadable
 
     public func query(on database: Database) -> QueryBuilder<To> {
         return To.query(on: database)
-            .filter(self.key, .equal, self.id)
+            .filter(\._$id == self.id)
     }
 
     public func get(on database: Database) -> EventLoopFuture<To> {
