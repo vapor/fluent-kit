@@ -22,7 +22,10 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
     public var projectedValue: Children<From, To> {
         return self
     }
-
+    
+    public var fromId: From.IDValue? {
+        return self.idValue
+    }
 
     // MARK: Query
 
