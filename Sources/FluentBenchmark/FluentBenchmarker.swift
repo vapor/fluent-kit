@@ -1211,6 +1211,7 @@ public final class FluentBenchmarker {
 
             let encoded = try JSONEncoder().encode(galaxies)
             print(String(decoding: encoded, as: UTF8.self))
+            
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: encoded)
             XCTAssertEqual(galaxies.map { $0.id }, decoded.map { $0.id })
             XCTAssertEqual(galaxies.map { $0.name }, decoded.map { $0.name })
