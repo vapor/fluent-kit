@@ -33,7 +33,7 @@ extension AnyModel {
         self.init()
         let container = try decoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let decoder = try container.superDecoder(forKey: .string(label))
+            let decoder = LazyDecoder { try container.superDecoder(forKey: .string(label)) }
             try property.decode(from: decoder)
         }
     }
@@ -41,9 +41,90 @@ extension AnyModel {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let encoder = container.superEncoder(forKey: .string(label))
+            let encoder = LazyEncoder { container.superEncoder(forKey: .string(label)) }
             try property.encode(to: encoder)
         }
+    }
+}
+
+private final class LazyDecoder: Decoder {
+    let factory: () throws -> Decoder
+    var cached: Result<Decoder, Error>?
+    
+    var value: Result<Decoder, Error> {
+        if let decoder = self.cached {
+            return decoder
+        } else {
+            let decoder: Result<Decoder, Error>
+            do {
+                decoder = try .success(self.factory())
+            } catch {
+                decoder = .failure(error)
+            }
+            self.cached = decoder
+            return decoder
+        }
+    }
+    
+    var codingPath: [CodingKey] {
+        return (try? self.value.get().codingPath) ?? []
+    }
+    var userInfo: [CodingUserInfoKey : Any] {
+        return (try? self.value.get().userInfo) ?? [:]
+    }
+    
+    init(factory: @escaping () throws -> Decoder) {
+        self.factory = factory
+    }
+    
+    func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
+        return try self.value.get().container(keyedBy: Key.self)
+    }
+    
+    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+        return try self.value.get().unkeyedContainer()
+    }
+    
+    func singleValueContainer() throws -> SingleValueDecodingContainer {
+        return try self.value.get().singleValueContainer()
+    }
+    
+}
+
+private final class LazyEncoder: Encoder {
+    let factory: () -> Encoder
+    var cached: Encoder?
+    var value: Encoder {
+        if let encoder = self.cached {
+            return encoder
+        } else {
+            let encoder = self.factory()
+            self.cached = encoder
+            return encoder
+        }
+    }
+    
+    var codingPath: [CodingKey] {
+        return self.value.codingPath
+    }
+    var userInfo: [CodingUserInfoKey : Any] {
+        return self.value.userInfo
+    }
+    
+    init(factory: @escaping () -> Encoder) {
+        self.factory = factory
+    }
+    
+    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
+        return self.value.container(keyedBy: Key.self)
+    }
+    
+    func unkeyedContainer() -> UnkeyedEncodingContainer {
+        return self.value.unkeyedContainer()
+    }
+    
+    func singleValueContainer() -> SingleValueEncodingContainer {
+        return self.value.singleValueContainer()
     }
 }
 
