@@ -7,6 +7,7 @@ extension FluentKitTests {
     // to regenerate.
     static let __allTests__FluentKitTests = [
         ("testGalaxyPlanetNames", testGalaxyPlanetNames),
+        ("testGalaxyPlanetSorts", testGalaxyPlanetSorts),
         ("testMigrationLogNames", testMigrationLogNames),
     ]
 }

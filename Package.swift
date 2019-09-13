@@ -16,6 +16,6 @@ let package = Package(
         .target(name: "FluentKit", dependencies: ["NIO"]),
         .target(name: "FluentBenchmark", dependencies: ["FluentKit"]),
         .target(name: "FluentSQL", dependencies: ["FluentKit", "SQLKit"]),
-        .testTarget(name: "FluentKitTests", dependencies: ["FluentBenchmark"]),
+        .testTarget(name: "FluentKitTests", dependencies: ["FluentBenchmark", "FluentSQL"]),
     ]
 )
