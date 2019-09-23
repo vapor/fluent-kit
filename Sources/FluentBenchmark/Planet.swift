@@ -24,9 +24,11 @@ final class Planet: Model {
     }
 }
 
-struct PlanetMigration: Migration {
+struct PlanetMigration: GenericMigration {
+    typealias MigrationModel = Planet
+    
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("planets")
+        return schema(for: database)
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .field("galaxy_id", .int, .required)
@@ -34,7 +36,7 @@ struct PlanetMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("planets").delete()
+        return schema(for: database).delete()
     }
 }
 

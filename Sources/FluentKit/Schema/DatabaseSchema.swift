@@ -112,4 +112,9 @@ public struct DatabaseSchema {
         self.deleteFields = []
         self.constraints = []
     }
+    
+    public init<M>(model: M.Type) where M: Model {
+        self.init(schema: model.schema)
+    }
+    
 }

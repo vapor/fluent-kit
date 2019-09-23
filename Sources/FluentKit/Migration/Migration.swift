@@ -11,6 +11,16 @@ extension Migration {
     
 }
 
+public protocol GenericMigration: Migration {
+    associatedtype MigrationModel: Model
+}
+
+extension GenericMigration {
+    public func schema(for database: Database) -> SchemaBuilder {
+        database.schema(MigrationModel.schema)
+    }
+}
+
 //extension Model {
 //    public static func autoMigration() -> Migration {
 //        return AutoMigration<Self>()

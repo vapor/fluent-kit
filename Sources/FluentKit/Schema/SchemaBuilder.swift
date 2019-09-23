@@ -4,6 +4,10 @@ extension Database {
     public func schema(_ schema: String) -> SchemaBuilder {
         return .init(database: self, schema: schema)
     }
+    
+    public func schema<M>(_ model: M.Type) -> SchemaBuilder where M: Model {
+        return .init(database: self, schema: model.schema)
+    }
 }
 
 public final class SchemaBuilder {
