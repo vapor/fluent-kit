@@ -41,7 +41,7 @@ extension AnyModel {
 }
 
 @propertyWrapper
-public final class Timestamp: AnyField, Filterable {
+public final class Timestamp: AnyField, FieldRepresentable {
     public typealias Value = Date?
 
     public enum Trigger {
@@ -50,7 +50,7 @@ public final class Timestamp: AnyField, Filterable {
         case delete
     }
 
-    let field: Field<Date?>
+    public let field: Field<Date?>
 
     public let trigger: Trigger
 

@@ -40,6 +40,7 @@ public final class FluentBenchmarker {
         try self.testSiblingsAttach()
         try self.testParentGet()
         try self.testParentSerialization()
+        try self.testMultipleJoinSameTable()
     }
     
     public func testCreate() throws {
@@ -1215,6 +1216,72 @@ public final class FluentBenchmarker {
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: encoded)
             XCTAssertEqual(galaxies.map { $0.id }, decoded.map { $0.id })
             XCTAssertEqual(galaxies.map { $0.name }, decoded.map { $0.name })
+        }
+    }
+
+    public func testMultipleJoinSameTable() throws {
+        // seeded db
+        try runTest(#function, [
+            TeamMigration(),
+            MatchMigration(),
+            TeamMatchSeed()
+        ]) {
+            // test fetching teams
+            do {
+                let teams = try Team.query(on: self.database)
+                    .with(\.$awayMatches).with(\.$homeMatches)
+                    .all().wait()
+                for team in teams {
+                    for homeMatch in team.homeMatches {
+                        XCTAssert(homeMatch.name.hasPrefix(team.name))
+                        XCTAssert(!homeMatch.name.hasSuffix(team.name))
+                    }
+                    for awayMatch in team.awayMatches {
+                        XCTAssert(!awayMatch.name.hasPrefix(team.name))
+                        XCTAssert(awayMatch.name.hasSuffix(team.name))
+                    }
+                }
+            }
+
+            // test fetching matches
+            do {
+                let matches = try Match.query(on: self.database)
+                    .with(\.$awayTeam).with(\.$homeTeam)
+                    .all().wait()
+                for match in matches {
+                    XCTAssert(match.name.hasPrefix(match.homeTeam.name))
+                    XCTAssert(match.name.hasSuffix(match.awayTeam.name))
+                }
+            }
+
+            struct HomeTeam: ModelAlias {
+                typealias Model = Team
+                static var alias: String { "home_teams" }
+            }
+
+            struct AwayTeam: ModelAlias {
+                typealias Model = Team
+                static var alias: String { "away_teams" }
+            }
+
+            // test manual join
+            do {
+                #warning("TODO: field representable")
+                #warning("TODO: schema -> table")
+                let matches = try Match.query(on: self.database)
+                    .join(HomeTeam.self, on: \Match.$homeTeam == \Team.$id)
+                    .join(AwayTeam.self, on: \Match.$awayTeam == \Team.$id)
+                    .filter(HomeTeam.self, \Team.$name == "a")
+                    .all().wait()
+
+                for match in matches {
+                    let home = try match.joined(HomeTeam.self)
+                    let away = try match.joined(AwayTeam.self)
+                    print(match.name)
+                    print("home: \(home.name)")
+                    print("away: \(away.name)")
+                }
+            }
         }
     }
 
