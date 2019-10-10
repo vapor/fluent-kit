@@ -204,7 +204,7 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func filter(_ filter: ModelFilter<Model>) -> Self {
         return self.filter(
-            .field(path: filter.path, schema: nil, alias: nil),
+            .field(path: filter.path, schema: Model.schema, alias: nil),
             filter.method,
             filter.value
         )
