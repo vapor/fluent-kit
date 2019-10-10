@@ -201,11 +201,6 @@ extension Model {
     var _$id: ID<IDValue> {
         self.anyID as! ID<IDValue>
     }
-
-    @available(*, deprecated, message: "use init")
-    static var reference: Self {
-        return self.init()
-    }
 }
 
 extension AnyModel {
