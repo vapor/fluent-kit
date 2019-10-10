@@ -1,5 +1,5 @@
 @propertyWrapper
-public final class Children<From, To>: AnyProperty, AnyEagerLoadable
+public final class Children<From, To>: AnyProperty
     where From: Model, To: Model
 {
     // MARK: ID
@@ -10,7 +10,7 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
 
     // MARK: Wrapper
 
-    public init(from parentKey: KeyPath<To, Parent<From>>) {
+    public init(for parentKey: KeyPath<To, Parent<From>>) {
         self.parentKey = parentKey
     }
 
@@ -62,8 +62,21 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
     func decode(from decoder: Decoder) throws {
         // don't decode
     }
+}
 
-    // MARK: Eager Load
+
+extension Children: EagerLoadable {
+    public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
+        where Model: FluentKit.Model
+    {
+        builder.eagerLoads.requests[self.eagerLoadKey] = SubqueryEagerLoad(self.parentKey)
+    }
+}
+
+extension Children: AnyEagerLoadable {
+    var eagerLoadKey: String {
+        return To()[keyPath: self.parentKey].key
+    }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
         return self.eagerLoadedValue
@@ -76,8 +89,8 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         return rows
     }
 
-    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-        guard let request = eagerLoads.requests[label] else {
+    func eagerLoad(from eagerLoads: EagerLoads) throws {
+        guard let request = eagerLoads.requests[self.eagerLoadKey] else {
             return
         }
         if let subquery = request as? SubqueryEagerLoad {
@@ -87,16 +100,7 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         }
     }
 
-    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
-        switch method {
-        case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad(self.parentKey)
-        case .join:
-            fatalError("Eager loading children using join is not yet supported")
-        }
-    }
-
-    private final class SubqueryEagerLoad: EagerLoadRequest {
+    final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [To]
         let parentKey: KeyPath<To, Parent<From>>
 
@@ -133,5 +137,3 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         }
     }
 }
-
-

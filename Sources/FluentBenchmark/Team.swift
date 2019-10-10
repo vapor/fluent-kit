@@ -7,10 +7,10 @@ final class Team: Model {
     @Field(key: "name")
     var name: String
 
-    @Children(from: \.$homeTeam)
+    @Children(for: \.$homeTeam)
     var homeMatches: [Match]
 
-    @Children(from: \.$awayTeam)
+    @Children(for: \.$awayTeam)
     var awayMatches: [Match]
 
     init() { }

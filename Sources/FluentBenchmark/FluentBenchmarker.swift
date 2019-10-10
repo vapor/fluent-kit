@@ -163,11 +163,11 @@ public final class FluentBenchmarker {
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard try planet.$galaxy.eagerLoaded().name == "Milky Way" else {
+                    guard planet.galaxy.name == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 case "PA-99-N2":
-                    guard try planet.$galaxy.eagerLoaded().name == "Andromeda" else {
+                    guard planet.galaxy.name == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 default: break
@@ -184,17 +184,17 @@ public final class FluentBenchmarker {
             PlanetSeed()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .with(\.$galaxy, method: .join)
+                .with(\.$galaxy)
                 .all().wait()
             
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard try planet.$galaxy.eagerLoaded().name == "Milky Way" else {
+                    guard planet.galaxy.name == "Milky Way" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 case "PA-99-N2":
-                    guard try planet.$galaxy.eagerLoaded().name == "Andromeda" else {
+                    guard planet.galaxy.name == "Andromeda" else {
                         throw Failure("unexpected galaxy name: \(planet.galaxy)")
                     }
                 default: break
@@ -237,7 +237,7 @@ public final class FluentBenchmarker {
             // subquery
             do {
                 let planets = try Planet.query(on: self.database)
-                    .with(\.$galaxy, method: .subquery)
+                    .with(\.$galaxy)
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
@@ -249,7 +249,7 @@ public final class FluentBenchmarker {
             // join
             do {
                 let planets = try Planet.query(on: self.database)
-                    .with(\.$galaxy, method: .join)
+                    .with(\.$galaxy)
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
@@ -1267,8 +1267,6 @@ public final class FluentBenchmarker {
 
             // test manual join
             do {
-                #warning("TODO: field representable")
-                #warning("TODO: schema -> table")
                 let matches = try Match.query(on: self.database)
                     .join(HomeTeam.self, on: \Match.$homeTeam == \Team.$id)
                     .join(AwayTeam.self, on: \Match.$awayTeam == \Team.$id)

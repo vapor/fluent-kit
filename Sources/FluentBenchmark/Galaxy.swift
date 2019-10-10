@@ -13,7 +13,7 @@ public final class Galaxy: Model {
     @Field(key: "name")
     public var name: String
 
-    @Children(from: \.$galaxy)
+    @Children(for: \.$galaxy)
     public var planets: [Planet]
 
     public init() { }

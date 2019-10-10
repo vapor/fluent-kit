@@ -150,7 +150,7 @@ extension AnyModel {
                 return label
             }
         }
-        fatalError("Property not found on model.")
+        fatalError("Property not found on model: \(property)")
     }
 
     var input: [String: DatabaseQuery.Value] {
@@ -216,8 +216,8 @@ extension AnyModel {
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {
-        try self.eagerLoadables.forEach { (label, eagerLoadable) in
-            try eagerLoadable.eagerLoad(from: eagerLoads, label: label)
+        try self.eagerLoadables.forEach { (_, eagerLoadable) in
+            try eagerLoadable.eagerLoad(from: eagerLoads)
         }
 
     }
