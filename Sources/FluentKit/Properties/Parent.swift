@@ -1,5 +1,5 @@
 @propertyWrapper
-public final class Parent<To>: AnyField, AnyEagerLoadable
+public final class Parent<To>: AnyField, AnyEagerLoadable, FieldRepresentable
     where To: Model
 {
     // MARK: ID
@@ -11,6 +11,10 @@ public final class Parent<To>: AnyField, AnyEagerLoadable
 
     @Field
     public var id: To.IDValue
+
+    public var field: Field<To.IDValue> {
+        return self.$id
+    }
 
     // MARK: Wrapper
 
@@ -73,6 +77,10 @@ public final class Parent<To>: AnyField, AnyEagerLoadable
     }
 
     // MARK: Eager Loadable
+
+    var eagerLoadValueDescription: CustomStringConvertible? {
+        return self.eagerLoadedValue
+    }
 
     func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
         guard let request = eagerLoads.requests[label] else {
@@ -173,9 +181,18 @@ public final class Parent<To>: AnyField, AnyEagerLoadable
         func prepare(query: inout DatabaseQuery) {
             // we can assume query.schema since eager loading
             // is only allowed on the base schema
-            query.joins.append(.model(
-                foreign: .field(path: [To.key(for: \._$id)], schema: To.schema, alias: nil),
-                local: .field(path: [self.key], schema: query.schema, alias: nil),
+            query.joins.append(.join(
+                schema: .schema(name: To.schema, alias: nil),
+                foreign: .field(
+                    path: [To.key(for: \._$id)],
+                    schema: To.schema,
+                    alias: nil
+                ),
+                local: .field(
+                    path: [self.key],
+                    schema: query.schema,
+                    alias: nil
+                ),
                 method: .inner
             ))
             query.fields += To().fields.map { (_, field) in

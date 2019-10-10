@@ -15,7 +15,12 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
     }
 
     public var wrappedValue: [To] {
-        get { fatalError("Use $ prefix to access") }
+        get {
+            guard let eagerLoaded = self.eagerLoadedValue else {
+                fatalError("Children relation not eager loaded, use $ prefix to access")
+            }
+            return eagerLoaded
+        }
         set { fatalError("Use $ prefix to access") }
     }
 
@@ -59,6 +64,10 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
     }
 
     // MARK: Eager Load
+
+    var eagerLoadValueDescription: CustomStringConvertible? {
+        return self.eagerLoadedValue
+    }
 
     public func eagerLoaded() throws -> [To] {
         guard let rows = self.eagerLoadedValue else {

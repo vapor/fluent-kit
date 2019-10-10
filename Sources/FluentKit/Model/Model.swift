@@ -3,6 +3,11 @@ public protocol AnyModel: class, CustomStringConvertible, Codable {
     init()
 }
 
+public protocol ModelAlias {
+    associatedtype Model: FluentKit.Model
+    static var alias: String { get }
+}
+
 public protocol Model: AnyModel {
     associatedtype IDValue: Codable, Hashable
 
@@ -130,9 +135,9 @@ private final class LazyEncoder: Encoder {
 
 extension Model {
     static func key<Field>(for field: KeyPath<Self, Field>) -> String
-        where Field: Filterable
+        where Field: FieldRepresentable
     {
-        return Self.init()[keyPath: field].key
+        return Self.init()[keyPath: field].field.key
     }
 }
 
@@ -157,21 +162,38 @@ extension AnyModel {
     }
 
     public var description: String {
-        let input: String
-        if self.input.isEmpty {
-            input = "nil"
-        } else {
-            input = self.input.description
+        var info: [InfoKey: CustomStringConvertible] = [:]
+
+        if !self.input.isEmpty {
+            info["input"] = self.input
         }
 
-        let output: String
-        if let o = self.anyID.cachedOutput {
-            output = o.description
-        } else {
-            output = "[:]"
+        if let output = self.anyID.cachedOutput {
+            info["output"] = output
         }
 
-        return "\(Self.self)(input: \(input), output: \(output))"
+        let eagerLoads: [String: CustomStringConvertible] = .init(uniqueKeysWithValues: self.eagerLoadables.compactMap { (name, eagerLoadable) in
+            if let value = eagerLoadable.eagerLoadValueDescription {
+                return (name, value)
+            } else {
+                return nil
+            }
+        })
+        if !eagerLoads.isEmpty {
+            info["eagerLoads"] = eagerLoads
+        }
+
+        return "\(Self.self)(\(info.debugDescription.dropFirst().dropLast()))"
+    }
+}
+
+private struct InfoKey: ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
+    let value: String
+    var description: String {
+        return self.value
+    }
+    init(stringLiteral value: String) {
+        self.value = value
     }
 }
 
@@ -201,6 +223,18 @@ extension AnyModel {
     }
 
     // MARK: Joined
+
+    public func joined<Joined>(_ model: Joined.Type) throws -> Joined.Model
+        where Joined: ModelAlias
+    {
+        guard let output = self.anyID.cachedOutput else {
+            fatalError("Can only access joined models using models fetched from database.")
+        }
+        let joined = Joined.Model()
+        try joined.output(from: output.prefixed(by: Joined.alias + "_"))
+        return joined
+    }
+
 
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
         where Joined: FluentKit.Model

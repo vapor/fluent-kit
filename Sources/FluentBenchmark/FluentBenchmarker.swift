@@ -40,6 +40,7 @@ public final class FluentBenchmarker {
         try self.testSiblingsAttach()
         try self.testParentGet()
         try self.testParentSerialization()
+        try self.testMultipleJoinSameTable()
     }
     
     public func testCreate() throws {
@@ -701,8 +702,8 @@ public final class FluentBenchmarker {
     }
 
     public func testSoftDelete() throws {
-        final class User: Model {
-            static let schema = "users"
+        final class SoftDeleteUser: Model {
+            static let schema = "sd_users"
 
             @ID(key: "id")
             var id: Int?
@@ -719,9 +720,10 @@ public final class FluentBenchmarker {
                 self.name = name
             }
         }
-        struct UserMigration: Migration {
+
+        struct SDUserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("users")
+                return database.schema("sd_users")
                     .field("id", .int, .identifier(auto: true))
                     .field("name", .string, .required)
                     .field("deleted_at", .datetime)
@@ -729,32 +731,32 @@ public final class FluentBenchmarker {
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("users").delete()
+                return database.schema("sd_users").delete()
             }
         }
 
 
         func testCounts(allCount: Int, realCount: Int) throws {
-            let all = try User.query(on: self.database).all().wait()
+            let all = try SoftDeleteUser.query(on: self.database).all().wait()
             guard all.count == allCount else {
                 throw Failure("all count should be \(allCount)")
             }
-            let real = try User.query(on: self.database).withDeleted().all().wait()
+            let real = try SoftDeleteUser.query(on: self.database).withDeleted().all().wait()
             guard real.count == realCount else {
                 throw Failure("real count should be \(realCount)")
             }
         }
 
         try runTest(#function, [
-            UserMigration(),
+            SDUserMigration(),
         ]) {
             // save two users
-            try User(name: "A").save(on: self.database).wait()
-            try User(name: "B").save(on: self.database).wait()
+            try SoftDeleteUser(name: "A").save(on: self.database).wait()
+            try SoftDeleteUser(name: "B").save(on: self.database).wait()
             try testCounts(allCount: 2, realCount: 2)
 
             // soft-delete a user
-            let a = try User.query(on: self.database).filter(\.$name == "A").first().wait()!
+            let a = try SoftDeleteUser.query(on: self.database).filter(\.$name == "A").first().wait()!
             try a.delete(on: self.database).wait()
             try testCounts(allCount: 1, realCount: 2)
 
@@ -1215,6 +1217,72 @@ public final class FluentBenchmarker {
             let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: encoded)
             XCTAssertEqual(galaxies.map { $0.id }, decoded.map { $0.id })
             XCTAssertEqual(galaxies.map { $0.name }, decoded.map { $0.name })
+        }
+    }
+
+    public func testMultipleJoinSameTable() throws {
+        // seeded db
+        try runTest(#function, [
+            TeamMigration(),
+            MatchMigration(),
+            TeamMatchSeed()
+        ]) {
+            // test fetching teams
+            do {
+                let teams = try Team.query(on: self.database)
+                    .with(\.$awayMatches).with(\.$homeMatches)
+                    .all().wait()
+                for team in teams {
+                    for homeMatch in team.homeMatches {
+                        XCTAssert(homeMatch.name.hasPrefix(team.name))
+                        XCTAssert(!homeMatch.name.hasSuffix(team.name))
+                    }
+                    for awayMatch in team.awayMatches {
+                        XCTAssert(!awayMatch.name.hasPrefix(team.name))
+                        XCTAssert(awayMatch.name.hasSuffix(team.name))
+                    }
+                }
+            }
+
+            // test fetching matches
+            do {
+                let matches = try Match.query(on: self.database)
+                    .with(\.$awayTeam).with(\.$homeTeam)
+                    .all().wait()
+                for match in matches {
+                    XCTAssert(match.name.hasPrefix(match.homeTeam.name))
+                    XCTAssert(match.name.hasSuffix(match.awayTeam.name))
+                }
+            }
+
+            struct HomeTeam: ModelAlias {
+                typealias Model = Team
+                static var alias: String { "home_teams" }
+            }
+
+            struct AwayTeam: ModelAlias {
+                typealias Model = Team
+                static var alias: String { "away_teams" }
+            }
+
+            // test manual join
+            do {
+                #warning("TODO: field representable")
+                #warning("TODO: schema -> table")
+                let matches = try Match.query(on: self.database)
+                    .join(HomeTeam.self, on: \Match.$homeTeam == \Team.$id)
+                    .join(AwayTeam.self, on: \Match.$awayTeam == \Team.$id)
+                    .filter(HomeTeam.self, \Team.$name == "a")
+                    .all().wait()
+
+                for match in matches {
+                    let home = try match.joined(HomeTeam.self)
+                    let away = try match.joined(AwayTeam.self)
+                    print(match.name)
+                    print("home: \(home.name)")
+                    print("away: \(away.name)")
+                }
+            }
         }
     }
 

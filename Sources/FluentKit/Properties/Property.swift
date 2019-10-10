@@ -5,6 +5,7 @@ protocol AnyProperty: class {
 }
 
 protocol AnyEagerLoadable: AnyProperty {
+    var eagerLoadValueDescription: CustomStringConvertible? { get }
     func eagerLoad(from eagerLoads: EagerLoads, label: String) throws
     func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String)
 }
@@ -20,9 +21,9 @@ protocol AnyID: AnyField {
     var cachedOutput: DatabaseOutput? { get set }
 }
 
-public protocol Filterable {
+public protocol FieldRepresentable {
     associatedtype Value: Codable
-    var key: String { get }
+    var field: Field<Value> { get }
 }
 
 extension AnyField { }
