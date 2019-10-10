@@ -50,7 +50,7 @@ extension OptionalParent: AnyEagerLoadable {
             return
         }
 
-        if let subquery = request as? ParentSubqueryEagerLoad<To.Wrapped> {
+        if let subquery = request as? ParentSubqueryEagerLoad<To> {
             self.eagerLoadedValue = try subquery.get(id: id)
         } else {
             fatalError("unsupported eagerload request: \(request)")
@@ -62,7 +62,7 @@ extension OptionalParent: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
-        builder.eagerLoads.requests[self.eagerLoadKey] = ParentSubqueryEagerLoad<To.Wrapped>(
+        builder.eagerLoads.requests[self.eagerLoadKey] = ParentSubqueryEagerLoad<To>(
             key: self.$id.key
         )
     }
@@ -91,7 +91,7 @@ private final class ParentSubqueryEagerLoad<To>: EagerLoadRequest
 
     func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
         let ids: [To.IDValue] = models
-            .map { try! $0.anyID.cachedOutput!.decode(field: self.key, as: To.IDValue.self) }
+            .compactMap { try! $0.anyID.cachedOutput!.decode(field: self.key, as: To.IDValue?.self) }
 
         let uniqueIDs = Array(Set(ids))
         return To.query(on: database)

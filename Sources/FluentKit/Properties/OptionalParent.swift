@@ -1,11 +1,11 @@
 @propertyWrapper
 public final class OptionalParent<To>
-    where To: OptionalType, To.Wrapped: Model
+    where To: Model
 {
     @Field
-    public var id: To.Wrapped.IDValue?
+    public var id: To.IDValue?
 
-    public var wrappedValue: To.Wrapped? {
+    public var wrappedValue: To? {
         get {
             guard self.didEagerLoad else {
                 fatalError("Optional parent relation not eager loaded, use $ prefix to access")
@@ -19,7 +19,7 @@ public final class OptionalParent<To>
         return self
     }
 
-    var eagerLoadedValue: To.Wrapped?
+    var eagerLoadedValue: To?
     var didEagerLoad: Bool
 
     public init(key: String) {
@@ -27,19 +27,19 @@ public final class OptionalParent<To>
         self.didEagerLoad = false
     }
 
-    public func query(on database: Database) -> QueryBuilder<To.Wrapped> {
-        return To.Wrapped.query(on: database)
+    public func query(on database: Database) -> QueryBuilder<To> {
+        return To.query(on: database)
             .filter(\._$id == self.id)
     }
 
-    public func get(on database: Database) -> EventLoopFuture<To.Wrapped?> {
+    public func get(on database: Database) -> EventLoopFuture<To?> {
         return self.query(on: database).first()
     }
 
 }
 
 extension OptionalParent: FieldRepresentable {
-    public var field: Field<To.Wrapped.IDValue?> {
+    public var field: Field<To.IDValue?> {
         return self.$id
     }
 }
@@ -51,14 +51,14 @@ extension OptionalParent: AnyProperty {
             try container.encode(parent)
         } else {
             try container.encode([
-                To.Wrapped.key(for: \._$id): self.id
+                To.key(for: \._$id): self.id
             ])
         }
     }
 
     func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string(To.Wrapped.key(for: \._$id))))
+        try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
         // TODO: allow for nested decoding
     }
 }

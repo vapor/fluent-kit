@@ -19,12 +19,16 @@ final class User: Model {
     @Field(key: "pet")
     var pet: Pet
 
+    @OptionalParent(key: "bf_id")
+    var bestFriend: User?
+
     init() { }
 
-    init(id: Int? = nil, name: String, pet: Pet) {
+    init(id: Int? = nil, name: String, pet: Pet, bestFriend: User? = nil) {
         self.id = id
         self.name = name
         self.pet = pet
+        self.$bestFriend.id = bestFriend?.id
     }
 }
 
@@ -34,6 +38,7 @@ struct UserMigration: Migration {
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .field("pet", .json, .required)
+            .field("bf_id", .int)
             .create()
     }
 
