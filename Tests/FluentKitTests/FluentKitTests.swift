@@ -2,6 +2,7 @@
 @testable import FluentBenchmark
 import XCTest
 import Foundation
+import FluentSQL
 
 final class FluentKitTests: XCTestCase {
     func testMigrationLogNames() throws {
@@ -53,5 +54,11 @@ final class FluentKitTests: XCTestCase {
         _ = try Planet.query(on: db).join(\.$galaxy).sort(Galaxy.self, "name", .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+    }
+
+    func testSQLSchemaCustom() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema("foo").field(.custom("INDEX i_foo (foo)")).update().wait()
+        print(db.sqlSerializers)
     }
 }

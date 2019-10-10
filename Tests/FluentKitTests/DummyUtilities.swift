@@ -25,7 +25,11 @@ public class DummyDatabaseForTestSQLSerializer: Database {
     }
 
     /// See `FluentDatabase`.
-    public func execute(_: DatabaseSchema) -> EventLoopFuture<Void> {
+    public func execute(_ schema: DatabaseSchema) -> EventLoopFuture<Void> {
+        var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
+        let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
+        sqlExpression.serialize(to: &sqlSerializer)
+        self.sqlSerializers.append(sqlSerializer)
         return self.eventLoop.makeSucceededFuture(())
     }
 
