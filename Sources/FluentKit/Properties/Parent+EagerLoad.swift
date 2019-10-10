@@ -77,7 +77,7 @@ private final class ParentSubqueryEagerLoad<To>: EagerLoadRequest
     var storage: [To]
 
     var description: String {
-        return "\(self.key): \(self.storage)"
+        return self.storage.description
     }
 
     init(key: String) {
