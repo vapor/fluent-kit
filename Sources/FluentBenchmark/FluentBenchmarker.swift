@@ -1307,13 +1307,16 @@ public final class FluentBenchmarker {
             // test
             let users = try User.query(on: self.database)
                 .with(\.$bestFriend)
+                .with(\.$friends)
                 .all().wait()
             for user in users {
                 switch user.name {
                 case "Swift":
                     XCTAssertEqual(user.bestFriend?.name, nil)
+                    XCTAssertEqual(user.friends.count, 1)
                 case "Vapor":
                     XCTAssertEqual(user.bestFriend?.name, "Swift")
+                    XCTAssertEqual(user.friends.count, 0)
                 default:
                     XCTFail("unexpected name: \(user.name)")
                 }

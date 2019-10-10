@@ -114,7 +114,7 @@ extension Siblings: EagerLoadable {
 extension Siblings: AnyEagerLoadable {
     var eagerLoadKey: String {
         let ref = Through()
-        return ref[keyPath: self.from].key + "+" + ref[keyPath: self.to].key
+        return "s:" + ref[keyPath: self.from].key + "+" + ref[keyPath: self.to].key
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {

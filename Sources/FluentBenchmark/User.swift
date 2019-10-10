@@ -22,6 +22,9 @@ final class User: Model {
     @OptionalParent(key: "bf_id")
     var bestFriend: User?
 
+    @Children(for: \.$bestFriend)
+    var friends: [User]
+
     init() { }
 
     init(id: Int? = nil, name: String, pet: Pet, bestFriend: User? = nil) {

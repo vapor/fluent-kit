@@ -1,6 +1,6 @@
 extension Parent: AnyEagerLoadable {
     var eagerLoadKey: String {
-        return self.$id.key
+        return "p:" + self.$id.key
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
@@ -33,7 +33,7 @@ extension Parent: EagerLoadable {
 
 extension OptionalParent: AnyEagerLoadable {
     var eagerLoadKey: String {
-        return self.$id.key
+        return "p:" + self.$id.key
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
