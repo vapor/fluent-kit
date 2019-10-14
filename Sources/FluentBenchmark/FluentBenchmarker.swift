@@ -41,6 +41,7 @@ public final class FluentBenchmarker {
         try self.testParentGet()
         try self.testParentSerialization()
         try self.testMultipleJoinSameTable()
+        try self.testColumnFilter()
     }
     
     public func testCreate() throws {
@@ -1283,6 +1284,23 @@ public final class FluentBenchmarker {
                     print("away: \(away.name)")
                 }
             }
+        }
+    }
+
+    func testColumnFilter() throws {
+        // seeded db
+        try runTest(#function, [
+            MoonMigration(),
+            MoonSeed()
+        ]) {
+            // test filtering on columns
+            let equalNumbers = try Moon.query(on: self.database).filter(\.$craters == \.$comets).all().wait()
+            XCTAssertEqual(equalNumbers.count, 2)
+            let moreCraters = try Moon.query(on: self.database).filter(\.$craters > \.$comets).all().wait()
+            XCTAssertEqual(equalNumbers.count, 3)
+            let moreComets = try Moon.query(on: self.database).filter(\.$craters < \.$comets).all().wait()
+            XCTAssertEqual(equalNumbers.count, 2)
+            
         }
     }
 
