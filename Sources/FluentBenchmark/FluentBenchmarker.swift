@@ -1297,9 +1297,9 @@ public final class FluentBenchmarker {
             let equalNumbers = try Moon.query(on: self.database).filter(\.$craters == \.$comets).all().wait()
             XCTAssertEqual(equalNumbers.count, 2)
             let moreCraters = try Moon.query(on: self.database).filter(\.$craters > \.$comets).all().wait()
-            XCTAssertEqual(equalNumbers.count, 3)
+            XCTAssertEqual(moreCraters.count, 3)
             let moreComets = try Moon.query(on: self.database).filter(\.$craters < \.$comets).all().wait()
-            XCTAssertEqual(equalNumbers.count, 2)
+            XCTAssertEqual(moreComets.count, 2)
             
         }
     }
