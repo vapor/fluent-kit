@@ -34,8 +34,8 @@ extension AnyModel {
             schema: Self.schema,
             alias: nil
         )
-        let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equal, .null)
-        let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
+        let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
+        let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(Date()))
         query.filters.append(.group([isNull, isFuture], .or))
     }
 }

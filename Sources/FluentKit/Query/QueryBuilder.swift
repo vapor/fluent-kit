@@ -336,12 +336,12 @@ public final class QueryBuilder<Model>
 
     @discardableResult
     public func filter(_ field: DatabaseQuery.Field, _ method: DatabaseQuery.Filter.Method, _ value: DatabaseQuery.Value) -> Self {
-        return self.filter(.basic(field, method, value))
+        return self.filter(.value(field, method, value))
     }
 
     @discardableResult
     public func filter(_ lhsField: DatabaseQuery.Field, _ method: DatabaseQuery.Filter.Method, _ rhsField: DatabaseQuery.Field) -> Self {
-        return self.filter(.column(lhsField, method, rhsField))
+        return self.filter(.field(lhsField, method, rhsField))
     }
     
     @discardableResult
