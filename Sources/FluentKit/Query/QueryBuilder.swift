@@ -200,23 +200,23 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Filter
-    
+
     @discardableResult
-    public func filter(_ filter: ModelFilter<Model>) -> Self {
-        switch filter {
-        case .normal(let path, let method, let value):
-            return self.filter(
-                .field(path: path, schema: Model.schema, alias: nil),
-                method,
-                value
-            )
-        case .column(let lhsPath, let method, let rhsPath):
-            return self.filter(
-                .field(path: lhsPath, schema: Model.schema, alias: nil),
-                method,
-                .field(path: rhsPath, schema: Model.schema, alias: nil)
-            )
-        }
+    public func filter(_ filter: ModelValueFilter<Model>) -> Self {
+        return self.filter(
+            .field(path: filter.path, schema: Model.schema, alias: nil),
+            filter.method,
+            filter.value
+        )
+    }
+
+    @discardableResult
+    public func filter(_ filter: ModelFieldFilter<Model, Model>) -> Self {
+        return self.filter(
+            .field(path: filter.lhsPath, schema: Model.schema, alias: nil),
+            filter.method,
+            .field(path: filter.rhsPath, schema: Model.schema, alias: nil)
+        )
     }
 
     @discardableResult
@@ -265,43 +265,47 @@ public final class QueryBuilder<Model>
     }
 
     @discardableResult
-    public func filter<Alias>(_ alias: Alias.Type, _ filter: ModelFilter<Alias.Model>) -> Self
+    public func filter<Alias>(_ alias: Alias.Type, _ filter: ModelValueFilter<Alias.Model>) -> Self
         where Alias: ModelAlias
     {
-        switch filter {
-        case .normal(let path, let method, let value):
-            return self.filter(
-                .field(path: path, schema: Alias.alias, alias: nil),
-                method,
-                value
-            )
-        case .column(let lhsPath, let method, let rhsPath):
-            return self.filter(
-                .field(path: lhsPath, schema: Alias.alias, alias: nil),
-                method,
-                .field(path: rhsPath, schema: Alias.alias, alias: nil)
-            )
-        }
+        return self.filter(
+            .field(path: filter.path, schema: Alias.alias, alias: nil),
+            filter.method,
+            filter.value
+        )
     }
 
     @discardableResult
-    public func filter<Joined>(_ alias: Joined.Type, _ filter: ModelFilter<Joined>) -> Self
+    public func filter<Alias>(_ alias: Alias.Type, _ filter: ModelFieldFilter<Alias.Model, Alias.Model>) -> Self
+        where Alias: ModelAlias
+    {
+        return self.filter(
+            .field(path: filter.lhsPath, schema: Alias.alias, alias: nil),
+            filter.method,
+            .field(path: filter.rhsPath, schema: Alias.alias, alias: nil)
+        )
+    }
+
+    @discardableResult
+    public func filter<Joined>(_ alias: Joined.Type, _ filter: ModelValueFilter<Joined>) -> Self
         where Joined: FluentKit.Model
     {
-        switch filter {
-        case .normal(let path, let method, let value):
-            return self.filter(
-                .field(path: path, schema: Joined.schema, alias: nil),
-                method,
-                value
-            )
-        case .column(let lhsPath, let method, let rhsPath):
-            return self.filter(
-                .field(path: lhsPath, schema: Joined.schema, alias: nil),
-                method,
-                .field(path: rhsPath, schema: Joined.schema, alias: nil)
-            )
-        }
+        return self.filter(
+            .field(path: filter.path, schema: Joined.schema, alias: nil),
+            filter.method,
+            filter.value
+        )
+    }
+
+    @discardableResult
+    public func filter<Joined>(_ alias: Joined.Type, _ filter: ModelFieldFilter<Joined, Joined>) -> Self
+        where Joined: FluentKit.Model
+    {
+        return self.filter(
+            .field(path: filter.lhsPath, schema: Joined.schema, alias: nil),
+            filter.method,
+            .field(path: filter.rhsPath, schema: Joined.schema, alias: nil)
+        )
     }
     
     @discardableResult
@@ -666,73 +670,73 @@ public final class QueryBuilder<Model>
     }
 }
 
-// MARK: Operators
+// MARK: Field-Value Operators
 
-public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .equal, .bind(rhs))
 }
 
-public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .notEqual, .bind(rhs))
 }
 
-public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .greaterThanOrEqual, .bind(rhs))
 }
 
-public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .greaterThan, .bind(rhs))
 }
 
-public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .lessThan, .bind(rhs))
 }
 
-public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .lessThanOrEqual, .bind(rhs))
 }
 
 infix operator ~~
-public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelFilter<Model>
+public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .subset(inverse: false), .array(rhs.map { .bind($0) }))
 }
 
 infix operator !~
-public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelFilter<Model>
+public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .subset(inverse: true), .array(rhs.map { .bind($0) }))
 }
 
 
-public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: false, .suffix), .bind(rhs))
 }
 
-public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: false, .anywhere), .bind(rhs))
 }
 
 infix operator =~
-public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: false, .prefix), .bind(rhs))
@@ -740,123 +744,101 @@ public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> M
 
 
 infix operator !~=
-public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .suffix), .bind(rhs))
 }
 
 infix operator !~~
-public func !~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func !~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .anywhere), .bind(rhs))
 }
 
 infix operator !=~
-public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelFilter<Model>
+public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .prefix), .bind(rhs))
 }
 
-// MARK: Column Operators
+// MARK: Field-Field Operators
 
-public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
+public func == <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .equal, rhs)
 }
 
-public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
+public func != <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .notEqual, rhs)
 }
 
-public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
+public func >= <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .greaterThanOrEqual, rhs)
 }
 
-public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
+public func > <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .greaterThan, rhs)
 }
 
-public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
+public func < <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .lessThan, rhs)
 }
 
-public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
+public func <= <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable
 {
     return .init(lhs, .lessThanOrEqual, rhs)
 }
 
-// not sure about these operators yet
-/*
-infix operator ~~
-public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
-{
-    return .init(lhs, .subset(inverse: false), .array(rhs.map { .bind($0) }))
-}
-
-infix operator !~
-public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: [Field.Value]) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable
-{
-    return .init(lhs, .subset(inverse: true), .array(rhs.map { .bind($0) }))
-}*/
-
-
-public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
+public func ~= <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: false, .suffix), rhs)
 }
 
-public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
+public func ~~ <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: false, .anywhere), rhs)
 }
 
-public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
+public func =~ <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: false, .prefix), rhs)
 }
 
-
-public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
+public func !~= <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .suffix), rhs)
 }
 
-public func !~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
+public func !~~ <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .anywhere), rhs)
 }
 
-public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: KeyPath<Model, Field>) -> ModelFilter<Model>
-    where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
+public func !=~ <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+    where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .prefix), rhs)
 }
 
-
-public enum ModelFilter<Model> where Model: FluentKit.Model {
-    case normal(path: [String], method: DatabaseQuery.Filter.Method, value: DatabaseQuery.Value)
-    case column(lhsPath: [String], method: DatabaseQuery.Filter.Method, rhsPath: [String])
-
+public struct ModelValueFilter<Model> where Model: FluentKit.Model {
     init<Field>(
         _ lhs: KeyPath<Model, Field>,
         _ method: DatabaseQuery.Filter.Method,
@@ -864,26 +846,32 @@ public enum ModelFilter<Model> where Model: FluentKit.Model {
     )
         where Field: FieldRepresentable
     {
-        self = .normal(
-            path: [Model.init()[keyPath: lhs].field.key],
-            method: method,
-            value: rhs
-        )
+        self.path = [Model.init()[keyPath: lhs].field.key]
+        self.method = method
+        self.value = rhs
     }
 
+    let path: [String]
+    let method: DatabaseQuery.Filter.Method
+    let value: DatabaseQuery.Value
+}
+
+public struct ModelFieldFilter<Left, Right> where Left: FluentKit.Model, Right: FluentKit.Model {
     init<Field>(
-        _ lhs: KeyPath<Model, Field>,
+        _ lhs: KeyPath<Left, Field>,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhs: KeyPath<Model, Field>
+        _ rhs: KeyPath<Right, Field>
     )
         where Field: FieldRepresentable
     {
-        self = .column(
-            lhsPath: [Model.init()[keyPath: lhs].field.key],
-            method: method,
-            rhsPath: [Model.init()[keyPath: rhs].field.key]
-        )
+        self.lhsPath = [Left.init()[keyPath: lhs].field.key]
+        self.method = method
+        self.rhsPath = [Right.init()[keyPath: rhs].field.key]
     }
+
+    let lhsPath: [String]
+    let method: DatabaseQuery.Filter.Method
+    let rhsPath: [String]
 }
 
 public struct NestedPath: ExpressibleByStringLiteral {
