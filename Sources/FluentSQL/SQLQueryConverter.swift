@@ -228,6 +228,16 @@ public struct SQLQueryConverter {
                     right: self.value(value)
                 )
             }
+        case .column(let lhsField, let method, let rhsField):
+            switch method {
+                // possible overrides for other methods
+            default:
+                return SQLBinaryExpression(
+                    left: self.field(lhsField),
+                    op: self.method(method),
+                    right: self.field(rhsField)
+                )
+            }
         case .custom(let any):
             return custom(any)
         case .group(let filters, let relation):

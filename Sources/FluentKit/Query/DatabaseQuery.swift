@@ -85,6 +85,7 @@ public struct DatabaseQuery {
         }
         
         case basic(Field, Method, Value)
+        case column(Field, Method, Field)
         case group([Filter], Relation)
         case custom(Any)
     }
