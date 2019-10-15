@@ -193,7 +193,7 @@ public struct SQLQueryConverter {
     
     private func filter(_ filter: DatabaseQuery.Filter) -> SQLExpression {
         switch filter {
-        case .basic(let field, let method, let value):
+        case .value(let field, let method, let value):
             switch (method, value) {
             case (.equality(let inverse), .null):
                 // special case when using != and = with NULL
@@ -228,6 +228,12 @@ public struct SQLQueryConverter {
                     right: self.value(value)
                 )
             }
+        case .field(let lhsField, let method, let rhsField):
+            return SQLBinaryExpression(
+                left: self.field(lhsField),
+                op: self.method(method),
+                right: self.field(rhsField)
+            )
         case .custom(let any):
             return custom(any)
         case .group(let filters, let relation):
