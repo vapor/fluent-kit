@@ -1305,8 +1305,35 @@ public final class FluentBenchmarker {
         }
     }
 
-    func testJoinedFieldFilter() {
-        
+    func testJoinedFieldFilter() throws {
+        // seeded db
+        try runTest(#function, [
+            CityMigration(),
+            CitySeed(),
+            SchoolMigration(),
+            SchoolSeed()
+        ]) {
+            let smallSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils < \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(smallSchools.count, 3)
+
+            let largeSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils > \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(largeSchools.count, 4)
+
+            let averageSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils == \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(averageSchools.count, 1)
+        }
     }
 
     // MARK: Utilities
