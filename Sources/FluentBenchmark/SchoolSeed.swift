@@ -36,7 +36,7 @@ final class SchoolSeed: Migration {
                     return database.eventLoop.makeSucceededFuture(())
                 }
                 let saves = schools.map { school -> EventLoopFuture<Void> in
-                    return School(name: school.name, numberOfPupils: school.pupils, cityID: city.id!)
+                    return School(name: school.name, pupils: school.pupils, cityID: city.id!)
                         .save(on: database)
                 }
                 return .andAllSucceed(saves, on: database.eventLoop)

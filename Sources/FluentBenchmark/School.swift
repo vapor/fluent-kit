@@ -9,18 +9,18 @@ public final class School: Model {
     @Field(key: "name")
     public var name: String
 
-    @Field(key: "numberOfPupils")
-    public var numberOfPupils: Int
+    @Field(key: "pupils")
+    public var pupils: Int
 
     @Parent(key: "city_id")
     public var city: City
 
     public init() { }
 
-    public init(id: Int? = nil, name: String, numberOfPupils: Int, cityID: City.IDValue) {
+    public init(id: Int? = nil, name: String, pupils: Int, cityID: City.IDValue) {
         self.id = id
         self.name = name
-        self.numberOfPupils = numberOfPupils
+        self.pupils = pupils
         self.$city.id = cityID
     }
 }
@@ -30,7 +30,7 @@ public struct SchoolMigration: Migration {
         return database.schema("schools")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
-            .field("numberOfPupils", .int, .required)
+            .field("pupils", .int, .required)
             .field("city_id", .int, .required)
             .create()
     }

@@ -5,8 +5,8 @@ final class CitySeed: Migration {
 
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         let saves = [
-            City(name: "Amsterdam", averageNumberOfPupils: 300),
-            City(name: "New York", averageNumberOfPupils: 400)
+            City(name: "Amsterdam", averagePupils: 300),
+            City(name: "New York", averagePupils: 400)
         ].map { city -> EventLoopFuture<Void> in
             return city.save(on: database)
         }
