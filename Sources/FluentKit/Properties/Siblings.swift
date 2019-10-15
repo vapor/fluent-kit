@@ -75,7 +75,7 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
 
         return To.query(on: database)
             .join(self.to)
-            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(Through.self, self.from.appending(path: \.$id) == fromID)
     }
 
     func output(from output: DatabaseOutput) throws {
@@ -99,6 +99,10 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
     }
 
     // MARK: Eager Load
+
+    var eagerLoadValueDescription: CustomStringConvertible? {
+        return self.eagerLoadedValue
+    }
 
     public func eagerLoaded() throws -> [To] {
         guard let rows = self.eagerLoadedValue else {

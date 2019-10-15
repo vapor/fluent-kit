@@ -6,6 +6,11 @@ public struct DatabaseQuery {
         case delete
         case custom(Any)
     }
+
+    public enum Schema {
+        case schema(name: String, alias: String?)
+        case custom(Any)
+    }
     
     public enum Field {
         public enum Aggregate {
@@ -79,7 +84,8 @@ public struct DatabaseQuery {
             case custom(Any)
         }
         
-        case basic(Field, Method, Value)
+        case value(Field, Method, Value)
+        case field(Field, Method, Field)
         case group([Filter], Relation)
         case custom(Any)
     }
@@ -119,7 +125,7 @@ public struct DatabaseQuery {
             case inner, left, right, outer
             case custom(Any)
         }
-        case model(foreign: Field, local: Field, method: Method)
+        case join(schema: Schema, foreign: Field, local: Field, method: Method)
         case custom(Any)
     }
 

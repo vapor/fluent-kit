@@ -2,6 +2,8 @@
 public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentifiable {
     typealias Implementation = AnyProperty & AnyEagerLoadable
 
+    // MARK: ID
+
     @Field public var id: To.IDValue
     public var key: String { return self.$id.key }
 
@@ -12,6 +14,12 @@ public final class Parent<To>: AnyField, AnyEagerLoadable where To: ModelIdentif
         get { self.$id.inputValue }
         set { self.$id.inputValue = newValue }
     }
+
+    public var field: Field<To.IDValue> {
+        return self.$id
+    }
+
+    // MARK: Wrapper
 
     public var wrappedValue: To {
         guard let value = self.eagerLoadedValue else {
@@ -114,11 +122,15 @@ extension Parent where To: Model {
             // TODO: allow for nested decoding
         }
 
+        var eagerLoadValueDescription: CustomStringConvertible? {
+            return self.eagerLoadedValue
+        }
+      
         func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
             guard let request = eagerLoads.requests[label] else {
                 return
             }
-
+          
             if let join = request as? JoinEagerLoad {
                 self.parent.eagerLoadedValue = try join.get(id: self.id)
             } else if let subquery = request as? SubqueryEagerLoad {
@@ -127,7 +139,7 @@ extension Parent where To: Model {
                 fatalError("unsupported eagerload request: \(request)")
             }
         }
-
+      
         func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
             switch method {
             case .subquery:
@@ -192,6 +204,40 @@ extension Parent where To: OptionalType, To.Wrapped: Model {
             // TODO: allow for nested decoding
         }
 
+        func prepare(query: inout DatabaseQuery) {
+            // we can assume query.schema since eager loading
+            // is only allowed on the base schema
+            query.joins.append(.join(
+                schema: .schema(name: To.schema, alias: nil),
+                foreign: .field(
+                    path: [To.key(for: \._$id)],
+                    schema: To.schema,
+                    alias: nil
+                ),
+                local: .field(
+                    path: [self.key],
+                    schema: query.schema,
+                    alias: nil
+                ),
+                method: .inner
+            ))
+            query.fields += To().fields.map { (_, field) in
+                return .field(
+                    path: [field.key],
+                    schema: To.schema,
+                    alias: To.schema + "_" + field.key
+                )
+            }
+
+            if let join = request as? JoinEagerLoad {
+                self.parent.eagerLoadedValue = try join.get(id: self.id)
+            } else if let subquery = request as? SubqueryEagerLoad {
+                self.parent.eagerLoadedValue = try subquery.get(id: self.id)
+            } else {
+                fatalError("unsupported eagerload request: \(request)")
+            }
+        }
+      
         func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
             guard let request = eagerLoads.requests[label] else {
                 return

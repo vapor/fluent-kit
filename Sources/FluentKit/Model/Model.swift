@@ -3,6 +3,11 @@ public protocol AnyModel: class, CustomStringConvertible, Codable {
     init()
 }
 
+public protocol ModelAlias {
+    associatedtype Model: FluentKit.Model
+    static var alias: String { get }
+}
+
 public protocol ModelIdentifiable {
     associatedtype IDValue: Codable, Hashable
 
@@ -33,7 +38,7 @@ extension AnyModel {
         self.init()
         let container = try decoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let decoder = try container.superDecoder(forKey: .string(label))
+            let decoder = LazyDecoder { try container.superDecoder(forKey: .string(label)) }
             try property.decode(from: decoder)
         }
     }
@@ -41,17 +46,98 @@ extension AnyModel {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let encoder = container.superEncoder(forKey: .string(label))
+            let encoder = LazyEncoder { container.superEncoder(forKey: .string(label)) }
             try property.encode(to: encoder)
         }
     }
 }
 
+private final class LazyDecoder: Decoder {
+    let factory: () throws -> Decoder
+    var cached: Result<Decoder, Error>?
+    
+    var value: Result<Decoder, Error> {
+        if let decoder = self.cached {
+            return decoder
+        } else {
+            let decoder: Result<Decoder, Error>
+            do {
+                decoder = try .success(self.factory())
+            } catch {
+                decoder = .failure(error)
+            }
+            self.cached = decoder
+            return decoder
+        }
+    }
+    
+    var codingPath: [CodingKey] {
+        return (try? self.value.get().codingPath) ?? []
+    }
+    var userInfo: [CodingUserInfoKey : Any] {
+        return (try? self.value.get().userInfo) ?? [:]
+    }
+    
+    init(factory: @escaping () throws -> Decoder) {
+        self.factory = factory
+    }
+    
+    func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
+        return try self.value.get().container(keyedBy: Key.self)
+    }
+    
+    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+        return try self.value.get().unkeyedContainer()
+    }
+    
+    func singleValueContainer() throws -> SingleValueDecodingContainer {
+        return try self.value.get().singleValueContainer()
+    }
+    
+}
+
+private final class LazyEncoder: Encoder {
+    let factory: () -> Encoder
+    var cached: Encoder?
+    var value: Encoder {
+        if let encoder = self.cached {
+            return encoder
+        } else {
+            let encoder = self.factory()
+            self.cached = encoder
+            return encoder
+        }
+    }
+    
+    var codingPath: [CodingKey] {
+        return self.value.codingPath
+    }
+    var userInfo: [CodingUserInfoKey : Any] {
+        return self.value.userInfo
+    }
+    
+    init(factory: @escaping () -> Encoder) {
+        self.factory = factory
+    }
+    
+    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
+        return self.value.container(keyedBy: Key.self)
+    }
+    
+    func unkeyedContainer() -> UnkeyedEncodingContainer {
+        return self.value.unkeyedContainer()
+    }
+    
+    func singleValueContainer() -> SingleValueEncodingContainer {
+        return self.value.singleValueContainer()
+    }
+}
+
 extension Model {
     static func key<Field>(for field: KeyPath<Self, Field>) -> String
-        where Field: Filterable
+        where Field: FieldRepresentable
     {
-        return Self.init()[keyPath: field].key
+        return Self.init()[keyPath: field].field.key
     }
 }
 
@@ -76,21 +162,38 @@ extension AnyModel {
     }
 
     public var description: String {
-        let input: String
-        if self.input.isEmpty {
-            input = "nil"
-        } else {
-            input = self.input.description
+        var info: [InfoKey: CustomStringConvertible] = [:]
+
+        if !self.input.isEmpty {
+            info["input"] = self.input
         }
 
-        let output: String
-        if let o = self.anyID.cachedOutput {
-            output = o.description
-        } else {
-            output = "[:]"
+        if let output = self.anyID.cachedOutput {
+            info["output"] = output
         }
 
-        return "\(Self.self)(input: \(input), output: \(output))"
+        let eagerLoads: [String: CustomStringConvertible] = .init(uniqueKeysWithValues: self.eagerLoadables.compactMap { (name, eagerLoadable) in
+            if let value = eagerLoadable.eagerLoadValueDescription {
+                return (name, value)
+            } else {
+                return nil
+            }
+        })
+        if !eagerLoads.isEmpty {
+            info["eagerLoads"] = eagerLoads
+        }
+
+        return "\(Self.self)(\(info.debugDescription.dropFirst().dropLast()))"
+    }
+}
+
+private struct InfoKey: ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
+    let value: String
+    var description: String {
+        return self.value
+    }
+    init(stringLiteral value: String) {
+        self.value = value
     }
 }
 
@@ -120,6 +223,18 @@ extension AnyModel {
     }
 
     // MARK: Joined
+
+    public func joined<Joined>(_ model: Joined.Type) throws -> Joined.Model
+        where Joined: ModelAlias
+    {
+        guard let output = self.anyID.cachedOutput else {
+            fatalError("Can only access joined models using models fetched from database.")
+        }
+        let joined = Joined.Model()
+        try joined.output(from: output.prefixed(by: Joined.alias + "_"))
+        return joined
+    }
+
 
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
         where Joined: FluentKit.Model

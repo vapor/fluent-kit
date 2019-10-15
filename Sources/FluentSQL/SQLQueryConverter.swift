@@ -108,25 +108,29 @@ public struct SQLQueryConverter {
         switch join {
         case .custom(let any):
             return custom(any)
-        case .model(let foreign, let local, let method):
-            let table: SQLExpression
-            switch foreign {
-            case .custom(let any):
-                table = custom(any)
-            case .field(_, let schema, _):
-                table = SQLIdentifier(schema!)
-            case .aggregate:
-                fatalError("Joining on an aggregate field is not supported.")
-            }
+        case .join(let schema, let foreign, let local, let method):
             return SQLJoin(
                 method: self.joinMethod(method),
-                table: table,
+                table: self.schema(schema),
                 expression: SQLBinaryExpression(
                     left: self.field(local),
                     op: SQLBinaryOperator.equal,
                     right: self.field(foreign)
                 )
             )
+        }
+    }
+
+    private func schema(_ schema: DatabaseQuery.Schema) -> SQLExpression {
+        switch schema {
+        case .schema(let name, let alias):
+            if let alias = alias {
+                return SQLAlias(SQLIdentifier(name), as: SQLIdentifier(alias))
+            } else {
+                return SQLIdentifier(name)
+            }
+        case .custom(let any):
+            return custom(any)
         }
     }
     
@@ -189,7 +193,7 @@ public struct SQLQueryConverter {
     
     private func filter(_ filter: DatabaseQuery.Filter) -> SQLExpression {
         switch filter {
-        case .basic(let field, let method, let value):
+        case .value(let field, let method, let value):
             switch (method, value) {
             case (.equality(let inverse), .null):
                 // special case when using != and = with NULL
@@ -224,6 +228,12 @@ public struct SQLQueryConverter {
                     right: self.value(value)
                 )
             }
+        case .field(let lhsField, let method, let rhsField):
+            return SQLBinaryExpression(
+                left: self.field(lhsField),
+                op: self.method(method),
+                right: self.field(rhsField)
+            )
         case .custom(let any):
             return custom(any)
         case .group(let filters, let relation):

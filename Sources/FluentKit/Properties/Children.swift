@@ -21,10 +21,10 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
 
     public var wrappedValue: [To] {
         get {
-            guard let values = self.eagerLoadedValue else {
-                fatalError("Child relations not eager loaded, use $ prefix to access")
+            guard let eagerLoaded = self.eagerLoadedValue else {
+                fatalError("Children relation not eager loaded, use $ prefix to access")
             }
-            return values
+            return eagerLoaded
         }
         set { fatalError("Use $ prefix to access") }
     }
@@ -40,6 +40,12 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         }
         return rows
     }
+    
+    public var fromId: From.IDValue? {
+        return self.idValue
+    }
+
+    // MARK: Query
 
     public func query(on database: Database) throws -> QueryBuilder<To> {
         guard let id = self.idValue else {
@@ -68,8 +74,20 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         try self.implementation.eagerLoad(from: eagerLoads, label: label)
     }
 
+    var eagerLoadValueDescription: CustomStringConvertible? {
+        return self.eagerLoadedValue
+    }
+  
+  
     func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
         self.implementation.eagerLoad(to: eagerLoads, method: method, label: label)
+    }
+
+    public func eagerLoaded() throws -> [To] {
+        guard let rows = self.eagerLoadedValue else {
+            throw FluentError.missingEagerLoad(name: To.schema.self)
+        }
+        return rows
     }
 }
 

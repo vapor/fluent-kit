@@ -41,6 +41,11 @@ public final class FluentBenchmarker {
         try self.testUUIDModel()
         try self.testNewModelDecode()
         try self.testSiblingsAttach()
+        try self.testParentGet()
+        try self.testParentSerialization()
+        try self.testMultipleJoinSameTable()
+        try self.testFieldFilter()
+        try self.testJoinedFieldFilter()
     }
     
     public func testCreate() throws {
@@ -781,8 +786,8 @@ public final class FluentBenchmarker {
     }
 
     public func testSoftDelete() throws {
-        final class User: Model {
-            static let schema = "users"
+        final class SoftDeleteUser: Model {
+            static let schema = "sd_users"
 
             @ID(key: "id")
             var id: Int?
@@ -799,9 +804,10 @@ public final class FluentBenchmarker {
                 self.name = name
             }
         }
-        struct UserMigration: Migration {
+
+        struct SDUserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("users")
+                return database.schema("sd_users")
                     .field("id", .int, .identifier(auto: true))
                     .field("name", .string, .required)
                     .field("deleted_at", .datetime)
@@ -809,32 +815,32 @@ public final class FluentBenchmarker {
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("users").delete()
+                return database.schema("sd_users").delete()
             }
         }
 
 
         func testCounts(allCount: Int, realCount: Int) throws {
-            let all = try User.query(on: self.database).all().wait()
+            let all = try SoftDeleteUser.query(on: self.database).all().wait()
             guard all.count == allCount else {
                 throw Failure("all count should be \(allCount)")
             }
-            let real = try User.query(on: self.database).withDeleted().all().wait()
+            let real = try SoftDeleteUser.query(on: self.database).withDeleted().all().wait()
             guard real.count == realCount else {
                 throw Failure("real count should be \(realCount)")
             }
         }
 
         try runTest(#function, [
-            UserMigration(),
+            SDUserMigration(),
         ]) {
             // save two users
-            try User(name: "A").save(on: self.database).wait()
-            try User(name: "B").save(on: self.database).wait()
+            try SoftDeleteUser(name: "A").save(on: self.database).wait()
+            try SoftDeleteUser(name: "B").save(on: self.database).wait()
             try testCounts(allCount: 2, realCount: 2)
 
             // soft-delete a user
-            let a = try User.query(on: self.database).filter(\.$name == "A").first().wait()!
+            let a = try SoftDeleteUser.query(on: self.database).filter(\.$name == "A").first().wait()!
             try a.delete(on: self.database).wait()
             try testCounts(allCount: 1, realCount: 2)
 
@@ -1218,6 +1224,196 @@ public final class FluentBenchmarker {
                 default: break
                 }
             }
+        }
+    }
+
+    public func testParentGet() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .all().wait()
+
+            for planet in planets {
+                let galaxy = try planet.$galaxy.get(on: self.database).wait()
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(galaxy.name, "Milky Way")
+                case "PA-99-N2":
+                    XCTAssertEqual(galaxy.name, "Andromeda")
+                case "Jupiter":
+                    XCTAssertEqual(galaxy.name, "Milky Way")
+                default: break
+                }
+            }
+        }
+    }
+
+    public func testParentSerialization() throws {
+        // seeded db
+        try runTest(#function, [
+            GalaxyMigration(),
+            GalaxySeed(),
+            PlanetMigration(),
+            PlanetSeed(),
+        ]) {
+            let galaxies = try Galaxy.query(on: self.database)
+                .all().wait()
+            
+            struct GalaxyKey: CodingKey, ExpressibleByStringLiteral {
+                var stringValue: String
+                var intValue: Int? {
+                    return Int(self.stringValue)
+                }
+                
+                init(stringLiteral value: String) {
+                    self.stringValue = value
+                }
+                
+                init?(stringValue: String) {
+                    self.stringValue = stringValue
+                }
+                
+                init?(intValue: Int) {
+                    self.stringValue = intValue.description
+                }
+            }
+            
+            struct GalaxyJSON: Codable {
+                var id: Int
+                var name: String
+                
+                init(from decoder: Decoder) throws {
+                    let keyed = try decoder.container(keyedBy: GalaxyKey.self)
+                    self.id = try keyed.decode(Int.self, forKey: "id")
+                    self.name = try keyed.decode(String.self, forKey: "name")
+                    XCTAssertEqual(keyed.allKeys.count, 2)
+                }
+            }
+
+            let encoded = try JSONEncoder().encode(galaxies)
+            print(String(decoding: encoded, as: UTF8.self))
+            
+            let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: encoded)
+            XCTAssertEqual(galaxies.map { $0.id }, decoded.map { $0.id })
+            XCTAssertEqual(galaxies.map { $0.name }, decoded.map { $0.name })
+        }
+    }
+
+    public func testMultipleJoinSameTable() throws {
+        // seeded db
+        try runTest(#function, [
+            TeamMigration(),
+            MatchMigration(),
+            TeamMatchSeed()
+        ]) {
+            // test fetching teams
+            do {
+                let teams = try Team.query(on: self.database)
+                    .with(\.$awayMatches).with(\.$homeMatches)
+                    .all().wait()
+                for team in teams {
+                    for homeMatch in team.homeMatches {
+                        XCTAssert(homeMatch.name.hasPrefix(team.name))
+                        XCTAssert(!homeMatch.name.hasSuffix(team.name))
+                    }
+                    for awayMatch in team.awayMatches {
+                        XCTAssert(!awayMatch.name.hasPrefix(team.name))
+                        XCTAssert(awayMatch.name.hasSuffix(team.name))
+                    }
+                }
+            }
+
+            // test fetching matches
+            do {
+                let matches = try Match.query(on: self.database)
+                    .with(\.$awayTeam).with(\.$homeTeam)
+                    .all().wait()
+                for match in matches {
+                    XCTAssert(match.name.hasPrefix(match.homeTeam.name))
+                    XCTAssert(match.name.hasSuffix(match.awayTeam.name))
+                }
+            }
+
+            struct HomeTeam: ModelAlias {
+                typealias Model = Team
+                static var alias: String { "home_teams" }
+            }
+
+            struct AwayTeam: ModelAlias {
+                typealias Model = Team
+                static var alias: String { "away_teams" }
+            }
+
+            // test manual join
+            do {
+                #warning("TODO: field representable")
+                #warning("TODO: schema -> table")
+                let matches = try Match.query(on: self.database)
+                    .join(HomeTeam.self, on: \Match.$homeTeam == \Team.$id)
+                    .join(AwayTeam.self, on: \Match.$awayTeam == \Team.$id)
+                    .filter(HomeTeam.self, \Team.$name == "a")
+                    .all().wait()
+
+                for match in matches {
+                    let home = try match.joined(HomeTeam.self)
+                    let away = try match.joined(AwayTeam.self)
+                    print(match.name)
+                    print("home: \(home.name)")
+                    print("away: \(away.name)")
+                }
+            }
+        }
+    }
+
+    func testFieldFilter() throws {
+        // seeded db
+        try runTest(#function, [
+            MoonMigration(),
+            MoonSeed()
+        ]) {
+            // test filtering on columns
+            let equalNumbers = try Moon.query(on: self.database).filter(\.$craters == \.$comets).all().wait()
+            XCTAssertEqual(equalNumbers.count, 2)
+            let moreCraters = try Moon.query(on: self.database).filter(\.$craters > \.$comets).all().wait()
+            XCTAssertEqual(moreCraters.count, 3)
+            let moreComets = try Moon.query(on: self.database).filter(\.$craters < \.$comets).all().wait()
+            XCTAssertEqual(moreComets.count, 2)
+        }
+    }
+
+    func testJoinedFieldFilter() throws {
+        // seeded db
+        try runTest(#function, [
+            CityMigration(),
+            CitySeed(),
+            SchoolMigration(),
+            SchoolSeed()
+        ]) {
+            let smallSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils < \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(smallSchools.count, 3)
+
+            let largeSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils > \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(largeSchools.count, 4)
+
+            let averageSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils == \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(averageSchools.count, 1)
         }
     }
 
