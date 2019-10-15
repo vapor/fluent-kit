@@ -1,0 +1,25 @@
+name: test
+on:
+- pull_request
+jobs:
+  xenial:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: docker://vapor/swift:5.1-xenial
+      with:
+        entrypoint: swift
+        args: test
+  bionic:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: docker://vapor/swift:5.1-bionic
+      with:
+        entrypoint: swift
+        args: test
+  sqlite:
+    container: vapor/swift:5.1
+    steps:
+    - uses: actions/checkout@v1
+    - run: swift --version
