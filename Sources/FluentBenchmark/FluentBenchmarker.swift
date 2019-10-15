@@ -1301,7 +1301,6 @@ public final class FluentBenchmarker {
             XCTAssertEqual(moreCraters.count, 3)
             let moreComets = try Moon.query(on: self.database).filter(\.$craters < \.$comets).all().wait()
             XCTAssertEqual(moreComets.count, 2)
-            
         }
     }
 
