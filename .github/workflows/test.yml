@@ -58,6 +58,8 @@ jobs:
     services:
       mysql:
         image: mysql
+        ports:
+          - 3306/tcp
         env:
           MYSQL_DATABASE: vapor_database
           MYSQL_USER: vapor_username
@@ -65,6 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - run: echo ${{ job.services.mysql.ports['3306'] }}
     - run: git clone -b master https://github.com/vapor/fluent-mysql-driver.git
       working-directory: ./
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
