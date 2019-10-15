@@ -41,7 +41,8 @@ public final class FluentBenchmarker {
         try self.testParentGet()
         try self.testParentSerialization()
         try self.testMultipleJoinSameTable()
-        try self.testColumnFilter()
+        try self.testFieldFilter()
+        try self.testJoinedFieldFilter()
     }
     
     public func testCreate() throws {
@@ -1287,7 +1288,7 @@ public final class FluentBenchmarker {
         }
     }
 
-    func testColumnFilter() throws {
+    func testFieldFilter() throws {
         // seeded db
         try runTest(#function, [
             MoonMigration(),
@@ -1302,6 +1303,10 @@ public final class FluentBenchmarker {
             XCTAssertEqual(moreComets.count, 2)
             
         }
+    }
+
+    func testJoinedFieldFilter() {
+        
     }
 
     // MARK: Utilities

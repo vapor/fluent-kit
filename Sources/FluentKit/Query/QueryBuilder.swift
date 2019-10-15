@@ -220,6 +220,17 @@ public final class QueryBuilder<Model>
     }
 
     @discardableResult
+    public func filter<Left, Right>(_ filter: ModelFieldFilter<Left, Right>) -> Self
+        where Left: FluentKit.Model, Right: FluentKit.Model
+    {
+        return self.filter(
+            .field(path: filter.lhsPath, schema: Left.schema, alias: nil),
+            filter.method,
+            .field(path: filter.rhsPath, schema: Right.schema, alias: nil)
+        )
+    }
+
+    @discardableResult
     public func filter<Joined, Values>(
         _ field: KeyPath<Joined, Field<Values.Element>>,
         in values: Values,
