@@ -2,22 +2,22 @@ name: test
 on:
 - pull_request
 jobs:
-  xenial:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: docker://vapor/swift:5.1-xenial
-      with:
-        entrypoint: swift
-        args: test
-  bionic:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: docker://vapor/swift:5.1-bionic
-      with:
-        entrypoint: swift
-        args: test
+  # xenial:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - uses: docker://vapor/swift:5.1-xenial
+  #     with:
+  #       entrypoint: swift
+  #       args: test
+  # bionic:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - uses: docker://vapor/swift:5.1-bionic
+  #     with:
+  #       entrypoint: swift
+  #       args: test
   sqlite:
     container: 
       image: vapor/swift:5.1
@@ -26,8 +26,8 @@ jobs:
     - uses: actions/checkout@v1
     - run: apt update -y; apt install -y libsqlite3-dev
     - run: git clone -b master https://github.com/vapor/fluent-sqlite-driver.git
-      working-directory: ~/
+      working-directory: ./
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ~/fluent-sqlite-driver
+      working-directory: ./fluent-sqlite-driver
     - run: swift test
-      working-directory: ~/fluent-sqlite-driver
+      working-directory: ./fluent-sqlite-driver
