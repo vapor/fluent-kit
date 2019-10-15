@@ -3,21 +3,19 @@ on:
 - pull_request
 jobs:
   xenial:
+    container: 
+      image: vapor/swift:5.1-xenial
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: docker://vapor/swift:5.1-xenial
-      with:
-        entrypoint: swift
-        args: test
+    - uses: actions/checkout@master
+    - run: swift test
   bionic:
+    container: 
+      image: vapor/swift:5.1-bionic
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: docker://vapor/swift:5.1-bionic
-      with:
-        entrypoint: swift
-        args: test
+    - uses: actions/checkout@master
+    - run: swift test
   sqlite:
     container: 
       image: vapor/swift:5.1
@@ -47,6 +45,7 @@ jobs:
       with:
         repository: vapor/fluent-postgres-driver
         ref: master
+    - run: pwd
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
     - run: swift test
       env:
