@@ -25,7 +25,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
       with:
-        repository: fluent-sqlite-driver
+        repository: vapor/fluent-sqlite-driver
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
     - run: swift test
   postgres:
@@ -44,9 +44,11 @@ jobs:
     steps:
     - uses: actions/checkout@master
       with:
-        repository: fluent-postgres-driver
+        repository: vapor/fluent-postgres-driver
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
     - run: swift test
+      env:
+        POSTGRES_HOSTNAME: psql
   mysql:
     container: 
       image: vapor/swift:5.1
@@ -62,7 +64,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
       with:
-        repository: fluent-mysql-driver
+        repository: vapor/fluent-mysql-driver
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
     - run: swift test
       env:
