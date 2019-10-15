@@ -19,7 +19,9 @@ jobs:
         entrypoint: swift
         args: test
   sqlite:
-    container: vapor/swift:5.1
+    container: 
+      image: vapor/swift:5.1
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: swift --version
