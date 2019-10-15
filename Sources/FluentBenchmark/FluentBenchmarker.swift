@@ -41,6 +41,8 @@ public final class FluentBenchmarker {
         try self.testParentGet()
         try self.testParentSerialization()
         try self.testMultipleJoinSameTable()
+        try self.testFieldFilter()
+        try self.testJoinedFieldFilter()
     }
     
     public func testCreate() throws {
@@ -1283,6 +1285,53 @@ public final class FluentBenchmarker {
                     print("away: \(away.name)")
                 }
             }
+        }
+    }
+
+    func testFieldFilter() throws {
+        // seeded db
+        try runTest(#function, [
+            MoonMigration(),
+            MoonSeed()
+        ]) {
+            // test filtering on columns
+            let equalNumbers = try Moon.query(on: self.database).filter(\.$craters == \.$comets).all().wait()
+            XCTAssertEqual(equalNumbers.count, 2)
+            let moreCraters = try Moon.query(on: self.database).filter(\.$craters > \.$comets).all().wait()
+            XCTAssertEqual(moreCraters.count, 3)
+            let moreComets = try Moon.query(on: self.database).filter(\.$craters < \.$comets).all().wait()
+            XCTAssertEqual(moreComets.count, 2)
+        }
+    }
+
+    func testJoinedFieldFilter() throws {
+        // seeded db
+        try runTest(#function, [
+            CityMigration(),
+            CitySeed(),
+            SchoolMigration(),
+            SchoolSeed()
+        ]) {
+            let smallSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils < \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(smallSchools.count, 3)
+
+            let largeSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils > \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(largeSchools.count, 4)
+
+            let averageSchools = try School.query(on: self.database)
+                .join(\.$city)
+                .filter(\School.$numberOfPupils == \City.$averageNumberOfPupils)
+                .all()
+                .wait()
+            XCTAssertEqual(averageSchools.count, 1)
         }
     }
 
