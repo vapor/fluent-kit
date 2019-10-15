@@ -59,6 +59,7 @@ jobs:
       mysql:
         image: mysql
         env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
           MYSQL_DATABASE: vapor_database
           MYSQL_USER: vapor_username
           MYSQL_PASSWORD: vapor_password
@@ -72,6 +73,3 @@ jobs:
       working-directory: ./fluent-mysql-driver
     - run: swift test
       working-directory: ./fluent-mysql-driver
-      env:
-        MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
-        MYSQL_HOSTNAME: mysql
