@@ -2,56 +2,51 @@ name: test
 on:
 - pull_request
 jobs:
-  # xenial:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - uses: docker://vapor/swift:5.1-xenial
-  #     with:
-  #       entrypoint: swift
-  #       args: test
-  # bionic:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - uses: docker://vapor/swift:5.1-bionic
-  #     with:
-  #       entrypoint: swift
-  #       args: test
-  # sqlite:
-  #   container: 
-  #     image: vapor/swift:5.1
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - run: apt update -y; apt install -y libsqlite3-dev
-  #   - run: git clone -b master https://github.com/vapor/fluent-sqlite-driver.git
-  #     working-directory: ./
-  #   - run: swift package edit fluent-kit --revision ${{ github.sha }}
-  #     working-directory: ./fluent-sqlite-driver
-  #   - run: swift test
-  #     working-directory: ./fluent-sqlite-driver
-  # postgres:
-  #   container: 
-  #     image: vapor/swift:5.1
-  #   services:
-  #     psql:
-  #       image: postgres
-  #       ports:
-  #         - 5432:5432
-  #       env:
-  #         POSTGRES_USER: vapor_username
-  #         POSTGRES_DB: vapor_database
-  #         POSTGRES_PASSWORD: vapor_password
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - run: git clone -b master https://github.com/vapor/fluent-postgres-driver.git
-  #     working-directory: ./
-  #   - run: swift package edit fluent-kit --revision ${{ github.sha }}
-  #     working-directory: ./fluent-postgres-driver
-  #   - run: swift test
-  #     working-directory: ./fluent-postgres-driver
+  xenial:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: docker://vapor/swift:5.1-xenial
+      with:
+        entrypoint: swift
+        args: test
+  bionic:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: docker://vapor/swift:5.1-bionic
+      with:
+        entrypoint: swift
+        args: test
+  sqlite:
+    container: 
+      image: vapor/swift:5.1
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        repository: fluent-sqlite-driver
+    - run: swift package edit fluent-kit --revision ${{ github.sha }}
+    - run: swift test
+  postgres:
+    container: 
+      image: vapor/swift:5.1
+    services:
+      psql:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: vapor_username
+          POSTGRES_DB: vapor_database
+          POSTGRES_PASSWORD: vapor_password
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        repository: fluent-postgres-driver
+    - run: swift package edit fluent-kit --revision ${{ github.sha }}
+    - run: swift test
   mysql:
     container: 
       image: vapor/swift:5.1
@@ -65,11 +60,11 @@ jobs:
           MYSQL_PASSWORD: vapor_password
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - run: echo 
-    - run: git clone -b master https://github.com/vapor/fluent-mysql-driver.git
-      working-directory: ./
+    - uses: actions/checkout@master
+      with:
+        repository: fluent-mysql-driver
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ./fluent-mysql-driver
     - run: swift test
-      working-directory: ./fluent-mysql-driver
+      env:
+        MYSQL_HOSTNAME: mysql
+        MYSQL_TLS: true
