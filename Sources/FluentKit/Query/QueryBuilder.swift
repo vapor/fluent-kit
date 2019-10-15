@@ -149,6 +149,21 @@ public final class QueryBuilder<Model>
     }
 
     @discardableResult
+    public func join<Foreign, Local, Value>(
+        _ foreign: KeyPath<Foreign, Field<Value>>,
+        on filter: JoinFilter<Foreign, Local, Value>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self
+        where Foreign: FluentKit.Model, Local: FluentKit.Model
+    {
+        return self.join(
+            Foreign.self, filter.foreign,
+            to: Local.self, filter.local,
+            alias: nil
+        )
+    }
+
+    @discardableResult
     public func join<ForeignAlias, Local, Value>(
         _ foreignAlias: ForeignAlias.Type,
         on filter: JoinFilter<ForeignAlias.Model, Local, Value>,
