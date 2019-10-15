@@ -59,7 +59,7 @@ jobs:
       mysql:
         image: mysql
         ports:
-          - 5432:5432
+          - 3306:3306
         env:
           MYSQL_DATABASE: vapor_database
           MYSQL_USER: vapor_username
