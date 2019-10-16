@@ -26,35 +26,13 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Eager Load
-    
-    @discardableResult
-    public func with<Value>(
-        _ field: KeyPath<Model, Children<Model, Value>>
-    ) -> Self {
-        let ref = Model()
-        let property = ref[keyPath: field]
-        property.eagerLoad(to: self.eagerLoads, method: .subquery, label: ref.label(for: property))
-        return self
-    }
 
     @discardableResult
-    public func with<Value>(
-        _ field: KeyPath<Model, Parent<Value>>,
-        method: EagerLoadMethod = .subquery
-    ) -> Self {
+    public func with<Property>(_ field: KeyPath<Model, Property>) -> Self
+        where Property: EagerLoadable
+    {
         let ref = Model()
-        let property = ref[keyPath: field]
-        property.eagerLoad(to: self.eagerLoads, method: method, label: ref.label(for: property))
-        return self
-    }
-
-    @discardableResult
-    public func with<To, Through>(
-        _ field: KeyPath<Model, Siblings<Model, To, Through>>
-    ) -> Self {
-        let ref = Model()
-        let property = ref[keyPath: field]
-        property.eagerLoad(to: self.eagerLoads, method: .subquery, label: ref.label(for: property))
+        ref[keyPath: field].eagerLoad(to: self)
         return self
     }
 

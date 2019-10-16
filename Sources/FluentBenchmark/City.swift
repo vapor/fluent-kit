@@ -9,18 +9,18 @@ public final class City: Model {
     @Field(key: "name")
     public var name: String
 
-    @Field(key: "averageNumberOfPupils")
-    public var averageNumberOfPupils: Int
+    @Field(key: "avg_pupils")
+    public var averagePupils: Int
 
-    @Children(from: \.$city)
+    @Children(for: \.$city)
     public var schools: [School]
 
     public init() { }
 
-    public init(id: Int? = nil, name: String, averageNumberOfPupils: Int) {
+    public init(id: Int? = nil, name: String, averagePupils: Int) {
         self.id = id
         self.name = name
-        self.averageNumberOfPupils = averageNumberOfPupils
+        self.averagePupils = averagePupils
     }
 }
 
@@ -29,7 +29,7 @@ public struct CityMigration: Migration {
         return database.schema("cities")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
-            .field("averageNumberOfPupils", .int, .required)
+            .field("avg_pupils", .int, .required)
             .create()
     }
 
