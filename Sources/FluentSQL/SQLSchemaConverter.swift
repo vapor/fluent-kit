@@ -39,9 +39,8 @@ public struct SQLSchemaConverter {
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint) -> SQLExpression {
-        switch constraint {
-        case .unique(let fields):
-            let name = fields.map { field -> String in
+        func identifier(_ fields: [DatabaseSchema.FieldName]) -> String {
+            return fields.map { field -> String in
                 switch field {
                 case .custom:
                     return ""
@@ -49,13 +48,49 @@ public struct SQLSchemaConverter {
                     return name
                 }
             }.joined(separator: "+")
+        }
+
+        switch constraint {
+        case .unique(let fields):
+            let name = identifier(fields)
             return SQLTableConstraint(
                 columns: fields.map(self.fieldName),
                 algorithm: SQLConstraintAlgorithm.unique,
                 name: SQLIdentifier("uq:\(name)")
             )
+        case .foreignKey(fields: let fields, parentTable: let parent, parentFields: let parentFields, updateAction: let onUpdate, deleteAction: let onDelete):
+            let name = identifier(fields + parentFields)
+            let childFieldGroup = SQLGroupExpression(
+                fields.map(self.fieldName)
+            )
+            let reference = SQLForeignKey(
+                table: self.name(parent),
+                columns: parentFields.map(self.fieldName),
+                onDelete: sqlForeignKeyAction(onDelete),
+                onUpdate: sqlForeignKeyAction(onUpdate))
+            return SQLTableConstraint(
+                columns: nil,
+                algorithm: SQLConstraintAlgorithm.foreignKey(childFieldGroup),
+                name: SQLIdentifier("fk:\(name)"),
+                modifier: reference
+            )
         case .custom(let any):
             return custom(any)
+        }
+    }
+
+    private func sqlForeignKeyAction(_ fkAction: DatabaseSchema.Constraint.ForeignKeyAction) -> SQLForeignKeyAction {
+        switch fkAction {
+        case .noAction:
+            return .noAction
+        case .restrict:
+            return .restrict
+        case .cascade:
+            return .cascade
+        case .setNull:
+            return .setNull
+        case .setDefault:
+            return .setDefault
         }
     }
     
@@ -136,6 +171,12 @@ public struct SQLSchemaConverter {
             return SQLColumnConstraint.notNull
         case .identifier(let auto):
             return SQLColumnConstraint.primaryKey(autoIncrement: auto, name: nil)
+        case .foreignKey(parentTable: let parent, parentField: let parentField, updateAction: let onUpdate, deleteAction: let onDelete):
+            return SQLColumnConstraint.references(self.name(parent),
+                                                  self.fieldName(parentField),
+                                                  onDelete: sqlForeignKeyAction(onDelete),
+                                                  onUpdate: sqlForeignKeyAction(onUpdate),
+                                                  name: nil)
         case .custom(let any):
             return custom(any)
         }
