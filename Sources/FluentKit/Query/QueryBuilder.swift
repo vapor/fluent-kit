@@ -668,9 +668,12 @@ public final class QueryBuilder<Model>
                 .forEach { $0.excludeDeleted(from: &query) }
         }
 
-        return self.database.execute(query) { output in
+        return self.database.driver.execute(
+            query,
+            eventLoop: self.database.eventLoopPreference
+        ) { output in
             try onOutput(output)
-        }
+        }.hop(to: self.database.eventLoop)
     }
 }
 

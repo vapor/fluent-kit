@@ -1,18 +1,14 @@
 import Foundation
 
 public struct Databases {
-    private var storage: [DatabaseID: Database]
+    private var storage: [DatabaseID: DatabaseDriver]
+    private var _default: DatabaseDriver?
     
-    private var _default: Database?
-    
-    public let eventLoop: EventLoop
-    
-    public init(on eventLoop: EventLoop) {
+    public init() {
         self.storage = [:]
-        self.eventLoop = eventLoop
     }
     
-    public mutating func add(_ database: Database, as id: DatabaseID, isDefault: Bool = true) {
+    public mutating func add(_ database: DatabaseDriver, as id: DatabaseID, isDefault: Bool = true) {
         self.storage[id] = database
         if isDefault {
             self._default = database
@@ -20,14 +16,31 @@ public struct Databases {
     }
     
     public func database(_ id: DatabaseID) -> Database? {
-        return self.storage[id]
+        return self.storage[id].flatMap { BasicDatabase(driver: $0) }
     }
     
     public func `default`() -> Database {
-        return self._default!
+        return BasicDatabase(driver: self._default!)
     }
 
-    public func close() -> EventLoopFuture<Void> {
-        return .andAllSucceed(self.storage.values.map { $0.close() }, on: self.eventLoop)
+    public func shutdown() {
+        for driver in self.storage.values {
+            driver.shutdown()
+        }
+    }
+}
+
+private struct BasicDatabase: Database {
+    var logger: Logger? {
+        return nil
+    }
+
+    var eventLoopPreference: EventLoopPreference {
+        return .any
+    }
+
+    let driver: DatabaseDriver
+    init(driver: DatabaseDriver) {
+        self.driver = driver
     }
 }
