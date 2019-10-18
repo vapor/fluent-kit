@@ -67,7 +67,8 @@ public struct SQLSchemaConverter {
                 table: self.name(parent),
                 columns: parentFields.map(self.fieldName),
                 onDelete: sqlForeignKeyAction(onDelete),
-                onUpdate: sqlForeignKeyAction(onUpdate))
+                onUpdate: sqlForeignKeyAction(onUpdate)
+            )
             return SQLTableConstraint(
                 columns: nil,
                 algorithm: SQLConstraintAlgorithm.foreignKey(childFieldGroup),
@@ -172,11 +173,13 @@ public struct SQLSchemaConverter {
         case .identifier(let auto):
             return SQLColumnConstraint.primaryKey(autoIncrement: auto, name: nil)
         case .foreignKey(parentTable: let parent, parentField: let parentField, updateAction: let onUpdate, deleteAction: let onDelete):
-            return SQLColumnConstraint.references(self.name(parent),
-                                                  self.fieldName(parentField),
-                                                  onDelete: sqlForeignKeyAction(onDelete),
-                                                  onUpdate: sqlForeignKeyAction(onUpdate),
-                                                  name: nil)
+            return SQLColumnConstraint.references(
+                self.name(parent),
+                self.fieldName(parentField),
+                onDelete: sqlForeignKeyAction(onDelete),
+                onUpdate: sqlForeignKeyAction(onUpdate),
+                name: nil
+            )
         case .custom(let any):
             return custom(any)
         }
