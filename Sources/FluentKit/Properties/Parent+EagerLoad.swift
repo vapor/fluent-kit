@@ -92,6 +92,10 @@ private final class ParentSubqueryEagerLoad<To>: EagerLoadRequest
     func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
         let ids: [To.IDValue] = models
             .compactMap { try! $0.anyID.cachedOutput!.decode(field: self.key, as: To.IDValue?.self) }
+        
+        guard !ids.isEmpty else {
+            return database.eventLoop.makeSucceededFuture(())
+        }
 
         let uniqueIDs = Array(Set(ids))
         return To.query(on: database)

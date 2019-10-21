@@ -1324,7 +1324,16 @@ public final class FluentBenchmarker {
                 default:
                     XCTFail("unexpected name: \(user.name)")
                 }
-            }        
+            }
+            
+            // test query with no ids
+            // https://github.com/vapor/fluent-kit/issues/85
+            let users2 = try User.query(on: self.database)
+                .with(\.$bestFriend)
+                .filter(\.$bestFriend == nil)
+                .all().wait()
+            XCTAssertEqual(users2.count, 1)
+            XCTAssert(users2.first?.bestFriend == nil)
         }
     }
   
