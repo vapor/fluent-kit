@@ -81,7 +81,7 @@ public struct DatabaseSchema {
     public enum FieldConstraint {
         case required
         case identifier(auto: Bool)
-        case foreignKey(parentTable: String, parentField: FieldName, updateAction: Constraint.ForeignKeyAction, deleteAction: Constraint.ForeignKeyAction)
+        case foreignKey(field: ForeignFieldName, updateAction: Constraint.ForeignKeyAction, deleteAction: Constraint.ForeignKeyAction)
         case custom(Any)
     }
     
@@ -108,7 +108,12 @@ public struct DatabaseSchema {
         case string(String)
         case custom(Any)
     }
-    
+
+    public enum ForeignFieldName {
+        case string(name: String, table: String)
+        case custom(name: Any, table: Any)
+    }
+
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]

@@ -116,6 +116,24 @@ public struct SQLSchemaConverter {
             return custom(any)
         }
     }
+
+    private func fieldName(_ fieldName: DatabaseSchema.ForeignFieldName) -> SQLExpression {
+        switch fieldName {
+        case .string(name: let string, table: _):
+            return SQLIdentifier(string)
+        case .custom(name: let any, table: _):
+            return custom(any)
+        }
+    }
+
+    private func tableName(_ fieldName: DatabaseSchema.ForeignFieldName) -> SQLExpression {
+        switch fieldName {
+        case .string(name: _, table: let string):
+            return SQLIdentifier(string)
+        case .custom(name: _, table: let any):
+            return custom(any)
+        }
+    }
     
     private func dataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression {
         if let custom = self.delegate.customDataType(dataType) {
@@ -172,9 +190,9 @@ public struct SQLSchemaConverter {
             return SQLColumnConstraint.notNull
         case .identifier(let auto):
             return SQLColumnConstraint.primaryKey(autoIncrement: auto, name: nil)
-        case .foreignKey(parentTable: let parent, parentField: let parentField, updateAction: let onUpdate, deleteAction: let onDelete):
+        case .foreignKey(field: let parentField, updateAction: let onUpdate, deleteAction: let onDelete):
             return SQLColumnConstraint.references(
-                self.name(parent),
+                self.tableName(parentField),
                 self.fieldName(parentField),
                 onDelete: sqlForeignKeyAction(onDelete),
                 onUpdate: sqlForeignKeyAction(onUpdate),
