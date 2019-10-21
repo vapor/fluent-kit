@@ -23,42 +23,49 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testGalaxyPlanetSorts() throws {
-        var db: DummyDatabaseForTestSQLSerializer
-        
-        db = DummyDatabaseForTestSQLSerializer()
+        let dummy = DummyDatabaseForTestSQLSerializer()
+        var dbs = Databases()
+        dbs.add(dummy, as: .init(string: "dummy"), isDefault: true)
+        let db = dbs.default()
+    
         _ = try Planet.query(on: db).sort(\.$name, .descending).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        XCTAssertEqual(dummy.sqlSerializers.count, 1)
+        XCTAssertEqual(dummy.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        dummy.reset()
         
-        db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$name, .ascending).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        XCTAssertEqual(dummy.sqlSerializers.count, 1)
+        XCTAssertEqual(dummy.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        dummy.reset()
         
-        db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).sort(\.$id, .descending).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."id" DESC"#), true)
+        XCTAssertEqual(dummy.sqlSerializers.count, 1)
+        XCTAssertEqual(dummy.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."id" DESC"#), true)
+        dummy.reset()
         
-        db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$id, .ascending).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."id" ASC"#), true)
+        XCTAssertEqual(dummy.sqlSerializers.count, 1)
+        XCTAssertEqual(dummy.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."id" ASC"#), true)
+        dummy.reset()
         
-        db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).sort("name", .descending).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        XCTAssertEqual(dummy.sqlSerializers.count, 1)
+        XCTAssertEqual(dummy.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        dummy.reset()
         
-        db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).join(\.$galaxy).sort(Galaxy.self, "name", .ascending).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        XCTAssertEqual(dummy.sqlSerializers.count, 1)
+        XCTAssertEqual(dummy.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        dummy.reset()
     }
 
     func testSQLSchemaCustom() throws {
-        let db = DummyDatabaseForTestSQLSerializer()
+        let dummy = DummyDatabaseForTestSQLSerializer()
+        var dbs = Databases()
+        dbs.add(dummy, as: .init(string: "dummy"), isDefault: true)
+        let db = dbs.default()
+        
         try db.schema("foo").field(.custom("INDEX i_foo (foo)")).update().wait()
-        print(db.sqlSerializers)
+        print(dummy.sqlSerializers)
     }
 }

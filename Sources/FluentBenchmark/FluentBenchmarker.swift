@@ -317,12 +317,13 @@ public final class FluentBenchmarker {
             migrations.add(GalaxyMigration())
             migrations.add(PlanetMigration())
             
-            var databases = Databases(on: self.database.eventLoop)
-            databases.add(self.database, as: .init(string: "main"))
+            var databases = Databases()
+            databases.add(self.database.driver, as: .init(string: "main"))
             
             var migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
+                logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()
@@ -348,12 +349,13 @@ public final class FluentBenchmarker {
             migrations.add(ErrorMigration())
             migrations.add(PlanetMigration())
             
-            var databases = Databases(on: self.database.eventLoop)
-            databases.add(self.database, as: .init(string: "main"))
+            var databases = Databases()
+            databases.add(self.database.driver, as: .init(string: "main"))
             
             let migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
+                logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()

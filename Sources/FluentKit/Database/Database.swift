@@ -2,12 +2,49 @@
 public enum EventLoopPreference {
     case any
     case prefer(EventLoop)
+    
+    public func on(_ group: EventLoopGroup) -> EventLoop {
+        switch self {
+        case .any:
+            return group.next()
+        case .prefer(let eventLoop):
+            return eventLoop
+        }
+    }
 }
 
 public protocol Database {
     var driver: DatabaseDriver { get }
     var logger: Logger? { get }
     var eventLoopPreference: EventLoopPreference { get }
+}
+
+extension Database {
+    public func withConnection<T>(
+        _ closure: @escaping (Database) -> EventLoopFuture<T>
+    ) -> EventLoopFuture<T> {
+        return self.driver.withConnection(eventLoop: self.eventLoopPreference) { driver in
+            return closure(DriverOverrideDatabase(base: self, driver: driver))
+        }
+    }
+}
+
+private struct DriverOverrideDatabase: Database {
+    var logger: Logger? {
+        return self.base.logger
+    }
+    
+    var eventLoopPreference: EventLoopPreference {
+        return self.base.eventLoopPreference
+    }
+    
+    let base: Database
+    let driver: DatabaseDriver
+    
+    init(base: Database, driver: DatabaseDriver) {
+        self.base = base
+        self.driver = driver
+    }
 }
 
 extension Database {
