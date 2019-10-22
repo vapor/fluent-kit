@@ -21,18 +21,14 @@ public final class DummyDatabase: DatabaseDriver {
         for _ in 0..<Int.random(in: 1..<42) {
             onRow(DummyRow())
         }
-        return database.eventLoopPreference
-            .on(self.eventLoopGroup)
-            .makeSucceededFuture(())
+        return database.eventLoop.makeSucceededFuture(())
     }
     
     public func execute(
         schema: DatabaseSchema,
         database: Database
     ) -> EventLoopFuture<Void> {
-        return database.eventLoopPreference
-            .on(self.eventLoopGroup)
-            .makeSucceededFuture(())
+        return database.eventLoop.makeSucceededFuture(())
     }
     
     public func shutdown() {

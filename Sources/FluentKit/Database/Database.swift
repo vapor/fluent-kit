@@ -1,16 +1,6 @@
-
 public enum EventLoopPreference {
     case indifferent
     case delegate(on: EventLoop)
-    
-    public func on(_ group: EventLoopGroup) -> EventLoop {
-        switch self {
-        case .indifferent:
-            return group.next()
-        case .delegate(let eventLoop):
-            return eventLoop
-        }
-    }
 }
 
 public protocol Database {
@@ -39,7 +29,12 @@ private struct DriverOverrideDatabase: Database {
 
 extension Database {
     public var eventLoop: EventLoop {
-        self.eventLoopPreference.on(self.driver.eventLoopGroup)
+        switch self.eventLoopPreference {
+        case .indifferent:
+            return self.driver.eventLoopGroup.next()
+        case .delegate(let eventLoop):
+            return eventLoop
+        }
     }
     
     var hopEventLoop: EventLoop? {
