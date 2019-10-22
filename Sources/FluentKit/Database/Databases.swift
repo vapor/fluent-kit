@@ -1,46 +1,46 @@
 import Foundation
 
-public struct Databases {
-    private var storage: [DatabaseID: DatabaseDriver]
-    private var _default: DatabaseDriver?
+public final class Databases {
+    private var storage: [DatabaseID: Database]
+    private var _default: Database?
     
     public init() {
         self.storage = [:]
     }
     
-    public mutating func add(_ database: DatabaseDriver, as id: DatabaseID, isDefault: Bool = true) {
-        self.storage[id] = database
+    public func add(
+        _ driver: DatabaseDriver,
+        logger: Logger = .init(label: "codes.vapor.db"),
+        as id: DatabaseID,
+        isDefault: Bool = true
+    ) {
+        let db = BasicDatabase(driver: driver, logger: logger)
+        self.storage[id] = db
         if isDefault {
-            self._default = database
+            self._default = db
         }
     }
     
     public func database(_ id: DatabaseID) -> Database? {
-        return self.storage[id].flatMap { BasicDatabase(driver: $0) }
+        return self.storage[id]
     }
     
     public func `default`() -> Database {
-        return BasicDatabase(driver: self._default!)
+        return self._default!
     }
 
     public func shutdown() {
-        for driver in self.storage.values {
-            driver.shutdown()
+        for db in self.storage.values {
+            db.driver.shutdown()
         }
     }
 }
 
 private struct BasicDatabase: Database {
-    var logger: Logger? {
-        return nil
-    }
-
     var eventLoopPreference: EventLoopPreference {
-        return .any
+        return .indifferent
     }
 
     let driver: DatabaseDriver
-    init(driver: DatabaseDriver) {
-        self.driver = driver
-    }
+    let logger: Logger
 }

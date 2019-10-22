@@ -12,17 +12,20 @@ extension Model {
         precondition(!self._$id.exists)
         return self.willCreate(on: database).flatMap {
             self._$id.generate()
-            return Self.query(on: database)
+            let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
+            Self.query(on: database)
                 .set(self.input)
                 .action(.create)
-                .run { output in
-                    var input = self.input
-                    if self._$id.generator == .database {
-                        let id = try output.decode(field: "fluentID", as: Self.IDValue.self)
-                        input[Self.key(for: \._$id)] = .bind(id)
-                    }
-                    try self.output(from: SavedInput(input))
+                .run { promise.succeed($0) }
+                .cascadeFailure(to: promise)
+            return promise.futureResult.flatMapThrowing { output in
+                var input = self.input
+                if self._$id.generator == .database {
+                    let id = try output.decode("fluentID", as: Self.IDValue.self)
+                    input[Self.key(for: \._$id)] = .bind(id)
                 }
+                try self.output(from: SavedInput(input).output(for: database))
+            }
         }.flatMap {
             return self.didCreate(on: database)
         }
@@ -40,7 +43,7 @@ extension Model {
                 .action(.update)
                 .run()
                 .flatMapThrowing {
-                    try self.output(from: SavedInput(input))
+                    try self.output(from: SavedInput(input).output(for: database))
                 }
         }.flatMap {
             return self.didUpdate(on: database)
@@ -88,7 +91,7 @@ extension Model {
                 .action(.update)
                 .run()
                 .flatMapThrowing {
-                    try self.output(from: SavedInput(self.input))
+                    try self.output(from: SavedInput(self.input).output(for: database))
                     self._$id.exists = true
                 }
         }.flatMap {
@@ -131,7 +134,7 @@ extension Array where Element: FluentKit.Model {
 
 // MARK: Private
 
-private struct SavedInput: DatabaseOutput {
+private struct SavedInput: DatabaseRow {
     var input: [String: DatabaseQuery.Value]
 
     init(_ input: [String: DatabaseQuery.Value]) {
@@ -142,7 +145,7 @@ private struct SavedInput: DatabaseOutput {
         return self.input[field] != nil
     }
 
-    func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
+    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T where T : Decodable {
         if let value = self.input[field] {
             // not in output, get from saved input
             switch value {

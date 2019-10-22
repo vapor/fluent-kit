@@ -3,6 +3,10 @@ import NIO
 public final class DummyDatabase: DatabaseDriver {
     public let eventLoopGroup: EventLoopGroup
     var didShutdown: Bool
+    
+    public var fieldDecoder: Decoder {
+        return DummyDecoder()
+    }
 
     public init(on eventLoopGroup: EventLoopGroup) {
         self.eventLoopGroup = eventLoopGroup
@@ -10,28 +14,25 @@ public final class DummyDatabase: DatabaseDriver {
     }
 
     public func execute(
-        _ query: DatabaseQuery,
-        eventLoop: EventLoopPreference,
-        _ onOutput: @escaping (DatabaseOutput) throws -> ()
+        query: DatabaseQuery,
+        database: Database,
+        onRow: @escaping (DatabaseRow) -> ()
     ) -> EventLoopFuture<Void> {
-        fatalError()
-        do {
-            for _ in 0..<Int.random(in: 1..<42) {
-                try onOutput(DummyOutput())
-            }
-            return self.eventLoopGroup.next().makeSucceededFuture(())
-        } catch {
-            return self.eventLoopGroup.next().makeFailedFuture(error)
+        for _ in 0..<Int.random(in: 1..<42) {
+            onRow(DummyRow())
         }
+        return database.eventLoopPreference
+            .on(self.eventLoopGroup)
+            .makeSucceededFuture(())
     }
     
-    /// See `FluentDatabase`.
     public func execute(
-        _ schema: DatabaseSchema,
-        eventLoop: EventLoopPreference
+        schema: DatabaseSchema,
+        database: Database
     ) -> EventLoopFuture<Void> {
-        #warning("TODO: use preference")
-        return self.eventLoopGroup.next().makeSucceededFuture(())
+        return database.eventLoopPreference
+            .on(self.eventLoopGroup)
+            .makeSucceededFuture(())
     }
     
     public func shutdown() {
@@ -39,7 +40,7 @@ public final class DummyDatabase: DatabaseDriver {
     }
     
     public func withConnection<T>(
-        eventLoop: EventLoopPreference,
+        database: Database,
         _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>
     ) -> EventLoopFuture<T> {
         return closure(self)
@@ -52,8 +53,10 @@ public final class DummyDatabase: DatabaseDriver {
 
 // MARK: Private
 
-private struct DummyOutput: DatabaseOutput {
-    func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
+private struct DummyRow: DatabaseRow {
+    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
+        where T: Decodable
+    {
         return try T(from: DummyDecoder())
     }
 

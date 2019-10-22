@@ -563,7 +563,7 @@ public final class QueryBuilder<Model>
             guard let res = res else {
                 throw FluentError.noResults
             }
-            return try res._$id.cachedOutput!.decode(field: "fluentAggregate", as: Result.self)
+            return try res._$id.cachedOutput!.decode("fluentAggregate", as: Result.self)
         }
     }
 
@@ -583,39 +583,38 @@ public final class QueryBuilder<Model>
     
     // MARK: Fetch
     
-    public func chunk(max: Int, closure: @escaping ([Model]) throws -> ()) -> EventLoopFuture<Void> {
-        var partial: [Model] = []
+    public func chunk(max: Int, closure: @escaping ([Result<Model, Error>]) -> ()) -> EventLoopFuture<Void> {
+        var partial: [Result<Model, Error>] = []
         partial.reserveCapacity(max)
         return self.all { row in
             partial.append(row)
             if partial.count >= max {
-                try closure(partial)
+                closure(partial)
                 partial = []
             }
         }.flatMapThrowing { 
             // any stragglers
             if !partial.isEmpty {
-                try closure(partial)
+                closure(partial)
                 partial = []
             }
         }
     }
     
     public func first() -> EventLoopFuture<Model?> {
-        var model: Model? = nil
         return self.limit(1)
-            .all { result in
-                assert(model == nil, "unexpected database output")
-                model = result
-            }
-            .map { model }
+            .all()
+            .map { $0.first }
     }
     
     public func all() -> EventLoopFuture<[Model]> {
-        var models: [Model] = []
+        var models: [Result<Model, Error>] = []
         return self.all { model in
             models.append(model)
-        }.map { models }
+        }.flatMapThrowing {
+            return try models
+                .map { try $0.get() }
+        }
     }
 
     internal func action(_ action: DatabaseQuery.Action) -> Self {
@@ -627,14 +626,16 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
     
-    public func all(_ onOutput: @escaping (Model) throws -> ()) -> EventLoopFuture<Void> {
+    public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
 
         let done = self.run { output in
-            let model = Model()
-            try model.output(from: output)
-            all.append(model)
-            try onOutput(model)
+            onOutput(.init(catching: {
+                let model = Model()
+                try model.output(from: output)
+                all.append(model)
+                return model
+            }))
         }
 
         // if eager loads exist, run them, and update models
@@ -653,7 +654,7 @@ public final class QueryBuilder<Model>
         }
     }
 
-    func run(_ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
+    func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -667,13 +668,27 @@ public final class QueryBuilder<Model>
             self.joinedModels
                 .forEach { $0.excludeDeleted(from: &query) }
         }
+        
+        self.database.logger.info("\(self.query)")
 
-        return self.database.driver.execute(
-            query,
-            eventLoop: self.database.eventLoopPreference
-        ) { output in
-            try onOutput(output)
-        }.hop(to: self.database.eventLoop)
+        let done = self.database.driver.execute(
+            query: query,
+            database: self.database
+        ) { row in
+            if let hop = self.database.hopEventLoop {
+                hop.execute {
+                    onOutput(row.output(for: self.database))
+                }
+            } else {
+                onOutput(row.output(for: self.database))
+            }
+        }
+        
+        if let hop = self.database.hopEventLoop {
+            return done.hop(to: hop)
+        } else {
+            return done
+        }
     }
 }
 

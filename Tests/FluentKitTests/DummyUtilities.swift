@@ -16,33 +16,22 @@ public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
         self.sqlSerializers = []
     }
     
-    public func execute(
-        _ query: DatabaseQuery,
-        eventLoop: EventLoopPreference,
-        _ onOutput: @escaping (DatabaseOutput) throws -> ()
-    ) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, database: Database, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return eventLoop.on(self.eventLoopGroup).makeSucceededFuture(())
+        return database.eventLoop.makeSucceededFuture(())
     }
     
-    public func execute(
-        _ schema: DatabaseSchema,
-        eventLoop: EventLoopPreference
-    ) -> EventLoopFuture<Void> {
+    public func execute(schema: DatabaseSchema, database: Database) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return eventLoop.on(self.eventLoopGroup).makeSucceededFuture(())
+        return database.eventLoop.makeSucceededFuture(())
     }
-    
-    public func withConnection<T>(eventLoop: EventLoopPreference, _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-        return closure(self)
-    }
-    
+
     public func shutdown() {
         //
     }

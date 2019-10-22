@@ -317,7 +317,7 @@ public final class FluentBenchmarker {
             migrations.add(GalaxyMigration())
             migrations.add(PlanetMigration())
             
-            var databases = Databases()
+            let databases = Databases()
             databases.add(self.database.driver, as: .init(string: "main"))
             
             var migrator = Migrator(
@@ -349,7 +349,7 @@ public final class FluentBenchmarker {
             migrations.add(ErrorMigration())
             migrations.add(PlanetMigration())
             
-            var databases = Databases()
+            let databases = Databases()
             databases.add(self.database.driver, as: .init(string: "main"))
             
             let migrator = Migrator(
@@ -608,20 +608,19 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {
-            var fetched64: [Galaxy] = []
-            var fetched2047: [Galaxy] = []
+            var fetched64: [Result<Galaxy, Error>] = []
+            var fetched2047: [Result<Galaxy, Error>] = []
             
-            try self.database.withConnection { database -> EventLoopFuture<Void> in
-                let saves = (1...512).map { i -> EventLoopFuture<Void> in
-                    return Galaxy(name: "Milky Way \(i)")
-                        .save(on: database)
-                }
-                return .andAllSucceed(saves, on: database.eventLoop)
-            }.wait()
+            let saves = (1...512).map { i -> EventLoopFuture<Void> in
+                return Galaxy(name: "Milky Way \(i)")
+                    .save(on: self.database)
+            }
+            try EventLoopFuture<Void>.andAllSucceed(saves, on: self.database.eventLoop).wait()
             
             try Galaxy.query(on: self.database).chunk(max: 64) { chunk in
                 guard chunk.count == 64 else {
-                    throw Failure("bad chunk count")
+                    XCTFail("bad chunk count")
+                    return
                 }
                 fetched64 += chunk
             }.wait()
@@ -632,7 +631,8 @@ public final class FluentBenchmarker {
             
             try Galaxy.query(on: self.database).chunk(max: 511) { chunk in
                 guard chunk.count == 511 || chunk.count == 1 else {
-                    throw Failure("bad chunk count")
+                    XCTFail("bad chunk count")
+                    return
                 }
                 fetched2047 += chunk
             }.wait()

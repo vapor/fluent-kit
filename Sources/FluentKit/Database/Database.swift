@@ -1,13 +1,13 @@
 
 public enum EventLoopPreference {
-    case any
-    case prefer(EventLoop)
+    case indifferent
+    case delegate(on: EventLoop)
     
     public func on(_ group: EventLoopGroup) -> EventLoop {
         switch self {
-        case .any:
+        case .indifferent:
             return group.next()
-        case .prefer(let eventLoop):
+        case .delegate(let eventLoop):
             return eventLoop
         }
     }
@@ -15,22 +15,12 @@ public enum EventLoopPreference {
 
 public protocol Database {
     var driver: DatabaseDriver { get }
-    var logger: Logger? { get }
+    var logger: Logger { get }
     var eventLoopPreference: EventLoopPreference { get }
 }
 
-extension Database {
-    public func withConnection<T>(
-        _ closure: @escaping (Database) -> EventLoopFuture<T>
-    ) -> EventLoopFuture<T> {
-        return self.driver.withConnection(eventLoop: self.eventLoopPreference) { driver in
-            return closure(DriverOverrideDatabase(base: self, driver: driver))
-        }
-    }
-}
-
 private struct DriverOverrideDatabase: Database {
-    var logger: Logger? {
+    var logger: Logger {
         return self.base.logger
     }
     
@@ -49,11 +39,19 @@ private struct DriverOverrideDatabase: Database {
 
 extension Database {
     public var eventLoop: EventLoop {
+        self.eventLoopPreference.on(self.driver.eventLoopGroup)
+    }
+    
+    var hopEventLoop: EventLoop? {
         switch self.eventLoopPreference {
-        case .any:
-            return self.driver.eventLoopGroup.next()
-        case .prefer(let eventLoop):
-            return eventLoop
+        case .delegate(let eventLoop):
+            if !eventLoop.inEventLoop {
+                return eventLoop
+            } else {
+                return nil
+            }
+        case .indifferent:
+            return nil
         }
     }
 }
@@ -62,20 +60,15 @@ public protocol DatabaseDriver {
     var eventLoopGroup: EventLoopGroup { get }
 
     func execute(
-        _ query: DatabaseQuery,
-        eventLoop: EventLoopPreference,
-        _ onOutput: @escaping (DatabaseOutput) throws -> ()
+        query: DatabaseQuery,
+        database: Database,
+        onRow: @escaping (DatabaseRow) -> ()
     ) -> EventLoopFuture<Void>
 
     func execute(
-        _ schema: DatabaseSchema,
-        eventLoop: EventLoopPreference
+        schema: DatabaseSchema,
+        database: Database
     ) -> EventLoopFuture<Void>
-
-    func withConnection<T>(
-        eventLoop: EventLoopPreference,
-        _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>
-    ) -> EventLoopFuture<T>
 
     func shutdown()
 }

@@ -80,8 +80,8 @@ public final class Siblings<From, To, Through>: AnyProperty
 
     func output(from output: DatabaseOutput) throws {
         let key = From.key(for: \._$id)
-        if output.contains(field: key) {
-            self.idValue = try output.decode(field: key, as: From.IDValue.self)
+        if output.contains(key) {
+            self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 

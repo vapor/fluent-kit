@@ -24,7 +24,7 @@ final class FluentKitTests: XCTestCase {
 
     func testGalaxyPlanetSorts() throws {
         let dummy = DummyDatabaseForTestSQLSerializer()
-        var dbs = Databases()
+        let dbs = Databases()
         dbs.add(dummy, as: .init(string: "dummy"), isDefault: true)
         let db = dbs.default()
     
@@ -61,7 +61,7 @@ final class FluentKitTests: XCTestCase {
 
     func testSQLSchemaCustom() throws {
         let dummy = DummyDatabaseForTestSQLSerializer()
-        var dbs = Databases()
+        let dbs = Databases()
         dbs.add(dummy, as: .init(string: "dummy"), isDefault: true)
         let db = dbs.default()
         

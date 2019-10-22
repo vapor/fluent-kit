@@ -50,16 +50,16 @@ public final class SchemaBuilder {
     
     public func delete() -> EventLoopFuture<Void> {
         self.schema.action = .delete
-        return self.database.driver.execute(self.schema, eventLoop: database.eventLoopPreference)
+        return self.database.driver.execute(schema: self.schema, database: self.database)
     }
     
     public func update() -> EventLoopFuture<Void> {
         self.schema.action = .update
-        return self.database.driver.execute(self.schema, eventLoop: database.eventLoopPreference)
+        return self.database.driver.execute(schema: self.schema, database: self.database)
     }
     
     public func create() -> EventLoopFuture<Void> {
         self.schema.action = .create
-        return self.database.driver.execute(self.schema, eventLoop: database.eventLoopPreference)
+        return self.database.driver.execute(schema: self.schema, database: self.database)
     }
 }
