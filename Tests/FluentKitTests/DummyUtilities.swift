@@ -3,42 +3,37 @@ import FluentSQL
 import NIO
 import SQLKit
 
-public class DummyDatabaseForTestSQLSerializer: Database {
+public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
+    public var eventLoopGroup: EventLoopGroup
     public var sqlSerializers: [SQLSerializer]
 
-    /// See `FluentDatabase`.
-    public var eventLoop: EventLoop {
-        return EmbeddedEventLoop()
-    }
-
-    public init() {
+    public init(on eventLoopGroup: EventLoopGroup = EmbeddedEventLoop()) {
+        self.eventLoopGroup = eventLoopGroup
         self.sqlSerializers = []
     }
-
-    /// See `FluentDatabase`.
-    public func execute(_ query: DatabaseQuery, _: @escaping (DatabaseOutput) throws -> Void) -> EventLoopFuture<Void> {
+    
+    public func reset() {
+        self.sqlSerializers = []
+    }
+    
+    public func execute(query: DatabaseQuery, database: Database, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return self.eventLoop.makeSucceededFuture(())
+        return database.eventLoop.makeSucceededFuture(())
     }
-
-    /// See `FluentDatabase`.
-    public func execute(_ schema: DatabaseSchema) -> EventLoopFuture<Void> {
+    
+    public func execute(schema: DatabaseSchema, database: Database) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return self.eventLoop.makeSucceededFuture(())
+        return database.eventLoop.makeSucceededFuture(())
     }
 
-    public func close() -> EventLoopFuture<Void> {
-        return self.eventLoop.makeSucceededFuture(())
-    }
-
-    public func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-        return closure(self)
+    public func shutdown() {
+        //
     }
 }
 

@@ -317,12 +317,13 @@ public final class FluentBenchmarker {
             migrations.add(GalaxyMigration())
             migrations.add(PlanetMigration())
             
-            var databases = Databases(on: self.database.eventLoop)
-            databases.add(self.database, as: .init(string: "main"))
+            let databases = Databases()
+            databases.add(self.database.driver, as: .init(string: "main"))
             
             var migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
+                logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()
@@ -348,12 +349,13 @@ public final class FluentBenchmarker {
             migrations.add(ErrorMigration())
             migrations.add(PlanetMigration())
             
-            var databases = Databases(on: self.database.eventLoop)
-            databases.add(self.database, as: .init(string: "main"))
+            let databases = Databases()
+            databases.add(self.database.driver, as: .init(string: "main"))
             
             let migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
+                logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()
@@ -606,20 +608,19 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {
-            var fetched64: [Galaxy] = []
-            var fetched2047: [Galaxy] = []
+            var fetched64: [Result<Galaxy, Error>] = []
+            var fetched2047: [Result<Galaxy, Error>] = []
             
-            try self.database.withConnection { database -> EventLoopFuture<Void> in
-                let saves = (1...512).map { i -> EventLoopFuture<Void> in
-                    return Galaxy(name: "Milky Way \(i)")
-                        .save(on: database)
-                }
-                return .andAllSucceed(saves, on: database.eventLoop)
-            }.wait()
+            let saves = (1...512).map { i -> EventLoopFuture<Void> in
+                return Galaxy(name: "Milky Way \(i)")
+                    .save(on: self.database)
+            }
+            try EventLoopFuture<Void>.andAllSucceed(saves, on: self.database.eventLoop).wait()
             
             try Galaxy.query(on: self.database).chunk(max: 64) { chunk in
                 guard chunk.count == 64 else {
-                    throw Failure("bad chunk count")
+                    XCTFail("bad chunk count")
+                    return
                 }
                 fetched64 += chunk
             }.wait()
@@ -630,7 +631,8 @@ public final class FluentBenchmarker {
             
             try Galaxy.query(on: self.database).chunk(max: 511) { chunk in
                 guard chunk.count == 511 || chunk.count == 1 else {
-                    throw Failure("bad chunk count")
+                    XCTFail("bad chunk count")
+                    return
                 }
                 fetched2047 += chunk
             }.wait()
@@ -1322,7 +1324,16 @@ public final class FluentBenchmarker {
                 default:
                     XCTFail("unexpected name: \(user.name)")
                 }
-            }        
+            }
+            
+            // test query with no ids
+            // https://github.com/vapor/fluent-kit/issues/85
+            let users2 = try User.query(on: self.database)
+                .with(\.$bestFriend)
+                .filter(\.$bestFriend == nil)
+                .all().wait()
+            XCTAssertEqual(users2.count, 1)
+            XCTAssert(users2.first?.bestFriend == nil)
         }
     }
   

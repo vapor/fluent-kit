@@ -169,7 +169,7 @@ extension AnyModel {
         }
 
         if let output = self.anyID.cachedOutput {
-            info["output"] = output
+            info["output"] = output.row
         }
 
         let eagerLoads: [String: CustomStringConvertible] = .init(uniqueKeysWithValues: self.eagerLoadables.compactMap { (name, eagerLoadable) in
@@ -226,7 +226,9 @@ extension AnyModel {
             fatalError("Can only access joined models using models fetched from database.")
         }
         let joined = Joined.Model()
-        try joined.output(from: output.prefixed(by: Joined.alias + "_"))
+        try joined.output(
+            from: output.row.prefixed(by: Joined.alias + "_").output(for: output.database)
+        )
         return joined
     }
 
@@ -238,7 +240,9 @@ extension AnyModel {
             fatalError("Can only access joined models using models fetched from database.")
         }
         let joined = Joined()
-        try joined.output(from: output.prefixed(by: Joined.schema + "_"))
+        try joined.output(
+            from: output.row.prefixed(by: Joined.schema + "_").output(for: output.database)
+        )
         return joined
     }
 
@@ -256,6 +260,14 @@ extension Model {
             throw FluentError.idRequired
         }
         return id
+    }
+}
+
+extension Database {
+    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
+        where Model: FluentKit.Model
+    {
+        return .init(database: self)
     }
 }
 

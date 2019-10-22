@@ -1,13 +1,21 @@
 import Foundation
+import Logging
 
 public struct Migrator {
     public var migrations: Migrations
     public var databases: Databases
+    public let logger: Logger
     public let eventLoop: EventLoop
     
-    public init(databases: Databases, migrations: Migrations, on eventLoop: EventLoop) {
+    public init(
+        databases: Databases,
+        migrations: Migrations,
+        logger: Logger,
+        on eventLoop: EventLoop
+    ) {
         self.databases = databases
         self.migrations = migrations
+        self.logger = logger
         self.eventLoop = eventLoop
     }
     

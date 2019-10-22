@@ -43,10 +43,10 @@ public final class Field<Value>: AnyField, FieldRepresentable
     // MARK: Property
 
     func output(from output: DatabaseOutput) throws {
-        if output.contains(field: self.key) {
+        if output.contains(self.key) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(field: self.key, as: Value.self)
+                self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(name: self.key, valueType: Value.self)
             }

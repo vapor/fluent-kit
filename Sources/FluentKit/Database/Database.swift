@@ -1,16 +1,71 @@
+public enum EventLoopPreference {
+    case indifferent
+    case delegate(on: EventLoop)
+}
+
 public protocol Database {
-    var eventLoop: EventLoop { get }
+    var driver: DatabaseDriver { get }
+    var logger: Logger { get }
+    var eventLoopPreference: EventLoopPreference { get }
+}
+
+private struct DriverOverrideDatabase: Database {
+    var logger: Logger {
+        return self.base.logger
+    }
     
+    var eventLoopPreference: EventLoopPreference {
+        return self.base.eventLoopPreference
+    }
+    
+    let base: Database
+    let driver: DatabaseDriver
+    
+    init(base: Database, driver: DatabaseDriver) {
+        self.base = base
+        self.driver = driver
+    }
+}
+
+extension Database {
+    public var eventLoop: EventLoop {
+        switch self.eventLoopPreference {
+        case .indifferent:
+            return self.driver.eventLoopGroup.next()
+        case .delegate(let eventLoop):
+            return eventLoop
+        }
+    }
+    
+    var hopEventLoop: EventLoop? {
+        switch self.eventLoopPreference {
+        case .delegate(let eventLoop):
+            if !eventLoop.inEventLoop {
+                return eventLoop
+            } else {
+                return nil
+            }
+        case .indifferent:
+            return nil
+        }
+    }
+}
+
+public protocol DatabaseDriver {
+    var eventLoopGroup: EventLoopGroup { get }
+
     func execute(
-        _ query: DatabaseQuery,
-        _ onOutput: @escaping (DatabaseOutput) throws -> ()
+        query: DatabaseQuery,
+        database: Database,
+        onRow: @escaping (DatabaseRow) -> ()
     ) -> EventLoopFuture<Void>
-    
-    func execute(_ schema: DatabaseSchema) -> EventLoopFuture<Void>
-    
-    func close() -> EventLoopFuture<Void>
-    
-    func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+
+    func execute(
+        schema: DatabaseSchema,
+        database: Database
+    ) -> EventLoopFuture<Void>
+
+    func shutdown()
 }
 
 public protocol DatabaseError {

@@ -195,7 +195,7 @@ public struct SQLQueryConverter {
         switch filter {
         case .value(let field, let method, let value):
             switch (method, value) {
-            case (.equality(let inverse), .null):
+            case (.equality(let inverse), _) where value.isNull:
                 // special case when using != and = with NULL
                 // must convert to IS NOT NULL and IS NULL respectively
                 return SQLBinaryExpression(
@@ -316,6 +316,29 @@ public struct SQLQueryConverter {
             fatalError("Contains filter method not supported at this scope.")
         case .custom(let any):
             return custom(any)
+        }
+    }
+}
+
+extension Encodable {
+    var isNil: Bool {
+        if let optional = self as? AnyOptionalType {
+            return optional.wrappedValue == nil
+        } else {
+            return false
+        }
+    }
+}
+
+extension DatabaseQuery.Value {
+    var isNull: Bool {
+        switch self {
+        case .null:
+            return true
+        case .bind(let bind):
+            return bind.isNil
+        default:
+            return false
         }
     }
 }
