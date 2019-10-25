@@ -1,11 +1,15 @@
 @propertyWrapper
-public final class Field<Value>: AnyField, Filterable
+public final class Field<Value>: AnyField, FieldRepresentable
     where Value: Codable
 {
     public let key: String
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
 
+    public var field: Field<Value> {
+        return self
+    }
+    
     public var projectedValue: Field<Value> {
         return self
     }
@@ -13,10 +17,14 @@ public final class Field<Value>: AnyField, Filterable
     public var wrappedValue: Value {
         get {
             if let value = self.inputValue {
-                guard case .bind(let bind) = value else {
-                    fatalError("Unexpected input value type")
+                switch value {
+                case .bind(let bind):
+                    return bind as! Value
+                case .default:
+                    fatalError("Cannot access default field before it is initialized or fetched")
+                default:
+                    fatalError("Unexpected input value type: \(value)")
                 }
-                return bind as! Value
             } else if let value = self.outputValue {
                 return value
             } else {
@@ -35,10 +43,10 @@ public final class Field<Value>: AnyField, Filterable
     // MARK: Property
 
     func output(from output: DatabaseOutput) throws {
-        if output.contains(field: self.key) {
+        if output.contains(self.key) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(field: self.key, as: Value.self)
+                self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(name: self.key, valueType: Value.self)
             }

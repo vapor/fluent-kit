@@ -1,4 +1,4 @@
-public struct DatabaseQuery {
+public struct DatabaseQuery: CustomStringConvertible {
     public enum Action {
         case create
         case read
@@ -6,9 +6,14 @@ public struct DatabaseQuery {
         case delete
         case custom(Any)
     }
+
+    public enum Schema {
+        case schema(name: String, alias: String?)
+        case custom(Any)
+    }
     
-    public enum Field {
-        public enum Aggregate {
+    public enum Field: CustomStringConvertible {
+        public enum Aggregate: CustomStringConvertible {
             public enum Method {
                 case count
                 case sum
@@ -17,8 +22,36 @@ public struct DatabaseQuery {
                 case maximum
                 case custom(Any)
             }
+            
+            public var description: String {
+                switch self {
+                case .custom(let custom):
+                    return "\(custom)"
+                case .fields(let method, let fields):
+                    return "\(method)(\(fields))"
+                }
+            }
+            
             case fields(method: Method, fields: [Field])
             case custom(Any)
+        }
+        
+        public var description: String {
+            switch self {
+            case .aggregate(let aggregate):
+                return aggregate.description
+            case .field(let path, let schema, let alias):
+                var description = path.joined(separator: ".")
+                if let schema = schema {
+                    description = schema + "." + description
+                }
+                if let alias = alias {
+                    description = description + " as " + alias
+                }
+                return description
+            case .custom(let custom):
+                return "\(custom)"
+            }
         }
         
         case aggregate(Aggregate)
@@ -79,7 +112,8 @@ public struct DatabaseQuery {
             case custom(Any)
         }
         
-        case basic(Field, Method, Value)
+        case value(Field, Method, Value)
+        case field(Field, Method, Field)
         case group([Filter], Relation)
         case custom(Any)
     }
@@ -119,7 +153,7 @@ public struct DatabaseQuery {
             case inner, left, right, outer
             case custom(Any)
         }
-        case model(foreign: Field, local: Field, method: Method)
+        case join(schema: Schema, foreign: Field, local: Field, method: Method)
         case custom(Any)
     }
 
@@ -153,6 +187,20 @@ public struct DatabaseQuery {
     public var limits: [Limit]
     public var offsets: [Offset]
     public var schema: String
+    
+    public var description: String {
+        var parts = [
+            "\(self.action)",
+            self.schema
+        ]
+        if !self.fields.isEmpty {
+            parts.append("fields=\(self.fields)")
+        }
+        if !self.filters.isEmpty {
+            parts.append("filters=\(self.filters)")
+        }
+        return parts.joined(separator: " ")
+    }
 
     init(schema: String) {
         self.schema = schema

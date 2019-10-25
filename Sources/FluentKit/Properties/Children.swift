@@ -1,28 +1,45 @@
 @propertyWrapper
-public final class Children<From, To>: AnyProperty, AnyEagerLoadable
+public final class Children<From, To>: AnyProperty
     where From: Model, To: Model
 {
     // MARK: ID
 
-    let parentKey: KeyPath<To, Parent<From>>
+    enum Key {
+        case required(KeyPath<To, Parent<From>>)
+        case optional(KeyPath<To, OptionalParent<From>>)
+    }
+
+    let parentKey: Key
     private var eagerLoadedValue: [To]?
     private var idValue: From.IDValue?
 
     // MARK: Wrapper
 
-    public init(from parentKey: KeyPath<To, Parent<From>>) {
-        self.parentKey = parentKey
+    public init(for parent: KeyPath<To, Parent<From>>) {
+        self.parentKey = .required(parent)
+    }
+
+    public init(for optionalParent: KeyPath<To, OptionalParent<From>>) {
+        self.parentKey = .optional(optionalParent)
     }
 
     public var wrappedValue: [To] {
-        get { fatalError("Use $ prefix to access") }
+        get {
+            guard let eagerLoaded = self.eagerLoadedValue else {
+                fatalError("Children relation not eager loaded, use $ prefix to access")
+            }
+            return eagerLoaded
+        }
         set { fatalError("Use $ prefix to access") }
     }
 
     public var projectedValue: Children<From, To> {
         return self
     }
-
+    
+    public var fromId: From.IDValue? {
+        return self.idValue
+    }
 
     // MARK: Query
 
@@ -30,16 +47,22 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         guard let id = self.idValue else {
             fatalError("Cannot query children relation from unsaved model.")
         }
-        return To.query(on: database)
-            .filter(self.parentKey.appending(path: \.$id) == id)
+        let builder = To.query(on: database)
+        switch self.parentKey {
+        case .optional(let optional):
+            builder.filter(optional.appending(path: \.$id) == id)
+        case .required(let required):
+            builder.filter(required.appending(path: \.$id) == id)
+        }
+        return builder
     }
 
     // MARK: Property
 
     func output(from output: DatabaseOutput) throws {
         let key = From.key(for: \._$id)
-        if output.contains(field: key) {
-            self.idValue = try output.decode(field: key, as: From.IDValue.self)
+        if output.contains(key) {
+            self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
@@ -54,8 +77,31 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
     func decode(from decoder: Decoder) throws {
         // don't decode
     }
+}
 
-    // MARK: Eager Load
+
+extension Children: EagerLoadable {
+    public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
+        where Model: FluentKit.Model
+    {
+        builder.eagerLoads.requests[self.eagerLoadKey] = SubqueryEagerLoad(self.parentKey)
+    }
+}
+
+extension Children: AnyEagerLoadable {
+    var eagerLoadKey: String {
+        let ref = To()
+        switch self.parentKey {
+        case .optional(let optional):
+            return "c:" + ref[keyPath: optional].key
+        case .required(let required):
+            return "c:" + ref[keyPath: required].key
+        }
+    }
+
+    var eagerLoadValueDescription: CustomStringConvertible? {
+        return self.eagerLoadedValue
+    }
 
     public func eagerLoaded() throws -> [To] {
         guard let rows = self.eagerLoadedValue else {
@@ -64,35 +110,26 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
         return rows
     }
 
-    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-        guard let request = eagerLoads.requests[label] else {
+    func eagerLoad(from eagerLoads: EagerLoads) throws {
+        guard let request = eagerLoads.requests[self.eagerLoadKey] else {
             return
         }
         if let subquery = request as? SubqueryEagerLoad {
             self.eagerLoadedValue = try subquery.get(id: self.idValue!)
         } else {
-            fatalError("unsupported eagerload request: \(request)")
+            fatalError("unsupported eagerload request: \(type(of: request))")
         }
     }
 
-    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
-        switch method {
-        case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad(self.parentKey)
-        case .join:
-            fatalError("Eager loading children using join is not yet supported")
-        }
-    }
-
-    private final class SubqueryEagerLoad: EagerLoadRequest {
+    final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [To]
-        let parentKey: KeyPath<To, Parent<From>>
+        let parentKey: Key
 
         var description: String {
             return self.storage.description
         }
 
-        init(_ parentKey: KeyPath<To, Parent<From>>) {
+        init(_ parentKey: Key) {
             self.storage = []
             self.parentKey = parentKey
         }
@@ -106,9 +143,14 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
                 .map { $0 as! From }
                 .map { $0.id! }
 
-            return To.query(on: database)
-                .filter(self.parentKey.appending(path: \.$id), in: Set(ids))
-                .all()
+            let builder = To.query(on: database)
+            switch self.parentKey {
+            case .optional(let optional):
+                builder.filter(optional.appending(path: \.$id), in: Set(ids))
+            case .required(let required):
+                builder.filter(required.appending(path: \.$id), in: Set(ids))
+            }
+            return builder.all()
                 .map { (children: [To]) -> Void in
                     self.storage = children
                 }
@@ -116,10 +158,13 @@ public final class Children<From, To>: AnyProperty, AnyEagerLoadable
 
         func get(id: From.IDValue) throws -> [To] {
             return self.storage.filter { child in
-                return child[keyPath: self.parentKey].id == id
+                switch self.parentKey {
+                case .optional(let optional):
+                    return child[keyPath: optional].id == id
+                case .required(let required):
+                    return child[keyPath: required].id == id
+                }
             }
         }
     }
 }
-
-

@@ -9,7 +9,7 @@ extension UUID: RandomGeneratable {
 }
 
 @propertyWrapper
-public final class ID<Value>: AnyID, Filterable
+public final class ID<Value>: AnyID, FieldRepresentable
     where Value: Codable
 {
     public enum Generator {
@@ -28,7 +28,7 @@ public final class ID<Value>: AnyID, Filterable
         }
     }
 
-    let field: Field<Value?>
+    public let field: Field<Value?>
     let generator: Generator
     var exists: Bool
     var cachedOutput: DatabaseOutput?

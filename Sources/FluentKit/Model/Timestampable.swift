@@ -34,14 +34,14 @@ extension AnyModel {
             schema: Self.schema,
             alias: nil
         )
-        let isNull = DatabaseQuery.Filter.basic(deletedAtField, .equal, .null)
-        let isFuture = DatabaseQuery.Filter.basic(deletedAtField, .greaterThan, .bind(Date()))
+        let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
+        let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(Date()))
         query.filters.append(.group([isNull, isFuture], .or))
     }
 }
 
 @propertyWrapper
-public final class Timestamp: AnyField, Filterable {
+public final class Timestamp: AnyField, FieldRepresentable {
     public typealias Value = Date?
 
     public enum Trigger {
@@ -50,7 +50,7 @@ public final class Timestamp: AnyField, Filterable {
         case delete
     }
 
-    let field: Field<Date?>
+    public let field: Field<Date?>
 
     public let trigger: Trigger
 

@@ -16,11 +16,17 @@ public struct SQLSchemaConverter {
         case .delete:
             return self.delete(schema)
         case .update:
-            fatalError("Update schema not yet supported")
+            return self.update(schema)
         }
     }
     
     // MARK: Private
+
+    private func update(_ schema: DatabaseSchema) -> SQLExpression {
+        var update = SQLAlterTable(name: self.name(schema.schema))
+        update.columns = schema.createFields.map(self.fieldDefinition)
+        return update
+    }
     
     private func delete(_ schema: DatabaseSchema) -> SQLExpression {
         let delete = SQLDropTable(table: self.name(schema.schema))
@@ -98,7 +104,7 @@ public struct SQLSchemaConverter {
     private func fieldDefinition(_ fieldDefinition: DatabaseSchema.FieldDefinition) -> SQLExpression {
         switch fieldDefinition {
         case .custom(let any):
-            return any as! SQLExpression
+            return custom(any)
         case .definition(let name, let dataType, let constraints):
             return SQLColumnDefinition(
                 column: self.fieldName(name),

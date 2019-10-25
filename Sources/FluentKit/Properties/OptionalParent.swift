@@ -1,28 +1,30 @@
 @propertyWrapper
-public final class Parent<To>
+public final class OptionalParent<To>
     where To: Model
 {
     @Field
-    public var id: To.IDValue
+    public var id: To.IDValue?
 
-    public var wrappedValue: To {
+    public var wrappedValue: To? {
         get {
-            guard let value = self.eagerLoadedValue else {
-                fatalError("Parent relation not eager loaded, use $ prefix to access")
+            guard self.didEagerLoad else {
+                fatalError("Optional parent relation not eager loaded, use $ prefix to access")
             }
-            return value
+            return self.eagerLoadedValue
         }
         set { fatalError("use $ prefix to access") }
     }
 
-    public var projectedValue: Parent<To> {
+    public var projectedValue: OptionalParent<To> {
         return self
     }
 
     var eagerLoadedValue: To?
+    var didEagerLoad: Bool
 
     public init(key: String) {
         self._id = .init(key: key)
+        self.didEagerLoad = false
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
@@ -30,24 +32,19 @@ public final class Parent<To>
             .filter(\._$id == self.id)
     }
 
-    public func get(on database: Database) -> EventLoopFuture<To> {
-        return self.query(on: database).first().flatMapThrowing { parent in
-            guard let parent = parent else {
-                throw FluentError.missingParent
-            }
-            return parent
-        }
+    public func get(on database: Database) -> EventLoopFuture<To?> {
+        return self.query(on: database).first()
     }
 
 }
 
-extension Parent: FieldRepresentable {
-    public var field: Field<To.IDValue> {
+extension OptionalParent: FieldRepresentable {
+    public var field: Field<To.IDValue?> {
         return self.$id
     }
 }
 
-extension Parent: AnyProperty {
+extension OptionalParent: AnyProperty {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.eagerLoadedValue {
@@ -66,4 +63,4 @@ extension Parent: AnyProperty {
     }
 }
 
-extension Parent: AnyField { }
+extension OptionalParent: AnyField { }

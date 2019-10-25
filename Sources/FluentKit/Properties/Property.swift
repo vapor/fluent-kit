@@ -4,14 +4,45 @@ protocol AnyProperty: class {
     func decode(from decoder: Decoder) throws
 }
 
-protocol AnyEagerLoadable: AnyProperty {
-    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws
-    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String)
+extension AnyProperty where Self: FieldRepresentable {
+    func output(from output: DatabaseOutput) throws {
+        try self.field.output(from: output)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try self.field.encode(to: encoder)
+    }
+
+    func decode(from decoder: Decoder) throws {
+        try self.field.decode(from: decoder)
+    }
 }
 
 protocol AnyField: AnyProperty {
     var key: String { get }
     var inputValue: DatabaseQuery.Value? { get set }
+}
+
+extension AnyField where Self: FieldRepresentable {
+    var key: String {
+        return self.field.key
+    }
+
+    var inputValue: DatabaseQuery.Value? {
+        get { self.field.inputValue }
+        set { self.field.inputValue = newValue }
+    }
+}
+
+public protocol EagerLoadable {
+    func eagerLoad<Model>(to builder: QueryBuilder<Model>)
+        where Model: FluentKit.Model
+}
+
+protocol AnyEagerLoadable: AnyProperty {
+    var eagerLoadKey: String { get }
+    var eagerLoadValueDescription: CustomStringConvertible? { get }
+    func eagerLoad(from eagerLoads: EagerLoads) throws
 }
 
 protocol AnyID: AnyField {
@@ -20,9 +51,9 @@ protocol AnyID: AnyField {
     var cachedOutput: DatabaseOutput? { get set }
 }
 
-public protocol Filterable {
+public protocol FieldRepresentable {
     associatedtype Value: Codable
-    var key: String { get }
+    var field: Field<Value> { get }
 }
 
 extension AnyField { }

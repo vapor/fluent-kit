@@ -1,26 +1,31 @@
 import FluentKit
 
-final class Galaxy: Model {
-    static let schema = "galaxies"
+public final class Galaxy: Model {
+    public static let schema = "galaxies"
+
+    public static var migration: Migration {
+        return GalaxyMigration()
+    }
     
     @ID(key: "id")
-    var id: Int?
+    public var id: Int?
 
     @Field(key: "name")
-    var name: String
+    public var name: String
 
-    @Children(from: \.$galaxy)
-    var planets: [Planet]
+    @Children(for: \.$galaxy)
+    public var planets: [Planet]
 
-    init() { }
+    public init() { }
 
-    init(id: Int? = nil, name: String) {
+    public init(id: Int? = nil, name: String) {
         self.id = id
         self.name = name
     }
 }
 
 struct GalaxyMigration: Migration {
+    init() {}
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("galaxies")
             .field("id", .int, .identifier(auto: true))

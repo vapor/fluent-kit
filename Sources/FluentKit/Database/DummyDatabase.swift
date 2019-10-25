@@ -1,44 +1,58 @@
 import NIO
 
-public struct DummyDatabase: Database {
-    /// See `FluentDatabase`.
-    public var eventLoop: EventLoop {
-        return EmbeddedEventLoop()
+public final class DummyDatabase: DatabaseDriver {
+    public let eventLoopGroup: EventLoopGroup
+    var didShutdown: Bool
+    
+    public var fieldDecoder: Decoder {
+        return DummyDecoder()
     }
-    
-    /// Creates a new `DummyDatabase`.
-    public init() { }
-    
-    /// See `FluentDatabase`.
-    public func execute(_ query: DatabaseQuery, _ onOutput: @escaping (DatabaseOutput) throws -> ()) -> EventLoopFuture<Void> {
-        do {
-            for _ in 0..<Int.random(in: 1..<42) {
-                try onOutput(DummyOutput())
-            }
-            return self.eventLoop.makeSucceededFuture(())
-        } catch {
-            return self.eventLoop.makeFailedFuture(error)
+
+    public init(on eventLoopGroup: EventLoopGroup) {
+        self.eventLoopGroup = eventLoopGroup
+        self.didShutdown = false
+    }
+
+    public func execute(
+        query: DatabaseQuery,
+        database: Database,
+        onRow: @escaping (DatabaseRow) -> ()
+    ) -> EventLoopFuture<Void> {
+        for _ in 0..<Int.random(in: 1..<42) {
+            onRow(DummyRow())
         }
+        return database.eventLoop.makeSucceededFuture(())
     }
     
-    /// See `FluentDatabase`.
-    public func execute(_ schema: DatabaseSchema) -> EventLoopFuture<Void> {
-        return self.eventLoop.makeSucceededFuture(())
+    public func execute(
+        schema: DatabaseSchema,
+        database: Database
+    ) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
     }
     
-    public func close() -> EventLoopFuture<Void> {
-        return self.eventLoop.makeSucceededFuture(())
+    public func shutdown() {
+        self.didShutdown = true
     }
     
-    public func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    public func withConnection<T>(
+        database: Database,
+        _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>
+    ) -> EventLoopFuture<T> {
         return closure(self)
+    }
+
+    deinit {
+        assert(self.didShutdown, "DummyDatabase did not shutdown before deinit.")
     }
 }
 
 // MARK: Private
 
-private struct DummyOutput: DatabaseOutput {
-    func decode<T>(field: String, as type: T.Type) throws -> T where T : Decodable {
+private struct DummyRow: DatabaseRow {
+    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
+        where T: Decodable
+    {
         return try T(from: DummyDecoder())
     }
 

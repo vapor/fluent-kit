@@ -14,8 +14,3 @@ final class EagerLoads: CustomStringConvertible {
         self.requests = [:]
     }
 }
-
-public enum EagerLoadMethod {
-    case subquery
-    case join
-}

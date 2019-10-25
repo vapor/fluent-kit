@@ -1,5 +1,5 @@
 @propertyWrapper
-public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
+public final class Siblings<From, To, Through>: AnyProperty
     where From: Model, To: Model, Through: Model
 {
 
@@ -75,13 +75,13 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
 
         return To.query(on: database)
             .join(self.to)
-            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(Through.self, self.from.appending(path: \.$id) == fromID)
     }
 
     func output(from output: DatabaseOutput) throws {
         let key = From.key(for: \._$id)
-        if output.contains(field: key) {
-            self.idValue = try output.decode(field: key, as: From.IDValue.self)
+        if output.contains(key) {
+            self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
@@ -97,8 +97,29 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
     func decode(from decoder: Decoder) throws {
         // don't decode
     }
+}
 
-    // MARK: Eager Load
+
+extension Siblings: EagerLoadable {
+    public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
+        where Model: FluentKit.Model
+    {
+        builder.eagerLoads.requests[self.eagerLoadKey] = SubqueryEagerLoad(
+            from: self.from, to: self.to
+        )
+    }
+}
+
+
+extension Siblings: AnyEagerLoadable {
+    var eagerLoadKey: String {
+        let ref = Through()
+        return "s:" + ref[keyPath: self.from].key + "+" + ref[keyPath: self.to].key
+    }
+
+    var eagerLoadValueDescription: CustomStringConvertible? {
+        return self.eagerLoadedValue
+    }
 
     public func eagerLoaded() throws -> [To] {
         guard let rows = self.eagerLoadedValue else {
@@ -107,8 +128,8 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
         return rows
     }
 
-    func eagerLoad(from eagerLoads: EagerLoads, label: String) throws {
-        guard let request = eagerLoads.requests[label] else {
+    func eagerLoad(from eagerLoads: EagerLoads) throws {
+        guard let request = eagerLoads.requests[self.eagerLoadKey] else {
             return
         }
         if let subquery = request as? SubqueryEagerLoad {
@@ -118,16 +139,7 @@ public final class Siblings<From, To, Through>: AnyProperty, AnyEagerLoadable
         }
     }
 
-    func eagerLoad(to eagerLoads: EagerLoads, method: EagerLoadMethod, label: String) {
-        switch method {
-        case .subquery:
-            eagerLoads.requests[label] = SubqueryEagerLoad(from: self.from, to: self.to)
-        case .join:
-            fatalError("join eager load not yet supported for siblings")
-        }
-    }
-
-    private final class SubqueryEagerLoad: EagerLoadRequest {
+    final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [To]
         private let from: KeyPath<Through, Parent<From>>
         private let to: KeyPath<Through, Parent<To>>
