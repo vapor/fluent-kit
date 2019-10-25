@@ -14,7 +14,7 @@ public final class Databases {
         as id: DatabaseID,
         isDefault: Bool = true
     ) {
-        let db = BasicDatabase(driver: driver, logger: logger)
+        let db = BasicDatabase(context: DatabaseContext(), driver: driver, logger: logger)
         self.storage[id] = db
         if isDefault {
             self._default = db
@@ -37,6 +37,8 @@ public final class Databases {
 }
 
 private struct BasicDatabase: Database {
+    var context: DatabaseContext
+    
     var eventLoopPreference: EventLoopPreference {
         return .indifferent
     }

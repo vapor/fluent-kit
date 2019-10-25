@@ -3,13 +3,30 @@ public enum EventLoopPreference {
     case delegate(on: EventLoop)
 }
 
+public class DatabaseContext {
+    internal var middleware: [AnyModelMiddleware]
+    
+    init() {
+        self.middleware = []
+    }
+    
+    public func use(middleware: AnyModelMiddleware) {
+        self.middleware.append(middleware)
+    }
+}
+
 public protocol Database {
     var driver: DatabaseDriver { get }
     var logger: Logger { get }
     var eventLoopPreference: EventLoopPreference { get }
+    var context: DatabaseContext { get }
 }
 
 private struct DriverOverrideDatabase: Database {
+    var context: DatabaseContext {
+        return self.base.context
+    }
+    
     var logger: Logger {
         return self.base.logger
     }
@@ -18,7 +35,7 @@ private struct DriverOverrideDatabase: Database {
         return self.base.eventLoopPreference
     }
     
-    let base: Database
+    var base: Database
     let driver: DatabaseDriver
     
     init(base: Database, driver: DatabaseDriver) {
