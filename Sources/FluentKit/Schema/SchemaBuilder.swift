@@ -39,36 +39,20 @@ public final class SchemaBuilder {
         return self
     }
 
-    public func foreignKey(_ field: String, references parent: (table: String, field: String), onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction, onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction) -> Self {
+    public func foreignKey(
+        _ field: String,
+        references foreignSchema: String,
+        _ foreignField: String,
+        onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
+        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+    ) -> Self {
         self.schema.constraints.append(.foreignKey(
             fields: [.string(field)],
-            parentTable: parent.table,
-            parentFields: [.string(parent.field)],
-            updateAction: onUpdate,
-            deleteAction: onDelete
+            foreignSchema: foreignSchema,
+            foreignFields: [.string(foreignField)],
+            onDelete: onDelete,
+            onUpdate: onUpdate
         ))
-        return self
-    }
-
-    public func foreignKey(_ fields: (String, String), references parent: (table: String, fields: (String, String)), onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction, onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction) -> Self {
-        self.schema.constraints.append(.foreignKey(
-            fields: [.string(fields.0), .string(fields.1)],
-            parentTable: parent.table,
-            parentFields: [.string(parent.fields.0), .string(parent.fields.1)],
-            updateAction: onUpdate,
-            deleteAction: onDelete
-            ))
-        return self
-    }
-
-    public func foreignKey(_ fields: (String, String, String), references parent: (table: String, fields: (String, String, String)), onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction, onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction) -> Self {
-        self.schema.constraints.append(.foreignKey(
-            fields: [.string(fields.0), .string(fields.1), .string(fields.2)],
-            parentTable: parent.table,
-            parentFields: [.string(parent.fields.0), .string(parent.fields.1), .string(parent.fields.2)],
-            updateAction: onUpdate,
-            deleteAction: onDelete
-            ))
         return self
     }
     

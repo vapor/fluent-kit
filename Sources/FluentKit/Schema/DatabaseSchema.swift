@@ -81,13 +81,17 @@ public struct DatabaseSchema {
     public enum FieldConstraint {
         case required
         case identifier(auto: Bool)
-        case foreignKey(field: ForeignFieldName, updateAction: Constraint.ForeignKeyAction, deleteAction: Constraint.ForeignKeyAction)
+        case foreignKey(field: ForeignFieldName, onDelete: Constraint.ForeignKeyAction, onUpdate: Constraint.ForeignKeyAction)
         case custom(Any)
+
+        public static func foreignKey(field: ForeignFieldName) -> Self {
+            return .foreignKey(field: field, onDelete: .noAction, onUpdate: .noAction)
+        }
     }
     
     public enum Constraint {
         case unique(fields: [FieldName])
-        case foreignKey(fields: [FieldName], parentTable: String, parentFields: [FieldName], updateAction: ForeignKeyAction, deleteAction: ForeignKeyAction)
+        case foreignKey(fields: [FieldName], foreignSchema: String, foreignFields: [FieldName], onDelete: ForeignKeyAction, onUpdate: ForeignKeyAction)
         case custom(Any)
 
         public enum ForeignKeyAction {

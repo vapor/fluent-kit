@@ -59,27 +59,26 @@ public struct SQLSchemaConverter {
         switch constraint {
         case .unique(let fields):
             let name = identifier(fields)
-            return SQLTableConstraint(
-                columns: fields.map(self.fieldName),
-                algorithm: SQLConstraintAlgorithm.unique,
+            return SQLConstraint(
+                algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
                 name: SQLIdentifier("uq:\(name)")
             )
-        case .foreignKey(fields: let fields, parentTable: let parent, parentFields: let parentFields, updateAction: let onUpdate, deleteAction: let onDelete):
+        case .foreignKey(fields: let fields, foreignSchema: let parent, foreignFields: let parentFields, onDelete: let onDelete, onUpdate: let onUpdate):
             let name = identifier(fields + parentFields)
-            let childFieldGroup = SQLGroupExpression(
-                fields.map(self.fieldName)
-            )
+
             let reference = SQLForeignKey(
                 table: self.name(parent),
                 columns: parentFields.map(self.fieldName),
                 onDelete: sqlForeignKeyAction(onDelete),
                 onUpdate: sqlForeignKeyAction(onUpdate)
             )
-            return SQLTableConstraint(
-                columns: nil,
-                algorithm: SQLConstraintAlgorithm.foreignKey(childFieldGroup),
-                name: SQLIdentifier("fk:\(name)"),
-                modifier: reference
+
+            return SQLConstraint(
+                algorithm: SQLTableConstraintAlgorithm.foreignKey(
+                    columns: fields.map(self.fieldName),
+                    references: reference
+                ),
+                name: SQLIdentifier("fk:\(name)")
             )
         case .custom(let any):
             return custom(any)
@@ -193,16 +192,15 @@ public struct SQLSchemaConverter {
     private func fieldConstraint(_ fieldConstraint: DatabaseSchema.FieldConstraint) -> SQLExpression {
         switch fieldConstraint {
         case .required:
-            return SQLColumnConstraint.notNull
+            return SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):
-            return SQLColumnConstraint.primaryKey(autoIncrement: auto, name: nil)
-        case .foreignKey(field: let parentField, updateAction: let onUpdate, deleteAction: let onDelete):
-            return SQLColumnConstraint.references(
+            return SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
+        case .foreignKey(field: let parentField, onDelete: let onDelete, onUpdate: let onUpdate):
+            return SQLColumnConstraintAlgorithm.references(
                 self.tableName(parentField),
                 self.fieldName(parentField),
                 onDelete: sqlForeignKeyAction(onDelete),
-                onUpdate: sqlForeignKeyAction(onUpdate),
-                name: nil
+                onUpdate: sqlForeignKeyAction(onUpdate)
             )
         case .custom(let any):
             return custom(any)
