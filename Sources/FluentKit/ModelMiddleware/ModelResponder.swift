@@ -2,8 +2,10 @@ public protocol AnyModelResponder {
     func handle(event: ModelEvent, model: AnyModel, on db: Database) -> EventLoopFuture<Void>
 }
 
-public struct BasicModelResponder: AnyModelResponder {
-    private let _handle: (ModelEvent, AnyModel, Database) throws -> EventLoopFuture<Void>
+internal typealias BasicModelResponderClosure = (ModelEvent, AnyModel, Database) throws -> EventLoopFuture<Void>
+
+internal struct BasicModelResponder: AnyModelResponder {
+    private let _handle: BasicModelResponderClosure
     
     public func handle(event: ModelEvent, model: AnyModel, on db: Database) -> EventLoopFuture<Void> {
         do {
@@ -13,7 +15,7 @@ public struct BasicModelResponder: AnyModelResponder {
         }
     }
     
-    init(handle: @escaping (ModelEvent, AnyModel, Database) throws -> EventLoopFuture<Void>) {
+    init(handle: @escaping BasicModelResponderClosure) {
         self._handle = handle
     }
 }

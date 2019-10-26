@@ -40,8 +40,8 @@ extension AnyModelMiddleware {
 }
 
 extension Array where Element == AnyModelMiddleware {
-    public func makeResponder(chainingTo responder: AnyModelResponder) -> AnyModelResponder {
-        var responder = responder
+    internal func chainingTo(closure: @escaping BasicModelResponderClosure) -> AnyModelResponder {
+        var responder: AnyModelResponder = BasicModelResponder(handle: closure)
         for middleware in reversed() {
             responder = middleware.makeResponder(chainingTo: responder)
         }

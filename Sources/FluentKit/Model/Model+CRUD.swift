@@ -8,9 +8,9 @@ extension Model {
     }
     
     public func create(on database: Database) -> EventLoopFuture<Void> {
-        let responder = BasicModelResponder { (_, _, db) in self._create(on: db) }
-        return database.context.middleware.makeResponder(chainingTo: responder)
-            .handle(event: .create, model: self, on: database)
+        return database.context.middleware.chainingTo { event, model, db in
+            self._create(on: db)
+        }.handle(event: .create, model: self, on: database)
     }
     
     private func _create(on database: Database) -> EventLoopFuture<Void> {
@@ -34,9 +34,9 @@ extension Model {
     }
     
     public func update(on database: Database) -> EventLoopFuture<Void> {
-        let responder = BasicModelResponder { (_, _, db) in self._update(on: db) }
-        return database.context.middleware.makeResponder(chainingTo: responder)
-            .handle(event: .update, model: self, on: database)
+        return database.context.middleware.chainingTo { event, model, db in
+            self._update(on: db)
+        }.handle(event: .update, model: self, on: database)
     }
     
     private func _update(on database: Database) -> EventLoopFuture<Void> {
@@ -56,13 +56,13 @@ extension Model {
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
             timestamp.1.touch()
-            let responder = BasicModelResponder { (_, _, db) in self._update(on: db) }
-            return database.context.middleware.makeResponder(chainingTo: responder)
-                .handle(event: .softDelete, model: self, on: database)
+            return database.context.middleware.chainingTo { event, model, db in
+                self.update(on: db)
+            }.handle(event: .softDelete, model: self, on: database)
         } else {
-            let responder = BasicModelResponder { (_, _, db) in self._delete(force: force, on: db) }
-            return database.context.middleware.makeResponder(chainingTo: responder)
-                .handle(event: .delete, model: self, on: database)
+            return database.context.middleware.chainingTo { event, model, db in
+                self._delete(force: force, on: db)
+            }.handle(event: .delete, model: self, on: database)
         }
     }
     
@@ -81,9 +81,9 @@ extension Model {
     }
     
     public func restore(on database: Database) -> EventLoopFuture<Void> {
-        let responder = BasicModelResponder { (_, _, db) in self._restore(on: db) }
-        return database.context.middleware.makeResponder(chainingTo: responder)
-            .handle(event: .restore, model: self, on: database)
+        return database.context.middleware.chainingTo { event, model, db in
+            self._restore(on: db)
+        }.handle(event: .restore, model: self, on: database)
     }
     
     private func _restore(on database: Database) -> EventLoopFuture<Void> {
@@ -128,9 +128,7 @@ extension Array where Element: FluentKit.Model {
     }
 }
 
-
 // MARK: Private
-
 private struct SavedInput: DatabaseRow {
     var input: [String: DatabaseQuery.Value]
     
