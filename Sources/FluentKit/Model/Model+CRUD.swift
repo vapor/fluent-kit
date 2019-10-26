@@ -57,7 +57,7 @@ extension Model {
         if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
             timestamp.1.touch()
             return database.context.middleware.chainingTo { event, model, db in
-                self.update(on: db)
+                self._update(on: db)
             }.handle(event: .softDelete, model: self, on: database)
         } else {
             return database.context.middleware.chainingTo { event, model, db in

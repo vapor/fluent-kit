@@ -33,7 +33,7 @@ public final class FluentBenchmarker {
         try self.testAsyncCreate()
         try self.testSoftDelete()
         try self.testTimestampable()
-        try self.testLifecycleHooks()
+        try self.testModelMiddleware()
         try self.testSort()
         try self.testUUIDModel()
         try self.testNewModelDecode()
@@ -833,7 +833,7 @@ public final class FluentBenchmarker {
         }
     }
 
-    public func testLifecycleHooks() throws {
+    public func testModelMiddleware() throws {
         struct TestError: Error {
             var string: String
         }
@@ -845,47 +845,65 @@ public final class FluentBenchmarker {
 
             @Field(key: "name")
             var name: String
+            
+            @Timestamp(key: "deletedAt", on: .delete)
+            var deletedAt: Date?
 
             init() { }
             init(id: Int? = nil, name: String) {
                 self.id = id
                 self.name = name
             }
-
-            func willCreate(on database: Database) -> EventLoopFuture<Void> {
-                self.name = "B"
-                return database.eventLoop.makeSucceededFuture(())
+        }
+        
+        struct UserMiddleware: ModelMiddleware {
+            func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+                model.name = "B"
+                
+                return next.handle(event: .create, model: model, on: db).flatMap {
+                    return db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
+                }
             }
-
-            func didCreate(on database: Database) -> EventLoopFuture<Void> {
-                return database.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
+            
+            func update(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+                model.name = "D"
+                
+                return next.handle(event: .update, model: model, on: db).flatMap {
+                    return db.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
+                }
             }
-
-            func willUpdate(on database: Database) -> EventLoopFuture<Void> {
-                self.name = "D"
-                return database.eventLoop.makeSucceededFuture(())
+            
+            func softDelete(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+                model.name = "E"
+                
+                return next.handle(event: .softDelete, model: model, on: db).flatMap {
+                    return db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
+                }
             }
-
-            func didUpdate(on database: Database) -> EventLoopFuture<Void> {
-                return database.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
+            
+            func restore(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+                model.name = "F"
+                
+                return next.handle(event: .restore, model: model , on: db).flatMap {
+                    return db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
+                }
             }
-
-            func willDelete(on database: Database) -> EventLoopFuture<Void> {
-                self.name = "E"
-                return database.eventLoop.makeSucceededFuture(())
-            }
-
-            func didDelete(on database: Database) -> EventLoopFuture<Void> {
-                return database.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
+            
+            func delete(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+                model.name = "G"
+                
+                return next.handle(event: .softDelete, model: model, on: db).flatMap {
+                    return db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
+                }
             }
         }
-
 
         struct UserMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
                 return database.schema("users")
                     .field("id", .int, .identifier(auto: true))
                     .field("name", .string, .required)
+                    .field("deletedAt", .datetime)
                     .create()
             }
 
@@ -897,6 +915,8 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             UserMigration(),
         ]) {
+            self.database.context.use(middleware: UserMiddleware())
+            
             let user = User(name: "A")
             // create
             do {
@@ -915,13 +935,29 @@ public final class FluentBenchmarker {
             }
             XCTAssertEqual(user.name, "D")
 
-            // delete
+            // soft delete
             do {
                 try user.delete(on: self.database).wait()
             } catch let error as TestError {
-                XCTAssertEqual(error.string, "didDelete")
+                XCTAssertEqual(error.string, "didSoftDelete")
             }
             XCTAssertEqual(user.name, "E")
+            
+            // restore
+            do {
+                try user.restore(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didRestore")
+            }
+            XCTAssertEqual(user.name, "F")
+            
+            // force delete
+            do {
+                try user.delete(force: true, on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didDelete")
+            }
+            XCTAssertEqual(user.name, "G")
         }
     }
 
