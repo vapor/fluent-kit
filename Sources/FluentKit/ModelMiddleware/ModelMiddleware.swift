@@ -31,6 +31,26 @@ extension ModelMiddleware {
             return self.restore(model: modelType, on: db, next: next)
         }
     }
+    
+    public func create(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.handle(event: .create, model: model, on: db)
+    }
+    
+    public func update(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.handle(event: .update, model: model, on: db)
+    }
+    
+    public func delete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.handle(event: .delete, model: model, on: db)
+    }
+    
+    public func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.handle(event: .softDelete, model: model, on: db)
+    }
+    
+    public func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.handle(event: .restore, model: model, on: db)
+    }
 }
 
 extension AnyModelMiddleware {
