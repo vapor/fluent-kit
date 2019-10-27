@@ -83,10 +83,6 @@ public struct DatabaseSchema {
         case identifier(auto: Bool)
         case foreignKey(field: ForeignFieldName, onDelete: Constraint.ForeignKeyAction, onUpdate: Constraint.ForeignKeyAction)
         case custom(Any)
-
-        public static func foreignKey(field: ForeignFieldName) -> Self {
-            return .foreignKey(field: field, onDelete: .noAction, onUpdate: .noAction)
-        }
     }
     
     public enum Constraint {
@@ -114,8 +110,8 @@ public struct DatabaseSchema {
     }
 
     public enum ForeignFieldName {
-        case string(name: String, table: String)
-        case custom(name: Any, table: Any)
+        case string(schema: String, field: String)
+        case custom(schema: Any, field: Any)
     }
 
     public var action: Action

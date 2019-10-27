@@ -80,3 +80,23 @@ public final class SchemaBuilder {
         return self.database.driver.execute(schema: self.schema, database: self.database)
     }
 }
+
+// MARK: - FieldConstraints
+
+extension DatabaseSchema.FieldConstraint {
+    public static func references(
+        _ schema: String,
+        _ field: String
+    ) -> Self {
+        return .foreignKey(field: .string(schema: schema, field: field), onDelete: .noAction, onUpdate: .noAction)
+    }
+
+    public static func references(
+        _ schema: String,
+        _ field: String,
+        onDelete: DatabaseSchema.Constraint.ForeignKeyAction,
+        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction
+    ) -> Self {
+        return .foreignKey(field: .string(schema: schema, field: field), onDelete: onDelete, onUpdate: onUpdate)
+    }
+}
