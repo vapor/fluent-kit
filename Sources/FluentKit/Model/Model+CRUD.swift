@@ -10,7 +10,7 @@ extension Model {
     public func create(on database: Database) -> EventLoopFuture<Void> {
         return database.context.middleware.chainingTo { event, model, db in
             self._create(on: db)
-        }.handle(event: .create, model: self, on: database)
+        }.handle(.create, self, on: database)
     }
     
     private func _create(on database: Database) -> EventLoopFuture<Void> {
@@ -36,7 +36,7 @@ extension Model {
     public func update(on database: Database) -> EventLoopFuture<Void> {
         return database.context.middleware.chainingTo { event, model, db in
             self._update(on: db)
-        }.handle(event: .update, model: self, on: database)
+        }.handle(.update, self, on: database)
     }
     
     private func _update(on database: Database) -> EventLoopFuture<Void> {
@@ -58,11 +58,11 @@ extension Model {
             timestamp.1.touch()
             return database.context.middleware.chainingTo { event, model, db in
                 self._update(on: db)
-            }.handle(event: .softDelete, model: self, on: database)
+            }.handle(.softDelete, self, on: database)
         } else {
             return database.context.middleware.chainingTo { event, model, db in
                 self._delete(force: force, on: db)
-            }.handle(event: .delete, model: self, on: database)
+            }.handle(.delete, self, on: database)
         }
     }
     
@@ -83,7 +83,7 @@ extension Model {
     public func restore(on database: Database) -> EventLoopFuture<Void> {
         return database.context.middleware.chainingTo { event, model, db in
             self._restore(on: db)
-        }.handle(event: .restore, model: self, on: database)
+        }.handle(.restore, self, on: database)
     }
     
     private func _restore(on database: Database) -> EventLoopFuture<Void> {

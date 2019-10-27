@@ -1,5 +1,5 @@
 public protocol AnyModelResponder {
-    func handle(event: ModelEvent, model: AnyModel, on db: Database) -> EventLoopFuture<Void>
+    func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database) -> EventLoopFuture<Void>
 }
 
 internal typealias BasicModelResponderClosure = (ModelEvent, AnyModel, Database) throws -> EventLoopFuture<Void>
@@ -7,7 +7,7 @@ internal typealias BasicModelResponderClosure = (ModelEvent, AnyModel, Database)
 internal struct BasicModelResponder: AnyModelResponder {
     private let _handle: BasicModelResponderClosure
     
-    public func handle(event: ModelEvent, model: AnyModel, on db: Database) -> EventLoopFuture<Void> {
+    public func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database) -> EventLoopFuture<Void> {
         do {
             return try _handle(event, model, db)
         } catch {
