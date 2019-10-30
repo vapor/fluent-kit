@@ -28,6 +28,13 @@ public final class QueryBuilder<Model>
     // MARK: Eager Load
 
     @discardableResult
+    public func with<Property>(_ field: KeyPath<Model, Parent<Property>>) -> Self {
+        let ref = Model()
+        ref[keyPath: field].eagerLoad(to: self)
+        return self
+    }
+
+    @discardableResult
     public func with<Property>(_ field: KeyPath<Model, Property>) -> Self
         where Property: EagerLoadable
     {
@@ -62,11 +69,12 @@ public final class QueryBuilder<Model>
 
 //    @discardableResult
 //    public func join<Value>(
-//        _ field: KeyPath<Model, Parent<Value?>>,
+//        _ field: KeyPath<Model, Parent<Value>>,
 //        alias: String? = nil
 //    ) -> Self
 //        where Value: FluentKit.Model
 //    {
+//        fatalError()
 //        return self.join(
 //            Value.self, Value.key(for: \._$id),
 //            to: Model.self, Model.key(for: field.appending(path: \.$id)),
