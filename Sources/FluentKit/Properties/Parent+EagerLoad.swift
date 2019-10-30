@@ -67,12 +67,9 @@ extension Parent {
 
             let uniqueIDs = Array(Set(ids))
             return self.loader(database, uniqueIDs).map { new in
-                uniqueIDs.forEach { id in
-                    if let model = new.first(where: { model in model.id == id }) {
-                        self.storage[id] = .loaded(model)
-                    } else if _isOptional(To.self) {
-                        self.storage[id] = .loaded(Optional<Void>.none as! To)
-                    }
+                new.forEach { model in
+                    guard let id = model.id else { return }
+                    self.storage[id] = .loaded(models)
                 }
 
                 self.run = true
