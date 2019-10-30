@@ -14,7 +14,6 @@ extension Parent: AnyEagerLoadable {
 
         if let subquery = request as? SubqueryEagerLoad {
             self.eagerLoadedValue = try subquery.get(id: id)
-            print(self.eagerLoadedValue)
         } else {
             fatalError("unsupported eagerload request: \(request)")
         }

@@ -681,7 +681,6 @@ public final class QueryBuilder<Model>
             }.flatMapThrowing {
                 try all.forEach { model in
                     try model.eagerLoad(from: self.eagerLoads)
-                    print(model)
                 }
             }
         } else {

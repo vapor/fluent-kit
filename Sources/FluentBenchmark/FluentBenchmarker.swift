@@ -272,7 +272,7 @@ public final class FluentBenchmarker {
         ]) {
             struct PlanetJSON: Codable, Equatable {
                 struct GalaxyID: Codable, Equatable {
-                    var id: Int
+                    var galaxy_id: Int
                 }
                 var id: Int
                 var name: String
@@ -285,17 +285,17 @@ public final class FluentBenchmarker {
             }
 
             let andromeda = GalaxyJSON(id: 1, name: "Andromeda", planets: [
-                .init(id: 9, name: "PA-99-N2", galaxy: .init(id: 1)),
+                .init(id: 9, name: "PA-99-N2", galaxy: .init(galaxy_id: 1)),
             ])
             let milkyWay = GalaxyJSON(id: 2, name: "Milky Way", planets: [
-                .init(id: 1, name: "Mercury", galaxy: .init(id: 2)),
-                .init(id: 2, name: "Venus", galaxy: .init(id: 2)),
-                .init(id: 3, name: "Earth", galaxy: .init(id: 2)),
-                .init(id: 4, name: "Mars", galaxy: .init(id: 2)),
-                .init(id: 5, name: "Jupiter", galaxy: .init(id: 2)),
-                .init(id: 6, name: "Saturn", galaxy: .init(id: 2)),
-                .init(id: 7, name: "Uranus", galaxy: .init(id: 2)),
-                .init(id: 8, name: "Neptune", galaxy: .init(id: 2)),
+                .init(id: 1, name: "Mercury", galaxy: .init(galaxy_id: 2)),
+                .init(id: 2, name: "Venus", galaxy: .init(galaxy_id: 2)),
+                .init(id: 3, name: "Earth", galaxy: .init(galaxy_id: 2)),
+                .init(id: 4, name: "Mars", galaxy: .init(galaxy_id: 2)),
+                .init(id: 5, name: "Jupiter", galaxy: .init(galaxy_id: 2)),
+                .init(id: 6, name: "Saturn", galaxy: .init(galaxy_id: 2)),
+                .init(id: 7, name: "Uranus", galaxy: .init(galaxy_id: 2)),
+                .init(id: 8, name: "Neptune", galaxy: .init(galaxy_id: 2)),
             ])
             let messier82 = GalaxyJSON(id: 3, name: "Messier 82", planets: [])
             let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
