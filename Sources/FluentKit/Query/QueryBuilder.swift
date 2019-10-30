@@ -60,6 +60,21 @@ public final class QueryBuilder<Model>
         )
     }
 
+//    @discardableResult
+//    public func join<Value>(
+//        _ field: KeyPath<Model, Parent<Value?>>,
+//        alias: String? = nil
+//    ) -> Self
+//        where Value: FluentKit.Model
+//    {
+//        return self.join(
+//            Value.self, Value.key(for: \._$id),
+//            to: Model.self, Model.key(for: field.appending(path: \.$id)),
+//            method: .inner,
+//            alias: alias
+//        )
+//    }
+
     @discardableResult
     public func join<Value>(
         _ field: KeyPath<Value, Parent<Model>>,

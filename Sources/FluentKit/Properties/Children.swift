@@ -1,26 +1,20 @@
 @propertyWrapper
 public final class Children<From, To>: AnyProperty
-    where From: Model, To: Model
+    where From: GenericModel, To: Model
 {
     // MARK: ID
 
-    enum Key {
-        case required(KeyPath<To, Parent<From>>)
-        case optional(KeyPath<To, OptionalParent<From>>)
-    }
+    let parentKey: KeyPath<To, Parent<From>>
+    let parentID: () -> String
 
-    let parentKey: Key
     private var eagerLoadedValue: [To]?
     private var idValue: From.IDValue?
 
     // MARK: Wrapper
 
-    public init(for parent: KeyPath<To, Parent<From>>) {
-        self.parentKey = .required(parent)
-    }
-
-    public init(for optionalParent: KeyPath<To, OptionalParent<From>>) {
-        self.parentKey = .optional(optionalParent)
+    private init(parentKey: KeyPath<To, Parent<From>>, parentID: @autoclosure @escaping () -> String) {
+        self.parentKey = parentKey
+        self.parentID = parentID
     }
 
     public var wrappedValue: [To] {
@@ -36,7 +30,7 @@ public final class Children<From, To>: AnyProperty
     public var projectedValue: Children<From, To> {
         return self
     }
-    
+
     public var fromId: From.IDValue? {
         return self.idValue
     }
@@ -48,21 +42,15 @@ public final class Children<From, To>: AnyProperty
             fatalError("Cannot query children relation from unsaved model.")
         }
         let builder = To.query(on: database)
-        switch self.parentKey {
-        case .optional(let optional):
-            builder.filter(optional.appending(path: \.$id) == id)
-        case .required(let required):
-            builder.filter(required.appending(path: \.$id) == id)
-        }
+        builder.filter(self.parentKey.appending(path: \.$id) == id)
         return builder
     }
 
     // MARK: Property
 
     func output(from output: DatabaseOutput) throws {
-        let key = From.key(for: \._$id)
-        if output.contains(key) {
-            self.idValue = try output.decode(key, as: From.IDValue.self)
+        if output.contains(self.parentID()) {
+            self.idValue = try output.decode(self.parentID(), as: From.IDValue.self)
         }
     }
 
@@ -91,12 +79,7 @@ extension Children: EagerLoadable {
 extension Children: AnyEagerLoadable {
     var eagerLoadKey: String {
         let ref = To()
-        switch self.parentKey {
-        case .optional(let optional):
-            return "c:" + ref[keyPath: optional].key
-        case .required(let required):
-            return "c:" + ref[keyPath: required].key
-        }
+        return "c:" + ref[keyPath: self.parentKey].key
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
@@ -123,13 +106,13 @@ extension Children: AnyEagerLoadable {
 
     final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [To]
-        let parentKey: Key
+        let parentKey: KeyPath<To, Parent<From>>
 
         var description: String {
             return self.storage.description
         }
 
-        init(_ parentKey: Key) {
+        init(_ parentKey: KeyPath<To, Parent<From>>) {
             self.storage = []
             self.parentKey = parentKey
         }
@@ -144,12 +127,8 @@ extension Children: AnyEagerLoadable {
                 .map { $0.id! }
 
             let builder = To.query(on: database)
-            switch self.parentKey {
-            case .optional(let optional):
-                builder.filter(optional.appending(path: \.$id), in: Set(ids))
-            case .required(let required):
-                builder.filter(required.appending(path: \.$id), in: Set(ids))
-            }
+            builder.filter(self.parentKey.appending(path: \.$id), in: Set(ids))
+
             return builder.all()
                 .map { (children: [To]) -> Void in
                     self.storage = children
@@ -157,14 +136,19 @@ extension Children: AnyEagerLoadable {
         }
 
         func get(id: From.IDValue) throws -> [To] {
-            return self.storage.filter { child in
-                switch self.parentKey {
-                case .optional(let optional):
-                    return child[keyPath: optional].id == id
-                case .required(let required):
-                    return child[keyPath: required].id == id
-                }
-            }
+            return self.storage.filter { child in return child[keyPath: self.parentKey].id == id }
         }
+    }
+}
+
+extension Children where From: Model {
+    public convenience init(for parent: KeyPath<To, Parent<From>>) {
+        self.init(parentKey: parent, parentID: From.key(for: \._$id))
+    }
+}
+
+extension Children where From: OptionalType, From.Wrapped: Model {
+    public convenience init(for parent: KeyPath<To, Parent<From>>) {
+        self.init(parentKey: parent, parentID: From.Wrapped.key(for: \._$id))
     }
 }

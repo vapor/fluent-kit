@@ -8,13 +8,13 @@ public protocol ModelAlias {
     static var alias: String { get }
 }
 
-public protocol Model: AnyModel {
+public protocol ModelIdentifiable {
     associatedtype IDValue: Codable, Hashable
 
     var id: IDValue? { get set }
+}
 
-    // MARK: Lifecycle
-
+public protocol Model: AnyModel, ModelIdentifiable {
     func willCreate(on database: Database) -> EventLoopFuture<Void>
     func didCreate(on database: Database) -> EventLoopFuture<Void>
 

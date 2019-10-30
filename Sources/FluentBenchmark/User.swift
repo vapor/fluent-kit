@@ -19,7 +19,7 @@ final class User: Model {
     @Field(key: "pet")
     var pet: Pet
 
-    @OptionalParent(key: "bf_id")
+    @Parent(key: "bf_id")
     var bestFriend: User?
 
     @Children(for: \.$bestFriend)

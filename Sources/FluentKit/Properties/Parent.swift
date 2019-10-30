@@ -1,33 +1,76 @@
 @propertyWrapper
-public final class Parent<To>
-    where To: Model
-{
-    @Field
-    public var id: To.IDValue
+public final class Parent<To> where To: GenericModel {
+    internal var eagerLoadedValue: EagerLoaded
+    @Field public var id: To.IDValue
 
     public var wrappedValue: To {
         get {
-            guard let value = self.eagerLoadedValue else {
-                fatalError("Parent relation not eager loaded, use $ prefix to access")
+            switch self.eagerLoadedValue {
+            case .notLoaded: fatalError("Parent relation not eager loaded, use $ prefix to access")
+            case let .loaded(value): return value
             }
-            return value
         }
-        set { fatalError("use $ prefix to access") }
+        set {
+            fatalError("use $ prefix to access")
+        }
     }
 
-    public var projectedValue: Parent<To> {
-        return self
+    public var projectedValue: Parent<To> { self }
+
+    private init(idKey: String) {
+        self.eagerLoadedValue = .notLoaded
+        self._id = Field(key: idKey)
+    }
+}
+
+extension Parent {
+    internal enum EagerLoaded: CustomStringConvertible {
+        case loaded(To)
+        case notLoaded
+
+        var description: String {
+            switch self {
+            case let .loaded(model): return model.description
+            case .notLoaded: return "notLoaded"
+            }
+        }
+    }
+}
+
+extension Parent: FieldRepresentable {
+    public var field: Field<To.IDValue> { self.$id }
+}
+
+extension Parent: AnyProperty {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+
+        if case let .loaded(parent) = self.eagerLoadedValue {
+            try container.encode(parent)
+        } else {
+            try container.encode([self.$id.key: self.id])
+        }
     }
 
-    var eagerLoadedValue: To?
+    func decode(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .string(self.$id.key)))
+        // TODO: allow for nested decoding
+    }
+}
 
-    public init(key: String) {
-        self._id = .init(key: key)
+extension Parent: AnyField { }
+
+
+// MARK: - Specialization
+
+extension Parent where To: Model {
+    public convenience init(key: String) {
+        self.init(idKey: key)
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
-        return To.query(on: database)
-            .filter(\._$id == self.id)
+        return To.query(on: database).filter(\._$id == self.id)
     }
 
     public func get(on database: Database) -> EventLoopFuture<To> {
@@ -38,32 +81,38 @@ public final class Parent<To>
             return parent
         }
     }
-
 }
 
-extension Parent: FieldRepresentable {
-    public var field: Field<To.IDValue> {
-        return self.$id
+extension Parent where To: OptionalType, To.Wrapped: Model, To.IDValue == To.Wrapped.IDValue? {
+    public convenience init(key: String) {
+        self.init(idKey: key)
+    }
+
+    public func query(on database: Database) -> QueryBuilder<To.Wrapped> {
+        return To.Wrapped.query(on: database).filter(\To.Wrapped._$id == self.id)
+    }
+
+    public func get(on database: Database) -> EventLoopFuture<To> {
+        return self.query(on: database).first().flatMapThrowing { parent in parent as! To }
     }
 }
 
-extension Parent: AnyProperty {
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        if let parent = self.eagerLoadedValue {
-            try container.encode(parent)
-        } else {
-            try container.encode([
-                To.key(for: \._$id): self.id
-            ])
-        }
-    }
 
-    func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
-        // TODO: allow for nested decoding
+// MARK: - Optionals
+
+public typealias GenericModel = ModelIdentifiable & Codable & CustomStringConvertible
+
+extension Optional: CustomStringConvertible where Wrapped: CustomStringConvertible {
+    public var description: String {
+        return self?.description ?? "nil"
     }
 }
 
-extension Parent: AnyField { }
+extension Optional: ModelIdentifiable where Wrapped: ModelIdentifiable {
+    public typealias IDValue = Wrapped.IDValue?
+
+    public var id: Wrapped.IDValue?? {
+        get { self?.id }
+        set { self?.id = newValue ?? nil }
+    }
+}
