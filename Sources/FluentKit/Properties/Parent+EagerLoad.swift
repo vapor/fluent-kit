@@ -69,7 +69,7 @@ extension Parent {
             return self.loader(database, uniqueIDs).map { new in
                 new.forEach { model in
                     guard let id = model.id else { return }
-                    self.storage[id] = .loaded(models)
+                    self.storage[id] = .loaded(model)
                 }
 
                 self.run = true
