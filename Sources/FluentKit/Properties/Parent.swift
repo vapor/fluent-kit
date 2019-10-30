@@ -6,6 +6,7 @@ public final class Parent<To> where To: GenericModel {
 
     public var wrappedValue: To {
         get {
+            print(self.eagerLoadedValue)
             switch self.eagerLoadedValue {
             case .notLoaded: fatalError("Parent relation not eager loaded, use $ prefix to access")
             case let .loaded(value): return value

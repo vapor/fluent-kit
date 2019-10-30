@@ -683,7 +683,6 @@ public final class QueryBuilder<Model>
                     try model.eagerLoad(from: self.eagerLoads)
                     print(model)
                 }
-                print("done")
             }
         } else {
             return done

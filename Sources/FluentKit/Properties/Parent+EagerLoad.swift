@@ -14,6 +14,7 @@ extension Parent: AnyEagerLoadable {
 
         if let subquery = request as? SubqueryEagerLoad {
             self.eagerLoadedValue = try subquery.get(id: id)
+            print(self.eagerLoadedValue)
         } else {
             fatalError("unsupported eagerload request: \(request)")
         }
@@ -37,6 +38,8 @@ extension Parent {
 
         let key: String
         let loader: Loader
+
+        var run: Bool
         var storage: [To.IDValue: Parent<To>.EagerLoaded]
 
         var description: String {
@@ -46,6 +49,7 @@ extension Parent {
         private init(key: String, loader: @escaping Loader) {
             self.storage = [:]
             self.loader = loader
+            self.run = false
             self.key = key
         }
 
@@ -58,6 +62,7 @@ extension Parent {
                 .compactMap { try! $0.anyID.cachedOutput!.decode(self.key, as: To.IDValue?.self) }
 
             guard !ids.isEmpty else {
+                self.run = true
                 return database.eventLoop.makeSucceededFuture(())
             }
 
@@ -70,11 +75,20 @@ extension Parent {
                         self.storage[id] = .loaded(Optional<Void>.none as! To)
                     }
                 }
+
+                self.run = true
             }
         }
 
         func get(id: To.IDValue) throws -> Parent<To>.EagerLoaded {
-            return self.storage[id] ?? .notLoaded
+            guard let loaded = self.storage[id] else {
+                if self.run && _isOptional(To.self) {
+                    return .loaded(Optional<Void>.none as! To)
+                }
+                return .notLoaded
+            }
+
+            return loaded
         }
     }
 }
