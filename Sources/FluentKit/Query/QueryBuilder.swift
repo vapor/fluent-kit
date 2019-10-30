@@ -28,7 +28,18 @@ public final class QueryBuilder<Model>
     // MARK: Eager Load
 
     @discardableResult
-    public func with<Property>(_ field: KeyPath<Model, Parent<Property>>) -> Self {
+    public func with<Property>(_ field: KeyPath<Model, Parent<Property>>) -> Self
+        where Property: OptionalType, Property.Wrapped: FluentKit.Model
+    {
+        let ref = Model()
+        ref[keyPath: field].eagerLoad(to: self)
+        return self
+    }
+
+    @discardableResult
+    public func with<Property>(_ field: KeyPath<Model, Parent<Property>>) -> Self
+        where Property: FluentKit.Model
+    {
         let ref = Model()
         ref[keyPath: field].eagerLoad(to: self)
         return self
@@ -670,7 +681,9 @@ public final class QueryBuilder<Model>
             }.flatMapThrowing {
                 try all.forEach { model in
                     try model.eagerLoad(from: self.eagerLoads)
+                    print(model)
                 }
+                print("done")
             }
         } else {
             return done

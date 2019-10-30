@@ -1,6 +1,7 @@
 @propertyWrapper
 public final class Parent<To> where To: GenericModel {
     internal var eagerLoadedValue: EagerLoaded
+    internal var eagerLoadRequest: EagerLoadRequest
     @Field public var id: To.IDValue
 
     public var wrappedValue: To {
@@ -17,9 +18,10 @@ public final class Parent<To> where To: GenericModel {
 
     public var projectedValue: Parent<To> { self }
 
-    private init(idKey: String) {
+    private init(id: String, eagerLoadRequest: EagerLoadRequest) {
         self.eagerLoadedValue = .notLoaded
-        self._id = Field(key: idKey)
+        self.eagerLoadRequest = eagerLoadRequest
+        self._id = Field(key: id)
     }
 }
 
@@ -66,7 +68,7 @@ extension Parent: AnyField { }
 
 extension Parent where To: Model {
     public convenience init(key: String) {
-        self.init(idKey: key)
+        self.init(id: key, eagerLoadRequest: SubqueryEagerLoad(key: key))
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
@@ -85,7 +87,7 @@ extension Parent where To: Model {
 
 extension Parent where To: OptionalType, To.Wrapped: Model, To.IDValue == To.Wrapped.IDValue? {
     public convenience init(key: String) {
-        self.init(idKey: key)
+        self.init(id: key, eagerLoadRequest: SubqueryEagerLoad(key: key))
     }
 
     public func query(on database: Database) -> QueryBuilder<To.Wrapped> {

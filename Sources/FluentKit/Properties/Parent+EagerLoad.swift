@@ -12,7 +12,7 @@ extension Parent: AnyEagerLoadable {
             return
         }
 
-        if let subquery = request as? ParentSubqueryEagerLoad<To> {
+        if let subquery = request as? SubqueryEagerLoad {
             self.eagerLoadedValue = try subquery.get(id: id)
         } else {
             fatalError("unsupported eagerload request: \(request)")
@@ -23,95 +23,81 @@ extension Parent: AnyEagerLoadable {
 
 // MARK: - Eager Loadable
 
-extension Parent where To: Model {
-    internal func subqueryLoader(for key: String) -> EagerLoadRequest {
-        return ParentSubqueryEagerLoad<To>(key: key)
-    }
-}
-
-extension Parent where To: OptionalType, To.Wrapped: Model {
-    internal func subqueryLoader(for key: String) -> EagerLoadRequest {
-        return ParentSubqueryEagerLoad<To>(key: key)
-    }
-}
-
-extension Parent {
-    internal func subqueryLoader(for key: String) -> EagerLoadRequest {
-        fatalError("""
-        You created a parent with a type that is neither a Model or Optional<Model>. \
-        You deserved to crash.
-        """)
-    }
-}
-
 extension Parent: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>) where Model: FluentKit.Model {
-        builder.eagerLoads.requests[self.eagerLoadKey] = self.subqueryLoader(for: self.$id.key)
+        builder.eagerLoads.requests[self.eagerLoadKey] = self.eagerLoadRequest
     }
 }
 
 // MARK: Private
 
-private final class ParentSubqueryEagerLoad<To>: EagerLoadRequest where To: GenericModel {
-    typealias Loader = (Database, [To.IDValue]) -> EventLoopFuture<[To]>
+extension Parent {
+    internal final class SubqueryEagerLoad: EagerLoadRequest {
+        typealias Loader = (Database, [To.IDValue]) -> EventLoopFuture<[To]>
 
-    let key: String
-    let loader: Loader
-    var storage: [To.IDValue: To]
+        let key: String
+        let loader: Loader
+        var storage: [To.IDValue: Parent<To>.EagerLoaded]
 
-    var description: String {
-        return self.storage.description
-    }
-
-    private init(key: String, loader: @escaping Loader) {
-        self.storage = [:]
-        self.loader = loader
-        self.key = key
-    }
-
-    func prepare(query: inout DatabaseQuery) {
-        // no preparation needed
-    }
-
-    func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-        let ids: [To.IDValue] = models
-            .compactMap { try! $0.anyID.cachedOutput!.decode(self.key, as: To.IDValue?.self) }
-
-        guard !ids.isEmpty else {
-            return database.eventLoop.makeSucceededFuture(())
+        var description: String {
+            return self.storage.description
         }
 
-        let uniqueIDs = Array(Set(ids))
-        return self.loader(database, uniqueIDs).map { new in
-            new.forEach { model in
-                guard let id = model.id else { return }
-                self.storage[id] = model
+        private init(key: String, loader: @escaping Loader) {
+            self.storage = [:]
+            self.loader = loader
+            self.key = key
+        }
+
+        func prepare(query: inout DatabaseQuery) {
+            // no preparation needed
+        }
+
+        func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
+            let ids: [To.IDValue] = models
+                .compactMap { try! $0.anyID.cachedOutput!.decode(self.key, as: To.IDValue?.self) }
+
+            guard !ids.isEmpty else {
+                return database.eventLoop.makeSucceededFuture(())
+            }
+
+            let uniqueIDs = Array(Set(ids))
+            return self.loader(database, uniqueIDs).map { new in
+                uniqueIDs.forEach { id in
+                    if let model = new.first(where: { model in model.id == id }) {
+                        self.storage[id] = .loaded(model)
+                    } else if _isOptional(To.self) {
+                        self.storage[id] = .loaded(Optional<Void>.none as! To)
+                    }
+                }
             }
         }
-    }
 
-    func get(id: To.IDValue) throws -> Parent<To>.EagerLoaded {
-        return self.storage[id].map(Parent<To>.EagerLoaded.loaded) ?? .notLoaded
+        func get(id: To.IDValue) throws -> Parent<To>.EagerLoaded {
+            return self.storage[id] ?? .notLoaded
+        }
     }
 }
 
 
 // MARK: - Model Loaders
 
-extension ParentSubqueryEagerLoad where To: Model {
+extension Parent.SubqueryEagerLoad where To: Model {
     convenience init(key: String) {
         let loader: Loader = { database, ids -> EventLoopFuture<[To]> in
-            return To.query(on: database).filter(key, in: ids).all()
+            return To.query(on: database).filter(To.key(for: \._$id), in: ids).all()
         }
 
         self.init(key: key, loader: loader)
     }
 }
 
-extension ParentSubqueryEagerLoad where To: OptionalType, To.Wrapped: Model {
+extension Parent.SubqueryEagerLoad where To: OptionalType, To.Wrapped: Model {
     convenience init(key: String) {
         let loader: Loader = { database, ids -> EventLoopFuture<[To]> in
-            return To.Wrapped.query(on: database).filter(key, in: ids).all().map { models in models as! [To] }
+            return To.Wrapped.query(on: database).filter(To.Wrapped.key(for: \._$id), in: ids).all().map { models in
+                models as! [To]
+            }
         }
 
         self.init(key: key, loader: loader)
