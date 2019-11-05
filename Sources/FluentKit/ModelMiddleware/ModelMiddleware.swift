@@ -20,36 +20,36 @@ extension ModelMiddleware {
         
         switch event {
         case .create:
-            return self.create(model: modelType, on: db, next: next)
+            return create(model: modelType, on: db, next: next)
         case .update:
-            return self.update(model: modelType, on: db, next: next)
+            return update(model: modelType, on: db, next: next)
         case .delete(let force):
-            return self.delete(model: modelType, force: force, on: db, next: next)
+            return delete(model: modelType, force: force, on: db, next: next)
         case .softDelete:
-            return self.softDelete(model: modelType, on: db, next: next)
+            return softDelete(model: modelType, on: db, next: next)
         case .restore:
-            return self.restore(model: modelType, on: db, next: next)
+            return restore(model: modelType, on: db, next: next)
         }
     }
     
     public func create(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.handle(.create, model, on: db)
+        return next.create(model, on: db)
     }
     
     public func update(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.handle(.update, model, on: db)
+        return next.update(model, on: db)
     }
     
     public func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.handle(.delete(force), model, on: db)
+        return next.delete(model, force: force, on: db)
     }
     
     public func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.handle(.softDelete, model, on: db)
+        return next.softDelete(model, on: db)
     }
     
     public func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.handle(.restore, model, on: db)
+        return next.restore(model, on: db)
     }
 }
 
@@ -61,7 +61,7 @@ extension AnyModelMiddleware {
 
 extension Array where Element == AnyModelMiddleware {
     internal func chainingTo<Model>(_ type: Model.Type, closure: @escaping (ModelEvent, Model, Database) throws -> EventLoopFuture<Void>) -> AnyModelResponder where Model: FluentKit.Model {
-        var responder: AnyModelResponder = ModelResponder(handle: closure)
+        var responder: AnyModelResponder = BasicModelResponder(handle: closure)
         for middleware in reversed() {
             responder = middleware.makeResponder(chainingTo: responder)
         }

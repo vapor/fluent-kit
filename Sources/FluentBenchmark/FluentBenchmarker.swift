@@ -860,7 +860,7 @@ public final class FluentBenchmarker {
             func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
                 model.name = "B"
                 
-                return next.handle(.create, model, on: db).flatMap {
+                return next.create(model, on: db).flatMap {
                     return db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
                 }
             }
@@ -868,7 +868,7 @@ public final class FluentBenchmarker {
             func update(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
                 model.name = "D"
                 
-                return next.handle(.update, model, on: db).flatMap {
+                return next.update(model, on: db).flatMap {
                     return db.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
                 }
             }
@@ -876,7 +876,7 @@ public final class FluentBenchmarker {
             func softDelete(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
                 model.name = "E"
                 
-                return next.handle(.softDelete, model, on: db).flatMap {
+                return next.softDelete(model, on: db).flatMap {
                     return db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
                 }
             }
@@ -884,7 +884,7 @@ public final class FluentBenchmarker {
             func restore(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
                 model.name = "F"
                 
-                return next.handle(.restore, model , on: db).flatMap {
+                return next.restore(model , on: db).flatMap {
                     return db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
                 }
             }
@@ -892,7 +892,7 @@ public final class FluentBenchmarker {
             func delete(model: User, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
                 model.name = "G"
                 
-                return next.handle(.delete(force), model, on: db).flatMap {
+                return next.delete(model, force: force, on: db).flatMap {
                     return db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
                 }
             }
