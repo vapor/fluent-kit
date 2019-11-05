@@ -7,7 +7,7 @@ public protocol ModelMiddleware: AnyModelMiddleware {
     
     func create(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func update(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func delete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
 }
@@ -23,8 +23,8 @@ extension ModelMiddleware {
             return self.create(model: modelType, on: db, next: next)
         case .update:
             return self.update(model: modelType, on: db, next: next)
-        case .delete:
-            return self.delete(model: modelType, on: db, next: next)
+        case .delete(let force):
+            return self.delete(model: modelType, force: force, on: db, next: next)
         case .softDelete:
             return self.softDelete(model: modelType, on: db, next: next)
         case .restore:
@@ -40,8 +40,8 @@ extension ModelMiddleware {
         return next.handle(.update, model, on: db)
     }
     
-    public func delete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.handle(.delete, model, on: db)
+    public func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.handle(.delete(force), model, on: db)
     }
     
     public func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
@@ -60,8 +60,8 @@ extension AnyModelMiddleware {
 }
 
 extension Array where Element == AnyModelMiddleware {
-    internal func chainingTo(closure: @escaping BasicModelResponderClosure) -> AnyModelResponder {
-        var responder: AnyModelResponder = BasicModelResponder(handle: closure)
+    internal func chainingTo<Model>(_ type: Model.Type, closure: @escaping (ModelEvent, Model, Database) throws -> EventLoopFuture<Void>) -> AnyModelResponder where Model: FluentKit.Model {
+        var responder: AnyModelResponder = ModelResponder(handle: closure)
         for middleware in reversed() {
             responder = middleware.makeResponder(chainingTo: responder)
         }
@@ -81,7 +81,7 @@ private struct ModelMiddlewareResponder: AnyModelResponder {
 public enum ModelEvent {
     case create
     case update
-    case delete
+    case delete(Bool)
     case restore
     case softDelete
 }

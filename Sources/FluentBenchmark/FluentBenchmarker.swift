@@ -889,10 +889,10 @@ public final class FluentBenchmarker {
                 }
             }
             
-            func delete(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+            func delete(model: User, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
                 model.name = "G"
                 
-                return next.handle(.softDelete, model, on: db).flatMap {
+                return next.handle(.delete(force), model, on: db).flatMap {
                     return db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
                 }
             }

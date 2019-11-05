@@ -8,8 +8,8 @@ extension Model {
     }
     
     public func create(on database: Database) -> EventLoopFuture<Void> {
-        return database.context.middleware.chainingTo { event, model, db in
-            self._create(on: db)
+        return database.context.middleware.chainingTo(Self.self) { event, model, db in
+            model.handle(event, on: db)
         }.handle(.create, self, on: database)
     }
     
@@ -34,8 +34,8 @@ extension Model {
     }
     
     public func update(on database: Database) -> EventLoopFuture<Void> {
-        return database.context.middleware.chainingTo { event, model, db in
-            self._update(on: db)
+        return database.context.middleware.chainingTo(Self.self) { event, model, db in
+            model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
     
@@ -56,13 +56,13 @@ extension Model {
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
             timestamp.1.touch()
-            return database.context.middleware.chainingTo { event, model, db in
-                self._update(on: db)
+            return database.context.middleware.chainingTo(Self.self) { event, model, db in
+                model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
         } else {
-            return database.context.middleware.chainingTo { event, model, db in
-                self._delete(force: force, on: db)
-            }.handle(.delete, self, on: database)
+            return database.context.middleware.chainingTo(Self.self) { event, model, db in
+                model.handle(event, on: db)
+            }.handle(.delete(force), self, on: database)
         }
     }
     
@@ -81,8 +81,8 @@ extension Model {
     }
     
     public func restore(on database: Database) -> EventLoopFuture<Void> {
-        return database.context.middleware.chainingTo { event, model, db in
-            self._restore(on: db)
+        return database.context.middleware.chainingTo(Self.self) { event, model, db in
+            model.handle(event, on: db)
         }.handle(.restore, self, on: database)
     }
     
@@ -101,6 +101,21 @@ extension Model {
             .flatMapThrowing {
                 try self.output(from: SavedInput(self.input).output(for: database))
                 self._$id.exists = true
+        }
+    }
+    
+    private func handle(_ event: ModelEvent, on db: Database) -> EventLoopFuture<Void> {
+        switch event {
+        case .create:
+            return _create(on: db)
+        case .delete(let force):
+            return _delete(force: force, on: db)
+        case .restore:
+            return _restore(on: db)
+        case .softDelete:
+            return _update(on: db)
+        case .update:
+            return _update(on: db)
         }
     }
 }
