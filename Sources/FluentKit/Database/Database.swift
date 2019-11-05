@@ -35,7 +35,7 @@ private struct DriverOverrideDatabase: Database {
         return self.base.eventLoopPreference
     }
     
-    var base: Database
+    let base: Database
     let driver: DatabaseDriver
     
     init(base: Database, driver: DatabaseDriver) {
