@@ -2,14 +2,14 @@ import Foundation
 
 public final class Databases {
     public let eventLoopGroup: EventLoopGroup
-    private var storage: [DatabaseID: DatabaseDriver]
-    private var middlewares: [DatabaseID: [AnyModelMiddleware]]
+    private var drivers: [DatabaseID: DatabaseDriver]
+    private var contexts: [DatabaseID: DatabaseContext]
     private var _default: DatabaseDriver?
     
     public init(on eventLoopGroup: EventLoopGroup) {
-        self.storage = [:]
+        self.drivers = [:]
+        self.contexts = [:]
         self.eventLoopGroup = eventLoopGroup
-        self.middlewares = [:]
     }
     
     public func add(
@@ -17,9 +17,9 @@ public final class Databases {
         as id: DatabaseID,
         isDefault: Bool = true
     ) {
-        self.storage[id] = driver
+        self.drivers[id] = driver
         if isDefault {
-            self.storage[.default] = driver
+            self.drivers[.default] = driver
         }
     }
     
@@ -27,11 +27,11 @@ public final class Databases {
         _ middleware: AnyModelMiddleware,
         to id: DatabaseID = .default
     ) {
-        self.middlewares[id, default: []].append(middleware)
+        self.contexts[id, default: .init()].middleware.append(middleware)
     }
     
     public func driver(_ id: DatabaseID = .default) -> DatabaseDriver? {
-        self.storage[id]
+        self.drivers[id]
     }
     
     public func database(
@@ -40,14 +40,16 @@ public final class Databases {
         on eventLoop: EventLoop
     ) -> Database? {
         self.driver(id).flatMap { driver in
-            let context = DatabaseContext(logger: logger, on: eventLoop)
-            context.middleware = self.middlewares[id] ?? []
-            return driver.makeDatabase(with: context)
+            driver.makeDatabase(
+                logger: logger,
+                context: self.contexts[id] ?? .init(),
+                on: eventLoop
+            )
         }
     }
 
     public func shutdown() {
-        for driver in self.storage.values {
+        for driver in self.drivers.values {
             driver.shutdown()
         }
     }

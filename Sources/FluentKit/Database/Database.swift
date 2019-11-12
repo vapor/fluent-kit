@@ -1,5 +1,7 @@
 public protocol Database {
+    var logger: Logger { get }
     var context: DatabaseContext { get }
+    var eventLoop: EventLoop { get }
     
     func execute(
         query: DatabaseQuery,
@@ -11,33 +13,19 @@ public protocol Database {
     ) -> EventLoopFuture<Void>
 }
 
-extension Database {
-    public var logger: Logger {
-        self.context.logger
-    }
-    
-    public var eventLoop: EventLoop {
-        self.context.eventLoop
-    }
-}
-
 public protocol DatabaseDriver {
-    var eventLoopGroup: EventLoopGroup { get }
-    func makeDatabase(with context: DatabaseContext) -> Database
+    func makeDatabase(
+        logger: Logger,
+        context: DatabaseContext,
+        on eventLoop: EventLoop
+    ) -> Database
     func shutdown()
 }
 
 public final class DatabaseContext {
-    public let logger: Logger
-    public let eventLoop: EventLoop
     var middleware: [AnyModelMiddleware]
     
-    public init(
-        logger: Logger = .init(label: "codes.vapor.fluent"),
-        on eventLoop: EventLoop
-    ) {
-        self.logger = logger
-        self.eventLoop = eventLoop
+    public init() {
         self.middleware = []
     }
 }

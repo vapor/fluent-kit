@@ -4,11 +4,15 @@ import NIO
 import SQLKit
 
 public class DummyDatabaseForTestSQLSerializer: Database {
+    public let logger: Logger
+    public let eventLoop: EventLoop
     public let context: DatabaseContext
     public var sqlSerializers: [SQLSerializer]
 
     public init() {
-        self.context = .init(logger: .init(label: "test"), on: EmbeddedEventLoop())
+        self.logger = .init(label: "test")
+        self.eventLoop = EmbeddedEventLoop()
+        self.context = .init()
         self.sqlSerializers = []
     }
     
