@@ -30,6 +30,7 @@ public protocol DatabaseDriver {
 public struct DatabaseContext {
     public let logger: Logger
     public let eventLoop: EventLoop
+    public let middleware: [AnyModelMiddleware]
     
     init(logger: Logger, on eventLoop: EventLoop) {
         self.logger = logger
