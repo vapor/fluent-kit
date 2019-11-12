@@ -671,24 +671,18 @@ public final class QueryBuilder<Model>
         
         self.database.logger.info("\(self.query)")
 
-        let done = self.database.driver.execute(
-            query: query,
-            database: self.database
-        ) { row in
-            if let hop = self.database.hopEventLoop {
-                hop.execute {
-                    onOutput(row.output(for: self.database))
-                }
-            } else {
-                onOutput(row.output(for: self.database))
-            }
+        let done = self.database.execute(query: query) { row in
+            assert(self.database.eventLoop.inEventLoop,
+                   "database driver output was not on eventloop")
+            onOutput(row.output(for: self.database))
         }
         
-        if let hop = self.database.hopEventLoop {
-            return done.hop(to: hop)
-        } else {
-            return done
+        done.whenComplete { _ in
+            assert(self.database.eventLoop.inEventLoop,
+                   "database driver output was not on eventloop")
         }
+        
+        return done
     }
 }
 
