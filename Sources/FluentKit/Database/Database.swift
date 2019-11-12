@@ -27,14 +27,18 @@ public protocol DatabaseDriver {
     func shutdown()
 }
 
-public struct DatabaseContext {
+public final class DatabaseContext {
     public let logger: Logger
     public let eventLoop: EventLoop
-    public let middleware: [AnyModelMiddleware]
+    var middleware: [AnyModelMiddleware]
     
-    init(logger: Logger, on eventLoop: EventLoop) {
+    public init(
+        logger: Logger = .init(label: "codes.vapor.fluent"),
+        on eventLoop: EventLoop
+    ) {
         self.logger = logger
         self.eventLoop = eventLoop
+        self.middleware = []
     }
 }
 

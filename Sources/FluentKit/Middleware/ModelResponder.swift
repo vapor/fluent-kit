@@ -1,5 +1,9 @@
 public protocol AnyModelResponder {
-    func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database) -> EventLoopFuture<Void>
+    func handle(
+        _ event: ModelEvent,
+        _ model: AnyModel,
+        on db: Database
+    ) -> EventLoopFuture<Void>
 }
 
 extension AnyModelResponder {

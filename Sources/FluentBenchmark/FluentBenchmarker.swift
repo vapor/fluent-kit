@@ -917,7 +917,7 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             UserMigration(),
         ]) {
-            self.database.context.use(middleware: UserMiddleware())
+            self.database.context.middleware.append(UserMiddleware())
             
             let user = User(name: "A")
             // create

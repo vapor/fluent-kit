@@ -3,11 +3,13 @@ import Foundation
 public final class Databases {
     public let eventLoopGroup: EventLoopGroup
     private var storage: [DatabaseID: DatabaseDriver]
+    private var middlewares: [DatabaseID: [AnyModelMiddleware]]
     private var _default: DatabaseDriver?
     
     public init(on eventLoopGroup: EventLoopGroup) {
         self.storage = [:]
         self.eventLoopGroup = eventLoopGroup
+        self.middlewares = [:]
     }
     
     public func add(
@@ -21,6 +23,13 @@ public final class Databases {
         }
     }
     
+    public func add(
+        _ middleware: AnyModelMiddleware,
+        to id: DatabaseID = .default
+    ) {
+        self.middlewares[id, default: []].append(middleware)
+    }
+    
     public func driver(_ id: DatabaseID = .default) -> DatabaseDriver? {
         self.storage[id]
     }
@@ -30,8 +39,10 @@ public final class Databases {
         logger: Logger,
         on eventLoop: EventLoop
     ) -> Database? {
-        self.driver(id).flatMap {
-            $0.makeDatabase(with: .init(logger: logger, on: eventLoop))
+        self.driver(id).flatMap { driver in
+            let context = DatabaseContext(logger: logger, on: eventLoop)
+            context.middleware = self.middlewares[id] ?? []
+            return driver.makeDatabase(with: context)
         }
     }
 

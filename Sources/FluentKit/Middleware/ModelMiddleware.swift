@@ -1,5 +1,10 @@
 public protocol AnyModelMiddleware {
-    func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database, chainingTo next: AnyModelResponder) -> EventLoopFuture<Void>
+    func handle(
+        _ event: ModelEvent,
+        _ model: AnyModel,
+        on db: Database,
+        chainingTo next: AnyModelResponder
+    ) -> EventLoopFuture<Void>
 }
 
 public protocol ModelMiddleware: AnyModelMiddleware {
