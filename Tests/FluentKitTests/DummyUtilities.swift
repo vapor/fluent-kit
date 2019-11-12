@@ -1,14 +1,14 @@
-import FluentKit
+@testable import FluentKit
 import FluentSQL
 import NIO
 import SQLKit
 
-public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
-    public var eventLoopGroup: EventLoopGroup
+public class DummyDatabaseForTestSQLSerializer: Database {
+    public let context: DatabaseContext
     public var sqlSerializers: [SQLSerializer]
 
-    public init(on eventLoopGroup: EventLoopGroup = EmbeddedEventLoop()) {
-        self.eventLoopGroup = eventLoopGroup
+    public init() {
+        self.context = .init(logger: .init(label: "test"), on: EmbeddedEventLoop())
         self.sqlSerializers = []
     }
     
@@ -16,20 +16,20 @@ public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
         self.sqlSerializers = []
     }
     
-    public func execute(query: DatabaseQuery, database: Database, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return database.eventLoop.makeSucceededFuture(())
+        return self.eventLoop.makeSucceededFuture(())
     }
     
-    public func execute(schema: DatabaseSchema, database: Database) -> EventLoopFuture<Void> {
+    public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return database.eventLoop.makeSucceededFuture(())
+        return self.eventLoop.makeSucceededFuture(())
     }
 
     public func shutdown() {

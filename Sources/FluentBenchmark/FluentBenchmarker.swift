@@ -1,12 +1,20 @@
-import FluentKit
+@testable import FluentKit
 import Foundation
+import NIO
 import XCTest
 
 public final class FluentBenchmarker {
-    public let database: Database
+    public let databases: Databases
     
-    public init(database: Database) {
-        self.database = database
+    public var database: Database {
+        self.databases.database(
+            logger: .init(label: "foo"),
+            on: self.databases.eventLoopGroup.next()
+        )!
+    }
+    
+    public init(databases: Databases) {
+        self.databases = databases
     }
     
     public func testAll() throws {
@@ -313,14 +321,11 @@ public final class FluentBenchmarker {
     
     public func testMigrator() throws {
         try self.runTest(#function, []) {
-            var migrations = Migrations()
+            let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(PlanetMigration())
             
-            let databases = Databases()
-            databases.add(self.database.driver, as: .init(string: "main"))
-            
-            var migrator = Migrator(
+            let migrator = Migrator(
                 databases: databases,
                 migrations: migrations,
                 logger: .init(label: "codes.vapor.fluent.test"),
@@ -344,16 +349,13 @@ public final class FluentBenchmarker {
     
     public func testMigratorError() throws {
         try self.runTest(#function, []) {
-            var migrations = Migrations()
+            let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
             migrations.add(PlanetMigration())
             
-            let databases = Databases()
-            databases.add(self.database.driver, as: .init(string: "main"))
-            
             let migrator = Migrator(
-                databases: databases,
+                databases: self.databases,
                 migrations: migrations,
                 logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop

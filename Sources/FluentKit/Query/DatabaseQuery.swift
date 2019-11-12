@@ -59,8 +59,8 @@ public struct DatabaseQuery: CustomStringConvertible {
         case custom(Any)
     }
     
-    public enum Filter {
-        public enum Method {
+    public enum Filter: CustomStringConvertible {
+        public enum Method: CustomStringConvertible {
             public static var equal: Method {
                 return .equality(inverse: false)
             }
@@ -104,6 +104,25 @@ public struct DatabaseQuery: CustomStringConvertible {
             
             /// Custom method
             case custom(Any)
+            
+            public var description: String {
+                switch self {
+                case .equality(let inverse):
+                    return inverse ? "!=" : "="
+                case .order(let inverse, let equality):
+                    if equality {
+                        return inverse ? "<=" : ">="
+                    } else {
+                        return inverse ? "<" : ">"
+                    }
+                case .subset(let inverse):
+                    return inverse ? "!∈" : "∈"
+                case .contains(let inverse, let contains):
+                    return (inverse ? "!" : "") + "\(contains)"
+                case .custom(let any):
+                    return "\(any)"
+                }
+            }
         }
         
         public enum Relation {
@@ -116,6 +135,19 @@ public struct DatabaseQuery: CustomStringConvertible {
         case field(Field, Method, Field)
         case group([Filter], Relation)
         case custom(Any)
+        
+        public var description: String {
+            switch self {
+            case .value(let field, let method, let value):
+                return "\(field) \(method) \(value)"
+            case .field(let fieldA, let method, let fieldB):
+                return "\(fieldA) \(method) \(fieldB)"
+            case .group(let filters, let relation):
+                return "\(relation) \(filters)"
+            case .custom(let any):
+                return "\(any)"
+            }
+        }
     }
     
     public enum Value: CustomStringConvertible {
@@ -141,7 +173,7 @@ public struct DatabaseQuery: CustomStringConvertible {
             case .null:
                 return "nil"
             case .default:
-                return "<default>"
+                return "default"
             case .custom(let custom):
                 return "\(custom)"
             }
@@ -198,6 +230,9 @@ public struct DatabaseQuery: CustomStringConvertible {
         }
         if !self.filters.isEmpty {
             parts.append("filters=\(self.filters)")
+        }
+        if !self.input.isEmpty {
+            parts.append("input=\(self.input)")
         }
         return parts.joined(separator: " ")
     }

@@ -12,35 +12,39 @@ public final class DummyDatabase: DatabaseDriver {
         self.eventLoopGroup = eventLoopGroup
         self.didShutdown = false
     }
+    
+    public func makeDatabase(with context: DatabaseContext) -> Database {
+        fatalError()
+    }
 
-    public func execute(
-        query: DatabaseQuery,
-        database: Database,
-        onRow: @escaping (DatabaseRow) -> ()
-    ) -> EventLoopFuture<Void> {
-        for _ in 0..<Int.random(in: 1..<42) {
-            onRow(DummyRow())
-        }
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    
-    public func execute(
-        schema: DatabaseSchema,
-        database: Database
-    ) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    
+//    public func execute(
+//        query: DatabaseQuery,
+//        database: Database,
+//        onRow: @escaping (DatabaseRow) -> ()
+//    ) -> EventLoopFuture<Void> {
+//        for _ in 0..<Int.random(in: 1..<42) {
+//            onRow(DummyRow())
+//        }
+//        return database.eventLoop.makeSucceededFuture(())
+//    }
+//
+//    public func execute(
+//        schema: DatabaseSchema,
+//        database: Database
+//    ) -> EventLoopFuture<Void> {
+//        return database.eventLoop.makeSucceededFuture(())
+//    }
+//
     public func shutdown() {
         self.didShutdown = true
     }
-    
-    public func withConnection<T>(
-        database: Database,
-        _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>
-    ) -> EventLoopFuture<T> {
-        return closure(self)
-    }
+//
+//    public func withConnection<T>(
+//        database: Database,
+//        _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>
+//    ) -> EventLoopFuture<T> {
+//        return closure(self)
+//    }
 
     deinit {
         assert(self.didShutdown, "DummyDatabase did not shutdown before deinit.")
