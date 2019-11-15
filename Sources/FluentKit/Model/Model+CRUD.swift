@@ -8,7 +8,7 @@ extension Model {
     }
     
     public func create(on database: Database) -> EventLoopFuture<Void> {
-        return database.context.middleware.chainingTo(Self.self) { event, model, db in
+        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             model.handle(event, on: db)
         }.handle(.create, self, on: database)
     }
@@ -34,7 +34,7 @@ extension Model {
     }
     
     public func update(on database: Database) -> EventLoopFuture<Void> {
-        return database.context.middleware.chainingTo(Self.self) { event, model, db in
+        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
@@ -56,11 +56,11 @@ extension Model {
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
             timestamp.1.touch()
-            return database.context.middleware.chainingTo(Self.self) { event, model, db in
+            return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
         } else {
-            return database.context.middleware.chainingTo(Self.self) { event, model, db in
+            return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
             }.handle(.delete(force), self, on: database)
         }
@@ -81,7 +81,7 @@ extension Model {
     }
     
     public func restore(on database: Database) -> EventLoopFuture<Void> {
-        return database.context.middleware.chainingTo(Self.self) { event, model, db in
+        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             model.handle(event, on: db)
         }.handle(.restore, self, on: database)
     }

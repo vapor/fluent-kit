@@ -1,18 +1,16 @@
 import NIO
 
 public struct DummyDatabase: Database {
-    public var logger: Logger
     public var context: DatabaseContext
-    public var eventLoop: EventLoop
     
     public init(
-        logger: Logger = .init(label: "codes.vapor.fluent.dummy"),
-        context: DatabaseContext = .init(),
-        on eventLoop: EventLoop = EmbeddedEventLoop()
+        context: DatabaseContext = .init(
+            configuration: .init(),
+            logger: .init(label: "codes.vapor.test"),
+            eventLoop: EmbeddedEventLoop()
+        )
     ) {
-        self.logger = logger
         self.context = context
-        self.eventLoop = eventLoop
     }
     
     public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
@@ -40,12 +38,8 @@ public final class DummyDatabaseDriver: DatabaseDriver {
         self.didShutdown = false
     }
     
-    public func makeDatabase(
-        logger: Logger,
-        context: DatabaseContext,
-        on eventLoop: EventLoop
-    ) -> Database {
-        DummyDatabase(logger: logger, context: context, on: eventLoop)
+    public func makeDatabase(with context: DatabaseContext) -> Database {
+        DummyDatabase(context: context)
     }
 
     public func shutdown() {
