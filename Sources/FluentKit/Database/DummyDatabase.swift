@@ -20,6 +20,10 @@ public struct DummyDatabase: Database {
         return self.eventLoop.makeSucceededFuture(())
     }
     
+    public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
+    
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         self.eventLoop.makeSucceededFuture(())
     }
