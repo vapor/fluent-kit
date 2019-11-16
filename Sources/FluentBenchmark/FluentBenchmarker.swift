@@ -4,17 +4,9 @@ import NIO
 import XCTest
 
 public final class FluentBenchmarker {
-    public let databases: Databases
-    
-    public var database: Database {
-        self.databases.database(
-            logger: .init(label: "foo"),
-            on: self.databases.eventLoopGroup.next()
-        )!
-    }
-    
-    public init(databases: Databases) {
-        self.databases = databases
+    public let database: Database
+    public init(database: Database) {
+        self.database = database
     }
     
     public func testAll() throws {
@@ -326,9 +318,8 @@ public final class FluentBenchmarker {
             migrations.add(PlanetMigration())
             
             let migrator = Migrator(
-                databases: databases,
+                databaseFactory: { _ in self.database },
                 migrations: migrations,
-                logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()
@@ -355,9 +346,8 @@ public final class FluentBenchmarker {
             migrations.add(PlanetMigration())
             
             let migrator = Migrator(
-                databases: self.databases,
+                databaseFactory: { _ in self.database },
                 migrations: migrations,
-                logger: .init(label: "codes.vapor.fluent.test"),
                 on: self.database.eventLoop
             )
             try migrator.setupIfNeeded().wait()
@@ -917,7 +907,7 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             UserMigration(),
         ]) {
-            self.database.context.middleware.append(UserMiddleware())
+            self.database.configuration.middleware.append(UserMiddleware())
             
             let user = User(name: "A")
             // create

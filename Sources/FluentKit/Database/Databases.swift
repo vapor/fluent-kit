@@ -20,10 +20,7 @@ public final class Databases {
         _ factory: DatabaseDriverFactory,
         as id: DatabaseID = .default
     ) {
-        self.drivers[id] = factory.makeDriver(self)
-        if self.configurations[id] == nil {
-            self.configurations[id] = .init()
-        }
+        self.use(factory.makeDriver(self), as: id)
     }
     
     public func use(

@@ -44,7 +44,11 @@ public struct DatabaseContext {
     public let logger: Logger
     public let eventLoop: EventLoop
     
-    public init(configuration: DatabaseConfiguration, logger: Logger, eventLoop: EventLoop) {
+    public init(
+        configuration: DatabaseConfiguration,
+        logger: Logger,
+        eventLoop: EventLoop
+    ) {
         self.configuration = configuration
         self.logger = logger
         self.eventLoop = eventLoop

@@ -2,20 +2,32 @@ import Foundation
 import Logging
 
 public struct Migrator {
-    public var migrations: Migrations
-    public var databases: Databases
-    public let logger: Logger
+    public let databaseFactory: (DatabaseID) -> (Database)
+    public let migrations: Migrations
     public let eventLoop: EventLoop
-
+    
     public init(
         databases: Databases,
         migrations: Migrations,
         logger: Logger,
         on eventLoop: EventLoop
     ) {
-        self.databases = databases
+        self.init(
+            databaseFactory: {
+                databases.database($0, logger: logger, on: eventLoop)!
+            },
+            migrations: migrations,
+            on: eventLoop
+        )
+    }
+
+    init(
+        databaseFactory: @escaping (DatabaseID) -> (Database),
+        migrations: Migrations,
+        on eventLoop: EventLoop
+    ) {
+        self.databaseFactory = databaseFactory
         self.migrations = migrations
-        self.logger = logger
         self.eventLoop = eventLoop
     }
     
@@ -171,7 +183,7 @@ public struct Migrator {
     }
     
     private func database(_ id: DatabaseID = .default) -> Database {
-        self.databases.database(id, logger: self.logger, on: self.eventLoop)!
+        self.databaseFactory(id)
     }
 }
 
