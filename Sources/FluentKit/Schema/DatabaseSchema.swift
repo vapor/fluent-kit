@@ -61,8 +61,8 @@ public struct DatabaseSchema {
         case bool
         
         public struct Enum {
-            var name: String
-            var cases: [String]
+            public var name: String
+            public var cases: [String]
         }
         case `enum`(Enum)
         case string
