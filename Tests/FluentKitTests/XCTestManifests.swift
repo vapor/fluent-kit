@@ -14,7 +14,7 @@ extension FluentKitTests {
         ("testMigrationLogNames", testMigrationLogNames),
         ("testMultipleFieldConstraint", testMultipleFieldConstraint),
         ("testRequiredFieldConstraint", testRequiredFieldConstraint),
-        ("testSQLSchemaCustom", testSQLSchemaCustom),
+        ("testSQLSchemaCustomIndex", testSQLSchemaCustomIndex),
         ("testUniqueTableConstraint", testUniqueTableConstraint),
     ]
 }

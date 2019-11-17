@@ -3,7 +3,11 @@ import FluentSQL
 import NIO
 import SQLKit
 
-public class DummyDatabaseForTestSQLSerializer: Database {
+public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+    public var dialect: SQLDialect {
+        DummyDatabaseDialect()
+    }
+    
     public let context: DatabaseContext
     public var sqlSerializers: [SQLSerializer]
 
@@ -21,15 +25,19 @@ public class DummyDatabaseForTestSQLSerializer: Database {
     }
     
     public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
-        var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
+        var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
         return self.eventLoop.makeSucceededFuture(())
     }
     
+    public func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
+        fatalError()
+    }
+    
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
-        var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
+        var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
@@ -49,12 +57,10 @@ public class DummyDatabaseForTestSQLSerializer: Database {
 
 // Copy from PostgresDialect
 struct DummyDatabaseDialect: SQLDialect {
-    private var bindOffset: Int
-
-    init() {
-        self.bindOffset = 0
+    var name: String {
+        "dummy db"
     }
-
+    
     var identifierQuote: SQLExpression {
         return SQLRaw("\"")
     }
@@ -63,9 +69,8 @@ struct DummyDatabaseDialect: SQLDialect {
         return SQLRaw("'")
     }
 
-    mutating func nextBindPlaceholder() -> SQLExpression {
-        self.bindOffset += 1
-        return SQLRaw("$" + self.bindOffset.description)
+    func bindPlaceholder(at position: Int) -> SQLExpression {
+        return SQLRaw("$" + (position + 1).description)
     }
 
     func literalBoolean(_ value: Bool) -> SQLExpression {
