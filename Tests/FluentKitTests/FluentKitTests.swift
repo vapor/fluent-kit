@@ -23,6 +23,42 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testGalaxyPlanetSorts() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Planet.query(on: db).sort(\.$name, .descending).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        db.reset()
+        
+        _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$name, .ascending).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        db.reset()
+        
+        _ = try Planet.query(on: db).sort(\.$id, .descending).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."id" DESC"#), true)
+        db.reset()
+        
+        _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$id, .ascending).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."id" ASC"#), true)
+        db.reset()
+        
+        _ = try Planet.query(on: db).sort("name", .descending).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        db.reset()
+        
+        _ = try Planet.query(on: db).join(\.$galaxy).sort(Galaxy.self, "name", .ascending).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        db.reset()
+    }
+
+    func testSQLSchemaCustom() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema("foo").field(.custom("INDEX i_foo (foo)")).update().wait()
+        print(db.sqlSerializers)
         let (driver, db) = Self.dummySQLDb
     
         _ = try Planet.query(on: db).sort(\.$name, .descending).all().wait()
@@ -62,12 +98,7 @@ final class FluentKitTests: XCTestCase {
         try db.schema("foo").field(.custom("INDEX i_foo (foo)")).update().wait()
         print(driver.sqlSerializers)
     }
-}
-
-// MARK: Constraints
-
-extension FluentKitTests {
-
+  
     func testRequiredFieldConstraint() throws {
         let (driver, db) = Self.dummySQLDb
 
