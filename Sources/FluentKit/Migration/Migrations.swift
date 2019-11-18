@@ -1,4 +1,4 @@
-public final class Migrations {
+public struct Migrations {
     struct Item {
         var id: DatabaseID?
         var migration: Migration
@@ -10,7 +10,7 @@ public final class Migrations {
         self.storage = []
     }
     
-    public func add(_ migration: Migration, to id: DatabaseID? = nil) {
+    public mutating func add(_ migration: Migration, to id: DatabaseID? = nil) {
         self.storage.append(.init(id: id, migration: migration))
     }
 }
