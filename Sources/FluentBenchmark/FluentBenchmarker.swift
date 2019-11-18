@@ -315,11 +315,11 @@ public final class FluentBenchmarker {
     
     public func testMigrator() throws {
         try self.runTest(#function, []) {
-            var migrations = Migrations()
+            let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(PlanetMigration())
             
-            var migrator = Migrator(
+            let migrator = Migrator(
                 databaseFactory: { _ in self.database },
                 migrations: migrations,
                 on: self.database.eventLoop
@@ -342,7 +342,7 @@ public final class FluentBenchmarker {
     
     public func testMigratorError() throws {
         try self.runTest(#function, []) {
-            var migrations = Migrations()
+            let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
             migrations.add(PlanetMigration())

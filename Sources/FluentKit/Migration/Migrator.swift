@@ -3,7 +3,7 @@ import Logging
 
 public struct Migrator {
     public let databaseFactory: (DatabaseID) -> (Database)
-    public var migrations: Migrations
+    public let migrations: Migrations
     public let eventLoop: EventLoop
     
     public init(
