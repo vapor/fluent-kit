@@ -38,9 +38,11 @@ public final class FluentBenchmarker {
         try self.testUUIDModel()
         try self.testNewModelDecode()
         try self.testSiblingsAttach()
+        try self.testSiblingsEagerLoad()
         try self.testParentGet()
         try self.testParentSerialization()
         try self.testMultipleJoinSameTable()
+        try self.testOptionalParent()
         try self.testFieldFilter()
         try self.testJoinedFieldFilter()
     }
@@ -1365,7 +1367,7 @@ public final class FluentBenchmarker {
         }
     }
   
-    func testFieldFilter() throws {
+    public func testFieldFilter() throws {
         // seeded db
         try runTest(#function, [
             MoonMigration(),
@@ -1381,7 +1383,7 @@ public final class FluentBenchmarker {
         }
     }
 
-    func testJoinedFieldFilter() throws {
+    public func testJoinedFieldFilter() throws {
         // seeded db
         try runTest(#function, [
             CityMigration(),
