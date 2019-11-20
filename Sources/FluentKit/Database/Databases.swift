@@ -7,7 +7,8 @@ public final class Databases {
     
     private var drivers: [DatabaseID: DatabaseDriver]
     private var configurations: [DatabaseID: DatabaseConfiguration]
-    private var _default: DatabaseDriver?
+    
+    private var defaultID: DatabaseID?
     
     public init(threadPool: NIOThreadPool, on eventLoopGroup: EventLoopGroup) {
         self.drivers = [:]
@@ -18,18 +19,23 @@ public final class Databases {
     
     public func use(
         _ factory: DatabaseDriverFactory,
-        as id: DatabaseID = .default
+        as id: DatabaseID,
+        isDefault: Bool? = nil
     ) {
-        self.use(factory.makeDriver(self), as: id)
+        self.use(factory.makeDriver(self), as: id, isDefault: isDefault)
     }
     
     public func use(
         _ driver: DatabaseDriver,
-        as id: DatabaseID = .default
+        as id: DatabaseID,
+        isDefault: Bool? = nil
     ) {
         self.drivers[id] = driver
         if self.configurations[id] == nil {
             self.configurations[id] = .init()
+        }
+        if isDefault == true || self.defaultID == nil && isDefault != false {
+            self.defaultID = id
         }
     }
     
@@ -38,7 +44,7 @@ public final class Databases {
 
         public func use(
             _ middleware: AnyModelMiddleware,
-            on id: DatabaseID = .default
+            on id: DatabaseID
         ) {
             self.databases.configurations[id, default: .init()]
                 .middleware
@@ -50,15 +56,20 @@ public final class Databases {
         .init(databases: self)
     }
     
-    public func driver(_ id: DatabaseID = .default) -> DatabaseDriver? {
-        self.drivers[id]
+    public func driver(_ id: DatabaseID? = nil) -> DatabaseDriver? {
+        self.drivers[id ?? self.getDefaultID()]
+    }
+    
+    public func `default`(to id: DatabaseID) {
+        self.defaultID = id
     }
     
     public func database(
-        _ id: DatabaseID = .default,
+        _ id: DatabaseID? = nil,
         logger: Logger,
         on eventLoop: EventLoop
     ) -> Database? {
+        let id = id ?? self.getDefaultID()
         let context = DatabaseContext(
             configuration: self.configurations[id]!,
             logger: logger,
@@ -73,6 +84,13 @@ public final class Databases {
         for driver in self.drivers.values {
             driver.shutdown()
         }
+    }
+    
+    private func getDefaultID() -> DatabaseID {
+        guard let id = self.defaultID else {
+            fatalError("No default database configured.")
+        }
+        return id
     }
 }
 

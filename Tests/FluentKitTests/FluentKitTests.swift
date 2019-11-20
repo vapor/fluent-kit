@@ -162,4 +162,73 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:galaxy_id+id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
     }
+    
+    func testDecodeWithoutID() throws {
+        let json = """
+        {"name": "Earth", "moonCount": 1}
+        """
+        let planet = try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))
+        XCTAssertEqual(planet.id, nil)
+        XCTAssertEqual(planet.name, "Earth")
+        XCTAssertEqual(planet.nickName, nil)
+        XCTAssertEqual(planet.moonCount, 1)
+    }
+    
+    func testDecodeWithID() throws {
+        let json = """
+        {"id": 42, "name": "Earth", "moonCount": 1}
+        """
+        let planet = try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))
+        XCTAssertEqual(planet.id, 42)
+        XCTAssertEqual(planet.name, "Earth")
+        XCTAssertEqual(planet.nickName, nil)
+        XCTAssertEqual(planet.moonCount, 1)
+    }
+    
+    func testDecodeWithOptional() throws {
+        let json = """
+        {"id": 42, "name": "Earth", "moonCount": 1, "nickName": "The Blue Marble"}
+        """
+        let planet = try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))
+        XCTAssertEqual(planet.id, 42)
+        XCTAssertEqual(planet.name, "Earth")
+        XCTAssertEqual(planet.nickName, "The Blue Marble")
+        XCTAssertEqual(planet.moonCount, 1)
+    }
+    
+    func testDecodeMissingRequired() throws {
+        let json = """
+        {"name": "Earth"}
+        """
+        do {
+            _ = try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))
+            XCTFail("should have thrown")
+        } catch {
+            print(error)
+        }
+    }
+}
+
+final class Planet2: Model {
+    static let schema = "planets"
+    
+    @ID(key: "id")
+    var id: Int?
+    
+    @Field(key: "name")
+    var name: String
+    
+    @Field(key: "nickname")
+    var nickName: String?
+    
+    @Field(key: "moon_count")
+    var moonCount: Int
+    
+    init() { }
+    
+    init(id: Int? = nil, name: String, moonCount: Int) {
+        self.id = id
+        self.name = name
+        self.moonCount = moonCount
+    }
 }
