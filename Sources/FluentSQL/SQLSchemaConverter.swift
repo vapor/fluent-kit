@@ -45,9 +45,8 @@ public struct SQLSchemaConverter {
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint) -> SQLExpression {
-        switch constraint {
-        case .unique(let fields):
-            let name = fields.map { field -> String in
+        func identifier(_ fields: [DatabaseSchema.FieldName]) -> String {
+            return fields.map { field -> String in
                 switch field {
                 case .custom:
                     return ""
@@ -55,13 +54,49 @@ public struct SQLSchemaConverter {
                     return name
                 }
             }.joined(separator: "+")
-            return SQLTableConstraint(
-                columns: fields.map(self.fieldName),
-                algorithm: SQLConstraintAlgorithm.unique,
+        }
+
+        switch constraint {
+        case .unique(let fields):
+            let name = identifier(fields)
+            return SQLConstraint(
+                algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
                 name: SQLIdentifier("uq:\(name)")
+            )
+        case .foreignKey(fields: let fields, foreignSchema: let parent, foreignFields: let parentFields, onDelete: let onDelete, onUpdate: let onUpdate):
+            let name = identifier(fields + parentFields)
+
+            let reference = SQLForeignKey(
+                table: self.name(parent),
+                columns: parentFields.map(self.fieldName),
+                onDelete: sqlForeignKeyAction(onDelete),
+                onUpdate: sqlForeignKeyAction(onUpdate)
+            )
+
+            return SQLConstraint(
+                algorithm: SQLTableConstraintAlgorithm.foreignKey(
+                    columns: fields.map(self.fieldName),
+                    references: reference
+                ),
+                name: SQLIdentifier("fk:\(name)")
             )
         case .custom(let any):
             return custom(any)
+        }
+    }
+
+    private func sqlForeignKeyAction(_ fkAction: DatabaseSchema.Constraint.ForeignKeyAction) -> SQLForeignKeyAction {
+        switch fkAction {
+        case .noAction:
+            return .noAction
+        case .restrict:
+            return .restrict
+        case .cascade:
+            return .cascade
+        case .setNull:
+            return .setNull
+        case .setDefault:
+            return .setDefault
         }
     }
     
@@ -83,6 +118,24 @@ public struct SQLSchemaConverter {
         case .string(let string):
             return SQLIdentifier(string)
         case .custom(let any):
+            return custom(any)
+        }
+    }
+
+    private func fieldName(_ fieldName: DatabaseSchema.ForeignFieldName) -> SQLExpression {
+        switch fieldName {
+        case .string(schema: _, field: let string):
+            return SQLIdentifier(string)
+        case .custom(schema: _, field: let any):
+            return custom(any)
+        }
+    }
+
+    private func tableName(_ fieldName: DatabaseSchema.ForeignFieldName) -> SQLExpression {
+        switch fieldName {
+        case .string(schema: let string, field: _):
+            return SQLIdentifier(string)
+        case .custom(schema: let any, field: _):
             return custom(any)
         }
     }
@@ -139,9 +192,16 @@ public struct SQLSchemaConverter {
     private func fieldConstraint(_ fieldConstraint: DatabaseSchema.FieldConstraint) -> SQLExpression {
         switch fieldConstraint {
         case .required:
-            return SQLColumnConstraint.notNull
+            return SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):
-            return SQLColumnConstraint.primaryKey(autoIncrement: auto, name: nil)
+            return SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
+        case .foreignKey(let parentField, onDelete: let onDelete, onUpdate: let onUpdate):
+            return SQLColumnConstraintAlgorithm.references(
+                self.tableName(parentField),
+                self.fieldName(parentField),
+                onDelete: sqlForeignKeyAction(onDelete),
+                onUpdate: sqlForeignKeyAction(onUpdate)
+            )
         case .custom(let any):
             return custom(any)
         }

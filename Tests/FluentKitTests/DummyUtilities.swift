@@ -1,14 +1,22 @@
-import FluentKit
+@testable import FluentKit
 import FluentSQL
 import NIO
 import SQLKit
 
-public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
-    public var eventLoopGroup: EventLoopGroup
+public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+    public var dialect: SQLDialect {
+        DummyDatabaseDialect()
+    }
+    
+    public let context: DatabaseContext
     public var sqlSerializers: [SQLSerializer]
 
-    public init(on eventLoopGroup: EventLoopGroup = EmbeddedEventLoop()) {
-        self.eventLoopGroup = eventLoopGroup
+    public init() {
+        self.context = .init(
+            configuration: .init(),
+            logger: .init(label: "test"),
+            eventLoop: EmbeddedEventLoop()
+        )
         self.sqlSerializers = []
     }
     
@@ -16,22 +24,32 @@ public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
         self.sqlSerializers = []
     }
     
-    public func execute(query: DatabaseQuery, database: Database, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
-        var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
+    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+        var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return database.eventLoop.makeSucceededFuture(())
+        return self.eventLoop.makeSucceededFuture(())
     }
     
-    public func execute(schema: DatabaseSchema, database: Database) -> EventLoopFuture<Void> {
-        var sqlSerializer = SQLSerializer(dialect: DummyDatabaseDialect())
+    public func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
+        fatalError()
+    }
+    
+    public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
+        var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        return database.eventLoop.makeSucceededFuture(())
+        return self.eventLoop.makeSucceededFuture(())
     }
-
+    
+    public func withConnection<T>(
+        _ closure: @escaping (Database) -> EventLoopFuture<T>
+    ) -> EventLoopFuture<T> {
+        closure(self)
+    }
+    
     public func shutdown() {
         //
     }
@@ -39,12 +57,10 @@ public class DummyDatabaseForTestSQLSerializer: DatabaseDriver {
 
 // Copy from PostgresDialect
 struct DummyDatabaseDialect: SQLDialect {
-    private var bindOffset: Int
-
-    init() {
-        self.bindOffset = 0
+    var name: String {
+        "dummy db"
     }
-
+    
     var identifierQuote: SQLExpression {
         return SQLRaw("\"")
     }
@@ -53,9 +69,8 @@ struct DummyDatabaseDialect: SQLDialect {
         return SQLRaw("'")
     }
 
-    mutating func nextBindPlaceholder() -> SQLExpression {
-        self.bindOffset += 1
-        return SQLRaw("$" + self.bindOffset.description)
+    func bindPlaceholder(at position: Int) -> SQLExpression {
+        return SQLRaw("$" + (position + 1).description)
     }
 
     func literalBoolean(_ value: Bool) -> SQLExpression {

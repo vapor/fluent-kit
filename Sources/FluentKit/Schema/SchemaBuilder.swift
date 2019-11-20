@@ -38,6 +38,23 @@ public final class SchemaBuilder {
         ))
         return self
     }
+
+    public func foreignKey(
+        _ field: String,
+        references foreignSchema: String,
+        _ foreignField: String,
+        onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
+        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+    ) -> Self {
+        self.schema.constraints.append(.foreignKey(
+            fields: [.string(field)],
+            foreignSchema: foreignSchema,
+            foreignFields: [.string(foreignField)],
+            onDelete: onDelete,
+            onUpdate: onUpdate
+        ))
+        return self
+    }
     
     public func deleteField(_ name: String) -> Self {
         return self.deleteField(.string(name))
@@ -50,16 +67,36 @@ public final class SchemaBuilder {
     
     public func delete() -> EventLoopFuture<Void> {
         self.schema.action = .delete
-        return self.database.driver.execute(schema: self.schema, database: self.database)
+        return self.database.execute(schema: self.schema)
     }
     
     public func update() -> EventLoopFuture<Void> {
         self.schema.action = .update
-        return self.database.driver.execute(schema: self.schema, database: self.database)
+        return self.database.execute(schema: self.schema)
     }
     
     public func create() -> EventLoopFuture<Void> {
         self.schema.action = .create
-        return self.database.driver.execute(schema: self.schema, database: self.database)
+        return self.database.execute(schema: self.schema)
+    }
+}
+
+// MARK: - FieldConstraints
+
+extension DatabaseSchema.FieldConstraint {
+    public static func references(
+        _ schema: String,
+        _ field: String
+    ) -> Self {
+        return .foreignKey(field: .string(schema: schema, field: field), onDelete: .noAction, onUpdate: .noAction)
+    }
+
+    public static func references(
+        _ schema: String,
+        _ field: String,
+        onDelete: DatabaseSchema.Constraint.ForeignKeyAction,
+        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction
+    ) -> Self {
+        return .foreignKey(field: .string(schema: schema, field: field), onDelete: onDelete, onUpdate: onUpdate)
     }
 }

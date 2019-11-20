@@ -1,71 +1,58 @@
-public enum EventLoopPreference {
-    case indifferent
-    case delegate(on: EventLoop)
-}
-
 public protocol Database {
-    var driver: DatabaseDriver { get }
-    var logger: Logger { get }
-    var eventLoopPreference: EventLoopPreference { get }
-}
-
-private struct DriverOverrideDatabase: Database {
-    var logger: Logger {
-        return self.base.logger
-    }
+    var context: DatabaseContext { get }
     
-    var eventLoopPreference: EventLoopPreference {
-        return self.base.eventLoopPreference
-    }
-    
-    let base: Database
-    let driver: DatabaseDriver
-    
-    init(base: Database, driver: DatabaseDriver) {
-        self.base = base
-        self.driver = driver
-    }
-}
-
-extension Database {
-    public var eventLoop: EventLoop {
-        switch self.eventLoopPreference {
-        case .indifferent:
-            return self.driver.eventLoopGroup.next()
-        case .delegate(let eventLoop):
-            return eventLoop
-        }
-    }
-    
-    var hopEventLoop: EventLoop? {
-        switch self.eventLoopPreference {
-        case .delegate(let eventLoop):
-            if !eventLoop.inEventLoop {
-                return eventLoop
-            } else {
-                return nil
-            }
-        case .indifferent:
-            return nil
-        }
-    }
-}
-
-public protocol DatabaseDriver {
-    var eventLoopGroup: EventLoopGroup { get }
-
     func execute(
         query: DatabaseQuery,
-        database: Database,
         onRow: @escaping (DatabaseRow) -> ()
     ) -> EventLoopFuture<Void>
 
     func execute(
-        schema: DatabaseSchema,
-        database: Database
+        schema: DatabaseSchema
     ) -> EventLoopFuture<Void>
+    
+    func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+}
 
+extension Database {
+    public var configuration: DatabaseConfiguration {
+        self.context.configuration
+    }
+    
+    public var logger: Logger {
+        self.context.logger
+    }
+    
+    public var eventLoop: EventLoop {
+        self.context.eventLoop
+    }
+}
+
+public protocol DatabaseDriver {
+    func makeDatabase(with context: DatabaseContext) -> Database
     func shutdown()
+}
+
+public final class DatabaseConfiguration {
+    var middleware: [AnyModelMiddleware]
+    public init() {
+        self.middleware = []
+    }
+}
+
+public struct DatabaseContext {
+    public let configuration: DatabaseConfiguration
+    public let logger: Logger
+    public let eventLoop: EventLoop
+    
+    public init(
+        configuration: DatabaseConfiguration,
+        logger: Logger,
+        eventLoop: EventLoop
+    ) {
+        self.configuration = configuration
+        self.logger = logger
+        self.eventLoop = eventLoop
+    }
 }
 
 public protocol DatabaseError {

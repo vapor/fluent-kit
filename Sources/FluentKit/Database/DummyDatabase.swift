@@ -1,6 +1,35 @@
 import NIO
 
-public final class DummyDatabase: DatabaseDriver {
+public struct DummyDatabase: Database {
+    public var context: DatabaseContext
+    
+    public init(
+        context: DatabaseContext = .init(
+            configuration: .init(),
+            logger: .init(label: "codes.vapor.test"),
+            eventLoop: EmbeddedEventLoop()
+        )
+    ) {
+        self.context = context
+    }
+    
+    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+        for _ in 0..<Int.random(in: 1..<42) {
+            onRow(DummyRow())
+        }
+        return self.eventLoop.makeSucceededFuture(())
+    }
+    
+    public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
+    
+    public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
+        self.eventLoop.makeSucceededFuture(())
+    }
+}
+
+public final class DummyDatabaseDriver: DatabaseDriver {
     public let eventLoopGroup: EventLoopGroup
     var didShutdown: Bool
     
@@ -12,36 +41,14 @@ public final class DummyDatabase: DatabaseDriver {
         self.eventLoopGroup = eventLoopGroup
         self.didShutdown = false
     }
+    
+    public func makeDatabase(with context: DatabaseContext) -> Database {
+        DummyDatabase(context: context)
+    }
 
-    public func execute(
-        query: DatabaseQuery,
-        database: Database,
-        onRow: @escaping (DatabaseRow) -> ()
-    ) -> EventLoopFuture<Void> {
-        for _ in 0..<Int.random(in: 1..<42) {
-            onRow(DummyRow())
-        }
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    
-    public func execute(
-        schema: DatabaseSchema,
-        database: Database
-    ) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    
     public func shutdown() {
         self.didShutdown = true
     }
-    
-    public func withConnection<T>(
-        database: Database,
-        _ closure: @escaping (DatabaseDriver) -> EventLoopFuture<T>
-    ) -> EventLoopFuture<T> {
-        return closure(self)
-    }
-
     deinit {
         assert(self.didShutdown, "DummyDatabase did not shutdown before deinit.")
     }

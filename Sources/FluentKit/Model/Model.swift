@@ -14,22 +14,7 @@ public protocol ModelIdentifiable {
     var id: IDValue? { get set }
 }
 
-public protocol Model: AnyModel, ModelIdentifiable {
-    func willCreate(on database: Database) -> EventLoopFuture<Void>
-    func didCreate(on database: Database) -> EventLoopFuture<Void>
-
-    func willUpdate(on database: Database) -> EventLoopFuture<Void>
-    func didUpdate(on database: Database) -> EventLoopFuture<Void>
-
-    func willDelete(on database: Database) -> EventLoopFuture<Void>
-    func didDelete(on database: Database) -> EventLoopFuture<Void>
-
-    func willRestore(on database: Database) -> EventLoopFuture<Void>
-    func didRestore(on database: Database) -> EventLoopFuture<Void>
-
-    func willSoftDelete(on database: Database) -> EventLoopFuture<Void>
-    func didSoftDelete(on database: Database) -> EventLoopFuture<Void>
-}
+public protocol Model: AnyModel, ModelIdentifiable { }
 
 extension AnyModel {
     // MARK: Codable
@@ -283,42 +268,5 @@ extension Model {
         return Self.query(on: database)
             .filter(\._$id == id)
             .first()
-    }
-}
-
-extension Model {
-    public func willCreate(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    public func didCreate(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-
-    public func willUpdate(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    public func didUpdate(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-
-    public func willDelete(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    public func didDelete(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-
-    public func willRestore(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    public func didRestore(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-
-    public func willSoftDelete(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
-    }
-    public func didSoftDelete(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
     }
 }

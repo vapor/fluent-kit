@@ -1,46 +1,85 @@
 import Foundation
+@_exported import class NIO.NIOThreadPool
 
 public final class Databases {
-    private var storage: [DatabaseID: Database]
-    private var _default: Database?
+    public let eventLoopGroup: EventLoopGroup
+    public let threadPool: NIOThreadPool
     
-    public init() {
-        self.storage = [:]
+    private var drivers: [DatabaseID: DatabaseDriver]
+    private var configurations: [DatabaseID: DatabaseConfiguration]
+    private var _default: DatabaseDriver?
+    
+    public init(threadPool: NIOThreadPool, on eventLoopGroup: EventLoopGroup) {
+        self.drivers = [:]
+        self.configurations = [:]
+        self.eventLoopGroup = eventLoopGroup
+        self.threadPool = threadPool
     }
     
-    public func add(
-        _ driver: DatabaseDriver,
-        logger: Logger = .init(label: "codes.vapor.db"),
-        as id: DatabaseID,
-        isDefault: Bool = true
+    public func use(
+        _ factory: DatabaseDriverFactory,
+        as id: DatabaseID = .default
     ) {
-        let db = BasicDatabase(driver: driver, logger: logger)
-        self.storage[id] = db
-        if isDefault {
-            self._default = db
+        self.use(factory.makeDriver(self), as: id)
+    }
+    
+    public func use(
+        _ driver: DatabaseDriver,
+        as id: DatabaseID = .default
+    ) {
+        self.drivers[id] = driver
+        if self.configurations[id] == nil {
+            self.configurations[id] = .init()
         }
     }
     
-    public func database(_ id: DatabaseID) -> Database? {
-        return self.storage[id]
+    public struct Middleware {
+        let databases: Databases
+
+        public func use(
+            _ middleware: AnyModelMiddleware,
+            on id: DatabaseID = .default
+        ) {
+            self.databases.configurations[id, default: .init()]
+                .middleware
+                .append(middleware)
+        }
     }
     
-    public func `default`() -> Database {
-        return self._default!
+    public var middleware: Middleware {
+        .init(databases: self)
+    }
+    
+    public func driver(_ id: DatabaseID = .default) -> DatabaseDriver? {
+        self.drivers[id]
+    }
+    
+    public func database(
+        _ id: DatabaseID = .default,
+        logger: Logger,
+        on eventLoop: EventLoop
+    ) -> Database? {
+        let context = DatabaseContext(
+            configuration: self.configurations[id]!,
+            logger: logger,
+            eventLoop: eventLoop
+        )
+        return self.driver(id).flatMap { driver in
+            driver.makeDatabase(with: context)
+        }
     }
 
     public func shutdown() {
-        for db in self.storage.values {
-            db.driver.shutdown()
+        for driver in self.drivers.values {
+            driver.shutdown()
         }
     }
 }
 
-private struct BasicDatabase: Database {
-    var eventLoopPreference: EventLoopPreference {
-        return .indifferent
+public struct DatabaseDriverFactory {
+    public let makeDriver: (Databases) -> DatabaseDriver
+    
+    public init(makeDriver: @escaping (Databases) -> DatabaseDriver) {
+        self.makeDriver = makeDriver
     }
-
-    let driver: DatabaseDriver
-    let logger: Logger
 }

@@ -61,8 +61,8 @@ public struct DatabaseSchema {
         case bool
         
         public struct Enum {
-            var name: String
-            var cases: [String]
+            public var name: String
+            public var cases: [String]
         }
         case `enum`(Enum)
         case string
@@ -81,12 +81,22 @@ public struct DatabaseSchema {
     public enum FieldConstraint {
         case required
         case identifier(auto: Bool)
+        case foreignKey(field: ForeignFieldName, onDelete: Constraint.ForeignKeyAction, onUpdate: Constraint.ForeignKeyAction)
         case custom(Any)
     }
     
     public enum Constraint {
         case unique(fields: [FieldName])
+        case foreignKey(fields: [FieldName], foreignSchema: String, foreignFields: [FieldName], onDelete: ForeignKeyAction, onUpdate: ForeignKeyAction)
         case custom(Any)
+
+        public enum ForeignKeyAction {
+            case noAction
+            case restrict
+            case cascade
+            case setNull
+            case setDefault
+        }
     }
     
     public enum FieldDefinition {
@@ -98,7 +108,12 @@ public struct DatabaseSchema {
         case string(String)
         case custom(Any)
     }
-    
+
+    public enum ForeignFieldName {
+        case string(schema: String, field: String)
+        case custom(schema: Any, field: Any)
+    }
+
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]
