@@ -93,9 +93,9 @@ extension Children: AnyEagerLoadable {
         let ref = To()
         switch self.parentKey {
         case .optional(let optional):
-            return "c:" + ref[keyPath: optional].key
+            return "c:\(To.schema):\(ref[keyPath: optional].key)"
         case .required(let required):
-            return "c:" + ref[keyPath: required].key
+            return "c:\(To.schema):\(ref[keyPath: required].key)"
         }
     }
 
