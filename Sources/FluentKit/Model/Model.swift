@@ -14,7 +14,7 @@ public protocol ModelIdentifiable {
     var id: IDValue? { get set }
 }
 
-public protocol Model: AnyModel, ModelIdentifiable { }
+public protocol Model: AnyModel, OptionalModel { }
 
 extension AnyModel {
     // MARK: Codable

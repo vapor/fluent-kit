@@ -102,7 +102,9 @@ extension Parent where To: OptionalType, To.Wrapped: Model, To.IDValue == To.Wra
 
 // MARK: - Optionals
 
-public typealias OptionalModel = ModelIdentifiable & Codable & CustomStringConvertible
+public protocol OptionalModel: ModelIdentifiable, Codable, CustomStringConvertible { }
+
+extension Optional: OptionalModel where Wrapped: Model { }
 
 extension Optional: CustomStringConvertible where Wrapped: CustomStringConvertible {
     public var description: String {
