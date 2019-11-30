@@ -6,6 +6,11 @@ extension FluentKitTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__FluentKitTests = [
+        ("testCreateEmptyModelArrayDoesntQuery", testCreateEmptyModelArrayDoesntQuery),
+        ("testDecodeMissingRequired", testDecodeMissingRequired),
+        ("testDecodeWithID", testDecodeWithID),
+        ("testDecodeWithOptional", testDecodeWithOptional),
+        ("testDecodeWithoutID", testDecodeWithoutID),
         ("testForeignKeyFieldConstraint", testForeignKeyFieldConstraint),
         ("testForeignKeyTableConstraint", testForeignKeyTableConstraint),
         ("testGalaxyPlanetNames", testGalaxyPlanetNames),

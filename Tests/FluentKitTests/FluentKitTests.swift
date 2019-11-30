@@ -207,6 +207,13 @@ final class FluentKitTests: XCTestCase {
             print(error)
         }
     }
+    
+    func testCreateEmptyModelArrayDoesntQuery() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try [Planet2]().create(on: db).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 0)
+    }
+    
 }
 
 final class Planet2: Model {
