@@ -1,5 +1,5 @@
 @propertyWrapper
-public final class Parent<To> where To: GenericModel {
+public final class Parent<To> where To: OptionalModel {
     internal var eagerLoadedValue: EagerLoaded
     internal var eagerLoadRequest: EagerLoadRequest
     @Field public var id: To.IDValue
@@ -102,7 +102,7 @@ extension Parent where To: OptionalType, To.Wrapped: Model, To.IDValue == To.Wra
 
 // MARK: - Optionals
 
-public typealias GenericModel = ModelIdentifiable & Codable & CustomStringConvertible
+public typealias OptionalModel = ModelIdentifiable & Codable & CustomStringConvertible
 
 extension Optional: CustomStringConvertible where Wrapped: CustomStringConvertible {
     public var description: String {

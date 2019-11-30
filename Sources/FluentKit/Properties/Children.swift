@@ -1,6 +1,6 @@
 @propertyWrapper
 public final class Children<From, To>: AnyProperty
-    where From: GenericModel, To: Model
+    where From: OptionalModel, To: Model
 {
     // MARK: ID
 
