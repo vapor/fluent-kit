@@ -79,7 +79,7 @@ extension Children: EagerLoadable {
 extension Children: AnyEagerLoadable {
     var eagerLoadKey: String {
         let ref = To()
-        return "c:" + ref[keyPath: self.parentKey].key
+        return "c:\(To.schema):\(ref[keyPath: self.parentKey].key)"
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {

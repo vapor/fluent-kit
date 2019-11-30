@@ -23,98 +23,89 @@ extension AnyModel {
         self.init()
         let container = try decoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let decoder = LazyDecoder { try container.superDecoder(forKey: .string(label)) }
+            let decoder = ContainerDecoder(container: container, key: .string(label))
             try property.decode(from: decoder)
         }
     }
 
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: _ModelCodingKey.self)
+        let container = encoder.container(keyedBy: _ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let encoder = LazyEncoder { container.superEncoder(forKey: .string(label)) }
+            let encoder = ContainerEncoder(container: container, key: .string(label))
             try property.encode(to: encoder)
         }
     }
 }
 
-private final class LazyDecoder: Decoder {
-    let factory: () throws -> Decoder
-    var cached: Result<Decoder, Error>?
-    
-    var value: Result<Decoder, Error> {
-        if let decoder = self.cached {
-            return decoder
-        } else {
-            let decoder: Result<Decoder, Error>
-            do {
-                decoder = try .success(self.factory())
-            } catch {
-                decoder = .failure(error)
-            }
-            self.cached = decoder
-            return decoder
-        }
-    }
+private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
+    let container: KeyedDecodingContainer<_ModelCodingKey>
+    let key: _ModelCodingKey
     
     var codingPath: [CodingKey] {
-        return (try? self.value.get().codingPath) ?? []
-    }
-    var userInfo: [CodingUserInfoKey : Any] {
-        return (try? self.value.get().userInfo) ?? [:]
+        self.container.codingPath
     }
     
-    init(factory: @escaping () throws -> Decoder) {
-        self.factory = factory
+    var userInfo: [CodingUserInfoKey : Any] {
+        [:]
     }
     
     func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        return try self.value.get().container(keyedBy: Key.self)
+        try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
     }
     
     func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        return try self.value.get().unkeyedContainer()
+        try self.container.nestedUnkeyedContainer(forKey: self.key)
     }
     
     func singleValueContainer() throws -> SingleValueDecodingContainer {
-        return try self.value.get().singleValueContainer()
+        self
     }
     
-}
-
-private final class LazyEncoder: Encoder {
-    let factory: () -> Encoder
-    var cached: Encoder?
-    var value: Encoder {
-        if let encoder = self.cached {
-            return encoder
-        } else {
-            let encoder = self.factory()
-            self.cached = encoder
-            return encoder
+    func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+        try self.container.decode(T.self, forKey: self.key)
+    }
+    
+    func decodeNil() -> Bool {
+        do {
+            return try self.container.decodeNil(forKey: self.key)
+        } catch {
+            return true
         }
     }
+}
+
+private struct ContainerEncoder: Encoder, SingleValueEncodingContainer {
+    var container: KeyedEncodingContainer<_ModelCodingKey>
+    let key: _ModelCodingKey
     
     var codingPath: [CodingKey] {
-        return self.value.codingPath
-    }
-    var userInfo: [CodingUserInfoKey : Any] {
-        return self.value.userInfo
+        self.container.codingPath
     }
     
-    init(factory: @escaping () -> Encoder) {
-        self.factory = factory
+    var userInfo: [CodingUserInfoKey : Any] {
+        [:]
     }
     
     func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
-        return self.value.container(keyedBy: Key.self)
+        var container = self.container
+        return container.nestedContainer(keyedBy: Key.self, forKey: self.key)
     }
     
     func unkeyedContainer() -> UnkeyedEncodingContainer {
-        return self.value.unkeyedContainer()
+        var container = self.container
+        return container.nestedUnkeyedContainer(forKey: self.key)
     }
     
     func singleValueContainer() -> SingleValueEncodingContainer {
-        return self.value.singleValueContainer()
+        self
+    }
+    
+    mutating func encode<T>(_ value: T) throws where T : Encodable {
+        try self.container.encode(value, forKey: self.key)
+    }
+    
+    mutating func encodeNil() throws {
+        try self.container.encodeNil(forKey: self.key)
     }
 }
 

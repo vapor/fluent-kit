@@ -2,7 +2,7 @@ import Foundation
 import Logging
 
 public struct Migrator {
-    public let databaseFactory: (DatabaseID) -> (Database)
+    public let databaseFactory: (DatabaseID?) -> (Database)
     public let migrations: Migrations
     public let eventLoop: EventLoop
     
@@ -22,7 +22,7 @@ public struct Migrator {
     }
 
     init(
-        databaseFactory: @escaping (DatabaseID) -> (Database),
+        databaseFactory: @escaping (DatabaseID?) -> (Database),
         migrations: Migrations,
         on eventLoop: EventLoop
     ) {
@@ -34,10 +34,10 @@ public struct Migrator {
     // MARK: Setup
     
     public func setupIfNeeded() -> EventLoopFuture<Void> {
-        MigrationLog.query(on: self.database()).all().map { migrations in
+        MigrationLog.query(on: self.database(nil)).all().map { migrations in
             ()
         }.flatMapError { error in
-            MigrationLog.migration.prepare(on: self.database())
+            MigrationLog.migration.prepare(on: self.database(nil))
         }
     }
     
@@ -119,32 +119,32 @@ public struct Migrator {
     // MARK: Private
     
     private func prepare(_ item: Migrations.Item, batch: Int) -> EventLoopFuture<Void> {
-        item.migration.prepare(on: self.database(item.id ?? .default)).flatMap {
+        item.migration.prepare(on: self.database(item.id)).flatMap {
             MigrationLog(name: item.migration.name, batch: batch)
-                .save(on: self.database())
+                .save(on: self.database(nil))
         }
     }
     
     private func revert(_ item: Migrations.Item) -> EventLoopFuture<Void> {
-        item.migration.revert(on: self.database(item.id ?? .default)).flatMap {
-            MigrationLog.query(on: self.database())
+        item.migration.revert(on: self.database(item.id)).flatMap {
+            MigrationLog.query(on: self.database(nil))
                 .filter(\.$name == item.migration.name)
                 .delete()
         }
     }
     
     private func revertMigrationLog() -> EventLoopFuture<Void> {
-        MigrationLog.migration.revert(on: self.database())
+        MigrationLog.migration.revert(on: self.database(nil))
     }
     
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        MigrationLog.query(on: self.database()).sort(\.$batch, .descending).first().map { log in
+        MigrationLog.query(on: self.database(nil)).sort(\.$batch, .descending).first().map { log in
             log?.batch ?? 0
         }
     }
     
     private func preparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
-        MigrationLog.query(on: self.database()).all().map { logs -> [Migrations.Item] in
+        MigrationLog.query(on: self.database(nil)).all().map { logs -> [Migrations.Item] in
             logs.compactMap { log in
                 if let item = self.migrations.storage.filter({ $0.migration.name == log.name }).first {
                     return item
@@ -157,7 +157,7 @@ public struct Migrator {
     }
     
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migrations.Item]> {
-        MigrationLog.query(on: self.database()).filter(\.$batch == batch).all().map { logs in
+        MigrationLog.query(on: self.database(nil)).filter(\.$batch == batch).all().map { logs in
             logs.compactMap { log in
                 if let item = self.migrations.storage.filter({ $0.migration.name == log.name }).first {
                     return item
@@ -170,7 +170,7 @@ public struct Migrator {
     }
     
     private func unpreparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
-        return MigrationLog.query(on: self.database()).all().map { logs -> [Migrations.Item] in
+        return MigrationLog.query(on: self.database(nil)).all().map { logs -> [Migrations.Item] in
             return self.migrations.storage.compactMap { item in
                 if logs.filter({ $0.name == item.migration.name }).count == 0 {
                     return item
@@ -182,7 +182,7 @@ public struct Migrator {
         }
     }
     
-    private func database(_ id: DatabaseID = .default) -> Database {
+    private func database(_ id: DatabaseID?) -> Database {
         self.databaseFactory(id)
     }
 }

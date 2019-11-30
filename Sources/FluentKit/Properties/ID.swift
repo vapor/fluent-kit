@@ -29,8 +29,8 @@ public final class ID<Value>: AnyID, FieldRepresentable
     }
 
     public let field: Field<Value?>
+    public var exists: Bool
     let generator: Generator
-    var exists: Bool
     var cachedOutput: DatabaseOutput?
 
     public var key: String {
