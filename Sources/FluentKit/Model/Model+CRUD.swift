@@ -122,6 +122,12 @@ extension Model {
 
 extension Array where Element: FluentKit.Model {
     public func create(on database: Database) -> EventLoopFuture<Void> {
+        guard self.count > 0 else {
+            // Is it valid to try to create zero models? For now we call it
+            // successful without doing anything.
+            return database.eventLoop.makeSucceededFuture(())
+        }
+        
         let builder = Element.query(on: database)
         self.forEach { model in
             precondition(!model._$id.exists)
