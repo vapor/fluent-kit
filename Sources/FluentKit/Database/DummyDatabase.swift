@@ -27,6 +27,14 @@ public struct DummyDatabase: Database {
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         self.eventLoop.makeSucceededFuture(())
     }
+
+    public func transaction<T>(_ transaction: @escaping (Database) throws -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        do {
+            return try transaction(self)
+        } catch {
+            return self.eventLoop.makeFailedFuture(error)
+        }
+    }
 }
 
 public final class DummyDatabaseDriver: DatabaseDriver {

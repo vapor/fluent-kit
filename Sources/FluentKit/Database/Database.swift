@@ -11,6 +11,8 @@ public protocol Database {
     ) -> EventLoopFuture<Void>
     
     func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+
+    func transaction<T>(_ transaction: @escaping (Database) throws -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 extension Database {
