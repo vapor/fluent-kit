@@ -122,9 +122,7 @@ extension Children: AnyEagerLoadable {
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [From.StoredIDValue] = models
-                .map { $0 as! From }
-                .map { $0.storedID }
+            let ids = models.map { ($0 as! From).storedID }
 
             let builder = To.query(on: database)
             builder.filter(self.parentKey.appending(path: \.$id), in: Set(ids))
