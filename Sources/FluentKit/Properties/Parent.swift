@@ -1,8 +1,8 @@
 @propertyWrapper
-public final class Parent<To> where To: OptionalModel {
+public final class Parent<To> where To: ParentRelatable {
     internal var eagerLoadedValue: EagerLoaded
     internal var eagerLoadRequest: EagerLoadRequest
-    @Field public var id: To.IDValue
+    @Field public var id: To.StoredIDValue
 
     public var wrappedValue: To {
         get {
@@ -40,7 +40,7 @@ extension Parent {
 }
 
 extension Parent: FieldRepresentable {
-    public var field: Field<To.IDValue> { self.$id }
+    public var field: Field<To.StoredIDValue> { self.$id }
 }
 
 extension Parent: AnyProperty {
@@ -85,7 +85,7 @@ extension Parent where To: Model {
     }
 }
 
-extension Parent where To: OptionalType, To.Wrapped: Model, To.IDValue == To.Wrapped.IDValue? {
+extension Parent where To: OptionalType, To.Wrapped: Model, To.StoredIDValue == To.Wrapped.IDValue? {
     public convenience init(key: String) {
         self.init(id: key, eagerLoadRequest: SubqueryEagerLoad(key: key))
     }
@@ -102,21 +102,15 @@ extension Parent where To: OptionalType, To.Wrapped: Model, To.IDValue == To.Wra
 
 // MARK: - Optionals
 
-public protocol OptionalModel: ModelIdentifiable, Codable, CustomStringConvertible { }
+public protocol ParentRelatable: Codable, CustomStringConvertible {
+    associatedtype StoredIDValue: Codable, Hashable
 
-extension Optional: OptionalModel where Wrapped: Model { }
-
-extension Optional: CustomStringConvertible where Wrapped: CustomStringConvertible {
-    public var description: String {
-        return self?.description ?? "nil"
-    }
+    var storedID: StoredIDValue { get }
 }
 
-extension Optional: ModelIdentifiable where Wrapped: ModelIdentifiable {
-    public typealias IDValue = Wrapped.IDValue?
+extension Optional: ParentRelatable, CustomStringConvertible where Wrapped: Model {
+    public typealias StoredIDValue = Wrapped.IDValue?
 
-    public var id: Wrapped.IDValue?? {
-        get { self?.id }
-        set { self?.id = newValue ?? nil }
-    }
+    public var description: String { self?.description ?? "nil" }
+    public var storedID: Wrapped.IDValue? { self?.id }
 }

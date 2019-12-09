@@ -1,6 +1,6 @@
 @propertyWrapper
 public final class Children<From, To>: AnyProperty
-    where From: OptionalModel, To: Model
+    where From: ParentRelatable, To: Model
 {
     // MARK: ID
 
@@ -8,7 +8,7 @@ public final class Children<From, To>: AnyProperty
     let parentID: () -> String
 
     private var eagerLoadedValue: [To]?
-    private var idValue: From.IDValue?
+    private var idValue: From.StoredIDValue?
 
     // MARK: Wrapper
 
@@ -31,7 +31,7 @@ public final class Children<From, To>: AnyProperty
         return self
     }
 
-    public var fromId: From.IDValue? {
+    public var fromId: From.StoredIDValue? {
         return self.idValue
     }
 
@@ -50,7 +50,7 @@ public final class Children<From, To>: AnyProperty
 
     func output(from output: DatabaseOutput) throws {
         if output.contains(self.parentID()) {
-            self.idValue = try output.decode(self.parentID(), as: From.IDValue.self)
+            self.idValue = try output.decode(self.parentID(), as: From.StoredIDValue.self)
         }
     }
 
@@ -122,9 +122,9 @@ extension Children: AnyEagerLoadable {
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [From.IDValue] = models
+            let ids: [From.StoredIDValue] = models
                 .map { $0 as! From }
-                .map { $0.id! }
+                .map { $0.storedID }
 
             let builder = To.query(on: database)
             builder.filter(self.parentKey.appending(path: \.$id), in: Set(ids))
@@ -135,7 +135,7 @@ extension Children: AnyEagerLoadable {
                 }
         }
 
-        func get(id: From.IDValue) throws -> [To] {
+        func get(id: From.StoredIDValue) throws -> [To] {
             return self.storage.filter { child in return child[keyPath: self.parentKey].id == id }
         }
     }

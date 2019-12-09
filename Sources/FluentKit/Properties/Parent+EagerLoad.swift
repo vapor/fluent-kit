@@ -33,8 +33,8 @@ extension Parent: EagerLoadable {
 
 extension Parent {
     internal final class SubqueryEagerLoad: EagerLoadRequest {
-        typealias Loader = (Database, Set<To.IDValue>) -> EventLoopFuture<[To]>
-        typealias LoadedParent = (id: To.IDValue, model: Parent<To>.EagerLoaded)
+        typealias Loader = (Database, Set<To.StoredIDValue>) -> EventLoopFuture<[To]>
+        typealias LoadedParent = (id: To.StoredIDValue, model: Parent<To>.EagerLoaded)
 
         let key: String
         let loader: Loader
@@ -59,14 +59,15 @@ extension Parent {
             var storedNil = false
             self.storage = models.compactMap { model -> LoadedParent? in
                 // Unwrap the ID for the attached parent model
-                guard let parent = try! model.anyID.cachedOutput!.decode(self.key, as: To.IDValue?.self) else {
+                guard let parent = try! model.anyID.cachedOutput!.decode(self.key, as: To.StoredIDValue?.self) else {
 
                     // Only store parent with `nil` id once, since all non-existent parents will have an
                     // id `nil` and will always result in a `nil` parent model.
                     guard !storedNil && _isOptional(To.self) else { return nil }
                     storedNil = true
+                    
 
-                    return (Optional<Void>.none as! To.IDValue, .loaded(Optional<Void>.none as! To))
+                    return (Optional<Void>.none as! To.StoredIDValue, .loaded(Optional<Void>.none as! To))
                 }
 
                 return (parent, .notLoaded)
@@ -79,13 +80,13 @@ extension Parent {
             let uniqueIDs = Set(self.storage.map { $0.id })
             return self.loader(database, uniqueIDs).map { related in
                 related.forEach { model in
-                    guard let index = self.storage.firstIndex(where: { return $0.id == model.id }) else { return }
+                    guard let index = self.storage.firstIndex(where: { return $0.id == model.storedID }) else { return }
                     self.storage[index].model = .loaded(model)
                 }
             }
         }
 
-        func get(id: To.IDValue) throws -> Parent<To>.EagerLoaded {
+        func get(id: To.StoredIDValue) throws -> Parent<To>.EagerLoaded {
             return self.storage.first { stored in stored.id == id }?.model ?? .notLoaded
         }
     }

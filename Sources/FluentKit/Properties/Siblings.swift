@@ -1,6 +1,6 @@
 @propertyWrapper
 public final class Siblings<From, To, Through>: AnyProperty
-    where From: Model & OptionalModel, To: Model & OptionalModel, Through: Model
+    where From: Model & ParentRelatable, To: Model & ParentRelatable, Through: Model
 {
 
     private let from: KeyPath<Through, Parent<From>>
