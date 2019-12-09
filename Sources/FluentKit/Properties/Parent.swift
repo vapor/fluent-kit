@@ -105,7 +105,7 @@ extension Parent where To: OptionalType, To.Wrapped: Model, To.StoredIDValue == 
 public protocol ParentRelatable: Codable, CustomStringConvertible {
     associatedtype StoredIDValue: Codable, Hashable
 
-    static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded)
+    static func defaultEagerLoaded(for id: StoredIDValue) -> Parent<Self>.EagerLoaded
 
     var storedID: StoredIDValue { get }
 }
@@ -117,16 +117,14 @@ extension Optional: ParentRelatable, CustomStringConvertible where Wrapped: Mode
     public var description: String { (self?.description).map { "Optional(\($0))" } ?? "nil" }
     public var storedID: Wrapped.IDValue? { self?.id }
 
-    public static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded) {
-        return (id, id.map { _ in .notLoaded } ?? .loaded(nil))
+    public static func defaultEagerLoaded(for id: StoredIDValue) -> Parent<Self>.EagerLoaded {
+        return id.map { _ in .notLoaded } ?? .loaded(nil)
     }
 }
 
 extension Model {
     public var storedID: StoredIDValue { self.id! }
 
-    public static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded) {
-        return (id, .notLoaded)
-    }
+    public static func defaultEagerLoaded(for id: StoredIDValue) -> Parent<Self>.EagerLoaded { .notLoaded }
 }
 

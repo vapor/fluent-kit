@@ -34,19 +34,18 @@ extension Parent: EagerLoadable {
 extension Parent {
     internal final class SubqueryEagerLoad: EagerLoadRequest {
         typealias Loader = (Database, Set<To.StoredIDValue>) -> EventLoopFuture<[To]>
-        typealias LoadedParent = (id: To.StoredIDValue, model: Parent<To>.EagerLoaded)
 
         let key: String
         let loader: Loader
 
-        var storage: [LoadedParent]
+        var storage: [To.StoredIDValue: Parent<To>.EagerLoaded]
 
         var description: String {
             return self.storage.description
         }
 
         private init(key: String, loader: @escaping Loader) {
-            self.storage = []
+            self.storage = [:]
             self.loader = loader
             self.key = key
         }
@@ -56,26 +55,25 @@ extension Parent {
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            self.storage = models.compactMap { model -> LoadedParent? in
+            self.storage = models.reduce(into: [:]) { storage, model in
                 let parent = try! model.anyID.cachedOutput!.decode(self.key, as: To.StoredIDValue.self)
-                return To.eagerLoaded(for: parent)
+                storage[parent] = To.defaultEagerLoaded(for: parent)
             }
 
             if self.storage.isEmpty {
                 return database.eventLoop.makeSucceededFuture(())
             }
 
-            let uniqueIDs = Set(self.storage.map { $0.id })
+            let uniqueIDs = Set(self.storage.keys)
             return self.loader(database, uniqueIDs).map { related in
                 related.forEach { model in
-                    guard let index = self.storage.firstIndex(where: { $0.id == model.storedID }) else { return }
-                    self.storage[index].model = .loaded(model)
+                    self.storage[model.storedID] = .loaded(model)
                 }
             }
         }
 
         func get(id: To.StoredIDValue) throws -> Parent<To>.EagerLoaded {
-            return self.storage.first { stored in stored.id == id }?.model ?? .notLoaded
+            return self.storage[id] ?? .notLoaded
         }
     }
 }
