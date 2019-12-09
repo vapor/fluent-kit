@@ -136,7 +136,7 @@ extension Children: AnyEagerLoadable {
         }
 
         func get(id: From.StoredIDValue) throws -> [To] {
-            return self.storage.filter { child in return child[keyPath: self.parentKey].id == id }
+            return self.storage.filter { child in child[keyPath: self.parentKey].id == id }
         }
     }
 }
