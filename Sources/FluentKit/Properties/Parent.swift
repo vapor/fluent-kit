@@ -118,7 +118,7 @@ extension Optional: ParentRelatable, CustomStringConvertible where Wrapped: Mode
     public var storedID: Wrapped.IDValue? { self?.id }
 
     public static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded) {
-        return (id, id == nil ? .loaded(nil) : .notLoaded)
+        return (id, id.map { _ in .notLoaded } ?? .loaded(nil))
     }
 }
 
