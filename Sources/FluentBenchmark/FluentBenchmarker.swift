@@ -246,9 +246,7 @@ public final class FluentBenchmarker {
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-                guard decoded == expected else {
-                    throw Failure("unexpected output")
-                }
+                XCTAssertEqual(decoded, expected)
             }
 
             // join
@@ -258,11 +256,8 @@ public final class FluentBenchmarker {
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-                guard decoded == expected else {
-                    throw Failure("unexpected output")
-                }
+                XCTAssertEqual(decoded, expected)
             }
-
         }
     }
 
