@@ -26,11 +26,11 @@ public final class Parent<To> where To: ParentRelatable {
 }
 
 extension Parent {
-    internal enum EagerLoaded: CustomStringConvertible {
+    public enum EagerLoaded: CustomStringConvertible {
         case loaded(To)
         case notLoaded
 
-        var description: String {
+        public var description: String {
             switch self {
             case let .loaded(model): return model.description
             case .notLoaded: return "notLoaded"
@@ -105,12 +105,28 @@ extension Parent where To: OptionalType, To.Wrapped: Model, To.StoredIDValue == 
 public protocol ParentRelatable: Codable, CustomStringConvertible {
     associatedtype StoredIDValue: Codable, Hashable
 
+    static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded)
+
     var storedID: StoredIDValue { get }
 }
+
 
 extension Optional: ParentRelatable, CustomStringConvertible where Wrapped: Model {
     public typealias StoredIDValue = Wrapped.IDValue?
 
-    public var description: String { self?.description ?? "nil" }
+    public var description: String { (self?.description).map { "Optional(\($0))" } ?? "nil" }
     public var storedID: Wrapped.IDValue? { self?.id }
+
+    public static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded) {
+        return (id, id == nil ? .loaded(nil) : .notLoaded)
+    }
 }
+
+extension Model {
+    public var storedID: StoredIDValue { self.id! }
+
+    public static func eagerLoaded(for id: StoredIDValue) -> (StoredIDValue, Parent<Self>.EagerLoaded) {
+        return (id, .notLoaded)
+    }
+}
+

@@ -56,21 +56,9 @@ extension Parent {
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            var storedNil = false
             self.storage = models.compactMap { model -> LoadedParent? in
-                // Unwrap the ID for the attached parent model
-                guard let parent = try! model.anyID.cachedOutput!.decode(self.key, as: To.StoredIDValue?.self) else {
-
-                    // Only store parent with `nil` id once, since all non-existent parents will have an
-                    // id `nil` and will always result in a `nil` parent model.
-                    guard !storedNil && _isOptional(To.self) else { return nil }
-                    storedNil = true
-                    
-
-                    return (Optional<Void>.none as! To.StoredIDValue, .loaded(Optional<Void>.none as! To))
-                }
-
-                return (parent, .notLoaded)
+                let parent = try! model.anyID.cachedOutput!.decode(self.key, as: To.StoredIDValue.self)
+                return To.eagerLoaded(for: parent)
             }
 
             if self.storage.isEmpty {
