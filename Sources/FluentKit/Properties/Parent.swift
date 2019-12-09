@@ -32,7 +32,7 @@ extension Parent {
 
         public var description: String {
             switch self {
-            case let .loaded(model): return model.description
+            case let .loaded(model): return "loaded(\(model.description))"
             case .notLoaded: return "notLoaded"
             }
         }
