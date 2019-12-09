@@ -219,24 +219,41 @@ public final class FluentBenchmarker {
                 var id: Int
                 var name: String
                 var galaxy: GalaxyJSON
+
+                init(name: String, galaxy: GalaxyJSON, on database: Database) throws {
+                    self.id = try Planet.query(on: database)
+                        .filter(\.$name == name)
+                        .first().wait()?
+                        .id ?? 0
+                    self.name = name
+                    self.galaxy = galaxy
+                }
             }
             struct GalaxyJSON: Codable, Equatable {
                 var id: Int
                 var name: String
+
+                init(name: String, on database: Database) throws {
+                    self.id = try Galaxy.query(on: database)
+                        .filter(\.$name == name)
+                        .first().wait()?
+                        .id ?? 0
+                    self.name = name
+                }
             }
 
-            let milkyWay = GalaxyJSON(id: 2, name: "Milky Way")
-            let andromeda = GalaxyJSON(id: 1, name: "Andromeda")
-            let expected: [PlanetJSON] = [
-                .init(id: 1, name: "Mercury", galaxy: milkyWay),
-                .init(id: 2, name: "Venus", galaxy: milkyWay),
-                .init(id: 3, name: "Earth", galaxy: milkyWay),
-                .init(id: 4, name: "Mars", galaxy: milkyWay),
-                .init(id: 5, name: "Jupiter", galaxy: milkyWay),
-                .init(id: 6, name: "Saturn", galaxy: milkyWay),
-                .init(id: 7, name: "Uranus", galaxy: milkyWay),
-                .init(id: 8, name: "Neptune", galaxy: milkyWay),
-                .init(id: 9, name: "PA-99-N2", galaxy: andromeda),
+            let milkyWay = try GalaxyJSON(name: "Milky Way", on: self.database)
+            let andromeda = try GalaxyJSON(name: "Andromeda", on: self.database)
+            let expected: [PlanetJSON] = try [
+                .init(name: "Mercury", galaxy: milkyWay, on: self.database),
+                .init(name: "Venus", galaxy: milkyWay, on: self.database),
+                .init(name: "Earth", galaxy: milkyWay, on: self.database),
+                .init(name: "Mars", galaxy: milkyWay, on: self.database),
+                .init(name: "Jupiter", galaxy: milkyWay, on: self.database),
+                .init(name: "Saturn", galaxy: milkyWay, on: self.database),
+                .init(name: "Uranus", galaxy: milkyWay, on: self.database),
+                .init(name: "Neptune", galaxy: milkyWay, on: self.database),
+                .init(name: "PA-99-N2", galaxy: andromeda, on: self.database),
             ]
 
             // subquery
@@ -246,9 +263,7 @@ public final class FluentBenchmarker {
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-                guard decoded == expected else {
-                    throw Failure("unexpected output")
-                }
+                XCTAssertEqual(decoded, expected)
             }
 
             // join
@@ -258,11 +273,8 @@ public final class FluentBenchmarker {
                     .all().wait()
 
                 let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-                guard decoded == expected else {
-                    throw Failure("unexpected output")
-                }
+                XCTAssertEqual(decoded, expected)
             }
-
         }
     }
 

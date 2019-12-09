@@ -7,15 +7,15 @@ jobs:
       image: vapor/swift:5.1-xenial
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - run: swift test
+    - uses: actions/checkout@v1
+    - run: swift test --enable-test-discovery --sanitize=thread
   bionic:
     container: 
       image: vapor/swift:5.1-bionic
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - run: swift test
+    - uses: actions/checkout@v1
+    - run: swift test --enable-test-discovery --sanitize=thread
   sqlite:
     container: 
       image: vapor/swift:5.1
@@ -26,7 +26,7 @@ jobs:
       working-directory: ./
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
       working-directory: ./fluent-sqlite-driver
-    - run: swift test
+    - run: swift test --enable-test-discovery --sanitize=thread
       working-directory: ./fluent-sqlite-driver
   postgres:
     container: 
@@ -46,7 +46,7 @@ jobs:
       working-directory: ./
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
       working-directory: ./fluent-postgres-driver
-    - run: swift test
+    - run: swift test --enable-test-discovery --sanitize=thread
       working-directory: ./fluent-postgres-driver
       env:
         POSTGRES_HOSTNAME: psql
@@ -67,7 +67,7 @@ jobs:
       working-directory: ./
     - run: swift package edit fluent-kit --revision ${{ github.sha }}
       working-directory: ./fluent-mysql-driver
-    - run: swift test
+    - run: swift test --enable-test-discovery --sanitize=thread
       working-directory: ./fluent-mysql-driver
       env:
         MYSQL_HOSTNAME: mysql
