@@ -68,7 +68,7 @@ extension Parent {
             let uniqueIDs = Set(self.storage.map { $0.id })
             return self.loader(database, uniqueIDs).map { related in
                 related.forEach { model in
-                    guard let index = self.storage.firstIndex(where: { return $0.id == model.storedID }) else { return }
+                    guard let index = self.storage.firstIndex(where: { $0.id == model.storedID }) else { return }
                     self.storage[index].model = .loaded(model)
                 }
             }
