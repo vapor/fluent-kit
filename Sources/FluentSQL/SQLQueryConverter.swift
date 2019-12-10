@@ -78,11 +78,10 @@ public struct SQLQueryConverter {
             return nil
         }
 
-        let list = SQLList(
+        return SQLList(
             items: filters.map(self.filter),
             separator: SQLBinaryOperator.and
         )
-        return list
     }
 
     private func sort(_ sort: DatabaseQuery.Sort) -> SQLExpression {
