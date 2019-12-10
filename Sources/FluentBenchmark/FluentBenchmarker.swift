@@ -118,8 +118,8 @@ public final class FluentBenchmarker {
             try checklist1.create(on: self.database).wait()
             try checklist2.create(on: self.database).wait()
 
-            checklist1.contents.append(", Fizz, Buzz")
-            try checklist1.update(on: self.database).wait()
+            let update = Trash(id: checklist1.id, contents: "Foo, Bar, Baz, Fizz, Buzz")
+            try update.update(on: self.database).wait()
 
             let trash = try Trash.query(on: self.database).filter(\.$contents == "Foo, Bar, Baz, Fizz, Buzz").all().wait()
             guard trash.count == 1 else {

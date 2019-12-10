@@ -15,7 +15,11 @@ final class Trash: Model {
 
     init() { }
 
-    init(contents: String) {
+    init(id: UUID? = nil, contents: String) {
+        if let id = id {
+            self.id = id
+            self._id.exists = true
+        }
         self.contents = contents
     }
 }
