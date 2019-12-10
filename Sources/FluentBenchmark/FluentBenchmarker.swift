@@ -121,7 +121,7 @@ public final class FluentBenchmarker {
             checklist.contents.append(", Fizz, Buzz")
             try checklist.save(on: self.database).wait()
 
-            let trash = try Trash.query(on: self.database).filter(\.$contents =~ "Foo").all().wait()
+            let trash = try Trash.query(on: self.database).filter(\.$contents == "Foo, Bar, Baz, Fizz, Buzz").all().wait()
             guard trash.count == 1 else {
                 throw Failure("unexpected trash count: \(trash)")
             }
