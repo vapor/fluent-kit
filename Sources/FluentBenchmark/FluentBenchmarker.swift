@@ -46,6 +46,8 @@ public final class FluentBenchmarker {
         try self.testFieldFilter()
         try self.testJoinedFieldFilter()
         try self.testSameChildrenFromKey()
+        try self.testArray()
+        try self.testPerformance()
         try self.testSoftDeleteWithQuery()
     }
     
@@ -1673,7 +1675,7 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             Foo._Migration()
         ]) {
-            for _ in 0..<1_000 {
+            for _ in 0..<100 {
                 let foo = Foo(
                     bar: 42, baz: 3.14159, qux: "foobar", quux: .init(),
                     quuz: 2.71828, corge: [1, 2, 3], grault: [4, 5, 6],
@@ -1687,7 +1689,7 @@ public final class FluentBenchmarker {
             for foo in foos {
                 XCTAssertNotNil(foo.id)
             }
-            XCTAssertEqual(foos.count, 1_000)
+            XCTAssertEqual(foos.count, 100)
         }
     }
 
