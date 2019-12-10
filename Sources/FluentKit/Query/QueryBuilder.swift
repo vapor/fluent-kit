@@ -607,6 +607,23 @@ public final class QueryBuilder<Model>
             .map { $0.first }
     }
     
+    public func first(
+        orCreate newModel: @escaping @autoclosure () -> Model
+    ) -> EventLoopFuture<Model> {
+        return self.first().flatMapThrowing { res in
+            guard let res = res else {
+                throw FluentError.noResults
+            }
+            return res
+        }.flatMapError { _ in
+            let model = newModel()
+
+            return model
+                .save(on: self.database)
+                .map { model }
+        }
+    }
+    
     public func all() -> EventLoopFuture<[Model]> {
         var models: [Result<Model, Error>] = []
         return self.all { model in
