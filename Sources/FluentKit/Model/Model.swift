@@ -221,10 +221,10 @@ extension AnyModel {
     }
 
     var anyID: AnyID {
-        guard let id = Mirror(reflecting: self).descendant("_id") else {
+        guard let id = Mirror(reflecting: self).descendant("_id") as? AnyID else {
             fatalError("id property must be declared using @ID")
         }
-        return id as! AnyID
+        return id
     }
 }
 

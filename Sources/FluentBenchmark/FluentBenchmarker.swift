@@ -1557,6 +1557,144 @@ public final class FluentBenchmarker {
         }
     }
 
+    public func testPerformance() throws {
+        final class Foo: Model, CustomReflectable {
+            static let schema = "foos"
+
+            struct _Migration: Migration {
+                func prepare(on database: Database) -> EventLoopFuture<Void> {
+                    return database.schema("foos")
+                        .field("id", .uuid)
+                        .field("bar", .int, .required)
+                        .field("baz", .double, .required)
+                        .field("qux", .string, .required)
+                        .field("quux", .datetime, .required)
+                        .field("quuz", .float, .required)
+                        .field("corge", .array(of: .int), .required)
+                        .field("grault", .array(of: .double), .required)
+                        .field("garply", .array(of: .string), .required)
+                        .field("waldo", .datetime, .required)
+                        .field("fred", .string, .required)
+                        .field("plugh", .int)
+                        .field("xyzzy", .double)
+                        .field("thud", .json, .required)
+                        .create()
+                }
+
+                func revert(on database: Database) -> EventLoopFuture<Void> {
+                    return database.schema("foos").delete()
+                }
+            }
+
+            struct Thud: Codable {
+                var foo: Int
+                var bar: Double
+                var baz: String
+            }
+
+            var customMirror: Mirror {
+                Mirror(self, children: [
+                    "_id": self.$id,
+                    "_bar": self.$bar,
+                    "_baz": self.$baz,
+                    "_qux": self.$qux,
+                    "_quux": self.$quux,
+                    "_quuz": self.$quuz,
+                    "_corge": self.$corge,
+                    "_grault": self.$grault,
+                    "_garply": self.$garply,
+                    "_waldo": self.$waldo,
+                    "_fred": self.$fred,
+                    "_plugh": self.$plugh,
+                    "_xyzzy": self.$xyzzy,
+                    "_thud": self.$thud
+                ])
+            }
+
+//            var _anyID: Any {
+//                self.$id
+//            }
+//
+//            var _properties: [(String, Any)] {
+//                [
+//                    ("id", self.$id),
+//                    ("bar", self.$bar),
+//                    ("baz", self.$baz),
+//                    ("qux", self.$qux),
+//                    ("quux", self.$quux),
+//                    ("quuz", self.$quuz),
+//                    ("corge", self.$corge),
+//                    ("grault", self.$grault),
+//                    ("garply", self.$garply),
+//                    ("waldo", self.$waldo),
+//                    ("fred", self.$fred),
+//                    ("plugh", self.$plugh),
+//                    ("xyzzy", self.$xyzzy),
+//                    ("thud", self.$thud)
+//                ]
+//            }
+
+            @ID(key: "id") var id: UUID?
+            @Field(key: "bar") var bar: Int
+            @Field(key: "baz") var baz: Double
+            @Field(key: "qux") var qux: String
+            @Field(key: "quux") var quux: Date
+            @Field(key: "quuz") var quuz: Float
+            @Field(key: "corge") var corge: [Int]
+            @Field(key: "grault") var grault: [Double]
+            @Field(key: "garply") var garply: [String]
+            @Field(key: "waldo") var waldo: [Date]
+            @Field(key: "fred") var fred: Decimal
+            @Field(key: "plugh") var plugh: Int?
+            @Field(key: "xyzzy") var xyzzy: Double?
+            @Field(key: "thud") var thud: Thud
+
+            init() { }
+
+            init(
+                id: UUID? = nil, bar: Int, baz: Double, qux: String,
+                quux: Date, quuz: Float, corge: [Int], grault: [Double],
+                garply: [String], waldo: [Date], fred: Decimal, plugh: Int?,
+                xyzzy: Double?, thud: Thud
+            ) {
+                self.id = id
+                self.bar = bar
+                self.baz = baz
+                self.qux = qux
+                self.quux = quux
+                self.quuz = quuz
+                self.corge = corge
+                self.grault = grault
+                self.garply = garply
+                self.waldo = waldo
+                self.fred = fred
+                self.plugh = plugh
+                self.xyzzy = xyzzy
+                self.thud = thud
+            }
+        }
+
+        try runTest(#function, [
+            Foo._Migration()
+        ]) {
+            for _ in 0..<1_000 {
+                let foo = Foo(
+                    bar: 42, baz: 3.14159, qux: "foobar", quux: .init(),
+                    quuz: 2.71828, corge: [1, 2, 3], grault: [4, 5, 6],
+                    garply: ["foo", "bar", "baz"], waldo: [.init(), .init(), .init()],
+                    fred: 1.4142135623730950, plugh: 1337, xyzzy: 9.94987437106,
+                    thud: .init(foo: 5, bar: 23, baz: "1994")
+                )
+                try foo.save(on: self.database).wait()
+            }
+            let foos = try Foo.query(on: self.database).all().wait()
+            for foo in foos {
+                XCTAssertNotNil(foo.id)
+            }
+            XCTAssertEqual(foos.count, 1_000)
+        }
+    }
+
     // MARK: Utilities
     
     struct Failure: Error {

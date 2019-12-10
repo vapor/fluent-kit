@@ -1,10 +1,10 @@
 extension AnyModel {
     var timestamps: [(String, Timestamp)] {
-        return self.properties.compactMap { (label, property) in
-            guard let field = property as? Timestamp else {
+        self.properties.compactMap {
+            guard let value = $1 as? Timestamp else {
                 return nil
             }
-            return (label, field)
+            return ($0, value)
         }
     }
     func touchTimestamps(_ triggers: Timestamp.Trigger...) {
@@ -101,30 +101,3 @@ public final class Timestamp: AnyField, FieldRepresentable {
         try self.field.decode(from: decoder)
     }
 }
-
-//public protocol Timestampable: Model, _AnyTimestampable {
-//    var createdAt: Date? { get set }
-//    var updatedAt: Date? { get set }
-//}
-//
-//
-//public protocol _AnyTimestampable {
-//    var _createdAtField: Field<Date?> { get }
-//    var _updatedAtField: Field<Date?> { get }
-//}
-//
-//extension Timestampable {
-//    public var _createdAtField: Field<Date?> {
-//        guard let createdAt = Mirror(reflecting: self).descendant("_createdAt") else {
-//            fatalError("createdAt must be declared using @Field")
-//        }
-//        return createdAt as! Field<Date?>
-//    }
-//
-//    public var _updatedAtField: Field<Date?> {
-//        guard let updatedAt = Mirror(reflecting: self).descendant("_updatedAt") else {
-//            fatalError("updatedAt must be declared using @Field")
-//        }
-//        return updatedAt as! Field<Date?>
-//    }
-//}
