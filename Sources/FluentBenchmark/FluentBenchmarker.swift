@@ -1252,12 +1252,14 @@ public final class FluentBenchmarker {
             struct GalaxyJSON: Codable {
                 var id: Int
                 var name: String
+                var deletedAt: Date?
                 
                 init(from decoder: Decoder) throws {
                     let keyed = try decoder.container(keyedBy: GalaxyKey.self)
                     self.id = try keyed.decode(Int.self, forKey: "id")
                     self.name = try keyed.decode(String.self, forKey: "name")
-                    XCTAssertEqual(keyed.allKeys.count, 2)
+                    self.deletedAt = try keyed.decodeIfPresent(Date.self, forKey: "deleted_at")
+                    XCTAssertEqual(keyed.allKeys.count, 3)
                 }
             }
 
