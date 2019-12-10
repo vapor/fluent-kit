@@ -15,12 +15,13 @@ final class Trash: Model {
 
     init() { }
 
-    init(id: UUID? = nil, contents: String) {
+    init(id: UUID? = nil, contents: String, deletedAt: Date? = nil) {
         if let id = id {
             self.id = id
             self._id.exists = true
         }
         self.contents = contents
+        self.deletedAt = deletedAt
     }
 }
 
