@@ -1557,14 +1557,76 @@ public final class FluentBenchmarker {
         }
     }
 
-    public func testPerformance() throws {
-        final class Foo: Model, CustomReflectable {
+    public func testArray() throws {
+        struct Qux: Codable {
+            var foo: String
+        }
+
+        final class Foo: Model {
             static let schema = "foos"
 
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {
                     return database.schema("foos")
-                        .field("id", .uuid)
+                        .field("id", .uuid, .identifier(auto: false))
+                        .field("bar", .array(of: .int), .required)
+                        .field("baz", .array(of: .string))
+                        .field("qux", .json)
+                        .create()
+                }
+
+                func revert(on database: Database) -> EventLoopFuture<Void> {
+                    return database.schema("foos").delete()
+                }
+            }
+
+            @ID(key: "id")
+            var id: UUID?
+
+            @Field(key: "bar")
+            var bar: [Int]
+
+            @Field(key: "baz")
+            var baz: [String]?
+
+            @Field(key: "qux")
+            var qux: [Qux]
+
+            @Field(key: "quux")
+            var quux: [Qux]
+
+            init() { }
+
+            init(id: UUID? = nil, bar: [Int], baz: [String]?, qux: [Qux], quux: [Qux]) {
+                self.id = id
+                self.bar = bar
+                self.baz = baz
+                self.qux = qux
+                self.quux = quux
+            }
+        }
+
+        try runTest(#function, [
+            Foo._Migration(),
+        ]) {
+            let a = Foo(
+                bar: [1, 2, 3],
+                baz: ["4", "5", "6"],
+                qux: [.init(foo: "7"), .init(foo: "8"), .init(foo: "9")],
+                quux: [.init(foo: "10"), .init(foo: "11"), .init(foo: "12")]
+            )
+            try a.create(on: self.database).wait()
+        }
+    }
+
+    public func testPerformance() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+
+            struct _Migration: Migration {
+                func prepare(on database: Database) -> EventLoopFuture<Void> {
+                    return database.schema("foos")
+                        .field("id", .uuid, .identifier(auto: false))
                         .field("bar", .int, .required)
                         .field("baz", .double, .required)
                         .field("qux", .string, .required)
@@ -1591,48 +1653,6 @@ public final class FluentBenchmarker {
                 var bar: Double
                 var baz: String
             }
-
-            var customMirror: Mirror {
-                Mirror(self, children: [
-                    "_id": self.$id,
-                    "_bar": self.$bar,
-                    "_baz": self.$baz,
-                    "_qux": self.$qux,
-                    "_quux": self.$quux,
-                    "_quuz": self.$quuz,
-                    "_corge": self.$corge,
-                    "_grault": self.$grault,
-                    "_garply": self.$garply,
-                    "_waldo": self.$waldo,
-                    "_fred": self.$fred,
-                    "_plugh": self.$plugh,
-                    "_xyzzy": self.$xyzzy,
-                    "_thud": self.$thud
-                ])
-            }
-
-//            var _anyID: Any {
-//                self.$id
-//            }
-//
-//            var _properties: [(String, Any)] {
-//                [
-//                    ("id", self.$id),
-//                    ("bar", self.$bar),
-//                    ("baz", self.$baz),
-//                    ("qux", self.$qux),
-//                    ("quux", self.$quux),
-//                    ("quuz", self.$quuz),
-//                    ("corge", self.$corge),
-//                    ("grault", self.$grault),
-//                    ("garply", self.$garply),
-//                    ("waldo", self.$waldo),
-//                    ("fred", self.$fred),
-//                    ("plugh", self.$plugh),
-//                    ("xyzzy", self.$xyzzy),
-//                    ("thud", self.$thud)
-//                ]
-//            }
 
             @ID(key: "id") var id: UUID?
             @Field(key: "bar") var bar: Int
