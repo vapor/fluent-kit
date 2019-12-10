@@ -96,17 +96,20 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration()
         ]) {
-            let galaxy = Galaxy(name: "Milkey Way")
-            try galaxy.save(on: self.database).wait()
-            galaxy.name = "Milky Way"
-            try galaxy.save(on: self.database).wait()
+            let galaxy1 = Galaxy(name: "Milkey Way")
+            let galaxy2 = Galaxy(name: "Black Eye")
+            try galaxy1.save(on: self.database).wait()
+            try galaxy2.save(on: self.database).wait()
+
+            galaxy1.name = "Andromeda"
+            try galaxy1.save(on: self.database).wait()
             
             // verify
-            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
+            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Andromeda").all().wait()
             guard galaxies.count == 1 else {
                 throw Failure("unexpected galaxy count: \(galaxies)")
             }
-            guard galaxies[0].name == "Milky Way" else {
+            guard galaxies[0].name == "Andromeda" else {
                 throw Failure("unexpected galaxy name")
             }
         }
