@@ -95,12 +95,10 @@ public final class FluentBenchmarker {
     
     public func testUpdate() throws {
         try runTest(#function, [
-            GalaxyMigration(),
-            TrashMigration()
+            GalaxyMigration()
         ]) {
             let galaxy = Galaxy(name: "Milkey Way")
             try galaxy.save(on: self.database).wait()
-
             galaxy.name = "Milky Way"
             try galaxy.save(on: self.database).wait()
             
