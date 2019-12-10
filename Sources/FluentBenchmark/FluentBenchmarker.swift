@@ -46,6 +46,7 @@ public final class FluentBenchmarker {
         try self.testFieldFilter()
         try self.testJoinedFieldFilter()
         try self.testSameChildrenFromKey()
+        try self.testSoftDeleteWithQuery()
     }
     
     public func testCreate() throws {
@@ -100,34 +101,16 @@ public final class FluentBenchmarker {
             let galaxy = Galaxy(name: "Milkey Way")
             try galaxy.save(on: self.database).wait()
 
-            galaxy.name = "Andromeda"
+            galaxy.name = "Milky Way"
             try galaxy.save(on: self.database).wait()
             
             // verify
-            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Andromeda").all().wait()
+            let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
             guard galaxies.count == 1 else {
                 throw Failure("unexpected galaxy count: \(galaxies)")
             }
-            guard galaxies[0].name == "Andromeda" else {
+            guard galaxies[0].name == "Milky Way" else {
                 throw Failure("unexpected galaxy name")
-            }
-
-            let deletedAt = Date()
-            let checklist1 = Trash(contents: "Foo, Bar, Baz", deletedAt: deletedAt)
-            let checklist2 = Trash(contents: "Foo, Bar, Baz", deletedAt: deletedAt)
-
-            try checklist1.create(on: self.database).wait()
-            try checklist2.create(on: self.database).wait()
-
-            let update = Trash(id: checklist1.id, contents: "Foo, Bar, Baz, Fizz, Buzz")
-            try update.update(on: self.database).wait()
-
-            let trash = try Trash.query(on: self.database).filter(\.$contents == "Foo, Bar, Baz, Fizz, Buzz").all().wait()
-            guard trash.count == 1 else {
-                throw Failure("unexpected trash count: \(trash)")
-            }
-            guard trash[0].contents == "Foo, Bar, Baz, Fizz, Buzz" else {
-                throw Failure("unexpected trash contents")
             }
         }
     }
@@ -1540,6 +1523,30 @@ public final class FluentBenchmarker {
                 XCTAssertEqual(foo.bars[0].bar, 42)
                 XCTAssertEqual(foo.bazs[0].baz, 3.14)
             }
+        }
+    }
+
+    public func testSoftDeleteWithQuery() throws {
+        try runTest(#function, [
+            TrashMigration()
+        ]) {
+            // a is scheduled for soft-deletion
+            let a = Trash(contents: "a")
+            a.deletedAt = Date(timeIntervalSinceNow: 50)
+            try a.create(on: self.database).wait()
+
+            // b is not soft-deleted
+            let b = Trash(contents: "b")
+            try b.create(on: self.database).wait()
+
+            // select for non-existing c, expect 0
+            // without proper query serialization this may
+            // return a. see:
+            // https://github.com/vapor/fluent-kit/pull/104
+            let trash = try Trash.query(on: self.database)
+                .filter(\.$contents == "c")
+                .all().wait()
+            XCTAssertEqual(trash.count, 0)
         }
     }
 
