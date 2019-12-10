@@ -16,6 +16,9 @@ public final class Galaxy: Model {
     @Children(for: \.$galaxy)
     public var planets: [Planet]
 
+    @Timestamp(key: "deleted_at", on: .delete)
+    public var deletedAt: Date?
+
     public init() { }
 
     public init(id: Int? = nil, name: String) {
