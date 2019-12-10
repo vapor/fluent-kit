@@ -34,6 +34,7 @@ struct GalaxyMigration: Migration {
         return database.schema("galaxies")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
+            .field("deleted_at", .datetime)
             .create()
     }
 
