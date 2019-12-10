@@ -82,7 +82,7 @@ public struct SQLQueryConverter {
             items: filters.map(self.filter),
             separator: SQLBinaryOperator.and
         )
-        return SQLGroupExpression(list)
+        return list
     }
 
     private func sort(_ sort: DatabaseQuery.Sort) -> SQLExpression {
