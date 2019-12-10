@@ -27,14 +27,11 @@ final class Trash: Model {
 
 struct TrashMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let builder = database.schema(Trash.schema)
-            .field("id", .uuid, .identifier(auto: false))
+        return database.schema(Trash.schema)
+            .field("id", .uuid, .identifier(auto: false), .custom("UNIQUE"))
             .field("contents", .string, .required)
             .field("deleted_at", .datetime)
-
-        builder.schema.constraints.append(.unique(fields: [.string("id")]))
-
-        return builder.create()
+            .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
