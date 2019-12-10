@@ -94,7 +94,8 @@ public final class FluentBenchmarker {
     
     public func testUpdate() throws {
         try runTest(#function, [
-            GalaxyMigration()
+            GalaxyMigration(),
+            TrashMigration()
         ]) {
             let galaxy = Galaxy(name: "Milkey Way")
             try galaxy.save(on: self.database).wait()
@@ -109,6 +110,23 @@ public final class FluentBenchmarker {
             }
             guard galaxies[0].name == "Andromeda" else {
                 throw Failure("unexpected galaxy name")
+            }
+
+            let checklist = Trash(contents: "Foo, Bar, Baz")
+            let code = Trash(contents: "print(42)")
+
+            try checklist.save(on: self.database).wait()
+            try code.save(on: self.database).wait()
+
+            checklist.contents.append(", Fizz, Buzz")
+            try checklist.save(on: self.database).wait()
+
+            let trash = try Trash.query(on: self.database).filter(\.$contents =~ "Foo").all().wait()
+            guard trash.count == 1 else {
+                throw Failure("unexpected trash count: \(trash)")
+            }
+            guard trash[0].contents == "Foo, Bar, Baz, Fizz, Buzz" else {
+                throw Failure("unexpected trash contents")
             }
         }
     }
@@ -714,61 +732,27 @@ public final class FluentBenchmarker {
     }
 
     public func testSoftDelete() throws {
-        final class SoftDeleteUser: Model {
-            static let schema = "sd_users"
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "name")
-            var name: String
-
-            @Timestamp(key: "deleted_at", on: .delete)
-            var deletedAt: Date?
-
-            init() { }
-            init(id: Int? = nil, name: String) {
-                self.id = id
-                self.name = name
-            }
-        }
-
-        struct SDUserMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("sd_users")
-                    .field("id", .int, .identifier(auto: true))
-                    .field("name", .string, .required)
-                    .field("deleted_at", .datetime)
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("sd_users").delete()
-            }
-        }
-
-
         func testCounts(allCount: Int, realCount: Int) throws {
-            let all = try SoftDeleteUser.query(on: self.database).all().wait()
+            let all = try Trash.query(on: self.database).all().wait()
             guard all.count == allCount else {
                 throw Failure("all count should be \(allCount)")
             }
-            let real = try SoftDeleteUser.query(on: self.database).withDeleted().all().wait()
+            let real = try Trash.query(on: self.database).withDeleted().all().wait()
             guard real.count == realCount else {
                 throw Failure("real count should be \(realCount)")
             }
         }
 
         try runTest(#function, [
-            SDUserMigration(),
+            TrashMigration(),
         ]) {
             // save two users
-            try SoftDeleteUser(name: "A").save(on: self.database).wait()
-            try SoftDeleteUser(name: "B").save(on: self.database).wait()
+            try Trash(contents: "A").save(on: self.database).wait()
+            try Trash(contents: "B").save(on: self.database).wait()
             try testCounts(allCount: 2, realCount: 2)
 
             // soft-delete a user
-            let a = try SoftDeleteUser.query(on: self.database).filter(\.$name == "A").first().wait()!
+            let a = try Trash.query(on: self.database).filter(\.$contents == "A").first().wait()!
             try a.delete(on: self.database).wait()
             try testCounts(allCount: 1, realCount: 2)
 
