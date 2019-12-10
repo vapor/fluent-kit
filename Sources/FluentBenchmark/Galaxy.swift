@@ -1,3 +1,4 @@
+import struct Foundation.Date
 import FluentKit
 
 public final class Galaxy: Model {
