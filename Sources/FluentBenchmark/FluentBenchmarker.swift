@@ -46,6 +46,7 @@ public final class FluentBenchmarker {
         try self.testFieldFilter()
         try self.testJoinedFieldFilter()
         try self.testSameChildrenFromKey()
+        try self.testSoftDeleteWithQuery()
     }
     
     public func testCreate() throws {
@@ -713,61 +714,27 @@ public final class FluentBenchmarker {
     }
 
     public func testSoftDelete() throws {
-        final class SoftDeleteUser: Model {
-            static let schema = "sd_users"
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "name")
-            var name: String
-
-            @Timestamp(key: "deleted_at", on: .delete)
-            var deletedAt: Date?
-
-            init() { }
-            init(id: Int? = nil, name: String) {
-                self.id = id
-                self.name = name
-            }
-        }
-
-        struct SDUserMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("sd_users")
-                    .field("id", .int, .identifier(auto: true))
-                    .field("name", .string, .required)
-                    .field("deleted_at", .datetime)
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("sd_users").delete()
-            }
-        }
-
-
         func testCounts(allCount: Int, realCount: Int) throws {
-            let all = try SoftDeleteUser.query(on: self.database).all().wait()
+            let all = try Trash.query(on: self.database).all().wait()
             guard all.count == allCount else {
                 throw Failure("all count should be \(allCount)")
             }
-            let real = try SoftDeleteUser.query(on: self.database).withDeleted().all().wait()
+            let real = try Trash.query(on: self.database).withDeleted().all().wait()
             guard real.count == realCount else {
                 throw Failure("real count should be \(realCount)")
             }
         }
 
         try runTest(#function, [
-            SDUserMigration(),
+            TrashMigration(),
         ]) {
             // save two users
-            try SoftDeleteUser(name: "A").save(on: self.database).wait()
-            try SoftDeleteUser(name: "B").save(on: self.database).wait()
+            try Trash(contents: "A").save(on: self.database).wait()
+            try Trash(contents: "B").save(on: self.database).wait()
             try testCounts(allCount: 2, realCount: 2)
 
             // soft-delete a user
-            let a = try SoftDeleteUser.query(on: self.database).filter(\.$name == "A").first().wait()!
+            let a = try Trash.query(on: self.database).filter(\.$contents == "A").first().wait()!
             try a.delete(on: self.database).wait()
             try testCounts(allCount: 1, realCount: 2)
 
@@ -1554,6 +1521,30 @@ public final class FluentBenchmarker {
                 XCTAssertEqual(foo.bars[0].bar, 42)
                 XCTAssertEqual(foo.bazs[0].baz, 3.14)
             }
+        }
+    }
+
+    public func testSoftDeleteWithQuery() throws {
+        try runTest(#function, [
+            TrashMigration()
+        ]) {
+            // a is scheduled for soft-deletion
+            let a = Trash(contents: "a")
+            a.deletedAt = Date(timeIntervalSinceNow: 50)
+            try a.create(on: self.database).wait()
+
+            // b is not soft-deleted
+            let b = Trash(contents: "b")
+            try b.create(on: self.database).wait()
+
+            // select for non-existing c, expect 0
+            // without proper query serialization this may
+            // return a. see:
+            // https://github.com/vapor/fluent-kit/pull/104
+            let trash = try Trash.query(on: self.database)
+                .filter(\.$contents == "c")
+                .all().wait()
+            XCTAssertEqual(trash.count, 0)
         }
     }
 
