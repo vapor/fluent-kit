@@ -1,11 +1,11 @@
-import struct Foundation.Date
+import Foundation
 import FluentKit
 
 final class Trash: Model {
     static let schema = "trash"
 
     @ID(key: "id")
-    var id: Int?
+    var id: UUID?
 
     @Field(key: "contents")
     var contents: String
@@ -23,7 +23,7 @@ final class Trash: Model {
 struct TrashMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Trash.schema)
-            .field("id", .int, .identifier(auto: true))
+            .field("id", .uuid, .identifier(auto: true))
             .field("contents", .string, .required)
             .field("deleted_at", .datetime)
             .create()
