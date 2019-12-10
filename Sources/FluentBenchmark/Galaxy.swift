@@ -1,4 +1,3 @@
-import struct Foundation.Date
 import FluentKit
 
 public final class Galaxy: Model {
@@ -17,9 +16,6 @@ public final class Galaxy: Model {
     @Children(for: \.$galaxy)
     public var planets: [Planet]
 
-    @Timestamp(key: "deleted_at", on: .delete)
-    public var deletedAt: Date?
-
     public init() { }
 
     public init(id: Int? = nil, name: String) {
@@ -34,7 +30,6 @@ struct GalaxyMigration: Migration {
         return database.schema("galaxies")
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
-            .field("deleted_at", .datetime)
             .create()
     }
 

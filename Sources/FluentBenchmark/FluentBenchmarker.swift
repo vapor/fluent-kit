@@ -96,13 +96,11 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration()
         ]) {
-            let galaxy1 = Galaxy(name: "Milkey Way")
-            let galaxy2 = Galaxy(name: "Black Eye")
-            try galaxy1.save(on: self.database).wait()
-            try galaxy2.save(on: self.database).wait()
+            let galaxy = Galaxy(name: "Milkey Way")
+            try galaxy.save(on: self.database).wait()
 
-            galaxy1.name = "Andromeda"
-            try galaxy1.save(on: self.database).wait()
+            galaxy.name = "Andromeda"
+            try galaxy.save(on: self.database).wait()
             
             // verify
             let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Andromeda").all().wait()
@@ -1252,14 +1250,12 @@ public final class FluentBenchmarker {
             struct GalaxyJSON: Codable {
                 var id: Int
                 var name: String
-                var deletedAt: Date?
                 
                 init(from decoder: Decoder) throws {
                     let keyed = try decoder.container(keyedBy: GalaxyKey.self)
                     self.id = try keyed.decode(Int.self, forKey: "id")
                     self.name = try keyed.decode(String.self, forKey: "name")
-                    self.deletedAt = try keyed.decodeIfPresent(Date.self, forKey: "deleted_at")
-                    XCTAssertEqual(keyed.allKeys.count, 3)
+                    XCTAssertEqual(keyed.allKeys.count, 2)
                 }
             }
 
