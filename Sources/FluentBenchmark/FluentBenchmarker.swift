@@ -1571,7 +1571,8 @@ public final class FluentBenchmarker {
                         .field("id", .uuid, .identifier(auto: false))
                         .field("bar", .array(of: .int), .required)
                         .field("baz", .array(of: .string))
-                        .field("qux", .json)
+                        .field("qux", .array(of: .json), .required)
+                        .field("quux", .json, .required)
                         .create()
                 }
 
@@ -1609,13 +1610,21 @@ public final class FluentBenchmarker {
         try runTest(#function, [
             Foo._Migration(),
         ]) {
-            let a = Foo(
+            let new = Foo(
                 bar: [1, 2, 3],
                 baz: ["4", "5", "6"],
                 qux: [.init(foo: "7"), .init(foo: "8"), .init(foo: "9")],
                 quux: [.init(foo: "10"), .init(foo: "11"), .init(foo: "12")]
             )
-            try a.create(on: self.database).wait()
+            try new.create(on: self.database).wait()
+
+            guard let fetched = try Foo.find(new.id, on: self.database).wait() else {
+                throw Failure("foo didnt save")
+            }
+            XCTAssertEqual(fetched.bar, [1, 2, 3])
+            XCTAssertEqual(fetched.baz, ["4", "5", "6"])
+            XCTAssertEqual(fetched.qux.map { $0.foo }, ["7", "8", "9"])
+            XCTAssertEqual(fetched.quux.map { $0.foo }, ["10", "11", "12"])
         }
     }
 
