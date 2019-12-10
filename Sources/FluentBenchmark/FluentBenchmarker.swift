@@ -112,14 +112,14 @@ public final class FluentBenchmarker {
                 throw Failure("unexpected galaxy name")
             }
 
-            let checklist = Trash(contents: "Foo, Bar, Baz")
-            let code = Trash(contents: "print(42)")
+            let checklist1 = Trash(contents: "Foo, Bar, Baz")
+            let checklist2 = Trash(contents: "Foo, Bar, Baz")
 
-            try checklist.save(on: self.database).wait()
-            try code.save(on: self.database).wait()
+            try checklist1.save(on: self.database).wait()
+            try checklist2.save(on: self.database).wait()
 
-            checklist.contents.append(", Fizz, Buzz")
-            try checklist.save(on: self.database).wait()
+            checklist1.contents.append(", Fizz, Buzz")
+            try checklist1.save(on: self.database).wait()
 
             let trash = try Trash.query(on: self.database).filter(\.$contents == "Foo, Bar, Baz, Fizz, Buzz").all().wait()
             guard trash.count == 1 else {
