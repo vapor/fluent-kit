@@ -237,8 +237,7 @@ public struct SQLQueryConverter {
         case .custom(let any):
             return custom(any)
         case .group(let filters, let relation):
-            return SQLList(items: filters.map(self.filter), separator: self.relation(relation))
-//            return SQLGroupExpression(SQLList(items: filters.map(self.filter), separator: self.relation(relation)))
+            return SQLGroupExpression(SQLList(items: filters.map(self.filter), separator: self.relation(relation)))
         }
     }
     
