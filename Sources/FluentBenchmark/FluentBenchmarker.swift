@@ -145,10 +145,10 @@ public final class FluentBenchmarker {
             for galaxy in galaxies {
                 switch galaxy.name {
                 case "Milky Way":
-                    guard try galaxy.$planets.eagerLoaded().contains(where: { $0.name == "Earth" }) else {
+                    guard galaxy.planets.contains(where: { $0.name == "Earth" }) else {
                         throw Failure("unexpected missing planet")
                     }
-                    guard try !galaxy.$planets.eagerLoaded().contains(where: { $0.name == "PA-99-N2"}) else {
+                    guard !galaxy.planets.contains(where: { $0.name == "PA-99-N2"}) else {
                         throw Failure("unexpected planet")
                     }
                 default: break
