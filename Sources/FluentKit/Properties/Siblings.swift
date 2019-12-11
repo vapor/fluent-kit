@@ -101,6 +101,10 @@ public final class Siblings<From, To, Through>: AnyProperty
 
 
 extension Siblings: EagerLoadable {
+    public var eagerLoaded: [To]? {
+        self.eagerLoadedValue
+    }
+
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -119,13 +123,6 @@ extension Siblings: AnyEagerLoadable {
 
     var eagerLoadValueDescription: CustomStringConvertible? {
         return self.eagerLoadedValue
-    }
-
-    public func eagerLoaded() throws -> [To] {
-        guard let rows = self.eagerLoadedValue else {
-            throw FluentError.missingEagerLoad(name: To.schema.self)
-        }
-        return rows
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {

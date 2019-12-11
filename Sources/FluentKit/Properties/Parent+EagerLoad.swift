@@ -21,6 +21,10 @@ extension Parent: AnyEagerLoadable {
 }
 
 extension Parent: EagerLoadable {
+    public var eagerLoaded: To? {
+        self.eagerLoadedValue
+    }
+
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -59,6 +63,10 @@ extension OptionalParent: AnyEagerLoadable {
 }
 
 extension OptionalParent: EagerLoadable {
+    public var eagerLoaded: To? {
+        self.eagerLoadedValue
+    }
+
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {

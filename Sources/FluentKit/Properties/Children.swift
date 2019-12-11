@@ -81,6 +81,10 @@ public final class Children<From, To>: AnyProperty
 
 
 extension Children: EagerLoadable {
+    public var eagerLoaded: [To]? {
+        self.eagerLoadedValue
+    }
+
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -101,13 +105,6 @@ extension Children: AnyEagerLoadable {
 
     var eagerLoadValueDescription: CustomStringConvertible? {
         return self.eagerLoadedValue
-    }
-
-    public func eagerLoaded() throws -> [To] {
-        guard let rows = self.eagerLoadedValue else {
-            throw FluentError.missingEagerLoad(name: To.schema.self)
-        }
-        return rows
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {
