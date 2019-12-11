@@ -60,20 +60,20 @@ extension AnyField { }
 
 extension AnyModel {
     var eagerLoadables: [(String, AnyEagerLoadable)] {
-        return self.properties.compactMap { (label, property) in
-            guard let eagerLoadable = property as? AnyEagerLoadable else {
+        self.properties.compactMap {
+            guard let value = $1 as? AnyEagerLoadable else {
                 return nil
             }
-            return (label, eagerLoadable)
+            return ($0, value)
         }
     }
 
     var fields: [(String, AnyField)] {
-        return self.properties.compactMap { (label, property) in
-            guard let field = property as? AnyField else {
+        self.properties.compactMap {
+            guard let value = $1 as? AnyField else {
                 return nil
             }
-            return (label, field)
+            return ($0, value)
         }
     }
     
@@ -84,11 +84,11 @@ extension AnyModel {
                 guard let label = child.label else {
                     return nil
                 }
-                guard let value = child.value as? AnyProperty else {
+                guard let property = child.value as? AnyProperty else {
                     return nil
                 }
                 // remove underscore
-                return (String(label.dropFirst()), value)
+                return (String(label.dropFirst()), property)
             }
     }
 }

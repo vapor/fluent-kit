@@ -18,27 +18,7 @@ public struct DatabaseSchema {
         case delete
     }
     
-    public enum DataType {
-        static func bestFor(type: Any.Type) -> DataType {
-            if let optional = type as? _OptionalType.Type {
-                return self.bestFor(type: optional._wrappedType)
-            }
-
-            func id(_ type: Any.Type) -> ObjectIdentifier {
-                return ObjectIdentifier(type)
-            }
-            
-            switch id(type) {
-            case id(String.self): return .string
-            case id(Int.self), id(Int64.self): return .int64
-            case id(UInt.self), id(UInt64.self): return .uint64
-            case id(UUID.self): return .uuid
-            case id(Date.self): return .datetime
-            case id(Bool.self): return .bool
-            default: return .json
-            }
-        }
-        
+    public indirect enum DataType {
         case json
         
         public static var int: DataType {
@@ -75,6 +55,8 @@ public struct DatabaseSchema {
         case double
         case data
         case uuid
+
+        case array(of: DataType)
         case custom(Any)
     }
     

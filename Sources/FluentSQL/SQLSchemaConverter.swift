@@ -184,6 +184,8 @@ public struct SQLSchemaConverter {
             return SQLRaw("FLOAT")
         case .double:
             return SQLRaw("DOUBLE")
+        case .array(of: let type):
+            return SQLArrayDataType(type: self.dataType(type))
         case .custom(let any):
             return custom(any)
         }
@@ -205,5 +207,13 @@ public struct SQLSchemaConverter {
         case .custom(let any):
             return custom(any)
         }
+    }
+}
+
+struct SQLArrayDataType: SQLExpression {
+    let type: SQLExpression
+    func serialize(to serializer: inout SQLSerializer) {
+        self.type.serialize(to: &serializer)
+        serializer.write("[]")
     }
 }
