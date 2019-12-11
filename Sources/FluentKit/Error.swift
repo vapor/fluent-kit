@@ -28,4 +28,9 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
     public var errorDescription: String? {
         return self.description
     }
+
+    public var isNoResults: Bool {
+        guard case .noResults = self else { return false }
+        return true
+    }
 }

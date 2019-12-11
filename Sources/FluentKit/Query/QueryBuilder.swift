@@ -606,22 +606,46 @@ public final class QueryBuilder<Model>
             .all()
             .map { $0.first }
     }
-    
+
+    /// Retrieve the first result matching the current query or create a new record
+    /// if no results are found.
+    ///
+    /// Example usage:
+    ///
+    ///     User.query(on: database)
+    ///         .filter(\.$name == "Jon")
+    ///         .first(orCreate: User(name: "Jon"))
+    ///
     public func first(
         orCreate newModel: @escaping @autoclosure () -> Model
     ) -> EventLoopFuture<Model> {
-        return self.first().flatMapThrowing { res in
+        let promise = self.database.eventLoop.makePromise(of: Model.self)
+
+        let existingModel: EventLoopFuture<Model> = self.first().flatMapThrowing { res in
             guard let res = res else {
                 throw FluentError.noResults
             }
             return res
-        }.flatMapError { _ in
-            let model = newModel()
-
-            return model
-                .save(on: self.database)
-                .map { model }
         }
+
+        existingModel.cascadeSuccess(to: promise)
+
+        // we only handle failure of .noResults by going
+        // and creating a new model. Other failures get
+        // propagated.
+        existingModel.whenFailure { error in
+            guard let fluentError = error as? FluentError,
+                fluentError.isNoResults else {
+                    promise.fail(error)
+                    return
+            }
+            let model = newModel()
+            model.create(on: self.database)
+                .map { model }
+                .cascade(to: promise)
+        }
+
+        return promise.futureResult
     }
     
     public func all() -> EventLoopFuture<[Model]> {
