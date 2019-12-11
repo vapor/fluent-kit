@@ -35,7 +35,6 @@ public final class OptionalParent<To>
     public func get(on database: Database) -> EventLoopFuture<To?> {
         return self.query(on: database).first()
     }
-
 }
 
 extension OptionalParent: FieldRepresentable {

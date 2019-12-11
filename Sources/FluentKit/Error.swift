@@ -2,7 +2,7 @@ import Foundation
 
 public enum FluentError: Error, LocalizedError, CustomStringConvertible {
     case idRequired
-    case invalidField(name: String, valueType: Any.Type)
+    case invalidField(name: String, valueType: Any.Type, error: Error)
     case missingField(name: String)
     case missingEagerLoad(name: String)
     case missingParent
@@ -18,8 +18,8 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
             return "eager load missing: \(name)"
         case .missingParent:
             return "parent missing"
-        case .invalidField(let name, let valueType):
-            return "invalid field: \(name), expected type: \(valueType)"
+        case .invalidField(let name, let valueType, let error):
+            return "invalid field: \(name) type: \(valueType) error: \(error)"
         case .noResults:
             return "Query returned no results"
         }

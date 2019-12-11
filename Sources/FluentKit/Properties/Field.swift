@@ -48,7 +48,11 @@ public final class Field<Value>: AnyField, FieldRepresentable
             do {
                 self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
-                throw FluentError.invalidField(name: self.key, valueType: Value.self)
+                throw FluentError.invalidField(
+                    name: self.key,
+                    valueType: Value.self,
+                    error: error
+                )
             }
         }
     }

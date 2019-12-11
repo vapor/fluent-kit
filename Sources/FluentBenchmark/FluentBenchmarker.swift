@@ -1540,8 +1540,7 @@ public final class FluentBenchmarker {
                         .field("id", .uuid, .identifier(auto: false))
                         .field("bar", .array(of: .int), .required)
                         .field("baz", .array(of: .string))
-                        .field("qux", .array(of: .json), .required)
-                        .field("quux", .json, .required)
+                        .field("qux", .json, .required)
                         .create()
                 }
 
@@ -1562,17 +1561,13 @@ public final class FluentBenchmarker {
             @Field(key: "qux")
             var qux: [Qux]
 
-            @Field(key: "quux")
-            var quux: [Qux]
-
             init() { }
 
-            init(id: UUID? = nil, bar: [Int], baz: [String]?, qux: [Qux], quux: [Qux]) {
+            init(id: UUID? = nil, bar: [Int], baz: [String]?, qux: [Qux]) {
                 self.id = id
                 self.bar = bar
                 self.baz = baz
                 self.qux = qux
-                self.quux = quux
             }
         }
 
@@ -1582,8 +1577,7 @@ public final class FluentBenchmarker {
             let new = Foo(
                 bar: [1, 2, 3],
                 baz: ["4", "5", "6"],
-                qux: [.init(foo: "7"), .init(foo: "8"), .init(foo: "9")],
-                quux: [.init(foo: "10"), .init(foo: "11"), .init(foo: "12")]
+                qux: [.init(foo: "7"), .init(foo: "8"), .init(foo: "9")]
             )
             try new.create(on: self.database).wait()
 
@@ -1593,7 +1587,6 @@ public final class FluentBenchmarker {
             XCTAssertEqual(fetched.bar, [1, 2, 3])
             XCTAssertEqual(fetched.baz, ["4", "5", "6"])
             XCTAssertEqual(fetched.qux.map { $0.foo }, ["7", "8", "9"])
-            XCTAssertEqual(fetched.quux.map { $0.foo }, ["10", "11", "12"])
         }
     }
 
@@ -1613,7 +1606,6 @@ public final class FluentBenchmarker {
                         .field("corge", .array(of: .int), .required)
                         .field("grault", .array(of: .double), .required)
                         .field("garply", .array(of: .string), .required)
-                        .field("waldo", .datetime, .required)
                         .field("fred", .string, .required)
                         .field("plugh", .int)
                         .field("xyzzy", .double)
@@ -1641,7 +1633,6 @@ public final class FluentBenchmarker {
             @Field(key: "corge") var corge: [Int]
             @Field(key: "grault") var grault: [Double]
             @Field(key: "garply") var garply: [String]
-            @Field(key: "waldo") var waldo: [Date]
             @Field(key: "fred") var fred: Decimal
             @Field(key: "plugh") var plugh: Int?
             @Field(key: "xyzzy") var xyzzy: Double?
@@ -1650,10 +1641,19 @@ public final class FluentBenchmarker {
             init() { }
 
             init(
-                id: UUID? = nil, bar: Int, baz: Double, qux: String,
-                quux: Date, quuz: Float, corge: [Int], grault: [Double],
-                garply: [String], waldo: [Date], fred: Decimal, plugh: Int?,
-                xyzzy: Double?, thud: Thud
+                id: UUID? = nil,
+                bar: Int,
+                baz: Double,
+                qux: String,
+                quux: Date,
+                quuz: Float,
+                corge: [Int],
+                grault: [Double],
+                garply: [String],
+                fred: Decimal,
+                plugh: Int?,
+                xyzzy: Double?,
+                thud: Thud
             ) {
                 self.id = id
                 self.bar = bar
@@ -1664,7 +1664,6 @@ public final class FluentBenchmarker {
                 self.corge = corge
                 self.grault = grault
                 self.garply = garply
-                self.waldo = waldo
                 self.fred = fred
                 self.plugh = plugh
                 self.xyzzy = xyzzy
@@ -1677,10 +1676,17 @@ public final class FluentBenchmarker {
         ]) {
             for _ in 0..<100 {
                 let foo = Foo(
-                    bar: 42, baz: 3.14159, qux: "foobar", quux: .init(),
-                    quuz: 2.71828, corge: [1, 2, 3], grault: [4, 5, 6],
-                    garply: ["foo", "bar", "baz"], waldo: [.init(), .init(), .init()],
-                    fred: 1.4142135623730950, plugh: 1337, xyzzy: 9.94987437106,
+                    bar: 42,
+                    baz: 3.14159,
+                    qux: "foobar",
+                    quux: .init(),
+                    quuz: 2.71828,
+                    corge: [1, 2, 3],
+                    grault: [4, 5, 6],
+                    garply: ["foo", "bar", "baz"],
+                    fred: 1.4142135623730950,
+                    plugh: 1337,
+                    xyzzy: 9.94987437106,
                     thud: .init(foo: 5, bar: 23, baz: "1994")
                 )
                 try foo.save(on: self.database).wait()
