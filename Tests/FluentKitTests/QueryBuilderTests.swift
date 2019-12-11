@@ -7,20 +7,21 @@ import FluentSQL
 
 final class QueryBuilderTests: XCTestCase {
     func testFirstOrCreateFindsResult() throws {
-        let planet = Planet3(id: 1, name: "Nupeter", galaxyID: 10)
+        let existingPlanet = Planet3(id: 1, name: "Nupeter", galaxyID: 10)
+        let newPlanet = Planet3(id: 2, name: "Marzipan", galaxyID: 10)
         // first and only result contains existing row
         let db = DummyDatabase(mockResults: [[
             DummyRow(dummyDecodedFields: [
-                "id": try planet.requireID(),
-                "name": planet.name,
-                "galaxy_id": planet.$galaxy.id
+                "id": try existingPlanet.requireID(),
+                "name": existingPlanet.name,
+                "galaxy_id": existingPlanet.$galaxy.id
             ])
         ]])
 
-        let retrievedPlanet = try Planet3.query(on: db).first(orCreate: planet).wait()
+        let retrievedPlanet = try Planet3.query(on: db).first(orCreate: newPlanet).wait()
 
-        XCTAssertEqual(retrievedPlanet.name, planet.name)
-        XCTAssertEqual(try retrievedPlanet.requireID(), try planet.requireID())
+        XCTAssertEqual(retrievedPlanet.name, existingPlanet.name)
+        XCTAssertEqual(try retrievedPlanet.requireID(), try existingPlanet.requireID())
     }
 
     func testFirstOrCreateCreatesResult() throws {
