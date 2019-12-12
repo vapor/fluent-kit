@@ -43,11 +43,12 @@ public class DummyDatabaseForTestQueries: Database {
     public init(
         mockResults: [MockResult] = [[]],
         context: DatabaseContext = .init(
-        configuration: .init(),
-        logger: .init(label: "test"),
-        eventLoop: EmbeddedEventLoop()
+            configuration: .init(),
+            logger: .init(label: "test"),
+            eventLoop: EmbeddedEventLoop()
         )
     ) {
+        precondition(mockResults.count > 0, "An empty array of results is not supported. Did you mean to pass 1 empty result (i.e. `[[]]`)?")
         self.context = context
         self.mockResults = mockResults
     }
