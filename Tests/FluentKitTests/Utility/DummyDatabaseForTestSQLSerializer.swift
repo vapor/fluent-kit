@@ -7,7 +7,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     public var dialect: SQLDialect {
         DummyDatabaseDialect()
     }
-    
+
     public let context: DatabaseContext
     public var sqlSerializers: [SQLSerializer]
 
@@ -19,11 +19,11 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         )
         self.sqlSerializers = []
     }
-    
+
     public func reset() {
         self.sqlSerializers = []
     }
-    
+
     public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
@@ -31,11 +31,11 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.sqlSerializers.append(sqlSerializer)
         return self.eventLoop.makeSucceededFuture(())
     }
-    
+
     public func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
         fatalError()
     }
-    
+
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
@@ -43,13 +43,13 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.sqlSerializers.append(sqlSerializer)
         return self.eventLoop.makeSucceededFuture(())
     }
-    
+
     public func withConnection<T>(
         _ closure: @escaping (Database) -> EventLoopFuture<T>
     ) -> EventLoopFuture<T> {
         closure(self)
     }
-    
+
     public func shutdown() {
         //
     }
@@ -60,7 +60,7 @@ struct DummyDatabaseDialect: SQLDialect {
     var name: String {
         "dummy db"
     }
-    
+
     var identifierQuote: SQLExpression {
         return SQLRaw("\"")
     }
