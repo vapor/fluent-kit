@@ -1540,7 +1540,7 @@ public final class FluentBenchmarker {
                         .field("id", .uuid, .identifier(auto: false))
                         .field("bar", .array(of: .int), .required)
                         .field("baz", .array(of: .string))
-                        .field("qux", .json, .required)
+                        .field("qux", .array(of: .json), .required)
                         .create()
                 }
 
