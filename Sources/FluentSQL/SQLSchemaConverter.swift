@@ -36,7 +36,9 @@ public struct SQLSchemaConverter {
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.schema))
         create.columns = schema.createFields.map(self.fieldDefinition)
-        create.tableConstraints = schema.constraints.map(self.constraint)
+        create.tableConstraints = schema.constraints.map {
+            self.constraint($0, table: schema.schema)
+        }
         return create
     }
     
@@ -44,7 +46,7 @@ public struct SQLSchemaConverter {
         return SQLIdentifier(string)
     }
     
-    private func constraint(_ constraint: DatabaseSchema.Constraint) -> SQLExpression {
+    private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> SQLExpression {
         func identifier(_ fields: [DatabaseSchema.FieldName]) -> String {
             return fields.map { field -> String in
                 switch field {
@@ -61,7 +63,7 @@ public struct SQLSchemaConverter {
             let name = identifier(fields)
             return SQLConstraint(
                 algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                name: SQLIdentifier("uq:\(name)")
+                name: SQLIdentifier("uq:\(table).\(name)")
             )
         case .foreignKey(fields: let fields, foreignSchema: let parent, foreignFields: let parentFields, onDelete: let onDelete, onUpdate: let onUpdate):
             let name = identifier(fields + parentFields)
