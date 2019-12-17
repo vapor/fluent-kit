@@ -53,7 +53,7 @@ public struct SQLSchemaConverter {
                 case .custom:
                     return ""
                 case .string(let name):
-                    return name
+                    return "\(table).\(name)"
                 }
             }.joined(separator: "+")
         }
@@ -63,7 +63,7 @@ public struct SQLSchemaConverter {
             let name = identifier(fields)
             return SQLConstraint(
                 algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                name: SQLIdentifier("uq:\(table).\(name)")
+                name: SQLIdentifier("uq:\(name)")
             )
         case .foreignKey(fields: let fields, foreignSchema: let parent, foreignFields: let parentFields, onDelete: let onDelete, onUpdate: let onUpdate):
             let name = identifier(fields + parentFields)

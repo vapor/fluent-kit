@@ -125,7 +125,7 @@ final class FluentKitTests: XCTestCase {
             .create()
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("id" BIGINT, CONSTRAINT "uq:id" UNIQUE ("id"))"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("id" BIGINT, CONSTRAINT "uq:planets.id" UNIQUE ("id"))"#)
         db.reset()
 
         try db.schema("planets")
@@ -135,7 +135,7 @@ final class FluentKitTests: XCTestCase {
             .create()
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("id" BIGINT, "name" TEXT, CONSTRAINT "uq:id+name" UNIQUE ("id", "name"))"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("id" BIGINT, "name" TEXT, CONSTRAINT "uq:planets.id+planets.name" UNIQUE ("id", "name"))"#)
     }
 
     func testForeignKeyTableConstraint() throws {
