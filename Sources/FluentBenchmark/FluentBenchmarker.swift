@@ -49,6 +49,7 @@ public final class FluentBenchmarker {
         try self.testArray()
         try self.testPerformance()
         try self.testSoftDeleteWithQuery()
+        try self.testDuplicatedUniquePropertyName()
     }
     
     public func testCreate() throws {
@@ -1540,7 +1541,7 @@ public final class FluentBenchmarker {
                         .field("id", .uuid, .identifier(auto: false))
                         .field("bar", .array(of: .int), .required)
                         .field("baz", .array(of: .string))
-                        .field("qux", .json, .required)
+                        .field("qux", .array(of: .json), .required)
                         .create()
                 }
 
@@ -1720,6 +1721,40 @@ public final class FluentBenchmarker {
                 .filter(\.$contents == "c")
                 .all().wait()
             XCTAssertEqual(trash.count, 0)
+        }
+    }
+
+    // https://github.com/vapor/fluent-kit/issues/112
+    public func testDuplicatedUniquePropertyName() throws {
+        struct Foo: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("foos")
+                    .field("name", .string)
+                    .unique(on: "name")
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("foos").delete()
+            }
+        }
+        struct Bar: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("bars")
+                    .field("name", .string)
+                    .unique(on: "name")
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("bars").delete()
+            }
+        }
+        try runTest(#function, [
+            Foo(),
+            Bar()
+        ]) {
+            //
         }
     }
 
