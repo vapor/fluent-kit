@@ -2,11 +2,12 @@
 @testable import FluentBenchmark
 import XCTest
 import Foundation
-import FluentSQL
+import XCTFluent
 
 final class QueryBuilderTests: XCTestCase {
     func testFirstEmptyResult() throws {
-        let db = DummyDatabaseForTestQueries(mockResults: [[]])
+        let db = TestDatabase()
+        db.append(queryResult: [])
 
         let retrievedPlanet = try Planet.query(on: db).first().wait()
 
@@ -15,19 +16,14 @@ final class QueryBuilderTests: XCTestCase {
 
     func testFirstSingleResult() throws {
         let planet = Planet(id: 10, name: "Tully", galaxyID: 1)
-        let db = DummyDatabaseForTestQueries(
-            mockResults: [
-                [
-                    DummyDatabaseForTestQueries.DummyRow(
-                        dummyDecodedFields: [
-                            "id": planet.id as Any,
-                            "name": planet.name,
-                            "galaxy_id": planet.$galaxy.id
-                        ]
-                    )
-                ]
-            ]
-        )
+        let db = TestDatabase()
+        db.append(queryResult: [
+            TestRow([
+                "id": planet.id as Any,
+                "name": planet.name,
+                "galaxy_id": planet.$galaxy.id
+            ])
+        ])
 
         let retrievedPlanet = try Planet.query(on: db).first().wait()
 
@@ -38,26 +34,20 @@ final class QueryBuilderTests: XCTestCase {
 
     func testFirstManyResults() throws {
         let planet = Planet(id: 10, name: "Tully", galaxyID: 1)
-        let db = DummyDatabaseForTestQueries(
-            mockResults: [
-                [
-                    DummyDatabaseForTestQueries.DummyRow(
-                        dummyDecodedFields: [
-                            "id": planet.id as Any,
-                            "name": planet.name,
-                            "galaxy_id": planet.$galaxy.id
-                        ]
-                    ),
-                    DummyDatabaseForTestQueries.DummyRow(
-                        dummyDecodedFields: [
-                            "id": 1,
-                            "name": "Nupeter",
-                            "galaxy_id": 1
-                        ]
-                    )
-                ]
-            ]
-        )
+        let db = TestDatabase()
+        db.append(queryResult: [
+            TestRow([
+                "id": planet.id as Any,
+                "name": planet.name,
+                "galaxy_id": planet.$galaxy.id
+            ]),
+            TestRow([
+                "id": 1,
+                "name": "Nupeter",
+                "galaxy_id": 1
+
+            ])
+        ])
 
         let retrievedPlanet = try Planet.query(on: db).first().wait()
 
