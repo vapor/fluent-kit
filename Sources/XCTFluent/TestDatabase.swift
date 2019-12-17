@@ -10,7 +10,7 @@ import NIO
 ///
 /// **Examples:**
 ///
-/// Return an empty result for all queries:
+/// Return an empty result for the next query:
 ///
 ///     let db = TestDatabase()
 ///     db.append(queryResult: [])
