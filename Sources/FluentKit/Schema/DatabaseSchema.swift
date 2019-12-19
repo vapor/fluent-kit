@@ -43,6 +43,13 @@ public struct DatabaseSchema {
         public struct Enum {
             public var name: String
             public var cases: [String]
+            public init(name: String, cases: [String]) {
+                self.name = name
+                self.cases = cases
+            }
+            public init<T: CaseIterable>(from nativeType: T.Type = T.self) {
+                self.init(name: "\(T.self)", cases: T.allCases.map { "\($0)" })
+            }
         }
         case `enum`(Enum)
         case string

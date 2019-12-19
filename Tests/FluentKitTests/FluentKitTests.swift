@@ -214,6 +214,29 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
     
+    func testCreateSchemaWithEnumType() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema("planets")
+                .field("classification", .enum(.init(name: "Classification", cases: ["Menshara", "NobodyCaresAboutTheOtherClasses"])))
+                .create()
+                .wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("classification" ENUM("Menshara","NobodyCaresAboutTheOtherClasses"))"#)
+    }
+
+    func testCreateSchemaWithIterableEnumType() throws {
+        enum IterableClassifications: CaseIterable {
+            case Menshara, NobodyCaresAboutTheOtherClasses
+        }
+        
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema("planets")
+                .field("classification", .enum(.init(from: IterableClassifications.self)))
+                .create()
+                .wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("classification" ENUM("Menshara","NobodyCaresAboutTheOtherClasses"))"#)
+    }
 }
 
 final class Planet2: Model {
