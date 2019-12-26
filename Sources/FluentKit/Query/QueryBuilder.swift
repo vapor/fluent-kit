@@ -641,12 +641,17 @@ public final class QueryBuilder<Model>
         // if eager loads exist, run them, and update models
         if !self.eagerLoads.requests.isEmpty {
             return done.flatMap {
-                return .andAllSucceed(self.eagerLoads.requests.values.map { eagerLoad in
+                // don't run eager loads if result set was empty
+                guard !all.isEmpty else {
+                    return self.database.eventLoop.makeSucceededFuture(())
+                }
+                // run eager loads
+                return EventLoopFuture<Void>.andAllSucceed(self.eagerLoads.requests.values.map { eagerLoad in
                     return eagerLoad.run(models: all, on: self.database)
-                }, on: self.database.eventLoop)
-            }.flatMapThrowing {
-                try all.forEach { model in
-                    try model.eagerLoad(from: self.eagerLoads)
+                }, on: self.database.eventLoop).flatMapThrowing {
+                    try all.forEach { model in
+                        try model.eagerLoad(from: self.eagerLoads)
+                    }
                 }
             }
         } else {

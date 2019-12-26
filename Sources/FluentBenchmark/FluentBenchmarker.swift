@@ -50,6 +50,7 @@ public final class FluentBenchmarker {
         try self.testPerformance()
         try self.testSoftDeleteWithQuery()
         try self.testDuplicatedUniquePropertyName()
+        try self.testEmptyEagerLoadChildren()
     }
     
     public func testCreate() throws {
@@ -1755,6 +1756,23 @@ public final class FluentBenchmarker {
             Bar()
         ]) {
             //
+        }
+    }
+    
+    // https://github.com/vapor/fluent-kit/issues/117
+    public func testEmptyEagerLoadChildren() throws {
+        try runTest(#function, [
+            GalaxyMigration(),
+            PlanetMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            let galaxies = try Galaxy.query(on: self.database)
+                .filter(\.$name == "foo")
+                .with(\.$planets)
+                .all().wait()
+
+            XCTAssertEqual(galaxies.count, 0)
         }
     }
 
