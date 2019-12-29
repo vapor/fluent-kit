@@ -140,7 +140,7 @@ extension Array where Element: FluentKit.Model {
         builder.set(self.map { $0.input })
         builder.query.action = .create
         var it = self.makeIterator()
-        return builder.run { created in
+        return builder.run { _ in
             let next = it.next()!
             next._$id.exists = true
         }
