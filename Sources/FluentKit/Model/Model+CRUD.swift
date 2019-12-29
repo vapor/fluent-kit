@@ -135,8 +135,7 @@ extension Array where Element: FluentKit.Model {
         
         self.forEach {
             $0._$id.generate()
-            $0.touchTimestamps(.create)
-            $0.touchTimestamps(.update)
+            $0.touchTimestamps(.create, .update)
         }
         builder.set(self.map { $0.input })
         builder.query.action = .create
