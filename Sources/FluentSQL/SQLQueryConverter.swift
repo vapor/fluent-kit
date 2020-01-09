@@ -4,8 +4,8 @@ public struct SQLQueryConverter {
         self.delegate = delegate
     }
     
-    public func convert(_ fluent: DatabaseQuery) -> SQLExpression {
-        let sql: SQLExpression
+    public func convert(_ fluent: DatabaseQuery) -> SQLExpression? {
+        let sql: SQLExpression?
         switch fluent.action {
         case .read: sql = self.select(fluent)
         case .create: sql = self.insert(fluent)
@@ -25,7 +25,9 @@ public struct SQLQueryConverter {
         return delete
     }
     
-    private func update(_ query: DatabaseQuery) -> SQLExpression {
+    private func update(_ query: DatabaseQuery) -> SQLExpression? {
+        guard query.fields.count > 0 else { return nil }
+
         var update = SQLUpdate(table: SQLIdentifier(query.schema))
         for (i, field) in query.fields.enumerated() {
             update.values.append(SQLBinaryExpression(

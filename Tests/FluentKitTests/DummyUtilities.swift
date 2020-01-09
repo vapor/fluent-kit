@@ -26,7 +26,10 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     
     public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(database: self)
-        let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
+        guard let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query) else {
+            return self.eventLoop.makeSucceededFuture(())
+        }
+
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
         return self.eventLoop.makeSucceededFuture(())
