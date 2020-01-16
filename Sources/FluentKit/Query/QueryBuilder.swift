@@ -25,6 +25,30 @@ public final class QueryBuilder<Model>
         self.joinedModels = []
     }
 
+    private init(
+        query: DatabaseQuery,
+        database: Database,
+        eagerLoads: EagerLoads,
+        includeDeleted: Bool,
+        joinedModels: [AnyModel]
+    ) {
+        self.query = query
+        self.database = database
+        self.eagerLoads = eagerLoads
+        self.includeDeleted = includeDeleted
+        self.joinedModels = joinedModels
+    }
+
+    public func copy() -> QueryBuilder<Model> {
+        .init(
+            query: self.query,
+            database: self.database,
+            eagerLoads: self.eagerLoads,
+            includeDeleted: self.includeDeleted,
+            joinedModels: self.joinedModels
+        )
+    }
+
     // MARK: Eager Load
 
     @discardableResult
@@ -550,7 +574,8 @@ public final class QueryBuilder<Model>
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
-        self.query.fields = [.aggregate(.fields(
+        let copy = self.copy()
+        copy.query.fields = [.aggregate(.fields(
             method: method,
             fields: [.field(
                 path: [fieldName],
@@ -559,7 +584,7 @@ public final class QueryBuilder<Model>
             ]
         ))]
         
-        return self.first().flatMapThrowing { res in
+        return copy.first().flatMapThrowing { res in
             guard let res = res else {
                 throw FluentError.noResults
             }
