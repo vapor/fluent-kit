@@ -54,8 +54,8 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     public func range(lower: Int = 0, upper: Int? = nil) -> Self {
         self.query.offsets.append(.count(lower))
-        upper.flatMap {
-            self.query.limits.append(.count(($0 - lower) + 1))
+        upper.flatMap { upper in
+            self.query.limits.append(.count((upper - lower) + 1))
         }
         return self
     }
