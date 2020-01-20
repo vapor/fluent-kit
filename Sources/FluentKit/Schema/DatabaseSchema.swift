@@ -99,6 +99,7 @@ public struct DatabaseSchema {
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]
+    public var updateFields: [FieldDefinition]
     public var deleteFields: [FieldName]
     public var constraints: [Constraint]
     
@@ -106,6 +107,7 @@ public struct DatabaseSchema {
         self.action = .create
         self.schema = schema
         self.createFields = []
+        self.updateFields = []
         self.deleteFields = []
         self.constraints = []
     }

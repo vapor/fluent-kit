@@ -53,6 +53,7 @@ public final class FluentBenchmarker {
         try self.testEmptyEagerLoadChildren()
         try self.testUInt8BackedEnum()
         try self.testRange()
+        try self.testSQLEnums()
     }
     
     public func testCreate() throws {
@@ -1875,7 +1876,7 @@ public final class FluentBenchmarker {
         }
     }
     
-    private func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
+    internal func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
         self.log("Running \(name)...")
         for migration in migrations {
             do {

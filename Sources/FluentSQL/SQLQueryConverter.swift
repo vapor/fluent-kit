@@ -279,7 +279,11 @@ public struct SQLQueryConverter {
     private func value(_ value: DatabaseQuery.Value) -> SQLExpression {
         switch value {
         case .bind(let encodable):
-            return SQLBind(encodable)
+            if let expressible = encodable as? SQLExpressible {
+                return expressible.sql
+            } else {
+                return SQLBind(encodable)
+            }
         case .null:
             return SQLLiteral.null
         case .array(let values):

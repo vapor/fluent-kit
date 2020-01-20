@@ -55,6 +55,25 @@ public final class SchemaBuilder {
         ))
         return self
     }
+
+
+
+    public func updateField(
+        _ name: String,
+        _ dataType: DatabaseSchema.DataType,
+        _ constraints: DatabaseSchema.FieldConstraint...
+    ) -> Self {
+        return self.updateField(.definition(
+            name: .string(name),
+            dataType: dataType,
+            constraints: constraints
+        ))
+    }
+
+    public func updateField(_ field: DatabaseSchema.FieldDefinition) -> Self {
+        self.schema.updateFields.append(field)
+        return self
+    }
     
     public func deleteField(_ name: String) -> Self {
         return self.deleteField(.string(name))
