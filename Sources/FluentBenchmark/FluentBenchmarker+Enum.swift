@@ -67,6 +67,7 @@ private final class _Planet: Model {
 
 private struct _PlanetMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
+        // this test is for SQL databases only
         guard let sql = database as? SQLDatabase else {
             return database.eventLoop.makeFailedFuture(
                 FluentBenchmarker.Failure("SQL database required")
@@ -103,8 +104,15 @@ private struct _PlanetMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("planets").delete().flatMap {
-            if let sql = database as? SQLDatabase, case .typeName = sql.dialect.enumSyntax {
+        // this test is for SQL databases only
+        guard let sql = database as? SQLDatabase else {
+            return database.eventLoop.makeFailedFuture(
+                FluentBenchmarker.Failure("SQL database required")
+            )
+        }
+
+        return database.schema("planets").delete().flatMap {
+            if case .typeName = sql.dialect.enumSyntax {
                 // if the database supports types, drop the type
                 // created by the forward migration
                 return sql.drop(type: "PLANET_TYPE").run()
@@ -117,11 +125,13 @@ private struct _PlanetMigration: Migration {
 
 private struct _PlanetAddDwarfType: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
+        // this test is for SQL databases only
         guard let sql = database as? SQLDatabase else {
             return database.eventLoop.makeFailedFuture(
                 FluentBenchmarker.Failure("SQL database required")
             )
         }
+
         switch sql.dialect.enumSyntax {
         case .unsupported:
             // if the database does not support typed enums,
