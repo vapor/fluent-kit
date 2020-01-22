@@ -57,6 +57,14 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
 
 // Copy from PostgresDialect
 struct DummyDatabaseDialect: SQLDialect {
+    var supportsAutoIncrement: Bool {
+        true
+    }
+
+    var enumSyntax: SQLEnumSyntax {
+        .unsupported
+    }
+
     var name: String {
         "dummy db"
     }
