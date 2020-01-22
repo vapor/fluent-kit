@@ -77,7 +77,7 @@ public struct SQLQueryConverter {
         guard !filters.isEmpty else {
             return nil
         }
-        
+
         return SQLList(
             items: filters.map(self.filter),
             separator: SQLBinaryOperator.and
@@ -237,7 +237,13 @@ public struct SQLQueryConverter {
         case .custom(let any):
             return custom(any)
         case .group(let filters, let relation):
-            return SQLList(items: filters.map(self.filter), separator: self.relation(relation))
+            // <item> OR <item> OR <item>
+            let expression = SQLList(
+                items: filters.map(self.filter),
+                separator: self.relation(relation)
+            )
+            // ( <expr> )
+            return SQLGroupExpression(expression)
         }
     }
     

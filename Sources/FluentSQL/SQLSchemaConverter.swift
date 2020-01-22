@@ -36,7 +36,9 @@ public struct SQLSchemaConverter {
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.schema))
         create.columns = schema.createFields.map(self.fieldDefinition)
-        create.tableConstraints = schema.constraints.map(self.constraint)
+        create.tableConstraints = schema.constraints.map {
+            self.constraint($0, table: schema.schema)
+        }
         return create
     }
     
@@ -44,14 +46,14 @@ public struct SQLSchemaConverter {
         return SQLIdentifier(string)
     }
     
-    private func constraint(_ constraint: DatabaseSchema.Constraint) -> SQLExpression {
+    private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> SQLExpression {
         func identifier(_ fields: [DatabaseSchema.FieldName]) -> String {
             return fields.map { field -> String in
                 switch field {
                 case .custom:
                     return ""
                 case .string(let name):
-                    return name
+                    return "\(table).\(name)"
                 }
             }.joined(separator: "+")
         }
@@ -184,6 +186,8 @@ public struct SQLSchemaConverter {
             return SQLRaw("FLOAT")
         case .double:
             return SQLRaw("DOUBLE")
+        case .array(of: let type):
+            return SQLArrayDataType(type: self.dataType(type))
         case .custom(let any):
             return custom(any)
         }
@@ -205,5 +209,13 @@ public struct SQLSchemaConverter {
         case .custom(let any):
             return custom(any)
         }
+    }
+}
+
+struct SQLArrayDataType: SQLExpression {
+    let type: SQLExpression
+    func serialize(to serializer: inout SQLSerializer) {
+        self.type.serialize(to: &serializer)
+        serializer.write("[]")
     }
 }

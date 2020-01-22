@@ -5,6 +5,9 @@ public protocol AnyOptionalType {
 
 public protocol OptionalType: AnyOptionalType {
     associatedtype Wrapped
+
+    init()
+    init(_ value: Wrapped)
 }
 
 extension OptionalType {
@@ -14,6 +17,10 @@ extension OptionalType {
 }
 
 extension Optional: OptionalType {
+    public init() {
+        self = .none
+    }
+
     public var wrappedValue: Any? {
         return self
     }

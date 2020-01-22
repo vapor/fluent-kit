@@ -1,6 +1,6 @@
 @propertyWrapper
 public final class Children<From, To>: AnyProperty
-    where From: ParentRelatable, To: Model
+    where From: ModelIdentifiable & Codable & CustomStringConvertible, To: Model
 {
     // MARK: ID
 
@@ -8,7 +8,7 @@ public final class Children<From, To>: AnyProperty
     let parentID: () -> String
 
     private var eagerLoadedValue: [To]?
-    private var idValue: From.StoredIDValue?
+    private var idValue: From.IDValue?
 
     // MARK: Wrapper
 
@@ -31,7 +31,7 @@ public final class Children<From, To>: AnyProperty
         return self
     }
 
-    public var fromId: From.StoredIDValue? {
+    public var fromId: From.IDValue? {
         return self.idValue
     }
 
@@ -50,7 +50,7 @@ public final class Children<From, To>: AnyProperty
 
     func output(from output: DatabaseOutput) throws {
         if output.contains(self.parentID()) {
-            self.idValue = try output.decode(self.parentID(), as: From.StoredIDValue.self)
+            self.idValue = try output.decode(self.parentID(), as: From.IDValue.self)
         }
     }
 
@@ -69,6 +69,10 @@ public final class Children<From, To>: AnyProperty
 
 
 extension Children: EagerLoadable {
+    public var eagerLoaded: [To]? {
+        self.eagerLoadedValue
+    }
+
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -84,13 +88,6 @@ extension Children: AnyEagerLoadable {
 
     var eagerLoadValueDescription: CustomStringConvertible? {
         return self.eagerLoadedValue
-    }
-
-    public func eagerLoaded() throws -> [To] {
-        guard let rows = self.eagerLoadedValue else {
-            throw FluentError.missingEagerLoad(name: To.schema.self)
-        }
-        return rows
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {
@@ -122,7 +119,7 @@ extension Children: AnyEagerLoadable {
         }
 
         func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids = models.map { ($0 as! From).storedID }
+            let ids = models.compactMap { ($0 as? From)?.id }
 
             let builder = To.query(on: database)
             builder.filter(self.parentKey.appending(path: \.$id), in: Set(ids))
@@ -133,7 +130,7 @@ extension Children: AnyEagerLoadable {
                 }
         }
 
-        func get(id: From.StoredIDValue) throws -> [To] {
+        func get(id: From.IDValue) throws -> [To] {
             return self.storage.filter { child in child[keyPath: self.parentKey].id == id }
         }
     }

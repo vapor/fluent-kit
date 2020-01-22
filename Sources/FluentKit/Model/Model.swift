@@ -14,7 +14,7 @@ public protocol ModelIdentifiable {
     var id: IDValue? { get set }
 }
 
-public protocol Model: AnyModel, ParentRelatable, ModelIdentifiable where StoredIDValue == IDValue { }
+public protocol Model: AnyModel, ModelIdentifiable { }
 
 extension AnyModel {
     // MARK: Codable
@@ -110,7 +110,13 @@ private struct ContainerEncoder: Encoder, SingleValueEncodingContainer {
 }
 
 extension Model {
-    static func key<Field>(for field: KeyPath<Self, Field>) -> String
+
+    /// Indicates whether the model has fields that have been set, but the model has not yet been saved to the database.
+    public var hasChanges: Bool {
+        return !self.input.isEmpty
+    }
+
+    public static func key<Field>(for field: KeyPath<Self, Field>) -> String
         where Field: FieldRepresentable
     {
         return Self.init()[keyPath: field].field.key
@@ -223,10 +229,10 @@ extension AnyModel {
     }
 
     var anyID: AnyID {
-        guard let id = Mirror(reflecting: self).descendant("_id") else {
+        guard let id = Mirror(reflecting: self).descendant("_id") as? AnyID else {
             fatalError("id property must be declared using @ID")
         }
-        return id as! AnyID
+        return id
     }
 }
 
