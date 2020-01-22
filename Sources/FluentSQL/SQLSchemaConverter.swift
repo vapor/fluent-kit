@@ -24,7 +24,10 @@ public struct SQLSchemaConverter {
 
     private func update(_ schema: DatabaseSchema) -> SQLExpression {
         var update = SQLAlterTable(name: self.name(schema.schema))
-        update.columns = schema.createFields.map(self.fieldDefinition)
+        update.addColumns = schema.createFields.map(self.fieldDefinition)
+        update.dropColumns = schema.deleteFields.map(self.fieldName)
+        // todo:
+        // update.modifyColumns
         return update
     }
     
