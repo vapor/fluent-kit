@@ -152,7 +152,7 @@ public final class QueryBuilder<Model>
 
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value>>,
+        _ foreign: Foreign.Type,
         on filter: JoinFilter<Foreign, Local, Value>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self
