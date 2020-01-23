@@ -395,8 +395,29 @@ public final class FluentBenchmarker {
             let planets = try Planet.query(on: self.database)
                 .join(\.$galaxy)
                 .all().wait()
+
             for planet in planets {
                 let galaxy = try planet.joined(Galaxy.self)
+                switch planet.name {
+                case "Earth":
+                    guard galaxy.name == "Milky Way" else {
+                        throw Failure("unexpected galaxy name: \(galaxy.name)")
+                    }
+                case "PA-99-N2":
+                    guard galaxy.name == "Andromeda" else {
+                        throw Failure("unexpected galaxy name: \(galaxy.name)")
+                    }
+                default: break
+                }
+            }
+
+            let galaxies = try Galaxy.query(on: self.database)
+                .join(Planet.self, on: \Galaxy.$id == \Planet.$galaxy.$id)
+                .all()
+                .wait()
+
+            for galaxy in galaxies {
+                let planet = try galaxy.joined(Planet.self)
                 switch planet.name {
                 case "Earth":
                     guard galaxy.name == "Milky Way" else {
