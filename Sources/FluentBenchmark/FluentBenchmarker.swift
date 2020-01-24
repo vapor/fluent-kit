@@ -50,6 +50,11 @@ public final class FluentBenchmarker {
         try self.testPerformance()
         try self.testSoftDeleteWithQuery()
         try self.testDuplicatedUniquePropertyName()
+        try self.testEmptyEagerLoadChildren()
+        try self.testUInt8BackedEnum()
+        try self.testRange()
+        try self.testCustomID()
+        try self.testMultipleSet()
     }
     
     public func testCreate() throws {
@@ -391,8 +396,29 @@ public final class FluentBenchmarker {
             let planets = try Planet.query(on: self.database)
                 .join(\.$galaxy)
                 .all().wait()
+
             for planet in planets {
                 let galaxy = try planet.joined(Galaxy.self)
+                switch planet.name {
+                case "Earth":
+                    guard galaxy.name == "Milky Way" else {
+                        throw Failure("unexpected galaxy name: \(galaxy.name)")
+                    }
+                case "PA-99-N2":
+                    guard galaxy.name == "Andromeda" else {
+                        throw Failure("unexpected galaxy name: \(galaxy.name)")
+                    }
+                default: break
+                }
+            }
+
+            let galaxies = try Galaxy.query(on: self.database)
+                .join(Planet.self, on: \Galaxy.$id == \Planet.$galaxy.$id)
+                .all()
+                .wait()
+
+            for galaxy in galaxies {
+                let planet = try galaxy.joined(Planet.self)
                 switch planet.name {
                 case "Earth":
                     guard galaxy.name == "Milky Way" else {
@@ -1757,6 +1783,106 @@ public final class FluentBenchmarker {
             //
         }
     }
+    
+    // https://github.com/vapor/fluent-kit/issues/117
+    public func testEmptyEagerLoadChildren() throws {
+        try runTest(#function, [
+            GalaxyMigration(),
+            PlanetMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            let galaxies = try Galaxy.query(on: self.database)
+                .filter(\.$name == "foo")
+                .with(\.$planets)
+                .all().wait()
+
+            XCTAssertEqual(galaxies.count, 0)
+        }
+    }
+    
+    public func testUInt8BackedEnum() throws {
+        enum Bar: UInt8, Codable {
+            case baz, qux
+        }
+        final class Foo: Model {
+            static let schema = "foos"
+
+            struct _Migration: Migration {
+                func prepare(on database: Database) -> EventLoopFuture<Void> {
+                    return database.schema("foos")
+                        .field("id", .int, .identifier(auto: true))
+                        .field("bar", .uint8, .required)
+                        .create()
+                }
+
+                func revert(on database: Database) -> EventLoopFuture<Void> {
+                    return database.schema("foos").delete()
+                }
+            }
+            
+            @ID(key: "id")
+            var id: Int?
+
+            @Field(key: "bar")
+            var bar: Bar
+
+            init() { }
+
+            init(id: Int? = nil, bar: Bar) {
+                self.id = id
+                self.bar = bar
+            }
+        }
+        try runTest(#function, [
+            Foo._Migration()
+        ]) {
+            let foo = Foo(bar: .baz)
+            try foo.save(on: self.database).wait()
+            
+            let fetched = try Foo.find(foo.id, on: self.database).wait()
+            XCTAssertEqual(fetched?.bar, .baz)
+        }
+    }
+
+    public func testRange() throws {
+        try runTest(#function, [
+            GalaxyMigration(),
+            PlanetMigration(),
+            GalaxySeed(),
+            PlanetSeed()
+        ]) {
+            do {
+                let planets = try Planet.query(on: self.database)
+                    .range(2..<5)
+                    .sort(\.$name)
+                    .all().wait()
+                XCTAssertEqual(planets.count, 3)
+                XCTAssertEqual(planets[0].name, "Mars")
+            }
+            do {
+                let planets = try Planet.query(on: self.database)
+                    .range(...5)
+                    .sort(\.$name)
+                    .all().wait()
+                XCTAssertEqual(planets.count, 6)
+            }
+            do {
+                let planets = try Planet.query(on: self.database)
+                    .range(..<5)
+                    .sort(\.$name)
+                    .all().wait()
+                XCTAssertEqual(planets.count, 5)
+            }
+            do {
+                let planets = try Planet.query(on: self.database)
+                    .range(..<5)
+                    .sort(\.$name)
+                    .all().wait()
+                XCTAssertEqual(planets.count, 5)
+            }
+        }
+    }
 
     // MARK: Utilities
     
@@ -1772,7 +1898,7 @@ public final class FluentBenchmarker {
         }
     }
     
-    private func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
+    internal func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
         self.log("Running \(name)...")
         for migration in migrations {
             do {

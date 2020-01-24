@@ -71,8 +71,27 @@ public final class ID<Value>: AnyID, FieldRepresentable
         case .database:
             self.inputValue = .default
         case .random:
-            let generatable = Value.self as! (RandomGeneratable & Encodable).Type
-            self.inputValue = .bind(generatable.generateRandom())
+            // only generate an id if none is set
+            let generate: Bool
+
+            // check to see if an id has been set
+            switch inputValue {
+            case .some(let value):
+                switch value {
+                case .bind(let value):
+                    generate = (value as? Value) == nil
+                default:
+                    generate = true
+                }
+            case .none:
+                generate = true
+            }
+
+            // if no id set, generate the value
+            if generate {
+                let generatable = Value.self as! (RandomGeneratable & Encodable).Type
+                self.inputValue = .bind(generatable.generateRandom())
+            }
         case .user:
             // do nothing
             break
