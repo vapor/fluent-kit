@@ -8,19 +8,17 @@ public final class QueryBuilder<Model>
     public let database: Database
     internal var eagerLoads: EagerLoads
     internal var includeDeleted: Bool
-    internal var joinedModels: [AnyModel]
+    internal var joinedModels: [JoinedModel]
+
+    struct JoinedModel {
+        let model: AnyModel
+        let alias: String?
+    }
     
     public init(database: Database) {
         self.database = database
         self.query = .init(schema: Model.schema)
         self.eagerLoads = .init()
-        self.query.fields = Model().fields.map { (_, field) in
-            return .field(
-                path: [field.key],
-                schema: Model.schema,
-                alias: nil
-            )
-        }
         self.includeDeleted = false
         self.joinedModels = []
     }
@@ -30,7 +28,7 @@ public final class QueryBuilder<Model>
         database: Database,
         eagerLoads: EagerLoads,
         includeDeleted: Bool,
-        joinedModels: [AnyModel]
+        joinedModels: [JoinedModel]
     ) {
         self.query = query
         self.database = database
@@ -191,14 +189,7 @@ public final class QueryBuilder<Model>
     ) -> Self
         where Foreign: FluentKit.Model, Local: FluentKit.Model
     {
-        self.query.fields += Foreign().fields.map { (_, field) in
-            return .field(
-                path: [field.key],
-                schema: schemaAlias ?? Foreign.schema,
-                alias: (schemaAlias ?? Foreign.schema) + "_" + field.key
-            )
-        }
-        self.joinedModels.append(Foreign())
+        self.joinedModels.append(.init(model: Foreign(), alias: schemaAlias))
         self.query.joins.append(.join(
             schema: .schema(name: Foreign.schema, alias: schemaAlias),
             foreign: .field(
@@ -384,13 +375,12 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func set(_ data: [String: DatabaseQuery.Value]) -> Self {
-        self.query.fields = data.keys.map { .field(path: [$0], schema: nil, alias: nil) }
-        self.query.input.append(.init(data.values))
-        return self
+        self.set([data])
     }
 
     @discardableResult
     public func set(_ data: [[String: DatabaseQuery.Value]]) -> Self {
+        assert(self.query.fields.isEmpty, "Conflicting query fields already exist.")
         // ensure there is at least one
         guard let keys = data.first?.keys else {
             return self
@@ -408,8 +398,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func set<Value>(_ field: KeyPath<Model, Field<Value>>, to value: Value) -> Self {
-        self.query.fields = []
-        query.fields.append(.field(path: [Model.key(for: field)], schema: nil, alias: nil))
+        self.query.fields.append(.field(path: [Model.key(for: field)], schema: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))
@@ -689,6 +678,26 @@ public final class QueryBuilder<Model>
         // so that run can be called multiple times
         var query = self.query
 
+        if query.fields.isEmpty {
+            // default fields
+            query.fields = Model().fields.map { (_, field) in
+                return .field(
+                    path: [field.key],
+                    schema: Model.schema,
+                    alias: nil
+                )
+            }
+            for joined in self.joinedModels {
+                query.fields += joined.model.fields.map { (_, field) in
+                    return .field(
+                        path: [field.key],
+                        schema: joined.alias ?? type(of: joined.model).schema,
+                        alias: (joined.alias ?? type(of: joined.model).schema) + "_" + field.key
+                    )
+                }
+            }
+        }
+
         // prepare all eager load requests
         self.eagerLoads.requests.values.forEach { $0.prepare(query: &query) }
         
@@ -696,7 +705,7 @@ public final class QueryBuilder<Model>
         if !self.includeDeleted {
             Model().excludeDeleted(from: &query)
             self.joinedModels
-                .forEach { $0.excludeDeleted(from: &query) }
+                .forEach { $0.model.excludeDeleted(from: &query) }
         }
         
         self.database.logger.info("\(self.query)")

@@ -54,6 +54,7 @@ public final class FluentBenchmarker {
         try self.testUInt8BackedEnum()
         try self.testRange()
         try self.testCustomID()
+        try self.testMultipleSet()
     }
     
     public func testCreate() throws {
