@@ -58,9 +58,13 @@ extension OptionalParent: AnyProperty {
     }
 
     func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
-        // TODO: allow for nested decoding
+        do {
+            let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+            try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
+            // TODO: allow for nested decoding
+        } catch {
+            self.id = nil
+        }
     }
 }
 
