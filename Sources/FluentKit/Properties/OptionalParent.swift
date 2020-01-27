@@ -48,10 +48,12 @@ extension OptionalParent: AnyProperty {
         var container = encoder.singleValueContainer()
         if let parent = self.eagerLoadedValue {
             try container.encode(parent)
-        } else {
+        } else if let id = self.id {
             try container.encode([
-                To.key(for: \._$id): self.id
+                To.key(for: \._$id): id
             ])
+        } else {
+            try container.encode(self.id)
         }
     }
 
