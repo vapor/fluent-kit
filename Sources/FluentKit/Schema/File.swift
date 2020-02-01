@@ -85,7 +85,7 @@ public class KeyPathSchemaBuilder<M: Model> {
     /// Adds a schema level foreign key constraint with the given parent id and foreign id keypaths, and optionally `onDelete` and `onUpdate` actions
     public func foreignKey<M2: Model>(
         _ keyPath: KeyPath<M, Parent<M2>>,
-        _ foreignIdKeyPath: KeyPath<M2, ID<M2.IDValue>>,
+        references foreignIdKeyPath: KeyPath<M2, ID<M2.IDValue>>,
         onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
         onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
     ) -> Self {
@@ -102,7 +102,7 @@ public class KeyPathSchemaBuilder<M: Model> {
     /// Adds a schema level foreign key constraint with the given optional parent ìd and foreign id keypaths, and optionally `onDelete` and `onUpdate` actions
     public func foreignKey<M2: Model>(
         _ keyPath: KeyPath<M, OptionalParent<M2>>,
-        _ foreignField: KeyPath<M2, ID<M2.IDValue>>,
+        references foreignField: KeyPath<M2, ID<M2.IDValue>>,
         onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
         onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
     ) -> Self {
