@@ -122,6 +122,12 @@ public class KeyPathSchemaBuilder<M: Model> {
         return self
     }
 
+    /// Delete the given field
+    public func deleteField(_ name: String) -> Self {
+        schema.deleteFields.append(.string(name))
+        return self
+    }
+
     /// Delete the schema
     public func delete() -> EventLoopFuture<Void> {
         schema.action = .delete
