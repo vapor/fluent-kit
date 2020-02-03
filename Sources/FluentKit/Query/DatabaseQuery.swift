@@ -36,10 +36,17 @@ public struct DatabaseQuery: CustomStringConvertible {
             case custom(Any)
         }
         
+        public enum Function {
+            case distinct
+            case custom(Any)
+        }
+        
         public var description: String {
             switch self {
             case .aggregate(let aggregate):
                 return aggregate.description
+            case .function(let function, let fields):
+                return "\(function)(\(fields))"
             case .field(let path, let schema, let alias):
                 var description = path.joined(separator: ".")
                 if let schema = schema {
@@ -55,6 +62,7 @@ public struct DatabaseQuery: CustomStringConvertible {
         }
         
         case aggregate(Aggregate)
+        case function(Function, fields: [Field])
         case field(path: [String], schema: String?, alias: String?)
         case custom(Any)
     }

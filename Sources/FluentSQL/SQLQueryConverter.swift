@@ -173,6 +173,13 @@ public struct SQLQueryConverter {
             default:
                 fatalError("Deep SQL JSON nesting not yet supported.")
             }
+        case .function(let function, let fields):
+            let name: String
+            switch function {
+            case .distinct: name = "DISTINCT"
+            case .custom(let custom): name = custom as! String
+            }
+            return SQLFunction(name, args: fields.map(self.field))
         case .aggregate(let agg):
             switch agg {
             case .custom(let any):
