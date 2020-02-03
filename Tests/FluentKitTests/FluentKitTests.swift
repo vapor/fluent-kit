@@ -54,6 +54,25 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
         db.reset()
     }
+    
+    func testSQLDistinct() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        
+        _ = try Planet.query(on: db).distinct(on: \.$name).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" FROM "planets""#)
+        db.reset()
+        
+        _ = try Planet.query(on: db).distinct().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.starts(with: #"SELECT DISTINCT "planets"."#), true)
+        db.reset()
+        
+        _ = try? Planet.query(on: db).distinctCount(on: \.$name).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "fluentAggregate" FROM "planets" LIMIT 1"#)
+        db.reset()
+    }
 
     func testSQLSchemaCustomIndex() throws {
         let db = DummyDatabaseForTestSQLSerializer()
