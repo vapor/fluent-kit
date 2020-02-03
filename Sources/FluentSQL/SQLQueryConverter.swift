@@ -40,6 +40,7 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
+        select.isDistinct = query.isDistinct
         select.tables.append(SQLIdentifier(query.schema))
         select.columns = query.fields.map(self.field)
         select.predicate = self.filters(query.filters)

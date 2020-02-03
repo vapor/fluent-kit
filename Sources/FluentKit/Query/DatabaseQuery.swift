@@ -210,6 +210,7 @@ public struct DatabaseQuery: CustomStringConvertible {
         case custom(Any)
     }
     
+    public var isDistinct: Bool
     public var fields: [Field]
     public var action: Action
     public var filters: [Filter]
@@ -225,6 +226,9 @@ public struct DatabaseQuery: CustomStringConvertible {
             "\(self.action)",
             self.schema
         ]
+        if self.isDistinct {
+            parts.append("distinct")
+        }
         if !self.fields.isEmpty {
             parts.append("fields=\(self.fields)")
         }
@@ -239,6 +243,7 @@ public struct DatabaseQuery: CustomStringConvertible {
 
     init(schema: String) {
         self.schema = schema
+        self.isDistinct = false
         self.fields = []
         self.action = .read
         self.filters = []
