@@ -212,7 +212,7 @@ public struct SQLQueryConverter {
                 case .anywhere:
                     right = SQLRaw("\"%" + string.description + "%\"")
                 case .prefix:
-                    right = SQLRaw("\"” + string.description + "%\"")
+                    right = SQLRaw("\"" + string.description + "%\"")
                 case .suffix:
                     right = SQLRaw("\"%" + string.description + "\"")
                 }
