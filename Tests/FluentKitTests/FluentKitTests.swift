@@ -214,6 +214,40 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
     
+    func testGregorianDateBasics() throws {
+        let d1 = GregorianDate(year: 1964, month: 1, day: 7)
+        XCTAssertEqual(d1.description, "1964-01-07")
+        let d2 = try GregorianDate(string: d1.description)
+        XCTAssertEqual(d1, d2)
+        let dc = d2.dateComponents
+        XCTAssertEqual(dc.year, 1964)
+        XCTAssertEqual(dc.month, 1)
+        XCTAssertEqual(dc.day, 7)
+        XCTAssertThrowsError(try GregorianDate(string: "not a date"))
+    }
+    
+    func testGregorianDateJSON() throws {
+        let d1 = GregorianDate(year: 1964, month: 1, day: 7)
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(d1)
+        let str = String(data: data, encoding: .utf8)!
+        XCTAssertEqual(str, "\"1964-01-07\"")
+        
+        let decoder = JSONDecoder()
+        let d2 = try decoder.decode(GregorianDate.self, from: data)
+        XCTAssertEqual(d1, d2)
+    }
+    
+    func testGregorianDateDecode() throws {
+        let json = """
+        {"id": 42, "name": "Jane Doe", "birthday": "1964-01-07"}
+        """
+        let person = try JSONDecoder().decode(Person.self, from: Data(json.utf8))
+        XCTAssertEqual(person.id, 42)
+        XCTAssertEqual(person.name, "Jane Doe")
+        XCTAssertEqual(person.birthday, GregorianDate(year: 1964, month: 1, day: 7))
+    }
+    
 }
 
 final class Planet2: Model {
@@ -237,5 +271,26 @@ final class Planet2: Model {
         self.id = id
         self.name = name
         self.moonCount = moonCount
+    }
+}
+
+final class Person: Model {
+    static let schema = "people"
+    
+    @ID(key: "id")
+    var id: Int?
+    
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "birthday")
+    var birthday: GregorianDate?
+
+    init() { }
+
+    init(id: Int? = nil, name: String, birthday: GregorianDate? = nil) {
+        self.id = id
+        self.name = name
+        self.birthday = birthday
     }
 }
