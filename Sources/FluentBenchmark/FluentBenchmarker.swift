@@ -55,6 +55,7 @@ public final class FluentBenchmarker {
         try self.testRange()
         try self.testCustomID()
         try self.testMultipleSet()
+        try self.testRelationMethods()
     }
     
     public func testCreate() throws {
