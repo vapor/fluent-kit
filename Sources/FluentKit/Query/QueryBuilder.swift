@@ -805,8 +805,7 @@ public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> 
     return .init(lhs, .contains(inverse: true, .suffix), .bind(rhs))
 }
 
-infix operator !~~
-public func !~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .anywhere), .bind(rhs))
@@ -881,7 +880,7 @@ public func !~= <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Rig
     return .init(lhs, .contains(inverse: true, .suffix), rhs)
 }
 
-public func !~~ <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
+public func !~ <Left, Right, Field>(lhs: KeyPath<Left, Field>, rhs: KeyPath<Right, Field>) -> ModelFieldFilter<Left, Right>
     where Left: FluentKit.Model, Right: FluentKit.Model, Field: FieldRepresentable, Field.Value: CustomStringConvertible
 {
     return .init(lhs, .contains(inverse: true, .anywhere), rhs)
