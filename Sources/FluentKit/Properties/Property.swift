@@ -78,18 +78,27 @@ extension AnyModel {
     }
     
     var properties: [(String, AnyProperty)] {
-        return Mirror(reflecting: self)
-            .children
-            .compactMap { child in
-                guard let label = child.label else {
-                    return nil
-                }
-                guard let property = child.value as? AnyProperty else {
-                    return nil
-                }
-                // remove underscore
-                return (String(label.dropFirst()), property)
+        var props: [(String, AnyProperty)] = []
+        var mirror: Mirror = Mirror(reflecting: self)
+        while true {
+            props.append(contentsOf: mirror.children
+                .compactMap { child in
+                    guard let label = child.label else {
+                        return nil
+                    }
+                    guard let property = child.value as? AnyProperty else {
+                        return nil
+                    }
+                    // remove underscore
+                    return (String(label.dropFirst()), property)
+            })
+            if let m = mirror.superclassMirror {
+                mirror = m
             }
+            else {
+                return props
+            }
+        }
     }
 }
 
