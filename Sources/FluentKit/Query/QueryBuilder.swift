@@ -17,7 +17,7 @@ public final class QueryBuilder<Model>
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(schema: Model.schema)
+        self.query = .init(schema: Model.schema())
         self.eagerLoads = .init()
         self.includeDeleted = false
         self.joinedModels = []
@@ -191,15 +191,15 @@ public final class QueryBuilder<Model>
     {
         self.joinedModels.append(.init(model: Foreign(), alias: schemaAlias))
         self.query.joins.append(.join(
-            schema: .schema(name: Foreign.schema, alias: schemaAlias),
+            schema: .schema(name: Foreign.schema(), alias: schemaAlias),
             foreign: .field(
                 path: [foreignField],
-                schema: schemaAlias ?? Foreign.schema,
+                schema: schemaAlias ?? Foreign.schema(),
                 alias: nil
             ),
             local: .field(
                 path: [localField],
-                schema: Local.schema,
+                schema: Local.schema(),
                 alias: nil
             ),
             method: method
@@ -212,7 +212,7 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func filter(_ filter: ModelValueFilter<Model>) -> Self {
         return self.filter(
-            .field(path: filter.path, schema: Model.schema, alias: nil),
+            .field(path: filter.path, schema: Model.schema(), alias: nil),
             filter.method,
             filter.value
         )
@@ -221,9 +221,9 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func filter(_ filter: ModelFieldFilter<Model, Model>) -> Self {
         return self.filter(
-            .field(path: filter.lhsPath, schema: Model.schema, alias: nil),
+            .field(path: filter.lhsPath, schema: Model.schema(), alias: nil),
             filter.method,
-            .field(path: filter.rhsPath, schema: Model.schema, alias: nil)
+            .field(path: filter.rhsPath, schema: Model.schema(), alias: nil)
         )
     }
 
@@ -232,9 +232,9 @@ public final class QueryBuilder<Model>
         where Left: FluentKit.Model, Right: FluentKit.Model
     {
         return self.filter(
-            .field(path: filter.lhsPath, schema: Left.schema, alias: nil),
+            .field(path: filter.lhsPath, schema: Left.schema(), alias: nil),
             filter.method,
-            .field(path: filter.rhsPath, schema: Right.schema, alias: nil)
+            .field(path: filter.rhsPath, schema: Right.schema(), alias: nil)
         )
     }
 
@@ -275,7 +275,7 @@ public final class QueryBuilder<Model>
         return self.filter(
             .field(
                 path: [fieldName],
-                schema: alias ?? Joined.schema,
+                schema: alias ?? Joined.schema(),
                 alias: nil
             ),
             .subset(inverse: false),
@@ -310,7 +310,7 @@ public final class QueryBuilder<Model>
         where Joined: FluentKit.Model
     {
         return self.filter(
-            .field(path: filter.path, schema: Joined.schema, alias: nil),
+            .field(path: filter.path, schema: Joined.schema(), alias: nil),
             filter.method,
             filter.value
         )
@@ -321,9 +321,9 @@ public final class QueryBuilder<Model>
         where Joined: FluentKit.Model
     {
         return self.filter(
-            .field(path: filter.lhsPath, schema: Joined.schema, alias: nil),
+            .field(path: filter.lhsPath, schema: Joined.schema(), alias: nil),
             filter.method,
-            .field(path: filter.rhsPath, schema: Joined.schema, alias: nil)
+            .field(path: filter.rhsPath, schema: Joined.schema(), alias: nil)
         )
     }
     
@@ -343,7 +343,7 @@ public final class QueryBuilder<Model>
     {
         return self.filter(.field(
             path: [fieldName],
-            schema: Model.schema,
+            schema: Model.schema(),
             alias: nil
         ), method, .bind(value))
     }
@@ -351,9 +351,9 @@ public final class QueryBuilder<Model>
     @discardableResult
     public func filter(_ lhsFieldName: String, _ method: DatabaseQuery.Filter.Method, _ rhsFieldName: String) -> Self {
         return self.filter(
-            .field(path: [lhsFieldName], schema: Model.schema, alias: nil),
+            .field(path: [lhsFieldName], schema: Model.schema(), alias: nil),
             method,
-            .field(path: [rhsFieldName], schema: Model.schema, alias: nil)
+            .field(path: [rhsFieldName], schema: Model.schema(), alias: nil)
         )
     }
 
@@ -439,7 +439,7 @@ public final class QueryBuilder<Model>
     {
         self.query.sorts.append(.sort(field: .field(
             path: [field],
-            schema: alias ?? Joined.schema,
+            schema: alias ?? Joined.schema(),
             alias: nil
         ), direction: direction))
         return self
@@ -468,7 +468,7 @@ public final class QueryBuilder<Model>
     {
         let field: DatabaseQuery.Field = .field(
             path: [fieldName] + path.path,
-            schema: Model.schema,
+            schema: Model.schema(),
             alias: nil
         )
         return self.filter(field, method, .bind(value))
@@ -568,7 +568,7 @@ public final class QueryBuilder<Model>
             method: method,
             fields: [.field(
                 path: [fieldName],
-                schema: Model.schema,
+                schema: Model.schema(),
                 alias: nil)
             ]
         ))]
@@ -683,7 +683,7 @@ public final class QueryBuilder<Model>
             query.fields = Model().fields.map { (_, field) in
                 return .field(
                     path: [field.key],
-                    schema: Model.schema,
+                    schema: Model.schema(),
                     alias: nil
                 )
             }
@@ -691,8 +691,8 @@ public final class QueryBuilder<Model>
                 query.fields += joined.model.fields.map { (_, field) in
                     return .field(
                         path: [field.key],
-                        schema: joined.alias ?? type(of: joined.model).schema,
-                        alias: (joined.alias ?? type(of: joined.model).schema) + "_" + field.key
+                        schema: joined.alias ?? type(of: joined.model).schema(),
+                        alias: (joined.alias ?? type(of: joined.model).schema()) + "_" + field.key
                     )
                 }
             }

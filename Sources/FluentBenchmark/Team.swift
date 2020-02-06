@@ -1,5 +1,5 @@
 final class Team: Model {
-    static let schema = "teams"
+    class func schema() -> String { "teams" }
 
     @ID(key: "id")
     var id: Int?

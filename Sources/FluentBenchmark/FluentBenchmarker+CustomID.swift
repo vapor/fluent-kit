@@ -18,7 +18,7 @@ extension FluentBenchmarker {
 
 
 private final class Foo: Model {
-    static let schema = "foos"
+    class func schema() -> String { "foos" }
 
     @ID(key: "id")
     var id: UUID?

@@ -2,7 +2,7 @@ import Foundation
 import FluentKit
 
 final class Trash: Model {
-    static let schema = "trash"
+    class func schema() -> String { "trash" }
 
     @ID(key: "id")
     var id: UUID?
@@ -27,7 +27,7 @@ final class Trash: Model {
 
 struct TrashMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(Trash.schema)
+        return database.schema(Trash.schema())
             .field("id", .uuid, .identifier(auto: false), .custom("UNIQUE"))
             .field("contents", .string, .required)
             .field("deleted_at", .datetime)
@@ -35,6 +35,6 @@ struct TrashMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(Trash.schema).delete()
+        return database.schema(Trash.schema()).delete()
     }
 }

@@ -1,5 +1,5 @@
 final class Match: Model {
-    static let schema = "matches"
+    class func schema() -> String { "matches" }
 
     @ID(key: "id")
     var id: Int?

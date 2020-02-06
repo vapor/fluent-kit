@@ -1,7 +1,7 @@
 import FluentKit
 
 public final class Tag: Model {
-    public static let schema = "tags"
+    public class func schema() -> String { "tags" }
 
     @ID(key: "id")
     public var id: Int?

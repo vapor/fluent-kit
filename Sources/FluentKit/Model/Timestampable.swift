@@ -31,7 +31,7 @@ extension AnyModel {
 
         let deletedAtField = DatabaseQuery.Field.field(
             path: [timestamp.key],
-            schema: Self.schema,
+            schema: Self.schema(),
             alias: nil
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)

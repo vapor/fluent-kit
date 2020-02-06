@@ -2,7 +2,7 @@ import Foundation
 
 /// Stores information about `Migration`s that have been run.
 public final class MigrationLog: Model {
-    public static let schema = "fluent"
+    public class func schema() -> String { "fluent" }
 
     public static var migration: Migration {
         return MigrationLogMigration()

@@ -217,7 +217,7 @@ final class FluentKitTests: XCTestCase {
 }
 
 final class Planet2: Model {
-    static let schema = "planets"
+    class func schema() -> String { "planets" }
     
     @ID(key: "id")
     var id: Int?

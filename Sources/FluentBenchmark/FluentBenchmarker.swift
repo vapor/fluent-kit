@@ -590,7 +590,7 @@ public final class FluentBenchmarker {
     
     public func testNullifyField() throws {
         final class Foo: Model {
-            static let schema = "foos"
+            class func schema() -> String { "foos" }
 
             @ID(key: "id")
             var id: Int?
@@ -684,7 +684,7 @@ public final class FluentBenchmarker {
     
     public func testUniqueFields() throws {
         final class Foo: Model {
-            static let schema = "foos"
+            class func schema() -> String { "foos" }
 
             @ID(key: "id")
             var id: Int?
@@ -781,7 +781,7 @@ public final class FluentBenchmarker {
 
     public func testTimestampable() throws {
         final class User: Model {
-            static let schema = "users"
+            class func schema() -> String { "users" }
 
             @ID(key: "id")
             var id: Int?
@@ -843,7 +843,7 @@ public final class FluentBenchmarker {
             var string: String
         }
         final class User: Model {
-            static let schema = "users"
+            class func schema() -> String { "users" }
 
             @ID(key: "id")
             var id: Int?
@@ -982,7 +982,7 @@ public final class FluentBenchmarker {
 
     public func testUUIDModel() throws {
         final class User: Model {
-            static let schema = "users"
+            class func schema() -> String { "users" }
 
             @ID(key: "id")
             var id: UUID?
@@ -1024,7 +1024,7 @@ public final class FluentBenchmarker {
 
     public func testNewModelDecode() throws {
         final class Todo: Model {
-            static let schema = "todos"
+            class func schema() -> String { "todos" }
 
             @ID(key: "id")
             var id: UUID?
@@ -1427,7 +1427,7 @@ public final class FluentBenchmarker {
     
     public func testSameChildrenFromKey() throws {
         final class Foo: Model {
-            static let schema = "foos"
+            class func schema() -> String { "foos" }
 
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {
@@ -1463,7 +1463,7 @@ public final class FluentBenchmarker {
         }
         
         final class Bar: Model {
-            static let schema = "bars"
+            class func schema() -> String { "bars" }
         
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {
@@ -1498,7 +1498,7 @@ public final class FluentBenchmarker {
         }
         
         final class Baz: Model {
-            static let schema = "bazs"
+            class func schema() -> String { "bazs" }
         
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {
@@ -1561,7 +1561,7 @@ public final class FluentBenchmarker {
         }
 
         final class Foo: Model {
-            static let schema = "foos"
+            class func schema() -> String { "foos" }
 
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {
@@ -1621,7 +1621,7 @@ public final class FluentBenchmarker {
 
     public func testPerformance() throws {
         final class Foo: Model {
-            static let schema = "foos"
+            class func schema() -> String { "foos" }
 
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {
@@ -1808,7 +1808,7 @@ public final class FluentBenchmarker {
             case baz, qux
         }
         final class Foo: Model {
-            static let schema = "foos"
+            class func schema() -> String { "foos" }
 
             struct _Migration: Migration {
                 func prepare(on database: Database) -> EventLoopFuture<Void> {

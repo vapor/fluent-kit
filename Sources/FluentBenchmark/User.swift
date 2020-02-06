@@ -8,7 +8,7 @@ final class User: Model {
         var name: String
         var type: Animal
     }
-    static let schema = "users"
+    class func schema() -> String { "users" }
     
     @ID(key: "id")
     var id: Int?

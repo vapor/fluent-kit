@@ -1,5 +1,5 @@
 public protocol AnyModel: class, CustomStringConvertible, Codable {
-    static var schema: String { get }
+    static func schema() -> String
     init()
 }
 
@@ -221,7 +221,7 @@ extension AnyModel {
         }
         let joined = Joined()
         try joined.output(
-            from: output.row.prefixed(by: Joined.schema + "_").output(for: output.database)
+            from: output.row.prefixed(by: Joined.schema() + "_").output(for: output.database)
         )
         return joined
     }

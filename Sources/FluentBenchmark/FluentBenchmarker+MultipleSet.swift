@@ -21,7 +21,7 @@ extension FluentBenchmarker {
 private final class TestModel: Model {
     struct Migration: FluentKit.Migration {
         func prepare(on database: Database) -> EventLoopFuture<Void> {
-            return database.schema(TestModel.schema)
+            return database.schema(TestModel.schema())
                 .field("id", .int, .identifier(auto: true))
                 .field("int_value", .int)
                 .field("string_value", .string)
@@ -29,10 +29,10 @@ private final class TestModel: Model {
         }
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
-            return database.schema(TestModel.schema).delete()
+            return database.schema(TestModel.schema()).delete()
         }
     }
-    static let schema = "test"
+    class func schema() -> String { "test" }
 
     @ID(key: "id")
     var id: Int?

@@ -1,7 +1,7 @@
 import FluentKit
 
 public final class Moon: Model {
-    public static let schema = "moons"
+    public class func schema() -> String { "moons" }
 
     @ID(key: "id")
     public var id: Int?

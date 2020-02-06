@@ -1,7 +1,7 @@
 import FluentKit
 
 public final class Galaxy: Model {
-    public static let schema = "galaxies"
+    public class func schema() -> String { "galaxies" }
 
     public static var migration: Migration {
         return GalaxyMigration()

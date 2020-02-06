@@ -1,7 +1,7 @@
 import FluentKit
 
 final class PlanetTag: Model {
-    static let schema = "planet+tag"
+    class func schema() -> String { "planet+tag" }
     
     @ID(key: "id")
     var id: Int?
