@@ -10,10 +10,10 @@ public final class Children<From, To>: AnyProperty
     }
 
     let parentKey: Key
-    private var eagerLoadedValue: [To]?
-    private var idValue: From.IDValue?
+    var idValue: From.IDValue?
 
     // MARK: Wrapper
+    public var value: [To]?
 
     public init(for parent: KeyPath<To, Parent<From>>) {
         self.parentKey = .required(parent)
@@ -25,12 +25,14 @@ public final class Children<From, To>: AnyProperty
 
     public var wrappedValue: [To] {
         get {
-            guard let eagerLoaded = self.eagerLoadedValue else {
-                fatalError("Children relation not eager loaded, use $ prefix to access")
+            guard let value = self.value else {
+                fatalError("Children relation not loaded.")
             }
-            return eagerLoaded
+            return value
         }
-        set { fatalError("Use $ prefix to access") }
+        set {
+            fatalError("Children relation is get-only.")
+        }
     }
 
     public var projectedValue: Children<From, To> {
@@ -43,7 +45,7 @@ public final class Children<From, To>: AnyProperty
 
     // MARK: Query
 
-    public func query(on database: Database) throws -> QueryBuilder<To> {
+    public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query children relation from unsaved model.")
         }
@@ -68,7 +70,7 @@ public final class Children<From, To>: AnyProperty
 
     // MARK: Codable
     func encode(to encoder: Encoder) throws {
-        if let rows = self.eagerLoadedValue {
+        if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
@@ -79,12 +81,30 @@ public final class Children<From, To>: AnyProperty
     }
 }
 
+extension Children.Key: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .optional(let keyPath):
+            return To.key(for: keyPath)
+        case .required(let keyPath):
+            return To.key(for: keyPath)
+        }
+    }
+}
 
-extension Children: EagerLoadable {
-    public var eagerLoaded: [To]? {
-        self.eagerLoadedValue
+extension Children: Relation {
+    public var name: String {
+        "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
 
+    public func load(on database: Database) -> EventLoopFuture<Void> {
+        self.query(on: database).all().map {
+            self.value = $0
+        }
+    }
+}
+
+extension Children: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -104,7 +124,7 @@ extension Children: AnyEagerLoadable {
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
-        return self.eagerLoadedValue
+        return self.value
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {
@@ -112,7 +132,7 @@ extension Children: AnyEagerLoadable {
             return
         }
         if let subquery = request as? SubqueryEagerLoad {
-            self.eagerLoadedValue = try subquery.get(id: self.idValue!)
+            self.value = try subquery.get(id: self.idValue!)
         } else {
             fatalError("unsupported eagerload request: \(type(of: request))")
         }

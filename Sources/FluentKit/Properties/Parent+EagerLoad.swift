@@ -4,7 +4,7 @@ extension Parent: AnyEagerLoadable {
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
-        return self.eagerLoadedValue
+        return self.value
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {
@@ -13,7 +13,7 @@ extension Parent: AnyEagerLoadable {
         }
 
         if let subquery = request as? ParentSubqueryEagerLoad<To> {
-            self.eagerLoadedValue = try subquery.get(id: id)
+            self.value = try subquery.get(id: id)
         } else {
             fatalError("unsupported eagerload request: \(request)")
         }
@@ -21,10 +21,6 @@ extension Parent: AnyEagerLoadable {
 }
 
 extension Parent: EagerLoadable {
-    public var eagerLoaded: To? {
-        self.eagerLoadedValue
-    }
-
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -41,7 +37,7 @@ extension OptionalParent: AnyEagerLoadable {
     }
 
     var eagerLoadValueDescription: CustomStringConvertible? {
-        return self.eagerLoadedValue
+        return self.value
     }
 
     func eagerLoad(from eagerLoads: EagerLoads) throws {
@@ -49,13 +45,12 @@ extension OptionalParent: AnyEagerLoadable {
             return
         }
 
-        self.didEagerLoad = true
         guard let id = self.id else {
             return
         }
 
         if let subquery = request as? ParentSubqueryEagerLoad<To> {
-            self.eagerLoadedValue = try subquery.get(id: id)
+            self.value = try subquery.get(id: id)
         } else {
             fatalError("unsupported eagerload request: \(request)")
         }
@@ -63,10 +58,6 @@ extension OptionalParent: AnyEagerLoadable {
 }
 
 extension OptionalParent: EagerLoadable {
-    public var eagerLoaded: To? {
-        self.eagerLoadedValue
-    }
-
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
