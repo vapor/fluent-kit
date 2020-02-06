@@ -226,18 +226,6 @@ final class FluentKitTests: XCTestCase {
         XCTAssertThrowsError(try GregorianDate(string: "not a date"))
     }
     
-    func testGregorianDateJSON() throws {
-        let d1 = GregorianDate(year: 1964, month: 1, day: 7)
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(d1)
-        let str = String(data: data, encoding: .utf8)!
-        XCTAssertEqual(str, "\"1964-01-07\"")
-        
-        let decoder = JSONDecoder()
-        let d2 = try decoder.decode(GregorianDate.self, from: data)
-        XCTAssertEqual(d1, d2)
-    }
-    
     func testGregorianDateDecode() throws {
         let json = """
         {"id": 42, "name": "Jane Doe", "birthday": "1964-01-07"}
