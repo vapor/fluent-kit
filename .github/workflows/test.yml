@@ -1,8 +1,6 @@
 name: test
 on:
-  push:
-    branches:
-      - gregorian-date
+- pull_request
 jobs:
   xenial:
     container: 
