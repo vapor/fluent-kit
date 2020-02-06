@@ -1,7 +1,7 @@
 import FluentKit
 
 public final class Galaxy: Model {
-    public class func schema() -> String { "galaxies" }
+    // Use the default schema name "Galaxy"
 
     public static var migration: Migration {
         return GalaxyMigration()
@@ -27,13 +27,13 @@ public final class Galaxy: Model {
 struct GalaxyMigration: Migration {
     init() {}
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("galaxies")
+        return database.schema(Galaxy.schema())
             .field("id", .int, .identifier(auto: true))
             .field("name", .string, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("galaxies").delete()
+        return database.schema(Galaxy.schema()).delete()
     }
 }

@@ -3,6 +3,12 @@ public protocol AnyModel: class, CustomStringConvertible, Codable {
     init()
 }
 
+extension AnyModel {
+    public static func schema() -> String {
+        return "\(Self.self)"
+    }
+}
+
 public protocol ModelAlias {
     associatedtype Model: FluentKit.Model
     static var alias: String { get }

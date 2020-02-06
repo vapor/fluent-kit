@@ -31,7 +31,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$name, .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "Galaxy"."name" ASC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db).sort(\.$id, .descending).all().wait()
@@ -41,7 +41,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$id, .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."id" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "Galaxy"."id" ASC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db).sort("name", .descending).all().wait()
@@ -51,7 +51,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).join(\.$galaxy).sort(Galaxy.self, "name", .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "Galaxy"."name" ASC"#), true)
         db.reset()
     }
 
@@ -92,19 +92,19 @@ final class FluentKitTests: XCTestCase {
     func testForeignKeyFieldConstraint() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         try db.schema("planets")
-            .field("galaxy_id", .int64, .references("galaxies", "id"))
+            .field("galaxy_id", .int64, .references(Galaxy.schema(), "id"))
             .create()
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT REFERENCES "galaxies" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT REFERENCES "Galaxy" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION)"#)
         db.reset()
 
         try db.schema("planets")
-            .field("galaxy_id", .int64, .references("galaxies", "id", onDelete: .restrict, onUpdate: .cascade))
+            .field("galaxy_id", .int64, .references(Galaxy.schema(), "id", onDelete: .restrict, onUpdate: .cascade))
             .create()
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT REFERENCES "Galaxy" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
     }
 
     func testMultipleFieldConstraint() throws {
@@ -142,25 +142,25 @@ final class FluentKitTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         try db.schema("planets")
             .field("galaxy_id", .int64)
-            .foreignKey("galaxy_id", references: "galaxies", "id")
+            .foreignKey("galaxy_id", references: Galaxy.schema(), "id")
             .create()
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "Galaxy" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION)"#)
         db.reset()
 
         try db.schema("planets")
             .field("galaxy_id", .int64)
             .foreignKey(
                 "galaxy_id",
-                references: "galaxies", "id",
+                references: Galaxy.schema(), "id",
                 onDelete: .restrict,
                 onUpdate: .cascade
             )
             .create()
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "Galaxy" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
     }
     
     func testDecodeWithoutID() throws {
