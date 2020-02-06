@@ -1,6 +1,5 @@
 name: test
 on:
-  - pull_request
   push:
     branches:
       - gregorian-date
