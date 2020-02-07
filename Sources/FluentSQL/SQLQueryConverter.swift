@@ -210,11 +210,11 @@ public struct SQLQueryConverter {
                 let right: SQLExpression
                 switch method {
                 case .anywhere:
-                    right = SQLLiteral.string("%" + string.description + "%")
+                    right = SQLBind("%" + string.description + "%")
                 case .prefix:
-                    right = SQLLiteral.string(string.description + "%")
+                    right = SQLBind(string.description + "%")
                 case .suffix:
-                    right = SQLLiteral.string("%" + string.description)
+                    right = SQLBind("%" + string.description)
                 }
                 return SQLBinaryExpression(
                     left: self.field(field),
