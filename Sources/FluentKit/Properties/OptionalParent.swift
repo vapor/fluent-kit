@@ -7,33 +7,38 @@ public final class OptionalParent<To>
 
     public var wrappedValue: To? {
         get {
-            guard self.didEagerLoad else {
-                fatalError("Optional parent relation not eager loaded, use $ prefix to access")
-            }
-            return self.eagerLoadedValue
+            self.value
         }
-        set { fatalError("use $ prefix to access") }
+        set {
+            fatalError("OptionalParent relation is get-only.")
+        }
     }
 
     public var projectedValue: OptionalParent<To> {
         return self
     }
 
-    var eagerLoadedValue: To?
-    var didEagerLoad: Bool
+    public var value: To?
 
     public init(key: String) {
         self._id = .init(key: key)
-        self.didEagerLoad = false
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
         return To.query(on: database)
             .filter(\._$id == self.id)
     }
+}
 
-    public func get(on database: Database) -> EventLoopFuture<To?> {
-        return self.query(on: database).first()
+extension OptionalParent: Relation {
+    public var name: String {
+        "OptionalParent<\(To.self)>(key: \(self.key))"
+    }
+
+    public func load(on database: Database) -> EventLoopFuture<Void> {
+        self.query(on: database).first().map {
+            self.value = $0
+        }
     }
 }
 
@@ -46,7 +51,7 @@ extension OptionalParent: FieldRepresentable {
 extension OptionalParent: AnyProperty {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        if let parent = self.eagerLoadedValue {
+        if let parent = self.value {
             try container.encode(parent)
         } else {
             try container.encode([

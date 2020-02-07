@@ -4,7 +4,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
     case idRequired
     case invalidField(name: String, valueType: Any.Type, error: Error)
     case missingField(name: String)
-    case missingEagerLoad(name: String)
+    case relationNotLoaded(name: String)
     case missingParent
     case noResults
 
@@ -14,8 +14,8 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
             return "ID required"
         case .missingField(let name):
             return "field missing: \(name)"
-        case .missingEagerLoad(let name):
-            return "eager load missing: \(name)"
+        case .relationNotLoaded(let name):
+            return "relation not loaded: \(name)"
         case .missingParent:
             return "parent missing"
         case .invalidField(let name, let valueType, let error):
