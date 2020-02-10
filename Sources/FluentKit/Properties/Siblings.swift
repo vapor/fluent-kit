@@ -34,7 +34,44 @@ public final class Siblings<From, To, Through>: AnyProperty
         return self
     }
 
+    // MARK: Checking state
+
+    public func isAttached(to: To, on database: Database) -> EventLoopFuture<Bool> {
+        guard let toID = to.id else {
+            fatalError("Cannot attach unsaved model.")
+        }
+
+        return isAttached(toID: toID, on: database)
+    }
+
+    public func isAttached(toID: To.IDValue, on database: Database) -> EventLoopFuture<Bool> {
+        guard let fromID = self.idValue else {
+            fatalError("Cannot check if attach siblings relation to unsaved model.")
+        }
+
+        return Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(self.to.appending(path: \.$id) == toID)
+            .first()
+            .map { $0 != nil }
+    }
+
     // MARK: Operations
+
+    public func attachIfNeeded(
+        _ to: To,
+        on database: Database,
+        _ edit: @escaping (Through) -> () = { _ in }
+    ) -> EventLoopFuture<Void> {
+        isAttached(to: to, on: database)
+            .flatMap { isAttached in
+                if isAttached {
+                    return database.eventLoop.makeSucceededFuture(())
+                }
+
+                return self.attach(to, on: database, edit)
+        }
+    }
 
     public func attach(
         _ to: To,
