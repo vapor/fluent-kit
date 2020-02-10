@@ -1,6 +1,11 @@
+extension Model {
+    public typealias OptionalParent<To> = ModelOptionalParent<Self, To>
+        where To: Model
+}
+
 @propertyWrapper
-public final class OptionalParent<To>
-    where To: Model
+public final class ModelOptionalParent<From, To>
+    where From: Model, To: Model
 {
     @Field
     public var id: To.IDValue?
@@ -14,7 +19,7 @@ public final class OptionalParent<To>
         }
     }
 
-    public var projectedValue: OptionalParent<To> {
+    public var projectedValue: ModelOptionalParent<From, To> {
         return self
     }
 
@@ -30,9 +35,9 @@ public final class OptionalParent<To>
     }
 }
 
-extension OptionalParent: Relation {
+extension ModelOptionalParent: Relation {
     public var name: String {
-        "OptionalParent<\(To.self)>(key: \(self.key))"
+        "OptionalParent<\(From.self), \(To.self)>(key: \(self.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -42,13 +47,13 @@ extension OptionalParent: Relation {
     }
 }
 
-extension OptionalParent: FieldRepresentable {
+extension ModelOptionalParent: FieldRepresentable {
     public var field: Field<To.IDValue?> {
         return self.$id
     }
 }
 
-extension OptionalParent: AnyProperty {
+extension ModelOptionalParent: AnyProperty {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -67,4 +72,4 @@ extension OptionalParent: AnyProperty {
     }
 }
 
-extension OptionalParent: AnyField { }
+extension ModelOptionalParent: AnyField { }

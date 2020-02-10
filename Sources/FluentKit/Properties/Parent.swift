@@ -1,6 +1,11 @@
+extension Model {
+    public typealias Parent<To> = ModelParent<Self, To>
+        where To: FluentKit.Model
+}
+
 @propertyWrapper
-public final class Parent<To>
-    where To: Model
+public final class ModelParent<From, To>
+    where From: Model, To: Model
 {
     @Field
     public var id: To.IDValue
@@ -15,7 +20,7 @@ public final class Parent<To>
         set { fatalError("use $ prefix to access") }
     }
 
-    public var projectedValue: Parent<To> {
+    public var projectedValue: ModelParent<From, To> {
         return self
     }
 
@@ -31,9 +36,9 @@ public final class Parent<To>
     }
 }
 
-extension Parent: Relation {
+extension ModelParent: Relation {
     public var name: String {
-        "Parent<\(To.self)>(key: \(self.key))"
+        "Parent<\(From.self), \(To.self)>(key: \(self.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -43,13 +48,13 @@ extension Parent: Relation {
     }
 }
 
-extension Parent: FieldRepresentable {
+extension ModelParent: FieldRepresentable {
     public var field: Field<To.IDValue> {
         return self.$id
     }
 }
 
-extension Parent: AnyProperty {
+extension ModelParent: AnyProperty {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -68,4 +73,4 @@ extension Parent: AnyProperty {
     }
 }
 
-extension Parent: AnyField { }
+extension ModelParent: AnyField { }

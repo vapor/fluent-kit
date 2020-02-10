@@ -1,18 +1,23 @@
+extension Model {
+    public typealias Siblings<To, Through> = ModelSiblings<Self, To, Through>
+        where To: Model, Through: Model
+}
+
 @propertyWrapper
-public final class Siblings<From, To, Through>: AnyProperty
+public final class ModelSiblings<From, To, Through>: AnyProperty
     where From: Model, To: Model, Through: Model
 {
 
-    let from: KeyPath<Through, Parent<From>>
-    let to: KeyPath<Through, Parent<To>>
+    let from: KeyPath<Through, Through.Parent<From>>
+    let to: KeyPath<Through, Through.Parent<To>>
     var idValue: From.IDValue?
     
     public var value: [To]?
 
     public init(
         through: Through.Type,
-        from: KeyPath<Through, Parent<From>>,
-        to: KeyPath<Through, Parent<To>>
+        from: KeyPath<Through, Through.Parent<From>>,
+        to: KeyPath<Through, Through.Parent<To>>
     ) {
         self.from = from
         self.to = to
@@ -30,7 +35,7 @@ public final class Siblings<From, To, Through>: AnyProperty
         }
     }
 
-    public var projectedValue: Siblings<From, To, Through> {
+    public var projectedValue: ModelSiblings<From, To, Through> {
         return self
     }
 
@@ -102,7 +107,7 @@ public final class Siblings<From, To, Through>: AnyProperty
     }
 }
 
-extension Siblings: Relation {
+extension ModelSiblings: Relation {
     public var name: String {
         let fromKey = Through.key(for: self.from)
         let toKey = Through.key(for: self.to)
@@ -116,7 +121,7 @@ extension Siblings: Relation {
     }
 }
 
-extension Siblings: EagerLoadable {
+extension ModelSiblings: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -127,7 +132,7 @@ extension Siblings: EagerLoadable {
 }
 
 
-extension Siblings: AnyEagerLoadable {
+extension ModelSiblings: AnyEagerLoadable {
     var eagerLoadKey: String {
         let ref = Through()
         return "s:" + ref[keyPath: self.from].key + "+" + ref[keyPath: self.to].key
@@ -150,14 +155,14 @@ extension Siblings: AnyEagerLoadable {
 
     final class SubqueryEagerLoad: EagerLoadRequest {
         var storage: [To]
-        private let from: KeyPath<Through, Parent<From>>
-        private let to: KeyPath<Through, Parent<To>>
+        private let from: KeyPath<Through, Through.Parent<From>>
+        private let to: KeyPath<Through, Through.Parent<To>>
 
         var description: String {
             return self.storage.description
         }
 
-        init(from: KeyPath<Through, Parent<From>>, to: KeyPath<Through, Parent<To>>) {
+        init(from: KeyPath<Through, Through.Parent<From>>, to: KeyPath<Through, Through.Parent<To>>) {
             self.storage = []
             self.from = from
             self.to = to

@@ -1,12 +1,17 @@
+extension Model {
+    public typealias Children<To> = ModelChildren<Self, To>
+        where To: FluentKit.Model
+}
+
 @propertyWrapper
-public final class Children<From, To>: AnyProperty
+public final class ModelChildren<From, To>: AnyProperty
     where From: Model, To: Model
 {
     // MARK: ID
 
     enum Key {
-        case required(KeyPath<To, Parent<From>>)
-        case optional(KeyPath<To, OptionalParent<From>>)
+        case required(KeyPath<To, To.Parent<From>>)
+        case optional(KeyPath<To, To.OptionalParent<From>>)
     }
 
     let parentKey: Key
@@ -15,11 +20,11 @@ public final class Children<From, To>: AnyProperty
     // MARK: Wrapper
     public var value: [To]?
 
-    public init(for parent: KeyPath<To, Parent<From>>) {
+    public init(for parent: KeyPath<To, To.Parent<From>>) {
         self.parentKey = .required(parent)
     }
 
-    public init(for optionalParent: KeyPath<To, OptionalParent<From>>) {
+    public init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
         self.parentKey = .optional(optionalParent)
     }
 
@@ -35,7 +40,7 @@ public final class Children<From, To>: AnyProperty
         }
     }
 
-    public var projectedValue: Children<From, To> {
+    public var projectedValue: ModelChildren<From, To> {
         return self
     }
     
@@ -57,6 +62,34 @@ public final class Children<From, To>: AnyProperty
             builder.filter(required.appending(path: \.$id) == id)
         }
         return builder
+    }
+
+    public func create(_ to: [To], on database: Database) -> EventLoopFuture<Void> {
+        guard let id = self.idValue else {
+            fatalError("Cannot save child to unsaved model.")
+        }
+        to.forEach {
+            switch self.parentKey {
+            case .required(let keyPath):
+                $0[keyPath: keyPath].id = id
+            case .optional(let keyPath):
+                $0[keyPath: keyPath].id = id
+            }
+        }
+        return to.create(on: database)
+    }
+
+    public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
+        guard let id = self.idValue else {
+            fatalError("Cannot save child to unsaved model.")
+        }
+        switch self.parentKey {
+        case .required(let keyPath):
+            to[keyPath: keyPath].id = id
+        case .optional(let keyPath):
+            to[keyPath: keyPath].id = id
+        }
+        return to.create(on: database)
     }
 
     // MARK: Property
@@ -81,7 +114,7 @@ public final class Children<From, To>: AnyProperty
     }
 }
 
-extension Children.Key: CustomStringConvertible {
+extension ModelChildren.Key: CustomStringConvertible {
     var description: String {
         switch self {
         case .optional(let keyPath):
@@ -92,7 +125,7 @@ extension Children.Key: CustomStringConvertible {
     }
 }
 
-extension Children: Relation {
+extension ModelChildren: Relation {
     public var name: String {
         "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
@@ -104,7 +137,7 @@ extension Children: Relation {
     }
 }
 
-extension Children: EagerLoadable {
+extension ModelChildren: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -112,7 +145,7 @@ extension Children: EagerLoadable {
     }
 }
 
-extension Children: AnyEagerLoadable {
+extension ModelChildren: AnyEagerLoadable {
     var eagerLoadKey: String {
         let ref = To()
         switch self.parentKey {

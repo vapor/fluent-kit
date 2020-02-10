@@ -32,3 +32,17 @@ public struct TagMigration: Migration {
         return database.schema("tags").delete()
     }
 }
+
+public final class TagSeed: Migration {
+    public init() { }
+
+    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return ["Small Rocky", "Gas Giant", "Inhabited"].map { name in
+            return Tag(name: name)
+        }.create(on: database)
+    }
+
+    public func revert(on database: Database) -> EventLoopFuture<Void> {
+        return Tag.query(on: database).delete()
+    }
+}

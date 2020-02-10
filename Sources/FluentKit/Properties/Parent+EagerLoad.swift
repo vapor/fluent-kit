@@ -1,4 +1,4 @@
-extension Parent: AnyEagerLoadable {
+extension ModelParent: AnyEagerLoadable {
     var eagerLoadKey: String {
         return "p:" + self.$id.key
     }
@@ -20,7 +20,7 @@ extension Parent: AnyEagerLoadable {
     }
 }
 
-extension Parent: EagerLoadable {
+extension ModelParent: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {
@@ -31,7 +31,7 @@ extension Parent: EagerLoadable {
 }
 
 
-extension OptionalParent: AnyEagerLoadable {
+extension ModelOptionalParent: AnyEagerLoadable {
     var eagerLoadKey: String {
         return "p:" + self.$id.key
     }
@@ -57,7 +57,7 @@ extension OptionalParent: AnyEagerLoadable {
     }
 }
 
-extension OptionalParent: EagerLoadable {
+extension ModelOptionalParent: EagerLoadable {
     public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
     {

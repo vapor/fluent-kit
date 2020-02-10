@@ -33,7 +33,7 @@ public protocol AnyRelationLoader {
 struct ParentRelationLoader<From, To>: RelationLoader
     where From: Model, To: Model
 {
-    let relationKey: KeyPath<From, Parent<To>>
+    let relationKey: KeyPath<From, From.Parent<To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map {
@@ -58,110 +58,10 @@ struct ParentRelationLoader<From, To>: RelationLoader
     }
 }
 
-struct ThroughParentRelationLoader<From, Through, Loader>: RelationLoader
-    where From: Model, Loader: RelationLoader, Loader.Model == Through
-{
-    let relationKey: KeyPath<From, Parent<Through>>
-    let loader: Loader
-
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs = models.map {
-            $0[keyPath: self.relationKey].value!
-        }
-        return loader.run(models: throughs, on: database)
-    }
-}
-
-struct ThroughChildrenRelationLoader<From, Through, Loader>: RelationLoader
-    where From: Model, Loader: RelationLoader, Loader.Model == Through
-{
-    let relationKey: KeyPath<From, Children<From, Through>>
-    let loader: Loader
-
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs = models.flatMap {
-            $0[keyPath: self.relationKey].value!
-        }
-        return loader.run(models: throughs, on: database)
-    }
-}
-
-
-public protocol RelationLoadable {
-    associatedtype From: Model
-    associatedtype To: Model
-
-    static func load<Builder>(
-        _ relationKey: KeyPath<From, Self>,
-        to builder: Builder
-    ) where Builder: EagerLoadBuilder, Builder.Model == From
-
-
-    static func load<Loader, Builder>(
-        _ loader: Loader,
-        through: KeyPath<From, Self>,
-        to builder: Builder
-    ) where Loader: RelationLoader,
-        Builder: EagerLoadBuilder,
-        Loader.Model == To,
-        Builder.Model == From
-}
-
-//extension Parent: RelationLoadable {
-//    public static func load<Builder>(
-//        _ relationKey: KeyPath<To, Parent<To>>,
-//        to builder: Builder
-//    )
-//        where Builder: EagerLoadBuilder, Builder.Model == To
-//    {
-//        let loader = ParentRelationLoader(relationKey: relationKey)
-//        builder.add(loader: loader)
-//    }
-//
-//
-//    public static func load<Loader, Builder>(
-//        _ loader: Loader,
-//        through: KeyPath<To, Parent<To>>,
-//        to builder: Builder
-//    ) where Loader: RelationLoader, Loader.Model == Base,
-//        Builder: EagerLoadBuilder, Builder.Model == Base
-//    {
-//        let loader = ThroughParentRelationLoader(relationKey: through, loader: loader)
-//        builder.add(loader: loader)
-//    }
-//}
-
-extension Children: RelationLoadable {
-    public static func load<Builder>(
-        _ relationKey: KeyPath<From, Children<From, To>>,
-        to builder: Builder
-    )
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
-        let loader = ChildrenRelationLoader(relationKey: relationKey)
-        builder.add(loader: loader)
-    }
-
-
-    public static func load<Loader, Builder>(
-        _ loader: Loader,
-        through: KeyPath<From, Children<From, To>>,
-        to builder: Builder
-    ) where
-        Loader: RelationLoader,
-        Loader.Model == To,
-        Builder: EagerLoadBuilder,
-        Builder.Model == From
-    {
-        let loader = ThroughChildrenRelationLoader(relationKey: through, loader: loader)
-        builder.add(loader: loader)
-    }
-}
-
 struct ChildrenRelationLoader<From, To>: RelationLoader
     where From: Model, To: Model
 {
-    let relationKey: KeyPath<From, Children<From, To>>
+    let relationKey: KeyPath<From, From.Children<To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
@@ -190,6 +90,175 @@ struct ChildrenRelationLoader<From, To>: RelationLoader
     }
 }
 
+struct SiblingsRelationLoader<From, To, Through>: RelationLoader
+    where From: Model, Through: Model, To: Model
+{
+    let relationKey: KeyPath<From, From.Siblings<To, Through>>
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let ids = models.map { $0.id! }
+
+        let from = From()[keyPath: self.relationKey].from
+        let to = From()[keyPath: self.relationKey].to
+        return To.query(on: database)
+            .join(to)
+            .filter(from.appending(path: \.$id), in: Set(ids))
+            .all()
+            .flatMapThrowing
+        {
+            for model in models {
+                let id = model[keyPath: self.relationKey].idValue!
+                model[keyPath: self.relationKey].value = try $0.filter {
+                    try $0.joined(Through.self)[keyPath: from].id == id
+                }
+            }
+        }
+    }
+}
+
+struct ThroughParentRelationLoader<From, Through, Loader>: RelationLoader
+    where From: Model, Loader: RelationLoader, Loader.Model == Through
+{
+    let relationKey: KeyPath<From, From.Parent<Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.map {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
+    }
+}
+
+struct ThroughChildrenRelationLoader<From, Through, Loader>: RelationLoader
+    where From: Model, Loader: RelationLoader, Loader.Model == Through
+{
+    let relationKey: KeyPath<From, From.Children<Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.flatMap {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
+    }
+}
+
+struct ThroughSiblingsRelationLoader<From, To, Through, Loader>: RelationLoader
+    where From: Model, Through: Model, Loader: RelationLoader, Loader.Model == To
+{
+    let relationKey: KeyPath<From, From.Siblings<To, Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.flatMap {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
+    }
+}
+
+
+public protocol RelationLoadable {
+    associatedtype From: Model
+    associatedtype To: Model
+
+    static func load<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From
+
+
+    static func load<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, Self>,
+        to builder: Builder
+    ) where Loader: RelationLoader,
+        Builder: EagerLoadBuilder,
+        Loader.Model == To,
+        Builder.Model == From
+}
+
+extension ModelParent: RelationLoadable {
+    public static func load<Builder>(
+        _ relationKey: KeyPath<From, From.Parent<To>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = ParentRelationLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func load<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Parent<To>>,
+        to builder: Builder
+    ) where
+        Loader: RelationLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughParentRelationLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
+}
+
+extension ModelChildren: RelationLoadable {
+    public static func load<Builder>(
+        _ relationKey: KeyPath<From, From.Children<To>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = ChildrenRelationLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func load<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Children<To>>,
+        to builder: Builder
+    ) where
+        Loader: RelationLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughChildrenRelationLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
+}
+
+extension ModelSiblings: RelationLoadable {
+    public static func load<Builder>(
+        _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = SiblingsRelationLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func load<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Siblings<To, Through>>,
+        to builder: Builder
+    ) where
+        Loader: RelationLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughSiblingsRelationLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
+}
 
 public protocol EagerLoadBuilder {
     associatedtype Model: FluentKit.Model
@@ -242,6 +311,7 @@ extension EagerLoadBuilder {
     ) -> Self
         where Relation: RelationLoadable, Relation.From == Model
     {
+        Relation.load(throughKey, to: self)
         let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)
         nested(builder)
         return self

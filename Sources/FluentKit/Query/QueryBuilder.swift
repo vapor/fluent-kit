@@ -74,7 +74,7 @@ public final class QueryBuilder<Model>
     
     @discardableResult
     public func join<Value>(
-        _ field: KeyPath<Model, Parent<Value>>,
+        _ field: KeyPath<Model, Model.Parent<Value>>,
         alias: String? = nil
     ) -> Self
         where Value: FluentKit.Model
@@ -89,7 +89,7 @@ public final class QueryBuilder<Model>
 
     @discardableResult
     public func join<Value>(
-        _ field: KeyPath<Value, Parent<Model>>,
+        _ field: KeyPath<Value, Value.Parent<Model>>,
         alias: String? = nil
     ) -> Self
         where Value: FluentKit.Model

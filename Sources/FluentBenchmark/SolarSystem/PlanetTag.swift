@@ -14,7 +14,7 @@ final class PlanetTag: Model {
 
     init() { }
 
-    init(planetID: Int, tagID: Int) {
+    init(planetID: Planet.IDValue, tagID: Tag.IDValue) {
         self.$planet.id = planetID
         self.$tag.id = tagID
     }
@@ -24,8 +24,8 @@ struct PlanetTagMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("planet+tag")
             .field("id", .int, .identifier(auto: true))
-            .field("planet_id", .int, .required)
-            .field("tag_id", .int, .required)
+            .field("planet_id", .int, .required, .references("planets", "id"))
+            .field("tag_id", .int, .required, .references("tags", "id"))
             .create()
     }
 
