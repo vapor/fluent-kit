@@ -15,13 +15,17 @@ public final class Moon: Model {
     @Field(key: "comets")
     public var comets: Int
 
+    @Parent(key: "planet_id")
+    public var planet: Planet
+
     public init() { }
 
-    public init(id: Int? = nil, name: String, craters: Int, comets: Int) {
+    public init(id: Int? = nil, name: String, craters: Int, comets: Int, planetID: Planet.IDValue) {
         self.id = id
         self.name = name
         self.craters = craters
         self.comets = comets
+        self.$planet.id = planetID
     }
 }
 
@@ -32,6 +36,7 @@ public struct MoonMigration: Migration {
             .field("name", .string, .required)
             .field("craters", .int, .required)
             .field("comets", .int, .required)
+            .field("planet_id", .int, .required, .references("planets", "id"))
             .create()
     }
 

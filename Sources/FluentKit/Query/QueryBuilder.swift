@@ -9,7 +9,7 @@ public final class QueryBuilder<Model>
     internal var eagerLoads: EagerLoads
     internal var includeDeleted: Bool
     internal var joinedModels: [JoinedModel]
-    var loaders: [AnyRelationLoader]
+    public var loaders: [AnyRelationLoader]
 
     struct JoinedModel {
         let model: AnyModel

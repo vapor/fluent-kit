@@ -15,7 +15,7 @@ final class EagerLoads: CustomStringConvertible {
     }
 }
 
-protocol RelationLoader: AnyRelationLoader {
+public protocol RelationLoader: AnyRelationLoader {
     associatedtype Model: FluentKit.Model
     func run(models: [Model], on database: Database) -> EventLoopFuture<Void>
 }
@@ -26,7 +26,7 @@ extension RelationLoader {
     }
 }
 
-protocol AnyRelationLoader {
+public protocol AnyRelationLoader {
     func anyRun(models: [AnyModel], on database: Database) -> EventLoopFuture<Void>
 }
 
@@ -72,29 +72,89 @@ struct ThroughParentRelationLoader<From, Through, Loader>: RelationLoader
     }
 }
 
+struct ThroughChildrenRelationLoader<From, Through, Loader>: RelationLoader
+    where From: Model, Loader: RelationLoader, Loader.Model == Through
+{
+    let relationKey: KeyPath<From, Children<From, Through>>
+    let loader: Loader
 
-public protocol RelationLoadable {
-    associatedtype Base: Model
-    static func load(_ relationKey: KeyPath<Base, Self>, to builder: QueryBuilder<Base>)
-}
-
-extension Parent: RelationLoadable {
-    public static func load(
-        _ relationKey: KeyPath<To, Parent<To>>,
-        to builder: QueryBuilder<To>
-    ) {
-        let loader = ParentRelationLoader(relationKey: relationKey)
-        builder.loaders.append(loader)
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.flatMap {
+            $0[keyPath: self.relationKey].value!
+        }
+        return loader.run(models: throughs, on: database)
     }
 }
 
+
+public protocol RelationLoadable {
+    associatedtype From: Model
+    associatedtype To: Model
+
+    static func load<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From
+
+
+    static func load<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, Self>,
+        to builder: Builder
+    ) where Loader: RelationLoader,
+        Builder: EagerLoadBuilder,
+        Loader.Model == To,
+        Builder.Model == From
+}
+
+//extension Parent: RelationLoadable {
+//    public static func load<Builder>(
+//        _ relationKey: KeyPath<To, Parent<To>>,
+//        to builder: Builder
+//    )
+//        where Builder: EagerLoadBuilder, Builder.Model == To
+//    {
+//        let loader = ParentRelationLoader(relationKey: relationKey)
+//        builder.add(loader: loader)
+//    }
+//
+//
+//    public static func load<Loader, Builder>(
+//        _ loader: Loader,
+//        through: KeyPath<To, Parent<To>>,
+//        to builder: Builder
+//    ) where Loader: RelationLoader, Loader.Model == Base,
+//        Builder: EagerLoadBuilder, Builder.Model == Base
+//    {
+//        let loader = ThroughParentRelationLoader(relationKey: through, loader: loader)
+//        builder.add(loader: loader)
+//    }
+//}
+
 extension Children: RelationLoadable {
-    public static func load(
+    public static func load<Builder>(
         _ relationKey: KeyPath<From, Children<From, To>>,
-        to builder: QueryBuilder<From>
-    ) {
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
         let loader = ChildrenRelationLoader(relationKey: relationKey)
-        builder.loaders.append(loader)
+        builder.add(loader: loader)
+    }
+
+
+    public static func load<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, Children<From, To>>,
+        to builder: Builder
+    ) where
+        Loader: RelationLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughChildrenRelationLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
     }
 }
 
@@ -130,21 +190,61 @@ struct ChildrenRelationLoader<From, To>: RelationLoader
     }
 }
 
-extension QueryBuilder {
+
+public protocol EagerLoadBuilder {
+    associatedtype Model: FluentKit.Model
+    func add<Loader>(loader: Loader)
+        where Loader: RelationLoader, Loader.Model == Model
+}
+
+public struct NestedEagerLoadBuilder<Builder, Relation>: EagerLoadBuilder
+    where Builder: EagerLoadBuilder,
+        Relation: RelationLoadable,
+        Builder.Model == Relation.From
+{
+    public typealias Model = Relation.To
+    let builder: Builder
+    let relationKey: KeyPath<Relation.From, Relation>
+
+    init(builder: Builder, _ relationKey: KeyPath<Relation.From, Relation>) {
+        self.builder = builder
+        self.relationKey = relationKey
+    }
+
+    public func add<Loader>(loader: Loader)
+        where Loader: RelationLoader, Loader.Model == Relation.To
+    {
+        Relation.load(loader, through: self.relationKey, to: self.builder)
+    }
+}
+
+extension QueryBuilder: EagerLoadBuilder {
+    public func add<Loader>(loader: Loader)
+        where Loader: RelationLoader, Loader.Model == Model
+    {
+        self.loaders.append(loader)
+    }
+}
+
+extension EagerLoadBuilder {
+    @discardableResult
     public func _with<Relation>(_ relationKey: KeyPath<Model, Relation>) -> Self
-        where Relation: RelationLoadable, Relation.Base == Model
+        where Relation: RelationLoadable, Relation.From == Model
     {
         Relation.load(relationKey, to: self)
         return self
     }
 
-    public func _with<Through, To>(
-        _ throughKey: KeyPath<Model, Parent<Through>>,
-        _ relationKey: KeyPath<Through, Children<Through, To>>
-    ) -> Self {
-        let loader = ChildrenRelationLoader(relationKey: relationKey)
-        let main = ThroughParentRelationLoader(relationKey: throughKey, loader: loader)
-        self.loaders.append(main)
+    @discardableResult
+    public func _with<Relation>(
+        _ throughKey: KeyPath<Model, Relation>,
+        _ nested: (NestedEagerLoadBuilder<Self, Relation>) -> ()
+    ) -> Self
+        where Relation: RelationLoadable, Relation.From == Model
+    {
+        let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)
+        nested(builder)
         return self
     }
 }
+

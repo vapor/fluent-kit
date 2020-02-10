@@ -3,8 +3,10 @@ extension FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration(),
             PlanetMigration(),
+            MoonMigration(),
             GalaxySeed(),
-            PlanetSeed()
+            PlanetSeed(),
+            MoonSeed()
         ]) {
 //            let galaxies = try Galaxy.query(on: self.database)
 //                ._with(\.$planets)
@@ -18,14 +20,16 @@ extension FluentBenchmarker {
 //
 //            print(planets)
 
-            let planets = try Planet.query(on: self.database)
-                ._with(\.$galaxy)
-                ._with(\.$galaxy, \.$planets)
+            let galaxies = try Galaxy.query(on: self.database)
+                ._with(\.$planets)
+                ._with(\.$planets) {
+                    $0._with(\.$moons)
+                }
                 .all().wait()
             let json = JSONEncoder()
             json.outputFormatting = .prettyPrinted
-            try print(String(decoding: json.encode(planets), as: UTF8.self))
-            print(planets)
+            try print(String(decoding: json.encode(galaxies), as: UTF8.self))
+            print(galaxies)
         }
     }
 }

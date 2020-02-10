@@ -12,6 +12,9 @@ public final class Planet: Model {
     @Parent(key: "galaxy_id")
     public var galaxy: Galaxy
 
+    @Children(for: \.$planet)
+    public var moons: [Moon]
+
     @Siblings(through: PlanetTag.self, from: \.$planet, to: \.$tag)
     public var tags: [Tag]
 
@@ -37,4 +40,3 @@ public struct PlanetMigration: Migration {
         return database.schema("planets").delete()
     }
 }
-
