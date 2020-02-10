@@ -9,6 +9,7 @@ public final class QueryBuilder<Model>
     internal var eagerLoads: EagerLoads
     internal var includeDeleted: Bool
     internal var joinedModels: [JoinedModel]
+    var loaders: [AnyRelationLoader]
 
     struct JoinedModel {
         let model: AnyModel
@@ -21,6 +22,7 @@ public final class QueryBuilder<Model>
         self.eagerLoads = .init()
         self.includeDeleted = false
         self.joinedModels = []
+        self.loaders = []
     }
 
     private init(
@@ -28,13 +30,15 @@ public final class QueryBuilder<Model>
         database: Database,
         eagerLoads: EagerLoads,
         includeDeleted: Bool,
-        joinedModels: [JoinedModel]
+        joinedModels: [JoinedModel],
+        loaders: [AnyRelationLoader]
     ) {
         self.query = query
         self.database = database
         self.eagerLoads = eagerLoads
         self.includeDeleted = includeDeleted
         self.joinedModels = joinedModels
+        self.loaders = loaders
     }
 
     public func copy() -> QueryBuilder<Model> {
@@ -43,7 +47,8 @@ public final class QueryBuilder<Model>
             database: self.database,
             eagerLoads: self.eagerLoads,
             includeDeleted: self.includeDeleted,
-            joinedModels: self.joinedModels
+            joinedModels: self.joinedModels,
+            loaders: self.loaders
         )
     }
 
@@ -653,7 +658,18 @@ public final class QueryBuilder<Model>
         }
 
         // if eager loads exist, run them, and update models
-        if !self.eagerLoads.requests.isEmpty {
+        if !self.loaders.isEmpty {
+            return done.flatMap {
+                // don't run eager loads if result set was empty
+                guard !all.isEmpty else {
+                    return self.database.eventLoop.makeSucceededFuture(())
+                }
+                // run eager loads
+                return .andAllSync(self.loaders.map { eagerLoad in
+                    { eagerLoad.anyRun(models: all, on: self.database) }
+                }, on: self.database.eventLoop)
+            }
+        } else if !self.eagerLoads.requests.isEmpty {
             return done.flatMap {
                 // don't run eager loads if result set was empty
                 guard !all.isEmpty else {
