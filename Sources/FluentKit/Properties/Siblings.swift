@@ -42,6 +42,27 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
     // MARK: Operations
 
     public func attach(
+        _ tos: [To],
+        on database: Database,
+        _ edit: (Through) -> () = { _ in }
+    ) -> EventLoopFuture<Void> {
+        guard let fromID = self.idValue else {
+            fatalError("Cannot attach siblings relation to unsaved model.")
+        }
+
+        return tos.map { to -> Through in
+            guard let toID = to.id else {
+                fatalError("Cannot attach unsaved model.")
+            }
+            let pivot = Through()
+            pivot[keyPath: self.from].id = fromID
+            pivot[keyPath: self.to].id = toID
+            edit(pivot)
+            return pivot
+        }.create(on: database)
+    }
+
+    public func attach(
         _ to: To,
         on database: Database,
         _ edit: (Through) -> () = { _ in }

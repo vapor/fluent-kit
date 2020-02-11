@@ -23,7 +23,6 @@ public final class Planet: Model {
     public init(id: IDValue? = nil, name: String) {
         self.id = id
         self.name = name
-        self.$star.id = starID
     }
 }
 
@@ -41,45 +40,38 @@ public struct PlanetMigration: Migration {
     }
 }
 
-final class PlanetSeed: Migration {
-    init() { }
+public struct PlanetSeed: Migration {
+    public init() { }
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        Galaxy.query(on: database).all().flatMap {
-            let stars: [Star]
-            switch $0.name {
-            case "Milky Way":
-            case "Andromeda":
-                return $0.$stars.create([
-                    Star(
-                ], on: database)
-            default:
-                stars = []
-            }
-            return $0.$stars.create(stars, on: database))
-        }
-        let milkyWay = self.add([
-            "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"
-        ], to: "Milky Way", on: database)
-        let andromeda = self.add(["PA-99-N2"], to: "Andromeda", on: database)
-        return .andAllSucceed([
-
-        ], on: database.eventLoop)
-    }
-
-    private func add(_ planet: String, to star: String, on database: Database) -> EventLoopFuture<Void> {
-        return Star.query(on: database)
-            .filter(\.$name == star)
-            .first()
-            .flatMap {
-                guard let star = $0 else {
-                    return database.eventLoop.makeSucceededFuture(())
+    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+        Star.query(on: database).all().flatMap { stars in
+            .andAllSucceed(stars.map { star in
+                let planets: [Planet]
+                switch star.name {
+                case "Sun":
+                    planets = [
+                        .init(name: "Mercury"),
+                        .init(name: "Venus"),
+                        .init(name: "Earth"),
+                        .init(name: "Mars"),
+                        .init(name: "Jupiter"),
+                        .init(name: "Saturn"),
+                        .init(name: "Uranus"),
+                        .init(name: "Nepture"),
+                    ]
+                case "Alpha Centauri":
+                    planets = [
+                        .init(name: "Proxima Centauri b")
+                    ]
+                default:
+                    planets = []
                 }
-                return star.$planets.save(Planet(name: planet), on: database)
-            }
+                return star.$planets.create(planets, on: database)
+            }, on: database.eventLoop)
+        }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
+    public func revert(on database: Database) -> EventLoopFuture<Void> {
+        Planet.query(on: database).delete()
     }
 }

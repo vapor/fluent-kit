@@ -4,7 +4,7 @@ public final class Tag: Model {
     public static let schema = "tags"
 
     @ID(key: "id")
-    public var id: Int?
+    public var id: UUID?
 
     @Field(key: "name")
     public var name: String
@@ -14,22 +14,24 @@ public final class Tag: Model {
 
     public init() { }
 
-    public init(id: Int? = nil, name: String) {
+    public init(id: UUID? = nil, name: String) {
         self.id = id
         self.name = name
     }
 }
 
 public struct TagMigration: Migration {
+    public init() { }
+
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("tags")
-            .field("id", .int, .identifier(auto: true))
+        database.schema("tags")
+            .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("tags").delete()
+        database.schema("tags").delete()
     }
 }
 
@@ -37,12 +39,13 @@ public final class TagSeed: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return ["Small Rocky", "Gas Giant", "Inhabited"].map { name in
-            return Tag(name: name)
-        }.create(on: database)
+        .andAllSucceed(["Small Rocky", "Gas Giant", "Inhabited"].map {
+            Tag(name: $0)
+                .create(on: database)
+        }, on: database.eventLoop)
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return Tag.query(on: database).delete()
+        Tag.query(on: database).delete()
     }
 }

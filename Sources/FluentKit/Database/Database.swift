@@ -33,7 +33,7 @@ public protocol DatabaseDriver {
 }
 
 public final class DatabaseConfiguration {
-    var middleware: [AnyModelMiddleware]
+    public var middleware: [AnyModelMiddleware]
     public init() {
         self.middleware = []
     }

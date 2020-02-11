@@ -21,7 +21,7 @@ public struct Migrator {
         )
     }
 
-    init(
+    public init(
         databaseFactory: @escaping (DatabaseID?) -> (Database),
         migrations: Migrations,
         on eventLoop: EventLoop
@@ -188,7 +188,7 @@ public struct Migrator {
 }
 
 extension EventLoopFuture {
-    static func andAllSync(
+    public static func andAllSync(
         _ futures: [() -> EventLoopFuture<Void>],
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {

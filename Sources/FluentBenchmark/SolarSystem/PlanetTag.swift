@@ -1,60 +1,71 @@
 import FluentKit
 
-final class PlanetTag: Model {
-    static let schema = "planet+tag"
+public final class PlanetTag: Model {
+    public static let schema = "planet+tag"
     
     @ID(key: "id")
-    var id: Int?
+    public var id: Int?
 
     @Parent(key: "planet_id")
-    var planet: Planet
+    public var planet: Planet
 
     @Parent(key: "tag_id")
-    var tag: Tag
+    public var tag: Tag
 
-    init() { }
+    public init() { }
 
-    init(planetID: Planet.IDValue, tagID: Tag.IDValue) {
+    public init(id: IDValue? = nil, planetID: Planet.IDValue, tagID: Tag.IDValue) {
+        self.id = id
         self.$planet.id = planetID
         self.$tag.id = tagID
     }
 }
 
-struct PlanetTagMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("planet+tag")
+public struct PlanetTagMigration: Migration {
+    public init() { }
+
+    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("planet+tag")
             .field("id", .int, .identifier(auto: true))
             .field("planet_id", .int, .required, .references("planets", "id"))
             .field("tag_id", .int, .required, .references("tags", "id"))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("planet+tag").delete()
+    public func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("planet+tag").delete()
     }
 }
 
-struct PlanetTagSeed: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        // small rocky = 1, gas giant = 2, inhabited = 3
-        // mercury = 1, venus = 2, earth = 3, mars = 4, jupiter = 5, saturn = 6, uranus = 7, neptune = 8
-        return .andAllSucceed([
-            // small rocky
-            PlanetTag(planetID: 1, tagID: 1).save(on: database),
-            PlanetTag(planetID: 2, tagID: 1).save(on: database),
-            PlanetTag(planetID: 3, tagID: 1).save(on: database),
-            PlanetTag(planetID: 4, tagID: 1).save(on: database),
-            // gas giants
-            PlanetTag(planetID: 5, tagID: 2).save(on: database),
-            PlanetTag(planetID: 6, tagID: 2).save(on: database),
-            PlanetTag(planetID: 7, tagID: 2).save(on: database),
-            PlanetTag(planetID: 8, tagID: 2).save(on: database),
-            // inhabited
-            PlanetTag(planetID: 3, tagID: 3).save(on: database),
-        ], on: database.eventLoop)
+public struct PlanetTagSeed: Migration {
+    public init() { }
+    
+    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+        let planets = Planet.query(on: database).all()
+        let tags = Tag.query(on: database).all()
+        return planets.and(tags).flatMap { (planets, tags) in
+            let inhabited = tags.filter { $0.name == "Inhabited" }.first!
+            let gasGiant = tags.filter { $0.name == "Gas Giant" }.first!
+            let smallRocky = tags.filter { $0.name == "Small Rocky" }.first!
+
+            return .andAllSucceed(planets.map { planet in
+                let tags: [Tag]
+                switch planet.name {
+                case "Mercury", "Venus", "Mars", "Proxima Centauri b":
+                    tags = [smallRocky]
+                case "Earth":
+                    tags = [inhabited, smallRocky]
+                case "Jupiter", "Saturn", "Uranus", "Neptune":
+                    tags = [gasGiant]
+                default:
+                    tags = []
+                }
+                return planet.$tags.attach(tags, on: database)
+            }, on: database.eventLoop)
+        }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        return PlanetTag.query(on: database).delete()
+    public func revert(on database: Database) -> EventLoopFuture<Void> {
+        PlanetTag.query(on: database).delete()
     }
 }
