@@ -58,19 +58,24 @@ final class FluentKitTests: XCTestCase {
     func testSQLDistinct() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         
-        _ = try Planet.query(on: db).distinct(on: \.$name).wait()
+        _ = try Planet.query(on: db).unique(on: \.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" FROM "planets""#)
         db.reset()
         
-        _ = try Planet.query(on: db).distinct().wait()
+        _ = try Planet.query(on: db).unique().all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.starts(with: #"SELECT DISTINCT "planets"."#), true)
         db.reset()
         
-        _ = try? Planet.query(on: db).distinctCount(on: \.$name).wait()
+        _ = try? Planet.query(on: db).unique().count(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "fluentAggregate" FROM "planets" LIMIT 1"#)
+        db.reset()
+        
+        _ = try? Planet.query(on: db).unique().sum(\.$id).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "fluentAggregate" FROM "planets" LIMIT 1"#)
         db.reset()
     }
 

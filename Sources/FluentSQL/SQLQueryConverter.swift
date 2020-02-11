@@ -40,9 +40,9 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        select.isDistinct = query.isDistinct
+        select.isDistinct = query.isUnique && !query.fields.contains { if case .aggregate(_) = $0 { return true } else { return false }}
         select.tables.append(SQLIdentifier(query.schema))
-        select.columns = query.fields.map(self.field)
+        select.columns = query.fields.map { self.field($0, query.isUnique) }
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
         select.orderBy = query.sorts.map(self.sort)
@@ -147,6 +147,10 @@ public struct SQLQueryConverter {
     }
     
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+        self.field(field, false)
+    }
+    
+    private func field(_ field: DatabaseQuery.Field, _ isUnique: Bool) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
@@ -173,13 +177,6 @@ public struct SQLQueryConverter {
             default:
                 fatalError("Deep SQL JSON nesting not yet supported.")
             }
-        case .function(let function, let fields):
-            let name: String
-            switch function {
-            case .distinct: name = "DISTINCT"
-            case .custom(let custom): name = custom as! String
-            }
-            return SQLFunction(name, args: fields.map(self.field))
         case .aggregate(let agg):
             switch agg {
             case .custom(let any):
@@ -194,7 +191,14 @@ public struct SQLQueryConverter {
                 case .minimum: name = "MIN"
                 case .custom(let custom): name = custom as! String
                 }
-                return SQLAlias(SQLFunction(name, args: fields.map { self.field($0) }), as: SQLIdentifier("fluentAggregate"))
+                return SQLAlias(
+                    SQLFunction(
+                        name,
+                        args: isUnique ?
+                            [SQLDistinct(fields.map(self.field))]
+                            : fields.map { self.field($0) }),
+                        as: SQLIdentifier("fluentAggregate")
+                    )
             }
         }
     }
