@@ -1,5 +1,5 @@
 extension QueryBuilder {
-    public func unique<Result>(on key: KeyPath<Model, Field<Result>>) -> EventLoopFuture<[Result]> where Result: Decodable {
+    public func all<Result>(uniqueOn key: KeyPath<Model, Field<Result>>) -> EventLoopFuture<[Result]> where Result: Decodable {
         let copy = self.copy()
         let fieldKey = Model.key(for: key)
         copy.query.isUnique = true
