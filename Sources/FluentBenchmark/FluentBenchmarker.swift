@@ -16,7 +16,6 @@ public final class FluentBenchmarker {
         try self.testDelete()
         try self.testEagerLoadChildren()
         try self.testEagerLoadParent()
-        try self.testEagerLoadParentJoin()
         try self.testEagerLoadParentJSON()
         try self.testEagerLoadChildrenJSON()
         try self.testMigrator()

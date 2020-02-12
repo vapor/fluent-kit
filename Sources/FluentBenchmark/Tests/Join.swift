@@ -1,46 +1,35 @@
 extension FluentBenchmarker {
     public func testJoin() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .join(\.$galaxy)
+                .join(\.$star)
                 .all().wait()
 
             for planet in planets {
-                let galaxy = try planet.joined(Galaxy.self)
+                let star = try planet.joined(Star.self)
                 switch planet.name {
                 case "Earth":
-                    guard galaxy.name == "Milky Way" else {
-                        throw Failure("unexpected galaxy name: \(galaxy.name)")
-                    }
-                case "PA-99-N2":
-                    guard galaxy.name == "Andromeda" else {
-                        throw Failure("unexpected galaxy name: \(galaxy.name)")
-                    }
+                    XCTAssertEqual(star.name, "Milky Way")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(star.name, "Alpha Centauri")
                 default: break
                 }
             }
 
             let galaxies = try Galaxy.query(on: self.database)
-                .join(Planet.self, on: \Galaxy.$id == \Planet.$galaxy.$id)
+                .join(Star.self, on: \Galaxy.$id == \Star.$galaxy.$id)
                 .all()
                 .wait()
 
             for galaxy in galaxies {
-                let planet = try galaxy.joined(Planet.self)
-                switch planet.name {
-                case "Earth":
-                    guard galaxy.name == "Milky Way" else {
-                        throw Failure("unexpected galaxy name: \(galaxy.name)")
-                    }
-                case "PA-99-N2":
-                    guard galaxy.name == "Andromeda" else {
-                        throw Failure("unexpected galaxy name: \(galaxy.name)")
-                    }
+                let star = try galaxy.joined(Star.self)
+                switch star.name {
+                case "Sun", "Alpha Centauri":
+                    XCTAssertEqual(galaxy.name, "Milky Way")
+                case "Alpheratz":
+                    XCTAssertEqual(galaxy.name, "Andromeda")
                 default: break
                 }
             }
@@ -48,8 +37,7 @@ extension FluentBenchmarker {
     }
 
     public func testMultipleJoinSameTable() throws {
-        // seeded db
-        try runTest(#function, [
+        try self.runTest(#function, [
             TeamMigration(),
             MatchMigration(),
             TeamMatchSeed()

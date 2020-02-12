@@ -1,11 +1,7 @@
 extension FluentBenchmarker {
     public func testParentSerialization() throws {
-        // seeded db
-        try runTest(#function, [
-            GalaxyMigration(),
-            GalaxySeed(),
-            PlanetMigration(),
-            PlanetSeed(),
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
                 .all().wait()
@@ -30,12 +26,12 @@ extension FluentBenchmarker {
             }
 
             struct GalaxyJSON: Codable {
-                var id: Int
+                var id: UUID
                 var name: String
 
                 init(from decoder: Decoder) throws {
                     let keyed = try decoder.container(keyedBy: GalaxyKey.self)
-                    self.id = try keyed.decode(Int.self, forKey: "id")
+                    self.id = try keyed.decode(UUID.self, forKey: "id")
                     self.name = try keyed.decode(String.self, forKey: "name")
                     XCTAssertEqual(keyed.allKeys.count, 2)
                 }
@@ -51,25 +47,19 @@ extension FluentBenchmarker {
     }
     
     public func testParentGet() throws {
-        // seeded db
-        try runTest(#function, [
-            GalaxyMigration(),
-            GalaxySeed(),
-            PlanetMigration(),
-            PlanetSeed(),
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
                 .all().wait()
 
             for planet in planets {
-                let galaxy = try planet.$galaxy.get(on: self.database).wait()
+                let star = try planet.$star.get(on: self.database).wait()
                 switch planet.name {
-                case "Earth":
-                    XCTAssertEqual(galaxy.name, "Milky Way")
-                case "PA-99-N2":
-                    XCTAssertEqual(galaxy.name, "Andromeda")
-                case "Jupiter":
-                    XCTAssertEqual(galaxy.name, "Milky Way")
+                case "Earth", "Jupiter":
+                    XCTAssertEqual(star.name, "Sun")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(star.name, "Alpha Centauri")
                 default: break
                 }
             }

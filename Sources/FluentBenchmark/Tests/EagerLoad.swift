@@ -1,12 +1,7 @@
 extension FluentBenchmarker {
     public func testEagerLoading() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            MoonMigration(),
-            GalaxySeed(),
-            PlanetSeed(),
-            MoonSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
                 ._with(\.$stars) {
@@ -24,25 +19,24 @@ extension FluentBenchmarker {
     }
 
     public func testEagerLoadChildren() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
-                .with(\.$planets)
+                .with(\.$stars)
                 .all().wait()
 
             for galaxy in galaxies {
                 switch galaxy.name {
                 case "Milky Way":
-                    guard galaxy.planets.contains(where: { $0.name == "Earth" }) else {
-                        throw Failure("unexpected missing planet")
-                    }
-                    guard !galaxy.planets.contains(where: { $0.name == "PA-99-N2"}) else {
-                        throw Failure("unexpected planet")
-                    }
+                    XCTAssertEqual(
+                        galaxy.stars.contains { $0.name == "Sun" },
+                        true
+                    )
+                    XCTAssertEqual(
+                        galaxy.stars.contains { $0.name == "Alpheratz"},
+                        false
+                    )
                 default: break
                 }
             }
@@ -50,53 +44,19 @@ extension FluentBenchmarker {
     }
 
     public func testEagerLoadParent() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .with(\.$galaxy)
+                .with(\.$star)
                 .all().wait()
 
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    guard planet.galaxy.name == "Milky Way" else {
-                        throw Failure("unexpected galaxy name: \(planet.galaxy)")
-                    }
-                case "PA-99-N2":
-                    guard planet.galaxy.name == "Andromeda" else {
-                        throw Failure("unexpected galaxy name: \(planet.galaxy)")
-                    }
-                default: break
-                }
-            }
-        }
-    }
-
-    public func testEagerLoadParentJoin() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
-        ]) {
-            let planets = try Planet.query(on: self.database)
-                .with(\.$galaxy)
-                .all().wait()
-
-            for planet in planets {
-                switch planet.name {
-                case "Earth":
-                    guard planet.galaxy.name == "Milky Way" else {
-                        throw Failure("unexpected galaxy name: \(planet.galaxy)")
-                    }
-                case "PA-99-N2":
-                    guard planet.galaxy.name == "Andromeda" else {
-                        throw Failure("unexpected galaxy name: \(planet.galaxy)")
-                    }
+                    XCTAssertEqual(planet.star.name, "Sun")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(planet.star.name, "Alpha Centauri")
                 default: break
                 }
             }
@@ -104,150 +64,149 @@ extension FluentBenchmarker {
     }
 
     public func testEagerLoadParentJSON() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             struct PlanetJSON: Codable, Equatable {
-                var id: Int
+                var id: UUID
                 var name: String
-                var galaxy: GalaxyJSON
+                var star: StarJSON
 
-                init(name: String, galaxy: GalaxyJSON, on database: Database) throws {
+                init(name: String, star: StarJSON, on database: Database) throws {
                     self.id = try Planet.query(on: database)
                         .filter(\.$name == name)
-                        .first().wait()?
-                        .id ?? 0
+                        .first().wait()!
+                        .requireID()
                     self.name = name
-                    self.galaxy = galaxy
+                    self.star = star
                 }
             }
-            struct GalaxyJSON: Codable, Equatable {
-                var id: Int
+            struct StarJSON: Codable, Equatable {
+                var id: UUID
                 var name: String
 
                 init(name: String, on database: Database) throws {
-                    self.id = try Galaxy.query(on: database)
+                    self.id = try Star.query(on: database)
                         .filter(\.$name == name)
-                        .first().wait()?
-                        .id ?? 0
+                        .first().wait()!
+                        .requireID()
                     self.name = name
                 }
             }
 
-            let milkyWay = try GalaxyJSON(name: "Milky Way", on: self.database)
-            let andromeda = try GalaxyJSON(name: "Andromeda", on: self.database)
+            let sun = try StarJSON(name: "Milky Way", on: self.database)
+            let alphaCentauri = try StarJSON(name: "Alpha Centauri", on: self.database)
             let expected: [PlanetJSON] = try [
-                .init(name: "Mercury", galaxy: milkyWay, on: self.database),
-                .init(name: "Venus", galaxy: milkyWay, on: self.database),
-                .init(name: "Earth", galaxy: milkyWay, on: self.database),
-                .init(name: "Mars", galaxy: milkyWay, on: self.database),
-                .init(name: "Jupiter", galaxy: milkyWay, on: self.database),
-                .init(name: "Saturn", galaxy: milkyWay, on: self.database),
-                .init(name: "Uranus", galaxy: milkyWay, on: self.database),
-                .init(name: "Neptune", galaxy: milkyWay, on: self.database),
-                .init(name: "PA-99-N2", galaxy: andromeda, on: self.database),
+                .init(name: "Earth", star: sun, on: self.database),
+                .init(name: "Jupiter", star: sun, on: self.database),
+                .init(name: "Mars", star: sun, on: self.database),
+                .init(name: "Mercury", star: sun, on: self.database),
+                .init(name: "Neptune", star: sun, on: self.database),
+                .init(name: "Proxima Centauri b", star: alphaCentauri, on: self.database),
+                .init(name: "Saturn", star: sun, on: self.database),
+                .init(name: "Uranus", star: sun, on: self.database),
+                .init(name: "Venus", star: sun, on: self.database),
             ]
 
-            // subquery
-            do {
-                let planets = try Planet.query(on: self.database)
-                    .with(\.$galaxy)
-                    .all().wait()
+            let planets = try Planet.query(on: self.database)
+                .with(\.$star)
+                .sort(\.$name)
+                .all().wait()
 
-                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-                XCTAssertEqual(decoded, expected)
-            }
-
-            // join
-            do {
-                let planets = try Planet.query(on: self.database)
-                    .with(\.$galaxy)
-                    .all().wait()
-
-                let decoded = try JSONDecoder().decode([PlanetJSON].self, from: JSONEncoder().encode(planets))
-                XCTAssertEqual(decoded, expected)
-            }
+            let decoded = try JSONDecoder().decode(
+                [PlanetJSON].self,
+                from: JSONEncoder().encode(planets)
+            )
+            XCTAssertEqual(decoded, expected)
         }
     }
 
     public func testEagerLoadChildrenJSON() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
-            struct PlanetJSON: Codable, Equatable {
-                struct GalaxyID: Codable, Equatable {
-                    var id: Int
+            struct StarJSON: Codable, Equatable {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
+                    lhs.name == rhs.name && lhs.galaxy == rhs.galaxy
                 }
-                var id: Int
+
+                struct GalaxyID: Codable, Equatable {
+                    static func ==(lhs: Self, rhs: Self) -> Bool {
+                        true
+                    }
+
+                    var id: UUID = .init()
+                }
+
+                var id: UUID = .init()
                 var name: String
-                var galaxy: GalaxyID
+                var galaxy: GalaxyID = .init()
             }
+
             struct GalaxyJSON: Codable, Equatable {
-                var id: Int
+                static func ==(lhs: Self, rhs: Self) -> Bool {
+                    lhs.name == rhs.name && lhs.stars == lhs.stars
+                }
+
+                var id: UUID = .init()
                 var name: String
-                var planets: [PlanetJSON]
+                var stars: [StarJSON]
             }
 
-            let andromeda = GalaxyJSON(id: 1, name: "Andromeda", planets: [
-                .init(id: 9, name: "PA-99-N2", galaxy: .init(id: 1)),
-            ])
-            let milkyWay = GalaxyJSON(id: 2, name: "Milky Way", planets: [
-                .init(id: 1, name: "Mercury", galaxy: .init(id: 2)),
-                .init(id: 2, name: "Venus", galaxy: .init(id: 2)),
-                .init(id: 3, name: "Earth", galaxy: .init(id: 2)),
-                .init(id: 4, name: "Mars", galaxy: .init(id: 2)),
-                .init(id: 5, name: "Jupiter", galaxy: .init(id: 2)),
-                .init(id: 6, name: "Saturn", galaxy: .init(id: 2)),
-                .init(id: 7, name: "Uranus", galaxy: .init(id: 2)),
-                .init(id: 8, name: "Neptune", galaxy: .init(id: 2)),
-            ])
-            let messier82 = GalaxyJSON(id: 3, name: "Messier 82", planets: [])
-            let expected: [GalaxyJSON] = [andromeda, milkyWay, messier82]
+            let expected: [GalaxyJSON] = [
+                .init(name: "Andromeda", stars: [
+                    .init(name: "Alpheratz"),
+                ]),
+                .init(name: "Messier 82", stars: []),
+                .init(name: "Milky Way", stars: [
+                    .init(name: "Alpha Centauri"),
+                    .init(name: "Sun"),
+                ]),
+                .init(name: "Pinwheel", stars: [])
+            ]
 
-            let galaxies = try Galaxy.query(on: self.database)
-                .with(\.$planets)
+            var galaxies = try Galaxy.query(on: self.database)
+                .with(\.$stars)
                 .all().wait()
 
-            let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: JSONEncoder().encode(galaxies))
-            guard decoded == expected else {
-                throw Failure("unexpected output")
+            // sort galaxies
+            galaxies.sort {
+                $0.name < $1.name
             }
+            // sort stars in galaxies
+            galaxies.forEach {
+                $0.$stars.value?.sort {
+                    $0.name < $1.name
+                }
+            }
+
+            let decoded = try JSONDecoder().decode(
+                [GalaxyJSON].self,
+                from: JSONEncoder().encode(galaxies)
+            )
+            XCTAssertEqual(decoded, expected)
         }
     }
 
     public func testSiblingsEagerLoad() throws {
-        // seeded db
-        try runTest(#function, [
-            GalaxyMigration(),
-            GalaxySeed(),
-            PlanetMigration(),
-            PlanetSeed(),
-            TagMigration(),
-            TagSeed(),
-            PlanetTagMigration(),
-            PlanetTagSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .with(\.$galaxy)
+                .with(\.$star)
                 .with(\.$tags)
                 .all().wait()
 
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    XCTAssertEqual(planet.galaxy.name, "Milky Way")
+                    XCTAssertEqual(planet.star.name, "Sun")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Small Rocky", "Inhabited"])
-                case "PA-99-N2":
-                    XCTAssertEqual(planet.galaxy.name, "Andromeda")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(planet.star.name, "Alpha Centauri")
                     XCTAssertEqual(planet.tags.map { $0.name }, [])
                 case "Jupiter":
-                    XCTAssertEqual(planet.galaxy.name, "Milky Way")
+                    XCTAssertEqual(planet.star.name, "Sun")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
                 default: break
                 }
@@ -257,15 +216,12 @@ extension FluentBenchmarker {
 
     // https://github.com/vapor/fluent-kit/issues/117
     public func testEmptyEagerLoadChildren() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
                 .filter(\.$name == "foo")
-                .with(\.$planets)
+                .with(\.$stars)
                 .all().wait()
 
             XCTAssertEqual(galaxies.count, 0)

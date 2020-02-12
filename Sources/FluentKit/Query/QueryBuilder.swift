@@ -746,7 +746,13 @@ public final class QueryBuilder<Model>
 public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldRepresentable
 {
-    return .init(lhs, .equal, .bind(rhs))
+    lhs == .bind(rhs)
+}
+
+public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
+    where Model: FluentKit.Model, Field: FieldRepresentable
+{
+    .init(lhs, .equal, rhs)
 }
 
 public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
