@@ -28,7 +28,7 @@ public struct StarMigration: Migration {
         return database.schema("stars")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
-            .field("galaxy_id", .int, .required, .references("galaxies", "id"))
+            .field("galaxy_id", .uuid, .required, .references("galaxies", "id"))
             .create()
     }
 

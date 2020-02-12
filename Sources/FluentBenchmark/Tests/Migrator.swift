@@ -3,7 +3,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, []) {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())
-            migrations.add(PlanetMigration())
+            migrations.add(StarMigration())
 
             let migrator = Migrator(
                 databaseFactory: { _ in self.database },
@@ -31,7 +31,7 @@ extension FluentBenchmarker {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
-            migrations.add(PlanetMigration())
+            migrations.add(StarMigration())
 
             let migrator = Migrator(
                 databaseFactory: { _ in self.database },

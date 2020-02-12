@@ -42,7 +42,7 @@ public struct MoonMigration: Migration {
             .field("name", .string, .required)
             .field("craters", .int, .required)
             .field("comets", .int, .required)
-            .field("planet_id", .int, .required, .references("planets", "id"))
+            .field("planet_id", .uuid, .required, .references("planets", "id"))
             .create()
     }
 

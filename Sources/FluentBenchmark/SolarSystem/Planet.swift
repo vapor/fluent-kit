@@ -31,7 +31,7 @@ public struct PlanetMigration: Migration {
         return database.schema("planets")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
-            .field("star_id", .int, .required, .references("stars", "id"))
+            .field("star_id", .uuid, .required, .references("stars", "id"))
             .create()
     }
 

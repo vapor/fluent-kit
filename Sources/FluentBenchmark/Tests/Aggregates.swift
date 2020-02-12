@@ -21,9 +21,9 @@ extension FluentBenchmarker {
             XCTAssertEqual(emptyCount, 0)
 
             // max id
-            let maxID = try Planet.query(on: self.database)
-                .max(\.$id).wait()
-            XCTAssertNotNil(maxID)
+            let maxName = try Planet.query(on: self.database)
+                .max(\.$name).wait()
+            XCTAssertEqual(maxName, "Venus")
         }
 
         // empty db
@@ -36,10 +36,10 @@ extension FluentBenchmarker {
             XCTAssertEqual(count, 0)
 
             // maxid
-            let maxID = try Planet.query(on: self.database)
-                .max(\.$id).wait()
+            let maxName = try Planet.query(on: self.database)
+                .max(\.$name).wait()
             // expect error?
-            XCTAssertNil(maxID)
+            XCTAssertNil(maxName)
         }
     }
 }

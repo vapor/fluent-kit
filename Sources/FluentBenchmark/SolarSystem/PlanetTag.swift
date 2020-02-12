@@ -27,8 +27,8 @@ public struct PlanetTagMigration: Migration {
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("planet+tag")
             .field("id", .uuid, .identifier(auto: false))
-            .field("planet_id", .int, .required, .references("planets", "id"))
-            .field("tag_id", .int, .required, .references("tags", "id"))
+            .field("planet_id", .uuid, .required, .references("planets", "id"))
+            .field("tag_id", .uuid, .required, .references("tags", "id"))
             .create()
     }
 

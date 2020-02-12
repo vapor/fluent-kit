@@ -24,14 +24,14 @@ public struct GalaxyMigration: Migration {
     public init() {}
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("galaxies")
+        database.schema("galaxies")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("galaxies").delete()
+        database.schema("galaxies").delete()
     }
 }
 
