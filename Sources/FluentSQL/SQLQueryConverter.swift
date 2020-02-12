@@ -40,7 +40,11 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        select.isDistinct = query.isUnique && !query.fields.contains { if case .aggregate(_) = $0 { return true } else { return false }}
+        // Only make the entire query DISTINCT if there are no aggregates.
+        // Otherwise the aggregates will make use of the DISTINCT directly.
+        select.isDistinct = query.isUnique && !query.fields.contains {
+            if case .aggregate(_) = $0 { return true } else { return false }
+        }
         select.tables.append(SQLIdentifier(query.schema))
         select.columns = query.fields.map { self.field($0, query.isUnique) }
         select.predicate = self.filters(query.filters)
