@@ -57,6 +57,7 @@ public final class FluentBenchmarker {
         try self.testMultipleSet()
         try self.testRelationMethods()
         try self.testGroup()
+        try self.testNonstandardIDKey()
     }
     
     public func testCreate() throws {
