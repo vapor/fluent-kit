@@ -13,7 +13,7 @@ public final class Field<Value>: AnyField, FieldRepresentable
     public var projectedValue: Field<Value> {
         return self
     }
-    
+
     public var wrappedValue: Value {
         get {
             if let value = self.inputValue {

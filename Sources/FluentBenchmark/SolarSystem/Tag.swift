@@ -39,7 +39,9 @@ public final class TagSeed: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        .andAllSucceed(["Small Rocky", "Gas Giant", "Inhabited"].map {
+        .andAllSucceed([
+            "Small Rocky", "Gas Giant", "Inhabited"
+        ].map {
             Tag(name: $0)
                 .create(on: database)
         }, on: database.eventLoop)

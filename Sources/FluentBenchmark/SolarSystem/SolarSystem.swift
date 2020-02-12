@@ -37,12 +37,12 @@ public struct SolarSystem: Migration {
     public func revert(on database: Database) -> EventLoopFuture<Void> {
         let all: [Migration]
         if self.seed {
-            all = seeds + migrations
+            all = migrations + seeds
         } else {
             all = migrations
         }
         return .andAllSync(all.reversed().map { migration in
-            { migration.prepare(on: database) }
+            { migration.revert(on: database) }
         }, on: database.eventLoop)
     }
 }

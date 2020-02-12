@@ -4,7 +4,7 @@ public final class PlanetTag: Model {
     public static let schema = "planet+tag"
     
     @ID(key: "id")
-    public var id: Int?
+    public var id: UUID?
 
     @Parent(key: "planet_id")
     public var planet: Planet
@@ -26,7 +26,7 @@ public struct PlanetTagMigration: Migration {
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("planet+tag")
-            .field("id", .int, .identifier(auto: true))
+            .field("id", .uuid, .identifier(auto: false))
             .field("planet_id", .int, .required, .references("planets", "id"))
             .field("tag_id", .int, .required, .references("tags", "id"))
             .create()

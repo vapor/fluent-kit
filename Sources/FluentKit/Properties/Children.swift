@@ -20,6 +20,10 @@ public final class ModelChildren<From, To>: AnyProperty
     // MARK: Wrapper
     public var value: [To]?
 
+    public var description: String {
+        self.idValue.debugDescription
+    }
+
     public init(for parent: KeyPath<To, To.Parent<From>>) {
         self.parentKey = .required(parent)
     }

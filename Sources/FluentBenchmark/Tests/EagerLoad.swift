@@ -11,10 +11,8 @@ extension FluentBenchmarker {
                     }
                 }
                 .all().wait()
-            let json = JSONEncoder()
-            json.outputFormatting = .prettyPrinted
-            try print(String(decoding: json.encode(galaxies), as: UTF8.self))
-            print(galaxies)
+
+            try print(prettyJSON(galaxies))
         }
     }
 
@@ -67,57 +65,11 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            struct PlanetJSON: Codable, Equatable {
-                var id: UUID
-                var name: String
-                var star: StarJSON
-
-                init(name: String, star: StarJSON, on database: Database) throws {
-                    self.id = try Planet.query(on: database)
-                        .filter(\.$name == name)
-                        .first().wait()!
-                        .requireID()
-                    self.name = name
-                    self.star = star
-                }
-            }
-            struct StarJSON: Codable, Equatable {
-                var id: UUID
-                var name: String
-
-                init(name: String, on database: Database) throws {
-                    self.id = try Star.query(on: database)
-                        .filter(\.$name == name)
-                        .first().wait()!
-                        .requireID()
-                    self.name = name
-                }
-            }
-
-            let sun = try StarJSON(name: "Milky Way", on: self.database)
-            let alphaCentauri = try StarJSON(name: "Alpha Centauri", on: self.database)
-            let expected: [PlanetJSON] = try [
-                .init(name: "Earth", star: sun, on: self.database),
-                .init(name: "Jupiter", star: sun, on: self.database),
-                .init(name: "Mars", star: sun, on: self.database),
-                .init(name: "Mercury", star: sun, on: self.database),
-                .init(name: "Neptune", star: sun, on: self.database),
-                .init(name: "Proxima Centauri b", star: alphaCentauri, on: self.database),
-                .init(name: "Saturn", star: sun, on: self.database),
-                .init(name: "Uranus", star: sun, on: self.database),
-                .init(name: "Venus", star: sun, on: self.database),
-            ]
-
             let planets = try Planet.query(on: self.database)
                 .with(\.$star)
-                .sort(\.$name)
                 .all().wait()
 
-            let decoded = try JSONDecoder().decode(
-                [PlanetJSON].self,
-                from: JSONEncoder().encode(planets)
-            )
-            XCTAssertEqual(decoded, expected)
+            try print(prettyJSON(planets))
         }
     }
 
@@ -125,66 +77,10 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            struct StarJSON: Codable, Equatable {
-                static func ==(lhs: Self, rhs: Self) -> Bool {
-                    lhs.name == rhs.name && lhs.galaxy == rhs.galaxy
-                }
-
-                struct GalaxyID: Codable, Equatable {
-                    static func ==(lhs: Self, rhs: Self) -> Bool {
-                        true
-                    }
-
-                    var id: UUID = .init()
-                }
-
-                var id: UUID = .init()
-                var name: String
-                var galaxy: GalaxyID = .init()
-            }
-
-            struct GalaxyJSON: Codable, Equatable {
-                static func ==(lhs: Self, rhs: Self) -> Bool {
-                    lhs.name == rhs.name && lhs.stars == lhs.stars
-                }
-
-                var id: UUID = .init()
-                var name: String
-                var stars: [StarJSON]
-            }
-
-            let expected: [GalaxyJSON] = [
-                .init(name: "Andromeda", stars: [
-                    .init(name: "Alpheratz"),
-                ]),
-                .init(name: "Messier 82", stars: []),
-                .init(name: "Milky Way", stars: [
-                    .init(name: "Alpha Centauri"),
-                    .init(name: "Sun"),
-                ]),
-                .init(name: "Pinwheel", stars: [])
-            ]
-
-            var galaxies = try Galaxy.query(on: self.database)
+            let galaxies = try Galaxy.query(on: self.database)
                 .with(\.$stars)
                 .all().wait()
-
-            // sort galaxies
-            galaxies.sort {
-                $0.name < $1.name
-            }
-            // sort stars in galaxies
-            galaxies.forEach {
-                $0.$stars.value?.sort {
-                    $0.name < $1.name
-                }
-            }
-
-            let decoded = try JSONDecoder().decode(
-                [GalaxyJSON].self,
-                from: JSONEncoder().encode(galaxies)
-            )
-            XCTAssertEqual(decoded, expected)
+            try print(prettyJSON(galaxies))
         }
     }
 
@@ -201,10 +97,10 @@ extension FluentBenchmarker {
                 switch planet.name {
                 case "Earth":
                     XCTAssertEqual(planet.star.name, "Sun")
-                    XCTAssertEqual(planet.tags.map { $0.name }, ["Small Rocky", "Inhabited"])
+                    XCTAssertEqual(planet.tags.map { $0.name }.sorted(), ["Inhabited", "Small Rocky"])
                 case "Proxima Centauri b":
                     XCTAssertEqual(planet.star.name, "Alpha Centauri")
-                    XCTAssertEqual(planet.tags.map { $0.name }, [])
+                    XCTAssertEqual(planet.tags.map { $0.name }, ["Small Rocky"])
                 case "Jupiter":
                     XCTAssertEqual(planet.star.name, "Sun")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
@@ -227,4 +123,13 @@ extension FluentBenchmarker {
             XCTAssertEqual(galaxies.count, 0)
         }
     }
+}
+
+
+func prettyJSON<T>(_ value: T) throws -> String
+    where T: Encodable
+{
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .prettyPrinted
+    return try String(decoding: encoder.encode(value), as: UTF8.self)
 }

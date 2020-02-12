@@ -11,7 +11,7 @@ extension FluentBenchmarker {
                 let star = try planet.joined(Star.self)
                 switch planet.name {
                 case "Earth":
-                    XCTAssertEqual(star.name, "Milky Way")
+                    XCTAssertEqual(star.name, "Sun")
                 case "Proxima Centauri b":
                     XCTAssertEqual(star.name, "Alpha Centauri")
                 default: break

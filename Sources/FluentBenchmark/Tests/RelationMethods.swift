@@ -14,15 +14,15 @@ extension FluentBenchmarker {
             XCTAssertNil(earth.$star.value)
             try earth.$star.load(on: self.database).wait()
             XCTAssertNotNil(earth.$star.value)
-            XCTAssertEqual(earth.$star.name, "Sun")
+            XCTAssertEqual(earth.star.name, "Sun")
 
             let test = Star(name: "Foo")
             earth.$star.value = test
-            XCTAssertEqual(earth.$star.name, "Foo")
+            XCTAssertEqual(earth.star.name, "Foo")
             // test get uses cached value
             try XCTAssertEqual(earth.$star.get(on: self.database).wait().name, "Foo")
             // test get can reload relation
-            try XCTAssertEqual(earth.$star.get(reload: true, on: self.database).wait().name, "Milky Way")
+            try XCTAssertEqual(earth.$star.get(reload: true, on: self.database).wait().name, "Sun")
 
             // test clearing loaded relation
             earth.$star.value = nil

@@ -1,10 +1,7 @@
 extension FluentBenchmarker {
     public func testRange() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             do {
                 let planets = try Planet.query(on: self.database)
