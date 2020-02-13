@@ -220,6 +220,7 @@ public struct DatabaseQuery: CustomStringConvertible {
     public var limits: [Limit]
     public var offsets: [Offset]
     public var schema: String
+    public var idKey: String
     
     public var description: String {
         var parts = [
@@ -241,9 +242,10 @@ public struct DatabaseQuery: CustomStringConvertible {
         return parts.joined(separator: " ")
     }
 
-    init(schema: String) {
+    init(schema: String, idKey: String) {
         self.schema = schema
         self.isUnique = false
+        self.idKey = idKey
         self.fields = []
         self.action = .read
         self.filters = []

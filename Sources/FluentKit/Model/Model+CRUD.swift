@@ -26,8 +26,8 @@ extension Model {
         return promise.futureResult.flatMapThrowing { output in
             var input = self.input
             if self._$id.generator == .database {
-                let id = try output.decode("fluentID", as: Self.IDValue.self)
-                input[Self.key(for: \._$id)] = .bind(id)
+                let idKey = Self.key(for: \._$id)
+                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
             try self.output(from: SavedInput(input).output(for: database))
         }
@@ -48,8 +48,9 @@ extension Model {
             .set(input)
             .action(.update)
             .run()
-            .flatMapThrowing {
-                try self.output(from: SavedInput(input).output(for: database))
+            .flatMapThrowing
+        {
+            try self.output(from: SavedInput(input).output(for: database))
         }
     }
     
@@ -75,8 +76,9 @@ extension Model {
             .filter(\._$id == self.id!)
             .action(.delete)
             .run()
-            .map {
-                self._$id.exists = false
+            .map
+        {
+            self._$id.exists = false
         }
     }
     
@@ -98,9 +100,10 @@ extension Model {
             .set(self.input)
             .action(.update)
             .run()
-            .flatMapThrowing {
-                try self.output(from: SavedInput(self.input).output(for: database))
-                self._$id.exists = true
+            .flatMapThrowing
+        {
+            try self.output(from: SavedInput(self.input).output(for: database))
+            self._$id.exists = true
         }
     }
     
