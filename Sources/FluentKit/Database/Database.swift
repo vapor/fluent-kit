@@ -9,6 +9,8 @@ public protocol Database {
     func execute(
         schema: DatabaseSchema
     ) -> EventLoopFuture<Void>
+
+    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
     func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }

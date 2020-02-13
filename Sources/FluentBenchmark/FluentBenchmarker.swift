@@ -58,6 +58,7 @@ public final class FluentBenchmarker {
         try self.testRelationMethods()
         try self.testGroup()
         try self.testNonstandardIDKey()
+        try self.testTransaction()
     }
 
     // MARK: Utilities

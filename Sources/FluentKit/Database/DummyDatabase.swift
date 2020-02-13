@@ -19,6 +19,10 @@ public struct DummyDatabase: Database {
         }
         return self.eventLoop.makeSucceededFuture(())
     }
+
+    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
     
     public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
