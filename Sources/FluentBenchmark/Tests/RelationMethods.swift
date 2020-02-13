@@ -7,7 +7,8 @@ extension FluentBenchmarker {
                 .filter(\.$name == "Earth")
                 .first().wait()
             else {
-                throw Failure("Could not load Planet earth")
+                XCTFail("Could not load Planet earth")
+                return
             }
 
             // test loading relation manually

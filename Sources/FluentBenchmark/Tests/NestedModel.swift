@@ -9,16 +9,20 @@ extension FluentBenchmarker {
                 .all().wait()
 
             guard let user = users.first, users.count == 1 else {
-                throw Failure("unexpected user count")
+                XCTFail("unexpected user count")
+                return
             }
             guard user.name == "Tanner" else {
-                throw Failure("unexpected user name")
+                XCTFail("unexpected user name")
+                return
             }
             guard user.pet.name == "Ziz" else {
-                throw Failure("unexpected pet name")
+                XCTFail("unexpected pet name")
+                return
             }
             guard user.pet.type == .cat else {
-                throw Failure("unexpected pet type")
+                XCTFail("unexpected pet type")
+                return
             }
 
             struct UserJSON: Equatable, Codable {
@@ -35,7 +39,8 @@ extension FluentBenchmarker {
 
             let decoded = try JSONDecoder().decode(UserJSON.self, from: JSONEncoder().encode(user))
             guard decoded == expected else {
-                throw Failure("unexpected output")
+                XCTFail("unexpected output")
+                return
             }
         }
     }

@@ -21,7 +21,8 @@ extension FluentBenchmarker {
             }.wait()
 
             guard fetched64.count == 512 else {
-                throw Failure("did not fetch all - only \(fetched64.count) out of 512")
+                XCTFail("did not fetch all - only \(fetched64.count) out of 512")
+                return
             }
 
             try Galaxy.query(on: self.database).chunk(max: 511) { chunk in
@@ -33,7 +34,8 @@ extension FluentBenchmarker {
             }.wait()
 
             guard fetched2047.count == 512 else {
-                throw Failure("did not fetch all - only \(fetched2047.count) out of 512")
+                XCTFail("did not fetch all - only \(fetched2047.count) out of 512")
+                return
             }
         }
     }

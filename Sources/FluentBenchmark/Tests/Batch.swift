@@ -9,9 +9,7 @@ extension FluentBenchmarker {
 
             try galaxies.create(on: self.database).wait()
             let count = try Galaxy.query(on: self.database).count().wait()
-            guard count == 26 else {
-                throw Failure("Not all galaxies savied")
-            }
+            XCTAssertEqual(count, 26)
         }
     }
 
@@ -25,9 +23,7 @@ extension FluentBenchmarker {
 
             let galaxies = try Galaxy.query(on: self.database).all().wait()
             for galaxy in galaxies {
-                guard galaxy.name == "Foo" else {
-                    throw Failure("batch update did not set id")
-                }
+                XCTAssertEqual(galaxy.name, "Foo")
             }
         }
     }

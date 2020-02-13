@@ -29,15 +29,13 @@ extension FluentBenchmarker {
             }
         }
 
-        // seeded db
-        try runTest(#function, [
+        try self.runTest(#function, [
             UserMigration(),
         ]) {
             try User(name: "Vapor")
                 .save(on: self.database).wait()
-            guard try User.query(on: self.database).count().wait() == 1 else {
-                throw Failure("User did not save")
-            }
+            let count = try User.query(on: self.database).count().wait()
+            XCTAssertEqual(count, 1, "User did not save")
         }
     }
 
@@ -71,8 +69,7 @@ extension FluentBenchmarker {
             }
         }
 
-        // seeded db
-        try runTest(#function, [
+        try self.runTest(#function, [
             TodoMigration(),
         ]) {
             let todo = """
@@ -81,7 +78,8 @@ extension FluentBenchmarker {
             try JSONDecoder().decode(Todo.self, from: todo.data(using: .utf8)!)
                 .save(on: self.database).wait()
             guard try Todo.query(on: self.database).count().wait() == 1 else {
-                throw Failure("Todo did not save")
+                XCTFail("Todo did not save")
+                return
             }
         }
     }
@@ -121,22 +119,26 @@ extension FluentBenchmarker {
             let foo = Foo(bar: "test")
             try foo.save(on: self.database).wait()
             guard foo.bar != nil else {
-                throw Failure("unexpected nil value")
+                XCTFail("unexpected nil value")
+                return
             }
             foo.bar = nil
             try foo.save(on: self.database).wait()
             guard foo.bar == nil else {
-                throw Failure("unexpected non-nil value")
+                XCTFail("unexpected non-nil value")
+                return
             }
 
             guard let fetched = try Foo.query(on: self.database)
                 .filter(\.$id == foo.id!)
                 .first().wait()
             else {
-                throw Failure("no model returned")
+                XCTFail("no model returned")
+                return
             }
             guard fetched.bar == nil else {
-                throw Failure("unexpected non-nil value")
+                XCTFail("unexpected non-nil value")
+                return
             }
         }
     }
@@ -147,7 +149,8 @@ extension FluentBenchmarker {
         ]) {
             let galaxy = Galaxy(name: "Milky Way")
             guard galaxy.id == nil else {
-                throw Failure("id should not be set")
+                XCTFail("id should not be set")
+                return
             }
             try galaxy.save(on: self.database).wait()
 
@@ -158,7 +161,8 @@ extension FluentBenchmarker {
             try b.save(on: self.database).wait()
             try c.save(on: self.database).wait()
             guard a.id != b.id && b.id != c.id && a.id != c.id else {
-                throw Failure("ids should not be equal")
+                XCTFail("ids should not be equal")
+                return
             }
         }
     }

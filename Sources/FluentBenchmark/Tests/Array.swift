@@ -55,7 +55,8 @@ extension FluentBenchmarker {
             try new.create(on: self.database).wait()
 
             guard let fetched = try Foo.find(new.id, on: self.database).wait() else {
-                throw Failure("foo didnt save")
+                XCTFail("foo didnt save")
+                return
             }
             XCTAssertEqual(fetched.bar, [1, 2, 3])
             XCTAssertEqual(fetched.baz, ["4", "5", "6"])

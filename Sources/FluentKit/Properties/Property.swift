@@ -34,17 +34,6 @@ extension AnyField where Self: FieldRepresentable {
     }
 }
 
-public protocol EagerLoadable {
-    func eagerLoad<Model>(to builder: QueryBuilder<Model>)
-        where Model: FluentKit.Model
-}
-
-protocol AnyEagerLoadable: AnyProperty {
-    var eagerLoadKey: String { get }
-    var eagerLoadValueDescription: CustomStringConvertible? { get }
-    func eagerLoad(from eagerLoads: EagerLoads) throws
-}
-
 protocol AnyID: AnyField {
     func generate()
     var exists: Bool { get set }
@@ -59,15 +48,6 @@ public protocol FieldRepresentable {
 extension AnyField { }
 
 extension AnyModel {
-    var eagerLoadables: [(String, AnyEagerLoadable)] {
-        self.properties.compactMap {
-            guard let value = $1 as? AnyEagerLoadable else {
-                return nil
-            }
-            return ($0, value)
-        }
-    }
-
     var fields: [(String, AnyField)] {
         self.properties.compactMap {
             guard let value = $1 as? AnyField else {

@@ -5,10 +5,11 @@ import XCTest
 
 public final class FluentBenchmarker {
     public let database: Database
+    
     public init(database: Database) {
         self.database = database
     }
-    
+
     public func testAll() throws {
         try self.testCreate()
         try self.testRead()
@@ -60,19 +61,7 @@ public final class FluentBenchmarker {
     }
 
     // MARK: Utilities
-    
-    struct Failure: Error {
-        let reason: String
-        let line: UInt
-        let file: StaticString
-        
-        init(_ reason: String, line: UInt = #line, file: StaticString = #file) {
-            self.reason = reason
-            self.line = line
-            self.file = file
-        }
-    }
-    
+
     internal func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
         self.log("Running \(name)...")
         for migration in migrations {
@@ -88,8 +77,6 @@ public final class FluentBenchmarker {
         var e: Error?
         do {
             try test()
-        } catch let failure as Failure {
-            XCTFail(failure.reason, file: failure.file, line: failure.line)
         } catch {
             e = error
         }

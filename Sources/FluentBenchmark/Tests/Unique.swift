@@ -33,14 +33,14 @@ extension FluentBenchmarker {
                 return database.schema("foos").delete()
             }
         }
-        try runTest(#function, [
+        try self.runTest(#function, [
             FooMigration(),
         ]) {
             try Foo(bar: "a", baz: 1).save(on: self.database).wait()
             try Foo(bar: "a", baz: 2).save(on: self.database).wait()
             do {
                 try Foo(bar: "a", baz: 1).save(on: self.database).wait()
-                throw Failure("should have failed")
+                XCTFail("should have failed")
             } catch _ as DatabaseError {
                 // pass
             }

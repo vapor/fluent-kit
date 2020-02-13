@@ -4,10 +4,10 @@ extension FluentBenchmarker {
             SolarSystem()
         ]) {
             let galaxies = try Galaxy.query(on: self.database)
-                ._with(\.$stars) {
-                    $0._with(\.$planets) {
-                        $0._with(\.$moons)
-                        $0._with(\.$tags)
+                .with(\.$stars) {
+                    $0.with(\.$planets) {
+                        $0.with(\.$moons)
+                        $0.with(\.$tags)
                     }
                 }
                 .all().wait()

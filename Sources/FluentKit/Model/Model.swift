@@ -151,18 +151,7 @@ extension AnyModel {
         if let output = self.anyID.cachedOutput {
             info["output"] = output.row
         }
-
-        let eagerLoads: [String: CustomStringConvertible] = .init(uniqueKeysWithValues: self.eagerLoadables.compactMap { (name, eagerLoadable) in
-            if let value = eagerLoadable.eagerLoadValueDescription {
-                return (name, value)
-            } else {
-                return nil
-            }
-        })
-        if !eagerLoads.isEmpty {
-            info["eagerLoads"] = eagerLoads
-        }
-
+        
         return "\(Self.self)(\(info.debugDescription.dropFirst().dropLast()))"
     }
 }
@@ -188,13 +177,6 @@ extension AnyModel {
         try self.properties.forEach { (_, property) in
             try property.output(from: output)
         }
-    }
-
-    func eagerLoad(from eagerLoads: EagerLoads) throws {
-        try self.eagerLoadables.forEach { (_, eagerLoadable) in
-            try eagerLoadable.eagerLoad(from: eagerLoads)
-        }
-
     }
 
     // MARK: Joined

@@ -3,11 +3,13 @@ extension FluentBenchmarker {
         func testCounts(allCount: Int, realCount: Int) throws {
             let all = try Trash.query(on: self.database).all().wait()
             guard all.count == allCount else {
-                throw Failure("all count should be \(allCount)")
+                XCTFail("all count should be \(allCount)")
+                return
             }
             let real = try Trash.query(on: self.database).withDeleted().all().wait()
             guard real.count == realCount else {
-                throw Failure("real count should be \(realCount)")
+                XCTFail("real count should be \(realCount)")
+                return
             }
         }
 

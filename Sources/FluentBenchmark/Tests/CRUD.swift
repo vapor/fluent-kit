@@ -11,15 +11,17 @@ extension FluentBenchmarker {
             guard let fetched = try Galaxy.query(on: self.database)
                 .filter(\.$name == "Messier 82")
                 .first()
-                .wait() else {
-                    throw Failure("unexpected empty result set")
-                }
+                .wait()
+            else {
+                XCTFail("unexpected empty result set")
+                return
+            }
 
             if fetched.name != galaxy.name {
-                throw Failure("unexpected name: \(galaxy) \(fetched)")
+                XCTFail("unexpected name: \(galaxy) \(fetched)")
             }
             if fetched.id != galaxy.id {
-                throw Failure("unexpected id: \(galaxy) \(fetched)")
+                XCTFail("unexpected id: \(galaxy) \(fetched)")
             }
         }
     }
@@ -33,10 +35,12 @@ extension FluentBenchmarker {
                 .filter(\.$name == "Milky Way")
                 .first().wait()
             else {
-                throw Failure("unpexected missing galaxy")
+                XCTFail("unpexected missing galaxy")
+                return
             }
             guard milkyWay.name == "Milky Way" else {
-                throw Failure("unexpected name")
+                XCTFail("unexpected name")
+                return
             }
         }
     }
@@ -53,10 +57,12 @@ extension FluentBenchmarker {
             // verify
             let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
             guard galaxies.count == 1 else {
-                throw Failure("unexpected galaxy count: \(galaxies)")
+                XCTFail("unexpected galaxy count: \(galaxies)")
+                return
             }
             guard galaxies[0].name == "Milky Way" else {
-                throw Failure("unexpected galaxy name")
+                XCTFail("unexpected galaxy name")
+                return
             }
         }
     }
@@ -72,7 +78,8 @@ extension FluentBenchmarker {
             // verify
             let galaxies = try Galaxy.query(on: self.database).all().wait()
             guard galaxies.count == 0 else {
-                throw Failure("unexpected galaxy count: \(galaxies)")
+                XCTFail("unexpected galaxy count: \(galaxies)")
+                return
             }
         }
     }
@@ -86,7 +93,8 @@ extension FluentBenchmarker {
             _ = try a.save(on: self.database).and(b.save(on: self.database)).wait()
             let galaxies = try Galaxy.query(on: self.database).all().wait()
             guard galaxies.count == 2 else {
-                throw Failure("both galaxies did not save")
+                XCTFail("both galaxies did not save")
+                return
             }
         }
     }

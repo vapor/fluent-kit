@@ -143,74 +143,69 @@ extension ModelSiblings: Relation {
 }
 
 extension ModelSiblings: EagerLoadable {
-    public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
-        where Model: FluentKit.Model
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        builder.eagerLoads.requests[self.eagerLoadKey] = SubqueryEagerLoad(
-            from: self.from, to: self.to
-        )
+        let loader = SiblingsEagerLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func eagerLoad<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Siblings<To, Through>>,
+        to builder: Builder
+    ) where
+        Loader: EagerLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughSiblingsEagerLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
     }
 }
 
 
-extension ModelSiblings: AnyEagerLoadable {
-    var eagerLoadKey: String {
-        let ref = Through()
-        return "s:" + ref[keyPath: self.from].key + "+" + ref[keyPath: self.to].key
-    }
+private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
+    where From: Model, Through: Model, To: Model
+{
+    let relationKey: KeyPath<From, From.Siblings<To, Through>>
 
-    var eagerLoadValueDescription: CustomStringConvertible? {
-        return self.value
-    }
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let ids = models.map { $0.id! }
 
-    func eagerLoad(from eagerLoads: EagerLoads) throws {
-        guard let request = eagerLoads.requests[self.eagerLoadKey] else {
-            return
-        }
-        if let subquery = request as? SubqueryEagerLoad {
-            self.value = try subquery.get(id: self.idValue!)
-        } else {
-            fatalError("unsupported eagerload request: \(request)")
-        }
-    }
-
-    final class SubqueryEagerLoad: EagerLoadRequest {
-        var storage: [To]
-        private let from: KeyPath<Through, Through.Parent<From>>
-        private let to: KeyPath<Through, Through.Parent<To>>
-
-        var description: String {
-            return self.storage.description
-        }
-
-        init(from: KeyPath<Through, Through.Parent<From>>, to: KeyPath<Through, Through.Parent<To>>) {
-            self.storage = []
-            self.from = from
-            self.to = to
-        }
-
-        func prepare(query: inout DatabaseQuery) {
-            // do nothing
-        }
-
-        func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [From.IDValue] = models
-                .map { $0 as! From }
-                .map { $0.id! }
-
-            return To.query(on: database)
-                .join(self.to)
-                .filter(self.from.appending(path: \.$id), in: Set(ids))
-                .all()
-                .map { (to: [To]) in
-                    self.storage = to
+        let from = From()[keyPath: self.relationKey].from
+        let to = From()[keyPath: self.relationKey].to
+        return To.query(on: database)
+            .join(to)
+            .filter(from.appending(path: \.$id), in: Set(ids))
+            .all()
+            .flatMapThrowing
+        {
+            for model in models {
+                let id = model[keyPath: self.relationKey].idValue!
+                model[keyPath: self.relationKey].value = try $0.filter {
+                    try $0.joined(Through.self)[keyPath: from].id == id
                 }
-        }
-
-        func get(id: From.IDValue) throws -> [To] {
-            return try self.storage.filter { to in
-                return try to.joined(Through.self)[keyPath: self.from].id == id
             }
         }
+    }
+}
+
+private struct ThroughSiblingsEagerLoader<From, To, Through, Loader>: EagerLoader
+    where From: Model, Through: Model, Loader: EagerLoader, Loader.Model == To
+{
+    let relationKey: KeyPath<From, From.Siblings<To, Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.flatMap {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
     }
 }

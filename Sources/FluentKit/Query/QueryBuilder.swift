@@ -6,10 +6,9 @@ public final class QueryBuilder<Model>
     public var query: DatabaseQuery
 
     public let database: Database
-    internal var eagerLoads: EagerLoads
     internal var includeDeleted: Bool
     internal var joinedModels: [JoinedModel]
-    public var loaders: [AnyRelationLoader]
+    public var eagerLoaders: [AnyEagerLoader]
 
     struct JoinedModel {
         let model: AnyModel
@@ -19,48 +18,33 @@ public final class QueryBuilder<Model>
     public init(database: Database) {
         self.database = database
         self.query = .init(schema: Model.schema, idKey: Model.key(for: \._$id))
-        self.eagerLoads = .init()
+        self.eagerLoaders = []
         self.includeDeleted = false
         self.joinedModels = []
-        self.loaders = []
     }
 
     private init(
         query: DatabaseQuery,
         database: Database,
-        eagerLoads: EagerLoads,
+        eagerLoaders: [AnyEagerLoader],
         includeDeleted: Bool,
-        joinedModels: [JoinedModel],
-        loaders: [AnyRelationLoader]
+        joinedModels: [JoinedModel]
     ) {
         self.query = query
         self.database = database
-        self.eagerLoads = eagerLoads
+        self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
         self.joinedModels = joinedModels
-        self.loaders = loaders
     }
 
     public func copy() -> QueryBuilder<Model> {
         .init(
             query: self.query,
             database: self.database,
-            eagerLoads: self.eagerLoads,
+            eagerLoaders: self.eagerLoaders,
             includeDeleted: self.includeDeleted,
-            joinedModels: self.joinedModels,
-            loaders: self.loaders
+            joinedModels: self.joinedModels
         )
-    }
-
-    // MARK: Eager Load
-
-    @discardableResult
-    public func with<Property>(_ field: KeyPath<Model, Property>) -> Self
-        where Property: EagerLoadable
-    {
-        let ref = Model()
-        ref[keyPath: field].eagerLoad(to: self)
-        return self
     }
 
     // MARK: Soft Delete
@@ -658,31 +642,16 @@ public final class QueryBuilder<Model>
         }
 
         // if eager loads exist, run them, and update models
-        if !self.loaders.isEmpty {
+        if !self.eagerLoaders.isEmpty {
             return done.flatMap {
                 // don't run eager loads if result set was empty
                 guard !all.isEmpty else {
                     return self.database.eventLoop.makeSucceededFuture(())
                 }
                 // run eager loads
-                return .andAllSync(self.loaders.map { eagerLoad in
+                return .andAllSync(self.eagerLoaders.map { eagerLoad in
                     { eagerLoad.anyRun(models: all, on: self.database) }
                 }, on: self.database.eventLoop)
-            }
-        } else if !self.eagerLoads.requests.isEmpty {
-            return done.flatMap {
-                // don't run eager loads if result set was empty
-                guard !all.isEmpty else {
-                    return self.database.eventLoop.makeSucceededFuture(())
-                }
-                // run eager loads
-                return EventLoopFuture<Void>.andAllSucceed(self.eagerLoads.requests.values.map { eagerLoad in
-                    return eagerLoad.run(models: all, on: self.database)
-                }, on: self.database.eventLoop).flatMapThrowing {
-                    try all.forEach { model in
-                        try model.eagerLoad(from: self.eagerLoads)
-                    }
-                }
             }
         } else {
             return done
@@ -713,9 +682,6 @@ public final class QueryBuilder<Model>
                 }
             }
         }
-
-        // prepare all eager load requests
-        self.eagerLoads.requests.values.forEach { $0.prepare(query: &query) }
         
         // check if model is soft-deletable and should be excluded
         if !self.includeDeleted {

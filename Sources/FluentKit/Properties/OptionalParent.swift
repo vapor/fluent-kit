@@ -73,3 +73,72 @@ extension ModelOptionalParent: AnyProperty {
 }
 
 extension ModelOptionalParent: AnyField { }
+
+extension ModelOptionalParent: EagerLoadable {
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.OptionalParent<To>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = OptionalParentEagerLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func eagerLoad<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.OptionalParent<To>>,
+        to builder: Builder
+    ) where
+        Loader: EagerLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughOptionalParentEagerLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
+}
+
+private struct OptionalParentEagerLoader<From, To>: EagerLoader
+    where From: Model, To: Model
+{
+    let relationKey: KeyPath<From, From.OptionalParent<To>>
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let ids = models.map {
+            $0[keyPath: self.relationKey].id
+        }
+
+        guard !ids.isEmpty else {
+            return database.eventLoop.makeSucceededFuture(())
+        }
+
+        return To.query(on: database)
+            .filter(To.key(for: \._$id), in: Set(ids))
+            .all()
+            .map
+        {
+            for model in models {
+                model[keyPath: self.relationKey].value = $0.filter {
+                    $0.id == model[keyPath: self.relationKey].id
+                }.first
+            }
+        }
+    }
+}
+
+private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoader
+    where From: Model, Loader: EagerLoader, Loader.Model == Through
+{
+    let relationKey: KeyPath<From, From.OptionalParent<Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.map {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
+    }
+}
