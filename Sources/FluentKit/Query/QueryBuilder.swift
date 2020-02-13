@@ -17,7 +17,7 @@ public final class QueryBuilder<Model>
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(schema: Model.schema)
+        self.query = .init(schema: Model.schema, idKey: Model.key(for: \._$id))
         self.eagerLoads = .init()
         self.includeDeleted = false
         self.joinedModels = []
