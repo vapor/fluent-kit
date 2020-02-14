@@ -79,8 +79,8 @@ extension AnyModel {
     
     var properties: [(String, AnyProperty)] {
         var props: [(String, AnyProperty)] = []
-        var mirror: Mirror = Mirror(reflecting: self)
-        while true {
+        var currentMirror: Mirror? = Mirror(reflecting: self)
+        while let mirror = currentMirror {
             props.append(contentsOf: mirror.children
                 .compactMap { child in
                     guard let label = child.label else {
@@ -92,13 +92,9 @@ extension AnyModel {
                     // remove underscore
                     return (String(label.dropFirst()), property)
             })
-            if let m = mirror.superclassMirror {
-                mirror = m
-            }
-            else {
-                return props
-            }
+            currentMirror = mirror.superclassMirror
         }
+        return props
     }
 }
 
