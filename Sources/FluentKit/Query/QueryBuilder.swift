@@ -497,6 +497,12 @@ public final class QueryBuilder<Model>
     public func count() -> EventLoopFuture<Int> {
         return self.aggregate(.count, Model.key(for: \Model._$id), as: Int.self)
     }
+    
+    public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
+        where Field: FieldRepresentable
+    {
+        return self.aggregate(.count, key, as: Int.self)
+    }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: FieldRepresentable
