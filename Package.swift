@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.2
 import PackageDescription
 
 let package = Package(
@@ -17,9 +17,21 @@ let package = Package(
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.0.0-beta.6.1"),
     ],
     targets: [
-        .target(name: "FluentKit", dependencies: ["NIO", "Logging"]),
-        .target(name: "FluentBenchmark", dependencies: ["FluentKit", "FluentSQL"]),
-        .target(name: "FluentSQL", dependencies: ["FluentKit", "SQLKit"]),
-        .testTarget(name: "FluentKitTests", dependencies: ["FluentBenchmark", "FluentSQL"]),
+        .target(name: "FluentKit", dependencies: [
+            .product(name: "NIO", package: "swift-nio"),
+            .product(name: "Logging", package: "swift-log"),
+        ]),
+        .target(name: "FluentBenchmark", dependencies: [
+            .target(name: "FluentKit"),
+            .target(name: "FluentSQL"),
+        ]),
+        .target(name: "FluentSQL", dependencies: [
+            .target(name: "FluentKit"),
+            .product(name: "SQLKit", package: "sql-kit"),
+        ]),
+        .testTarget(name: "FluentKitTests", dependencies: [
+            .target(name: "FluentBenchmark"),
+            .target(name: "FluentSQL"),
+        ]),
     ]
 )
