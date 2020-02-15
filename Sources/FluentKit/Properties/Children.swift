@@ -180,9 +180,9 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         let parentKey = From()[keyPath: self.relationKey].parentKey
         switch parentKey {
         case .optional(let optional):
-            builder.filter(optional.appending(path: \.$id), in: Set(ids))
+            builder.filter(optional.appending(path: \.$id) ~~ Set(ids))
         case .required(let required):
-            builder.filter(required.appending(path: \.$id), in: Set(ids))
+            builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
         return builder.all().map {
             for model in models {

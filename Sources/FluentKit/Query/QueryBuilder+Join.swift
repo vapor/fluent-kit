@@ -1,7 +1,6 @@
 extension QueryBuilder {
     // MARK: Join
 
-    #warning("TODO: all relation support")
     @discardableResult
     public func join<Value>(
         _ field: KeyPath<Model, Model.Parent<Value>>,
@@ -32,15 +31,14 @@ extension QueryBuilder {
         )
     }
 
-    #warning("todo FieldRepresentable support")
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value?>>,
-        to local: KeyPath<Local, Field<Value>>,
+        _ foreign: KeyPath<Foreign, Model.Field<Value?>>,
+        to local: KeyPath<Local, Model.Field<Value>>,
         method: DatabaseQuery.Join.Method = .inner,
         alias: String? = nil
     ) -> Self
-        where Foreign: FluentKit.Model, Local: FluentKit.Model
+        where Value: Codable, Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
             Foreign.self, Foreign.key(for: foreign),
@@ -52,12 +50,12 @@ extension QueryBuilder {
 
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value>>,
-        to local: KeyPath<Local, Field<Value?>>,
+        _ foreign: KeyPath<Foreign, Model.Field<Value>>,
+        to local: KeyPath<Local, Model.Field<Value?>>,
         method: DatabaseQuery.Join.Method = .inner,
         alias: String? = nil
     ) -> Self
-        where Foreign: FluentKit.Model, Local: FluentKit.Model
+        where Value: Codable, Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
             Foreign.self, Foreign.key(for: foreign),
@@ -69,12 +67,12 @@ extension QueryBuilder {
 
     @discardableResult
     public func join<Foreign, Local, Value>(
-        _ foreign: KeyPath<Foreign, Field<Value>>,
-        to local: KeyPath<Local, Field<Value>>,
+        _ foreign: KeyPath<Foreign, Model.Field<Value>>,
+        to local: KeyPath<Local, Model.Field<Value>>,
         method: DatabaseQuery.Join.Method = .inner,
         alias: String? = nil
     ) -> Self
-        where Foreign: FluentKit.Model, Local: FluentKit.Model
+        where Value: Codable, Foreign: FluentKit.Model, Local: FluentKit.Model
     {
         return self.join(
             Foreign.self, Foreign.key(for: foreign),

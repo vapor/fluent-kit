@@ -16,6 +16,14 @@ public protocol Database {
 }
 
 extension Database {
+    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
+        where Model: FluentKit.Model
+    {
+        return .init(database: self)
+    }
+}
+
+extension Database {
     public var configuration: DatabaseConfiguration {
         self.context.configuration
     }

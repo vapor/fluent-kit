@@ -182,7 +182,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         let to = From()[keyPath: self.relationKey].to
         return To.query(on: database)
             .join(to)
-            .filter(from.appending(path: \.$id), in: Set(ids))
+            .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
             .all()
             .flatMapThrowing
         {

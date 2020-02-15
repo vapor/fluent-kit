@@ -7,7 +7,7 @@ extension Model {
 public final class ModelOptionalParent<From, To>
     where From: Model, To: Model
 {
-    @Field
+    @ModelField<From, To.IDValue?>
     public var id: To.IDValue?
 
     public var wrappedValue: To? {
@@ -48,7 +48,7 @@ extension ModelOptionalParent: Relation {
 }
 
 extension ModelOptionalParent: FieldRepresentable {
-    public var field: Field<To.IDValue?> {
+    public var field: ModelField<From, To.IDValue?> {
         return self.$id
     }
 }
@@ -66,7 +66,7 @@ extension ModelOptionalParent: AnyProperty {
     }
 
     func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+        let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
         // TODO: allow for nested decoding
     }
@@ -116,7 +116,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
         }
 
         return To.query(on: database)
-            .filter(To.key(for: \._$id), in: Set(ids))
+            .filter(\._$id ~~ Set(ids))
             .all()
             .map
         {
