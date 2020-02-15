@@ -5,6 +5,7 @@ extension FluentBenchmarker {
         ]) {
             do {
                 let planetsPage1 = try Planet.query(on: self.database)
+                    .sort(\.$name)
                     .paginate(PageRequest(page: 1, per: 2))
                     .wait()
 
@@ -12,11 +13,12 @@ extension FluentBenchmarker {
                 XCTAssertEqual(planetsPage1.metadata.per, 2)
                 XCTAssertEqual(planetsPage1.metadata.total, 9)
                 XCTAssertEqual(planetsPage1.items.count, 2)
-                XCTAssertEqual(planetsPage1.items[0].name, "Mercury")
-                XCTAssertEqual(planetsPage1.items[1].name, "Venus")
+                XCTAssertEqual(planetsPage1.items[0].name, "Earth")
+                XCTAssertEqual(planetsPage1.items[1].name, "Jupiter")
             }
             do {
                 let planetsPage2 = try Planet.query(on: self.database)
+                    .sort(\.$name)
                     .paginate(PageRequest(page: 2, per: 2))
                     .wait()
 
@@ -24,13 +26,14 @@ extension FluentBenchmarker {
                 XCTAssertEqual(planetsPage2.metadata.per, 2)
                 XCTAssertEqual(planetsPage2.metadata.total, 9)
                 XCTAssertEqual(planetsPage2.items.count, 2)
-                XCTAssertEqual(planetsPage2.items[0].name, "Earth")
-                XCTAssertEqual(planetsPage2.items[1].name, "Mars")
+                XCTAssertEqual(planetsPage2.items[0].name, "Mars")
+                XCTAssertEqual(planetsPage2.items[1].name, "Mercury")
             }
             do {
                 let galaxiesPage = try Galaxy.query(on: self.database)
                     .filter(\.$name == "Milky Way")
                     .with(\.$stars)
+                    .sort(\.$name)
                     .paginate(PageRequest(page: 1, per: 1))
                     .wait()
 
