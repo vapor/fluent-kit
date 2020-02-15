@@ -55,10 +55,19 @@ final class FluentKitTests: XCTestCase {
         db.reset()
     }
     
+    func testSingleColumnSelect() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        
+        _ = try Planet.query(on: db).all(\.$name).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" FROM "planets""#)
+        db.reset()
+    }
+    
     func testSQLDistinct() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         
-        _ = try Planet.query(on: db).all(uniqueOn: \.$name).wait()
+        _ = try Planet.query(on: db).unique().all(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" FROM "planets""#)
         db.reset()
