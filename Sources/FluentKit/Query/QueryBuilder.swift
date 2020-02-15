@@ -117,27 +117,8 @@ public final class QueryBuilder<Model>
             .all()
             .map { $0.first }
     }
-    
-    public func all() -> EventLoopFuture<[Model]> {
-        var models: [Result<Model, Error>] = []
-        return self.all { model in
-            models.append(model)
-        }.flatMapThrowing {
-            return try models
-                .map { try $0.get() }
-        }
-    }
 
-    internal func action(_ action: DatabaseQuery.Action) -> Self {
-        self.query.action = action
-        return self
-    }
-    
-    public func run() -> EventLoopFuture<Void> {
-        return self.run { _ in }
-    }
-
-    public func all<Field>(_ key: Field.Key) -> EventLoopFuture<[Field.Value]>
+    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
         where Field: FieldRepresentable,
             Field.Model == Model
     {
@@ -151,7 +132,10 @@ public final class QueryBuilder<Model>
         }
     }
 
-    public func all<Joined, Field>(_ joined: Joined.Type, _ key: Field.Key) -> EventLoopFuture<[Field.Value]>
+    public func all<Joined, Field>(
+        _ joined: Joined.Type,
+        _ key: KeyPath<Joined, Field>
+    ) -> EventLoopFuture<[Field.Value]>
         where Field: FieldRepresentable,
             Field.Model == Joined
     {
@@ -163,6 +147,20 @@ public final class QueryBuilder<Model>
                 try $0.joined(Joined.self)[keyPath: key].field.wrappedValue
             }
         }
+    }
+
+    public func all() -> EventLoopFuture<[Model]> {
+        var models: [Result<Model, Error>] = []
+        return self.all { model in
+            models.append(model)
+        }.flatMapThrowing {
+            return try models
+                .map { try $0.get() }
+        }
+    }
+
+    public func run() -> EventLoopFuture<Void> {
+        return self.run { _ in }
     }
 
     public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
@@ -193,6 +191,12 @@ public final class QueryBuilder<Model>
             return done
         }
     }
+
+    internal func action(_ action: DatabaseQuery.Action) -> Self {
+        self.query.action = action
+        return self
+    }
+
 
     func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it

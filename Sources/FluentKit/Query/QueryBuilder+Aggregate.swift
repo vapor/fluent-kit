@@ -2,14 +2,21 @@ extension QueryBuilder {
     // MARK: Aggregate
 
     public func count() -> EventLoopFuture<Int> {
-        return self.aggregate(.count, Model.key(for: \Model._$id), as: Int.self)
+        self.count(\._$id)
+    }
+
+    public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
+        where Field: FieldRepresentable,
+            Field.Model == Model
+    {
+        self.aggregate(.count, key, as: Int.self)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: FieldRepresentable,
             Field.Model == Model
     {
-        return self.aggregate(.sum, key)
+        self.aggregate(.sum, key)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
@@ -17,14 +24,14 @@ extension QueryBuilder {
             Field.Value: OptionalType,
             Field.Model == Model
     {
-        return self.aggregate(.sum, key)
+        self.aggregate(.sum, key)
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: FieldRepresentable,
             Field.Model == Model
     {
-        return self.aggregate(.average, key)
+        self.aggregate(.average, key)
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
@@ -32,14 +39,14 @@ extension QueryBuilder {
             Field.Value: OptionalType,
             Field.Model == Model
     {
-        return self.aggregate(.average, key)
+        self.aggregate(.average, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: FieldRepresentable,
             Field.Model == Model
     {
-        return self.aggregate(.minimum, key)
+        self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
@@ -47,14 +54,14 @@ extension QueryBuilder {
             Field.Value: OptionalType,
             Field.Model == Model
     {
-        return self.aggregate(.minimum, key)
+        self.aggregate(.minimum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: FieldRepresentable,
             Field.Model == Model
     {
-        return self.aggregate(.maximum, key)
+        self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
@@ -62,7 +69,7 @@ extension QueryBuilder {
             Field.Value: OptionalType,
             Field.Model == Model
     {
-        return self.aggregate(.maximum, key)
+        self.aggregate(.maximum, key)
     }
 
     public func aggregate<Field, Result>(
@@ -72,7 +79,7 @@ extension QueryBuilder {
     ) -> EventLoopFuture<Result>
         where Field: FieldRepresentable, Result: Codable
     {
-        return self.aggregate(method, Model()[keyPath: field].field.key, as: Result.self)
+        self.aggregate(method, Model()[keyPath: field].field.key, as: Result.self)
     }
 
     public func aggregate<Result>(

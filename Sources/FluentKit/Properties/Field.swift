@@ -87,10 +87,6 @@ public protocol FieldRepresentable {
     var field: Model.Field<Value> { get }
 }
 
-extension FieldRepresentable {
-    public typealias Key = KeyPath<Model, Self>
-}
-
 protocol AnyField: AnyProperty {
     var key: String { get }
     var inputValue: DatabaseQuery.Value? { get set }

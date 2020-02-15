@@ -3,7 +3,7 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter<Field>(
-        _ field: Field.Key,
+        _ field: KeyPath<Model, Field>,
         _ method: DatabaseQuery.Filter.Method,
         _ value: Field.Value
     ) -> Self
@@ -14,9 +14,9 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter<Left, Right>(
-        _ lhsField: Left.Key,
+        _ lhsField: KeyPath<Model, Left>,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhsField: Right.Key
+        _ rhsField: KeyPath<Model, Right>
     ) -> Self
         where Left: FieldRepresentable,
             Left.Model == Model,
