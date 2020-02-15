@@ -94,6 +94,8 @@ extension QueryBuilder {
         // read IDs from the aggreate reply when performing
         // the eager load subqueries.
         copy.eagerLoaders = .init()
+        // Remove all sorts since they may be incompatible with aggregates.
+        copy.query.sorts = []
         copy.query.fields = [.aggregate(.fields(
             method: method,
             fields: [.field(
