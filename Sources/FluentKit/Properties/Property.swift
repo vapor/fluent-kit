@@ -35,8 +35,6 @@ extension AnyField where Self: FieldRepresentable {
 }
 
 public protocol EagerLoadable {
-    associatedtype EagerLoadValue
-    var eagerLoaded: EagerLoadValue? { get }
     func eagerLoad<Model>(to builder: QueryBuilder<Model>)
         where Model: FluentKit.Model
 }

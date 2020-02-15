@@ -7,7 +7,7 @@ public final class Parent<To>
 
     public var wrappedValue: To {
         get {
-            guard let value = self.eagerLoadedValue else {
+            guard let value = self.value else {
                 fatalError("Parent relation not eager loaded, use $ prefix to access")
             }
             return value
@@ -19,7 +19,7 @@ public final class Parent<To>
         return self
     }
 
-    var eagerLoadedValue: To?
+    public var value: To?
 
     public init(key: String) {
         self._id = .init(key: key)
@@ -29,16 +29,18 @@ public final class Parent<To>
         return To.query(on: database)
             .filter(\._$id == self.id)
     }
+}
 
-    public func get(on database: Database) -> EventLoopFuture<To> {
-        return self.query(on: database).first().flatMapThrowing { parent in
-            guard let parent = parent else {
-                throw FluentError.missingParent
-            }
-            return parent
-        }
+extension Parent: Relation {
+    public var name: String {
+        "Parent<\(To.self)>(key: \(self.key))"
     }
 
+    public func load(on database: Database) -> EventLoopFuture<Void> {
+        self.query(on: database).first().map {
+            self.value = $0
+        }
+    }
 }
 
 extension Parent: FieldRepresentable {
@@ -50,7 +52,7 @@ extension Parent: FieldRepresentable {
 extension Parent: AnyProperty {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        if let parent = self.eagerLoadedValue {
+        if let parent = self.value {
             try container.encode(parent)
         } else {
             try container.encode([
