@@ -1,7 +1,7 @@
 extension QueryBuilder {
     @discardableResult
     public func filter(_ filter: ModelFieldFilter<Model, Model>) -> Self {
-        return self.filter(
+        self.filter(
             .field(path: filter.lhsPath, schema: Model.schema, alias: nil),
             filter.method,
             .field(path: filter.rhsPath, schema: Model.schema, alias: nil)
@@ -12,7 +12,7 @@ extension QueryBuilder {
     public func filter<Left, Right>(_ filter: ModelFieldFilter<Left, Right>) -> Self
         where Left: FluentKit.Model, Right: FluentKit.Model
     {
-        return self.filter(
+        self.filter(
             .field(path: filter.lhsPath, schema: Left.schema, alias: nil),
             filter.method,
             .field(path: filter.rhsPath, schema: Right.schema, alias: nil)
@@ -23,7 +23,7 @@ extension QueryBuilder {
     public func filter<Alias>(_ alias: Alias.Type, _ filter: ModelFieldFilter<Alias.Model, Alias.Model>) -> Self
         where Alias: ModelAlias
     {
-        return self.filter(
+        self.filter(
             .field(path: filter.lhsPath, schema: Alias.alias, alias: nil),
             filter.method,
             .field(path: filter.rhsPath, schema: Alias.alias, alias: nil)
@@ -34,7 +34,7 @@ extension QueryBuilder {
     public func filter<Joined>(_ alias: Joined.Type, _ filter: ModelFieldFilter<Joined, Joined>) -> Self
         where Joined: FluentKit.Model
     {
-        return self.filter(
+        self.filter(
             .field(path: filter.lhsPath, schema: Joined.schema, alias: nil),
             filter.method,
             .field(path: filter.rhsPath, schema: Joined.schema, alias: nil)
