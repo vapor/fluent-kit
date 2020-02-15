@@ -1,19 +1,24 @@
+extension Model {
+    public typealias Field<Value> = ModelField<Self, Value>
+        where Value: Codable
+}
+
 @propertyWrapper
-public final class Field<Value>: AnyField, FieldRepresentable
-    where Value: Codable
+public final class ModelField<Model, Value>: AnyField, FieldRepresentable
+    where Model: FluentKit.Model, Value: Codable
 {
     public let key: String
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
 
-    public var field: Field<Value> {
+    public var field: ModelField<Model, Value> {
         return self
     }
     
-    public var projectedValue: Field<Value> {
+    public var projectedValue: ModelField<Model, Value> {
         return self
     }
-    
+
     public var wrappedValue: Value {
         get {
             if let value = self.inputValue {
@@ -64,9 +69,9 @@ public final class Field<Value>: AnyField, FieldRepresentable
 
     func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        if let valueType = Value.self as? _Optional.Type {
+        if let valueType = Value.self as? AnyOptionalType.Type {
             if container.decodeNil() {
-                self.wrappedValue = (valueType._none as! Value)
+                self.wrappedValue = (valueType.nil as! Value)
             } else {
                 self.wrappedValue = try container.decode(Value.self)
             }
@@ -76,12 +81,35 @@ public final class Field<Value>: AnyField, FieldRepresentable
     }
 }
 
-
-private protocol _Optional {
-    static var _none: Any { get }
+public protocol FieldRepresentable {
+    associatedtype Model: FluentKit.Model
+    associatedtype Value: Codable
+    var field: Model.Field<Value> { get }
 }
-extension Optional: _Optional {
-    static var _none: Any {
-        return Self.none as Any
+
+protocol AnyField: AnyProperty {
+    var key: String { get }
+    var inputValue: DatabaseQuery.Value? { get set }
+}
+
+extension AnyField where Self: FieldRepresentable {
+    var key: String {
+        return self.field.key
+    }
+
+    var inputValue: DatabaseQuery.Value? {
+        get { self.field.inputValue }
+        set { self.field.inputValue = newValue }
+    }
+}
+
+extension AnyModel {
+    var fields: [(String, AnyField)] {
+        self.properties.compactMap {
+            guard let value = $1 as? AnyField else {
+                return nil
+            }
+            return ($0, value)
+        }
     }
 }

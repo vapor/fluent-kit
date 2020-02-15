@@ -1,10 +1,7 @@
 extension FluentBenchmarker {
     public func testGroup() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            PlanetMigration(),
-            GalaxySeed(),
-            PlanetSeed()
+        try self.runTest(#function, [
+            SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
                 .group(.or) {

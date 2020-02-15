@@ -1,8 +1,13 @@
+extension Model {
+    public typealias Parent<To> = ModelParent<Self, To>
+        where To: FluentKit.Model
+}
+
 @propertyWrapper
-public final class Parent<To>
-    where To: Model
+public final class ModelParent<From, To>
+    where From: Model, To: Model
 {
-    @Field
+    @ModelField<From, To.IDValue>
     public var id: To.IDValue
 
     public var wrappedValue: To {
@@ -15,7 +20,7 @@ public final class Parent<To>
         set { fatalError("use $ prefix to access") }
     }
 
-    public var projectedValue: Parent<To> {
+    public var projectedValue: ModelParent<From, To> {
         return self
     }
 
@@ -31,9 +36,9 @@ public final class Parent<To>
     }
 }
 
-extension Parent: Relation {
+extension ModelParent: Relation {
     public var name: String {
-        "Parent<\(To.self)>(key: \(self.key))"
+        "Parent<\(From.self), \(To.self)>(key: \(self.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -43,13 +48,13 @@ extension Parent: Relation {
     }
 }
 
-extension Parent: FieldRepresentable {
-    public var field: Field<To.IDValue> {
+extension ModelParent: FieldRepresentable {
+    public var field: ModelField<From, To.IDValue> {
         return self.$id
     }
 }
 
-extension Parent: AnyProperty {
+extension ModelParent: AnyProperty {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -62,10 +67,79 @@ extension Parent: AnyProperty {
     }
 
     func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _ModelCodingKey.self)
+        let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
         // TODO: allow for nested decoding
     }
 }
 
-extension Parent: AnyField { }
+extension ModelParent: AnyField { }
+
+extension ModelParent: EagerLoadable {
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.Parent<To>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = ParentEagerLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func eagerLoad<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Parent<To>>,
+        to builder: Builder
+    ) where
+        Loader: EagerLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughParentEagerLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
+}
+
+private struct ParentEagerLoader<From, To>: EagerLoader
+    where From: Model, To: Model
+{
+    let relationKey: KeyPath<From, From.Parent<To>>
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let ids = models.map {
+            $0[keyPath: self.relationKey].id
+        }
+
+        guard !ids.isEmpty else {
+            return database.eventLoop.makeSucceededFuture(())
+        }
+
+        return To.query(on: database)
+            .filter(\._$id ~~ Set(ids))
+            .all()
+            .map
+        {
+            for model in models {
+                model[keyPath: self.relationKey].value = $0.filter {
+                    $0.id == model[keyPath: self.relationKey].id
+                }.first
+            }
+        }
+    }
+}
+
+private struct ThroughParentEagerLoader<From, Through, Loader>: EagerLoader
+    where From: Model, Loader: EagerLoader, Loader.Model == Through
+{
+    let relationKey: KeyPath<From, From.Parent<Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.map {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
+    }
+}

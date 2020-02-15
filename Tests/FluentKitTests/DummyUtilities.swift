@@ -35,6 +35,10 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     public func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
         fatalError()
     }
+
+    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
     
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(database: self)

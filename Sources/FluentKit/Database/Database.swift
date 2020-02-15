@@ -9,8 +9,18 @@ public protocol Database {
     func execute(
         schema: DatabaseSchema
     ) -> EventLoopFuture<Void>
+
+    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
     func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+}
+
+extension Database {
+    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
+        where Model: FluentKit.Model
+    {
+        return .init(database: self)
+    }
 }
 
 extension Database {
@@ -33,7 +43,7 @@ public protocol DatabaseDriver {
 }
 
 public final class DatabaseConfiguration {
-    var middleware: [AnyModelMiddleware]
+    public var middleware: [AnyModelMiddleware]
     public init() {
         self.middleware = []
     }

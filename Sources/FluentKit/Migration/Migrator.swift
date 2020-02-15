@@ -21,7 +21,7 @@ public struct Migrator {
         )
     }
 
-    init(
+    public init(
         databaseFactory: @escaping (DatabaseID?) -> (Database),
         migrations: Migrations,
         on eventLoop: EventLoop
@@ -50,7 +50,7 @@ public struct Migrator {
         }.flatMap { (lastBatch, migrations) in
             .andAllSync(migrations.map { item in
                 { self.prepare(item, batch: lastBatch + 1) }
-            }, eventLoop: self.eventLoop)
+            }, on: self.eventLoop)
         }
     }
     
@@ -66,7 +66,7 @@ public struct Migrator {
         self.preparedMigrations(batch: number).flatMap { migrations in
             EventLoopFuture<Void>.andAllSync(migrations.map { item in
                 { self.revert(item) }
-            }, eventLoop: self.eventLoop)
+            }, on: self.eventLoop)
         }
     }
     
@@ -74,7 +74,7 @@ public struct Migrator {
         self.preparedMigrations().flatMap { migrations in
             .andAllSync(migrations.map { item in
                 { self.revert(item) }
-            }, eventLoop: self.eventLoop)
+            }, on: self.eventLoop)
         }.flatMap { _ in
             self.revertMigrationLog()
         }
@@ -187,10 +187,10 @@ public struct Migrator {
     }
 }
 
-private extension EventLoopFuture {
-    static func andAllSync(
+extension EventLoopFuture {
+    public static func andAllSync(
         _ futures: [() -> EventLoopFuture<Void>],
-        eventLoop: EventLoop
+        on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
         let promise = eventLoop.makePromise(of: Void.self)
         

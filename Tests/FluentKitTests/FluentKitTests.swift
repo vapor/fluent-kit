@@ -19,7 +19,7 @@ final class FluentKitTests: XCTestCase {
 
         XCTAssertEqual(Planet.key(for: \.$id), "id")
         XCTAssertEqual(Planet.key(for: \.$name), "name")
-        XCTAssertEqual(Planet.key(for: \.$galaxy.$id), "galaxy_id")
+        XCTAssertEqual(Planet.key(for: \.$star.$id), "star_id")
     }
 
     func testGalaxyPlanetSorts() throws {
@@ -29,9 +29,9 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
         db.reset()
         
-        _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$name, .ascending).all().wait()
+        _ = try Planet.query(on: db).join(\.$star).sort(\Star.$name, .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db).sort(\.$id, .descending).all().wait()
@@ -39,9 +39,9 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."id" DESC"#), true)
         db.reset()
         
-        _ = try Planet.query(on: db).join(\.$galaxy).sort(\Galaxy.$id, .ascending).all().wait()
+        _ = try Planet.query(on: db).join(\.$star).sort(\Star.$id, .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."id" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."id" ASC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db).sort("name", .descending).all().wait()
@@ -49,9 +49,9 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
         db.reset()
         
-        _ = try Planet.query(on: db).join(\.$galaxy).sort(Galaxy.self, "name", .ascending).all().wait()
+        _ = try Planet.query(on: db).join(\.$star).sort(Star.self, "name", .ascending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "galaxies"."name" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
         db.reset()
     }
     
