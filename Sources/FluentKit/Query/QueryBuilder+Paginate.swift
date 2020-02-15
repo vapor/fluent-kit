@@ -8,8 +8,8 @@ extension QueryBuilder {
     public func paginate(
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
-        let count = self.copy().count()
-        let items = self.range(request.start..<request.end).all()
+        let count = self.count()
+        let items = self.copy().range(request.start..<request.end).all()
         return items.and(count).map { (models, total) in
             Page(
                 items: models,
