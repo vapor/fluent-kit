@@ -24,6 +24,18 @@ extension FluentBenchmarker {
             let maxName = try Planet.query(on: self.database)
                 .max(\.$name).wait()
             XCTAssertEqual(maxName, "Venus")
+
+            // eager loads ignored
+            let countWithEagerLoads = try Galaxy.query(on: self.database)
+                .with(\.$stars)
+                .count().wait()
+            XCTAssertEqual(countWithEagerLoads, 4)
+
+            // eager loads ignored again
+            let maxNameWithEagerLoads = try Galaxy.query(on: self.database)
+                .with(\.$stars)
+                .max(\.$name).wait()
+            XCTAssertEqual(maxNameWithEagerLoads, "Pinwheel Galaxy")
         }
 
         // empty db

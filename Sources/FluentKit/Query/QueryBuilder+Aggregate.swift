@@ -83,6 +83,10 @@ extension QueryBuilder {
         where Result: Codable
     {
         let copy = self.copy()
+        // Remove all eager load requests otherwise we try to
+        // read IDs from the aggreate reply when performing
+        // the eager load subqueries.
+        copy.eagerLoaders = .init()
         copy.query.fields = [.aggregate(.fields(
             method: method,
             fields: [.field(

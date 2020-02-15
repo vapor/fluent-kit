@@ -40,8 +40,13 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
+        // Only make the entire query DISTINCT if there are no aggregates.
+        // Otherwise the aggregates will make use of the DISTINCT directly.
+        select.isDistinct = query.isUnique && !query.fields.contains {
+            if case .aggregate(_) = $0 { return true } else { return false }
+        }
         select.tables.append(SQLIdentifier(query.schema))
-        select.columns = query.fields.map(self.field)
+        select.columns = query.fields.map { self.field($0, query.isUnique) }
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
         select.orderBy = query.sorts.map(self.sort)
@@ -146,6 +151,10 @@ public struct SQLQueryConverter {
     }
     
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+        self.field(field, false)
+    }
+    
+    private func field(_ field: DatabaseQuery.Field, _ isUnique: Bool) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
@@ -186,7 +195,14 @@ public struct SQLQueryConverter {
                 case .minimum: name = "MIN"
                 case .custom(let custom): name = custom as! String
                 }
-                return SQLAlias(SQLFunction(name, args: fields.map { self.field($0) }), as: SQLIdentifier("fluentAggregate"))
+                return SQLAlias(
+                    SQLFunction(
+                        name,
+                        args: isUnique ?
+                            [SQLDistinct(fields.map(self.field))]
+                            : fields.map { self.field($0) }),
+                        as: SQLIdentifier("fluentAggregate")
+                    )
             }
         }
     }

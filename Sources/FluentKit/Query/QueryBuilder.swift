@@ -84,6 +84,13 @@ public final class QueryBuilder<Model>
         self.query.offsets.append(.count(count))
         return self
     }
+
+    // MARK: Unqiue
+
+    public func unique() -> Self {
+        self.query.isUnique = true
+        return self
+    }
     
     // MARK: Fetch
     
@@ -129,7 +136,35 @@ public final class QueryBuilder<Model>
     public func run() -> EventLoopFuture<Void> {
         return self.run { _ in }
     }
-    
+
+    public func all<Field>(_ key: Field.Key) -> EventLoopFuture<[Field.Value]>
+        where Field: FieldRepresentable,
+            Field.Model == Model
+    {
+        let copy = self.copy()
+        let fieldKey = Model.key(for: key)
+        copy.query.fields = [.field(path: [fieldKey], schema: Model.schema, alias: nil)]
+        return copy.all().map {
+            $0.map {
+                $0[keyPath: key].field.wrappedValue
+            }
+        }
+    }
+
+    public func all<Joined, Field>(_ joined: Joined.Type, _ key: Field.Key) -> EventLoopFuture<[Field.Value]>
+        where Field: FieldRepresentable,
+            Field.Model == Joined
+    {
+        let copy = self.copy()
+        let fieldKey = Joined.key(for: key)
+        copy.query.fields = [.field(path: [fieldKey], schema: Model.schema, alias: nil)]
+        return copy.all().flatMapThrowing {
+            try $0.map {
+                try $0.joined(Joined.self)[keyPath: key].field.wrappedValue
+            }
+        }
+    }
+
     public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
 

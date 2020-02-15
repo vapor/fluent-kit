@@ -7,6 +7,13 @@ extension Model {
 public final class ModelSiblings<From, To, Through>: AnyProperty
     where From: Model, To: Model, Through: Model
 {
+    public enum AttachMethod {
+        // always create the pivot
+        case always
+
+        // only create the pivot if it doesn't already exist
+        case ifNotExists
+    }
 
     let from: KeyPath<Through, Through.Parent<From>>
     let to: KeyPath<Through, Through.Parent<To>>
@@ -39,6 +46,28 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
         return self
     }
 
+    // MARK: Checking state
+
+    public func isAttached(to: To, on database: Database) -> EventLoopFuture<Bool> {
+        guard let toID = to.id else {
+            fatalError("Cannot attach unsaved model.")
+        }
+
+        return self.isAttached(toID: toID, on: database)
+    }
+
+    public func isAttached(toID: To.IDValue, on database: Database) -> EventLoopFuture<Bool> {
+        guard let fromID = self.idValue else {
+            fatalError("Cannot check if siblings are attached to an unsaved model.")
+        }
+
+        return Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(self.to.appending(path: \.$id) == toID)
+            .first()
+            .map { $0 != nil }
+    }
+
     // MARK: Operations
 
     public func attach(
@@ -60,6 +89,26 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
             edit(pivot)
             return pivot
         }.create(on: database)
+    }
+
+    public func attach(
+        _ to: To,
+        method: AttachMethod,
+        on database: Database,
+        _ edit: @escaping (Through) -> () = { _ in }
+    ) -> EventLoopFuture<Void> {
+        switch method {
+        case .always:
+            return self.attach(to, on: database, edit)
+        case .ifNotExists:
+            return self.isAttached(to: to, on: database).flatMap { alreadyAttached in
+                if alreadyAttached {
+                    return database.eventLoop.makeSucceededFuture(())
+                }
+
+                return self.attach(to, on: database, edit)
+            }
+        }
     }
 
     public func attach(
