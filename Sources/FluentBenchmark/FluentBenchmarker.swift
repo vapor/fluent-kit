@@ -546,6 +546,20 @@ public final class FluentBenchmarker {
             guard maxID == 9 else {
                 throw Failure("unexpected maxID: \(maxID ?? 0)")
             }
+            // eager loads ignored
+            let countWEagerLoads = try Galaxy.query(on: self.database)
+                .with(\.$planets)
+                .count().wait()
+            guard countWEagerLoads == 3 else {
+                throw Failure("unexpected count: \(countWEagerLoads)")
+            }
+            // eager loads ignored again
+            let maxIDWEagerLoads = try Galaxy.query(on: self.database)
+                .with(\.$planets)
+                .max(\.$id).wait()
+            guard maxIDWEagerLoads == 3 else {
+                throw Failure("unexpected maxID: \(maxIDWEagerLoads ?? 0)")
+            }
         }
         // empty db
         try runTest(#function, [
