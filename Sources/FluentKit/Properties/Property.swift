@@ -18,7 +18,7 @@ extension AnyProperty where Self: FieldRepresentable {
     }
 }
 
-extension AnyModel {
+extension FieldGroup {
     var properties: [(String, AnyProperty)] {
         return Mirror(reflecting: self)
             .children

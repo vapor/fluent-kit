@@ -1,16 +1,10 @@
-extension Model {
-    public typealias Field<Value> = ModelField<Self, Value>
-        where Value: Codable
-}
-
-@propertyWrapper
-public final class ModelField<Model, Value>: AnyField, FieldRepresentable
-    where Model: FluentKit.Model, Value: Codable
-{
+@propertyWrapper @dynamicMemberLookup
+public final class ModelField<Model, Value>: AnyField, FieldRepresentable where Model: FieldGroup, Value: Codable {
+    public private(set) var keyPath = [String]()
     public let key: String
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-
+    
     public var field: ModelField<Model, Value> {
         return self
     }
@@ -44,6 +38,17 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
     public init(key: String) {
         self.key = key
     }
+    
+    public subscript<NestedValue>(
+        dynamicMember keyPath: KeyPath<Value, ModelField<Value, NestedValue>>
+    ) -> ModelField<Model, NestedValue> where Value: FieldGroup {
+        let field = wrappedValue[keyPath: keyPath]
+        let newField = ModelField<Model, NestedValue>(key: field.key)
+        newField.outputValue = field.outputValue
+        newField.inputValue = field.inputValue
+        newField.keyPath = self.keyPath + [self.key]
+        return newField
+    }
 
     // MARK: Property
 
@@ -62,7 +67,7 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
@@ -82,9 +87,9 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
 }
 
 public protocol FieldRepresentable {
-    associatedtype Model: FluentKit.Model
+    associatedtype Model: FieldGroup
     associatedtype Value: Codable
-    var field: Model.Field<Value> { get }
+    var field: ModelField<Model, Value> { get }
 }
 
 protocol AnyField: AnyProperty {

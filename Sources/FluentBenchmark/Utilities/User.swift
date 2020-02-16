@@ -1,12 +1,22 @@
 import FluentKit
 
 final class User: Model {
-    struct Pet: Codable {
+    final class Pet: FieldGroup {
         enum Animal: String, Codable {
             case cat, dog
         }
+        
+        @Field(key: "name")
         var name: String
+        
+        @Field(key: "animal")
         var type: Animal
+        
+        init() {}
+        init(name: String, type: Animal) {
+            self.name = name
+            self.type = type
+        }
     }
     static let schema = "users"
     

@@ -5,7 +5,7 @@ extension FluentBenchmarker {
             UserSeed()
         ]) {
             let users = try User.query(on: self.database)
-                .filter(\.$pet, "type", .equal, User.Pet.Animal.cat)
+                .filter(\.$pet.$type,  .equal, User.Pet.Animal.cat)
                 .all().wait()
 
             guard let user = users.first, users.count == 1 else {

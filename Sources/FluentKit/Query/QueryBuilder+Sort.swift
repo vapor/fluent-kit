@@ -12,7 +12,7 @@ extension QueryBuilder {
     }
 
 
-    public func sort<Joined, Field>(
+    public func sort<Joined: FluentKit.Model, Field>(
         _ field: KeyPath<Joined, Field>,
         _ direction: DatabaseQuery.Sort.Direction = .ascending,
         alias: String? = nil

@@ -137,7 +137,8 @@ public final class QueryBuilder<Model>
         _ key: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
         where Field: FieldRepresentable,
-            Field.Model == Joined
+            Field.Model == Joined,
+            Joined: FluentKit.Model
     {
         let copy = self.copy()
         let fieldKey = Joined.key(for: key)

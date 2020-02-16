@@ -5,12 +5,6 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func key<Field>(for field: KeyPath<Self, Field>) -> String
-        where Field: FieldRepresentable
-    {
-        return Self.init()[keyPath: field].field.key
-    }
-
     public static func query(on database: Database) -> QueryBuilder<Self> {
         return .init(database: database)
     }

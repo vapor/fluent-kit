@@ -1,6 +1,5 @@
-public protocol AnyModel: class, CustomStringConvertible, Codable {
+public protocol AnyModel: FieldGroup, CustomStringConvertible {
     static var schema: String { get }
-    init()
 }
 
 extension AnyModel {
