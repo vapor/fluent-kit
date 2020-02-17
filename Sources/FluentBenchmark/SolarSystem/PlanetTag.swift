@@ -3,7 +3,7 @@ import FluentKit
 public final class PlanetTag: Model {
     public static let schema = "planet+tag"
     
-    @ID(key: "id")
+    @ID(key: FluentBenchmarker.idKey)
     public var id: UUID?
 
     @Parent(key: "planet_id")

@@ -3,7 +3,7 @@ import FluentKit
 public final class Moon: Model {
     public static let schema = "moons"
 
-    @ID(key: "id")
+    @ID(key: FluentBenchmarker.idKey)
     public var id: UUID?
 
     @Field(key: "name")

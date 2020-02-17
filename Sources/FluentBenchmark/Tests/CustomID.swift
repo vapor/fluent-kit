@@ -20,7 +20,7 @@ extension FluentBenchmarker {
 private final class Foo: Model {
     static let schema = "foos"
 
-    @ID(key: "id")
+    @ID(key: FluentBenchmarker.idKey)
     var id: UUID?
 
     init() { }
