@@ -1,114 +1,9 @@
 extension FluentBenchmarker {
     public func testSameChildrenFromKey() throws {
-        final class Foo: Model {
-            static let schema = "foos"
-
-            struct _Migration: Migration {
-                func prepare(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("foos")
-                        .field("id", .int, .identifier(auto: true))
-                        .field("name", .string, .required)
-                        .create()
-                }
-
-                func revert(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("foos").delete()
-                }
-            }
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "name")
-            var name: String
-
-            @Children(for: \.$foo)
-            var bars: [Bar]
-
-            @Children(for: \.$foo)
-            var bazs: [Baz]
-
-            init() { }
-
-            init(id: Int? = nil, name: String) {
-                self.id = id
-                self.name = name
-            }
-        }
-
-        final class Bar: Model {
-            static let schema = "bars"
-
-            struct _Migration: Migration {
-                func prepare(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("bars")
-                        .field("id", .int, .identifier(auto: true))
-                        .field("bar", .int, .required)
-                        .field("foo_id", .int, .required)
-                        .create()
-                }
-
-                func revert(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("bars").delete()
-                }
-            }
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "bar")
-            var bar: Int
-
-            @Parent(key: "foo_id")
-            var foo: Foo
-
-            init() { }
-
-            init(id: Int? = nil, bar: Int, fooID: Int) {
-                self.id = id
-                self.bar = bar
-                self.$foo.id = fooID
-            }
-        }
-
-        final class Baz: Model {
-            static let schema = "bazs"
-
-            struct _Migration: Migration {
-                func prepare(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("bazs")
-                        .field("id", .int, .identifier(auto: true))
-                        .field("baz", .double, .required)
-                        .field("foo_id", .int, .required)
-                        .create()
-                }
-
-                func revert(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("bazs").delete()
-                }
-            }
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "baz")
-            var baz: Double
-
-            @Parent(key: "foo_id")
-            var foo: Foo
-
-            init() { }
-
-            init(id: Int? = nil, baz: Double, fooID: Int) {
-                self.id = id
-                self.baz = baz
-                self.$foo.id = fooID
-            }
-        }
         try runTest(#function, [
-            Foo._Migration(),
-            Bar._Migration(),
-            Baz._Migration()
+            FooMigration(),
+            BarMigration(),
+            BazMigration()
         ]) {
             let foo = Foo(name: "a")
             try foo.save(on: self.database).wait()
@@ -128,5 +23,111 @@ extension FluentBenchmarker {
             }
         }
     }
+}
 
+
+private final class Foo: Model {
+    static let schema = "foos"
+
+    @ID(key: FluentBenchmarker.idKey)
+    var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @Children(for: \.$foo)
+    var bars: [Bar]
+
+    @Children(for: \.$foo)
+    var bazs: [Baz]
+
+    init() { }
+
+    init(id: IDValue? = nil, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
+private struct FooMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("name", .string, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("foos").delete()
+    }
+}
+
+private final class Bar: Model {
+    static let schema = "bars"
+
+    @ID(key: FluentBenchmarker.idKey)
+    var id: UUID?
+
+    @Field(key: "bar")
+    var bar: Int
+
+    @Parent(key: "foo_id")
+    var foo: Foo
+
+    init() { }
+
+    init(id: IDValue? = nil, bar: Int, fooID: Foo.IDValue) {
+        self.id = id
+        self.bar = bar
+        self.$foo.id = fooID
+    }
+}
+
+private struct BarMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("bars")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("bar", .int, .required)
+            .field("foo_id", .uuid, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("bars").delete()
+    }
+}
+
+private final class Baz: Model {
+    static let schema = "bazs"
+
+    @ID(key: FluentBenchmarker.idKey)
+    var id: UUID?
+
+    @Field(key: "baz")
+    var baz: Double
+
+    @Parent(key: "foo_id")
+    var foo: Foo
+
+    init() { }
+
+    init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue) {
+        self.id = id
+        self.baz = baz
+        self.$foo.id = fooID
+    }
+}
+
+private struct BazMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("bazs")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("baz", .double, .required)
+            .field("foo_id", .uuid, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("bazs").delete()
+    }
 }

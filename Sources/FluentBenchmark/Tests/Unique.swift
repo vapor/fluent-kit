@@ -1,38 +1,5 @@
 extension FluentBenchmarker {
     public func testUniqueFields() throws {
-        final class Foo: Model {
-            static let schema = "foos"
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "bar")
-            var bar: String
-
-            @Field(key: "baz")
-            var baz: Int
-
-            init() { }
-            init(id: Int? = nil, bar: String, baz: Int) {
-                self.id = id
-                self.bar = bar
-                self.baz = baz
-            }
-        }
-        struct FooMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("foos")
-                    .field("id", .int, .identifier(auto: true))
-                    .field("bar", .string, .required)
-                    .field("baz", .int, .required)
-                    .unique(on: "bar", "baz")
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("foos").delete()
-            }
-        }
         try self.runTest(#function, [
             FooMigration(),
         ]) {
@@ -49,35 +16,73 @@ extension FluentBenchmarker {
 
     // https://github.com/vapor/fluent-kit/issues/112
     public func testDuplicatedUniquePropertyName() throws {
-        struct Foo: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("foos")
-                    .field("name", .string)
-                    .unique(on: "name")
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("foos").delete()
-            }
-        }
-        struct Bar: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("bars")
-                    .field("name", .string)
-                    .unique(on: "name")
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("bars").delete()
-            }
-        }
         try runTest(#function, [
-            Foo(),
-            Bar()
+            BarMigration(),
+            BazMigration()
         ]) {
             //
         }
+    }
+}
+
+private final class Foo: Model {
+    static let schema = "foos"
+
+    @ID(key: FluentBenchmarker.idKey)
+    var id: UUID?
+
+    @Field(key: "bar")
+    var bar: String
+
+    @Field(key: "baz")
+    var baz: Int
+
+    init() { }
+
+    init(id: IDValue? = nil, bar: String, baz: Int) {
+        self.id = id
+        self.bar = bar
+        self.baz = baz
+    }
+}
+
+private struct FooMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("bar", .string, .required)
+            .field("baz", .int, .required)
+            .unique(on: "bar", "baz")
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos").delete()
+    }
+}
+
+private struct BarMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("bars")
+            .field("name", .string)
+            .unique(on: "name")
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("bars").delete()
+    }
+}
+
+private struct BazMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("bazs")
+            .field("name", .string)
+            .unique(on: "name")
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("bazs").delete()
     }
 }

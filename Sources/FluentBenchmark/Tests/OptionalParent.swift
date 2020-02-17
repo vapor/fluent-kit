@@ -48,3 +48,70 @@ extension FluentBenchmarker {
         }
     }
 }
+
+private final class User: Model {
+    struct Pet: Codable {
+        enum Animal: String, Codable {
+            case cat, dog
+        }
+        var name: String
+        var type: Animal
+    }
+    static let schema = "users"
+
+    @ID(key: FluentBenchmarker.idKey)
+    var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "pet")
+    var pet: Pet
+
+    @OptionalParent(key: "bf_id")
+    var bestFriend: User?
+
+    @Children(for: \.$bestFriend)
+    var friends: [User]
+
+    init() { }
+
+    init(id: IDValue? = nil, name: String, pet: Pet, bestFriend: User? = nil) {
+        self.id = id
+        self.name = name
+        self.pet = pet
+        self.$bestFriend.id = bestFriend?.id
+    }
+}
+
+private struct UserMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("name", .string, .required)
+            .field("pet", .json, .required)
+            .field("bf_id", .uuid)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users").delete()
+    }
+}
+
+
+private struct UserSeed: Migration {
+    init() { }
+
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
+        let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog))
+        return logan.save(on: database)
+            .and(tanner.save(on: database))
+            .map { _ in }
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+}

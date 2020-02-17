@@ -8,6 +8,19 @@ extension FluentBenchmarker {
             XCTAssertNotNil(foo.id)
         }
     }
+
+    public func testAutoincrementingID() throws {
+        try self.runTest(#function, [
+            FooMigration()
+        ]) {
+            let foo1 = Foo(baz: "qux")
+            try foo1.save(on: self.database).wait()
+            XCTAssertEqual(foo1.id, 1)
+            let foo2 = Foo(baz: "qux")
+            try foo2.save(on: self.database).wait()
+            XCTAssertEqual(foo2.id, 2)
+        }
+    }
 }
 
 private final class Foo: Model {

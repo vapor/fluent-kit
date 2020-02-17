@@ -3,7 +3,7 @@ extension FluentBenchmarker {
         final class User: Model {
             static let schema = "users"
 
-            @ID(key: "id")
+            @ID(key: FluentBenchmarker.idKey)
             var id: UUID?
 
             @Field(key: "name")
@@ -43,7 +43,7 @@ extension FluentBenchmarker {
         final class Todo: Model {
             static let schema = "todos"
 
-            @ID(key: "id")
+            @ID(key: FluentBenchmarker.idKey)
             var id: UUID?
 
             @Field(key: "title")
@@ -85,34 +85,6 @@ extension FluentBenchmarker {
     }
 
     public func testNullifyField() throws {
-        final class Foo: Model {
-            static let schema = "foos"
-
-            @ID(key: "id")
-            var id: Int?
-
-            @Field(key: "bar")
-            var bar: String?
-
-            init() { }
-
-            init(id: Int? = nil, bar: String?) {
-                self.id = id
-                self.bar = bar
-            }
-        }
-        struct FooMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("foos")
-                    .field("id", .int, .identifier(auto: true))
-                    .field("bar", .string)
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("foos").delete()
-            }
-        }
         try runTest(#function, [
             FooMigration(),
         ]) {
@@ -165,5 +137,35 @@ extension FluentBenchmarker {
                 return
             }
         }
+    }
+}
+
+private final class Foo: Model {
+    static let schema = "foos"
+
+    @ID(key: FluentBenchmarker.idKey)
+    var id: UUID?
+
+    @Field(key: "bar")
+    var bar: String?
+
+    init() { }
+
+    init(id: IDValue? = nil, bar: String?) {
+        self.id = id
+        self.bar = bar
+    }
+}
+
+private struct FooMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("foos")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("bar", .string)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("foos").delete()
     }
 }
