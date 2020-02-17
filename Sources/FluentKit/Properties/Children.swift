@@ -35,7 +35,7 @@ public final class ModelChildren<From, To>: AnyProperty
     public var wrappedValue: [To] {
         get {
             guard let value = self.value else {
-                fatalError("Children relation not loaded.")
+                fatalError("Children relation not eager loaded, use $ prefix to access: \(name)")
             }
             return value
         }

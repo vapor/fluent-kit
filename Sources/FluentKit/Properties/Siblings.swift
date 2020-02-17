@@ -33,7 +33,7 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
     public var wrappedValue: [To] {
         get {
             guard let value = self.value else {
-                fatalError("Siblings relation not loaded.")
+                fatalError("Siblings relation not eager loaded, use $ prefix to access: \(name)")
             }
             return value
         }

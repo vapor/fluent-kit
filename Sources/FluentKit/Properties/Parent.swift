@@ -13,7 +13,7 @@ public final class ModelParent<From, To>
     public var wrappedValue: To {
         get {
             guard let value = self.value else {
-                fatalError("Parent relation not eager loaded, use $ prefix to access")
+                fatalError("Parent relation not eager loaded, use $ prefix to access: \(name)")
             }
             return value
         }
