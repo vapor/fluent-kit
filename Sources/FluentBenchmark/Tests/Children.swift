@@ -88,7 +88,7 @@ private struct BarMigration: Migration {
         database.schema("bars")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .int, .required)
-            .field("foo_id", .int, .required)
+            .field("foo_id", .uuid, .required)
             .create()
     }
 
@@ -123,7 +123,7 @@ private struct BazMigration: Migration {
         return database.schema("bazs")
             .field("id", .uuid, .identifier(auto: false))
             .field("baz", .double, .required)
-            .field("foo_id", .int, .required)
+            .field("foo_id", .uuid, .required)
             .create()
     }
 

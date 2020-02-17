@@ -90,7 +90,7 @@ private struct UserMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("pet", .json, .required)
-            .field("bf_id", .int)
+            .field("bf_id", .uuid)
             .create()
     }
 

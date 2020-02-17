@@ -197,8 +197,8 @@ struct MatchMigration: Migration {
         return database.schema("matches")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
-            .field("away_team_id", .int, .required)
-            .field("home_team_id", .int, .required)
+            .field("away_team_id", .uuid, .required)
+            .field("home_team_id", .uuid, .required)
             .create()
     }
 
@@ -265,7 +265,7 @@ private struct SchoolMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("pupils", .int, .required)
-            .field("city_id", .int, .required)
+            .field("city_id", .uuid, .required)
             .create()
     }
 
