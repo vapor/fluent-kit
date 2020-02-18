@@ -70,6 +70,8 @@ public final class Databases {
         on eventLoop: EventLoop
     ) -> Database? {
         let id = id ?? self.getDefaultID()
+        var logger = logger
+        logger[metadataKey: "database-id"] = .string(id.string)
         let context = DatabaseContext(
             configuration: self.configurations[id]!,
             logger: logger,
