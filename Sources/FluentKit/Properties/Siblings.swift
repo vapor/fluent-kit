@@ -227,19 +227,21 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
 
-        let from = From()[keyPath: self.relationKey].from
-        let to = From()[keyPath: self.relationKey].to
+        let throughFromParent = From()[keyPath: self.relationKey].from
+        let throughToParent = From()[keyPath: self.relationKey].to
         return To.query(on: database)
-            .join(to)
-            .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
+            .join(throughToParent)
+            .filter(Through.self, throughFromParent.appending(path: \.$id) ~~ Set(ids))
             .all()
             .flatMapThrowing
-        {
-            for model in models {
-                let id = model[keyPath: self.relationKey].idValue!
-                model[keyPath: self.relationKey].value = try $0.filter {
-                    try $0.joined(Through.self)[keyPath: from].id == id
-                }
+        { tos in
+            var map: [From.IDValue: [To]] = [:]
+            for to in tos {
+                let fromID = try to.joined(Through.self)[keyPath: throughFromParent].id
+                map[fromID, default: []].append(to)
+            }
+            for from in models {
+                from[keyPath: self.relationKey].value = map[from.id!] ?? []
             }
         }
     }
