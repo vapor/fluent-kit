@@ -8,7 +8,7 @@ public final class MigrationLog: Model {
         return MigrationLogMigration()
     }
 
-    @ID(key: "id")
+    @ID(key: .id)
     public var id: Int?
 
     @Field(key: "name")
@@ -37,7 +37,7 @@ public final class MigrationLog: Model {
 private final class MigrationLogMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("fluent")
-            .field("id", .int, .identifier(auto: true))
+            .field(.id, .int, .identifier(auto: true))
             .field("name", .string, .required)
             .field("batch", .int, .required)
             .field("created_at", .datetime)

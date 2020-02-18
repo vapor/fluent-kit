@@ -162,22 +162,22 @@ public struct SQLQueryConverter {
             // TODO: if joins don't exist, use short column name
             switch path.count {
             case 1:
-                let name = path[0]
+                let key = path[0]
                 if let schema = schema {
-                    let id = SQLColumn(SQLIdentifier(name), table: SQLIdentifier(schema))
+                    let id = SQLColumn(SQLIdentifier(self.key(key)), table: SQLIdentifier(schema))
                     if let alias = alias {
                         return SQLAlias(id, as: SQLIdentifier(alias))
                     } else {
                         return id
                     }
                 } else {
-                    return SQLIdentifier(name)
+                    return SQLIdentifier(self.key(key))
                 }
             case 2:
                 // row->".code" = 4
                 // return SQLRaw("\(path[0])->>'\(path[1])'")
                 // return SQLRaw("JSON_EXTRACT(\(path[0]), '$.\(path[1])')")
-                return self.delegate.nestedFieldExpression(path[0], [path[1]])
+                return self.delegate.nestedFieldExpression(self.key(path[0]), [self.key(path[1])])
             default:
                 fatalError("Deep SQL JSON nesting not yet supported.")
             }
@@ -338,6 +338,17 @@ public struct SQLQueryConverter {
             fatalError("Contains filter method not supported at this scope.")
         case .custom(let any):
             return custom(any)
+        }
+    }
+
+    private func key(_ key: FieldKey) -> String {
+        switch key {
+        case .id:
+            return "id"
+        case .name(let name):
+            return name
+        case .prefixed(let prefix, let key):
+            return prefix + self.key(key)
         }
     }
 }

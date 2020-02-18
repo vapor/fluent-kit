@@ -29,7 +29,7 @@ extension FluentBenchmarker {
 private final class Foo: Model {
     static let schema = "foos"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")
@@ -65,7 +65,7 @@ private struct FooMigration: Migration {
 private final class Bar: Model {
     static let schema = "bars"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "bar")
@@ -100,7 +100,7 @@ private struct BarMigration: Migration {
 private final class Baz: Model {
     static let schema = "bazs"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "baz")

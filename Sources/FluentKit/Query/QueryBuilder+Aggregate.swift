@@ -84,7 +84,7 @@ extension QueryBuilder {
 
     public func aggregate<Result>(
         _ method: DatabaseQuery.Field.Aggregate.Method,
-        _ fieldName: String,
+        _ fieldName: FieldKey,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable

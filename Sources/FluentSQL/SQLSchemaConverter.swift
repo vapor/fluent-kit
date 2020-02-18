@@ -55,8 +55,8 @@ public struct SQLSchemaConverter {
                 switch field {
                 case .custom:
                     return ""
-                case .string(let name):
-                    return "\(table).\(name)"
+                case .key(let key):
+                    return "\(table).\(self.key(key))"
                 }
             }.joined(separator: "+")
         }
@@ -120,8 +120,8 @@ public struct SQLSchemaConverter {
     
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> SQLExpression {
         switch fieldName {
-        case .string(let string):
-            return SQLIdentifier(string)
+        case .key(let key):
+            return SQLIdentifier(self.key(key))
         case .custom(let any):
             return custom(any)
         }
@@ -211,6 +211,17 @@ public struct SQLSchemaConverter {
             )
         case .custom(let any):
             return custom(any)
+        }
+    }
+
+    private func key(_ key: FieldKey) -> String {
+        switch key {
+        case .id:
+            return "id"
+        case .name(let name):
+            return name
+        case .prefixed(let prefix, let key):
+            return prefix + self.key(key)
         }
     }
 }

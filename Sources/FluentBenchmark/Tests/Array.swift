@@ -22,7 +22,7 @@ extension FluentBenchmarker {
                 }
             }
 
-            @ID(key: FluentBenchmarker.idKey)
+            @ID(key: .id)
             var id: UUID?
 
             @Field(key: "bar")

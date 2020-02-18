@@ -115,9 +115,9 @@ extension QueryBuilder {
     @discardableResult
     private func join<Foreign, Local>(
         _ foreign: Foreign.Type,
-        _ foreignField: String,
+        _ foreignField: FieldKey,
         to local: Local.Type,
-        _ localField: String,
+        _ localField: FieldKey,
         method: DatabaseQuery.Join.Method = .inner,
         alias schemaAlias: String? = nil
     ) -> Self
@@ -180,6 +180,6 @@ public func == <Foreign, ForeignField, Local, LocalField>(
 public struct JoinFilter<Foreign, Local, Value>
     where Foreign: Model, Local: Model, Value: Codable
 {
-    let foreign: String
-    let local: String
+    let foreign: FieldKey
+    let local: FieldKey
 }

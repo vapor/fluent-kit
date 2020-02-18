@@ -13,6 +13,27 @@ extension Model {
         where Value: Codable
 }
 
+public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
+    case id
+    case name(String)
+    case prefixed(String, FieldKey)
+
+    public var description: String {
+        switch self {
+        case .id:
+            return "id"
+        case .name(let name):
+            return name
+        case .prefixed(let prefix, let key):
+            return prefix + key.description
+        }
+    }
+
+    public init(stringLiteral value: String) {
+        self = .name(value)
+    }
+}
+
 @propertyWrapper
 public final class ModelID<Model, Value>: AnyID, FieldRepresentable
     where Model: FluentKit.Model, Value: Codable
@@ -38,7 +59,7 @@ public final class ModelID<Model, Value>: AnyID, FieldRepresentable
     let generator: Generator
     var cachedOutput: DatabaseOutput?
 
-    public var key: String {
+    public var key: FieldKey {
         return self.field.key
     }
 
@@ -64,7 +85,7 @@ public final class ModelID<Model, Value>: AnyID, FieldRepresentable
         }
     }
 
-    public init(key: String, generatedBy generator: Generator? = nil) {
+    public init(key: FieldKey, generatedBy generator: Generator? = nil) {
         self.field = .init(key: key)
         self.generator = generator ?? Generator.default(for: Value.self)
         self.exists = false

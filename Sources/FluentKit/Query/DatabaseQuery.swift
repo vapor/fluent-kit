@@ -41,7 +41,7 @@ public struct DatabaseQuery: CustomStringConvertible {
             case .aggregate(let aggregate):
                 return aggregate.description
             case .field(let path, let schema, let alias):
-                var description = path.joined(separator: ".")
+                var description = path.map { $0.description }.joined(separator: ".")
                 if let schema = schema {
                     description = schema + "." + description
                 }
@@ -55,7 +55,7 @@ public struct DatabaseQuery: CustomStringConvertible {
         }
         
         case aggregate(Aggregate)
-        case field(path: [String], schema: String?, alias: String?)
+        case field(path: [FieldKey], schema: String?, alias: String?)
         case custom(Any)
     }
     
@@ -220,7 +220,6 @@ public struct DatabaseQuery: CustomStringConvertible {
     public var limits: [Limit]
     public var offsets: [Offset]
     public var schema: String
-    public var idKey: String
     
     public var description: String {
         var parts = [
@@ -242,10 +241,9 @@ public struct DatabaseQuery: CustomStringConvertible {
         return parts.joined(separator: " ")
     }
 
-    init(schema: String, idKey: String) {
+    init(schema: String) {
         self.schema = schema
         self.isUnique = false
-        self.idKey = idKey
         self.fields = []
         self.action = .read
         self.filters = []

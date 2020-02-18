@@ -13,7 +13,7 @@ extension QueryBuilder {
     }
 
     public func filter<NestedValue>(
-        _ fieldName: String,
+        _ fieldName: FieldKey,
         _ path: NestedPath,
         _ method: DatabaseQuery.Filter.Method,
         _ value: NestedValue
@@ -30,13 +30,13 @@ extension QueryBuilder {
 }
 
 public struct NestedPath: ExpressibleByStringLiteral {
-    public var path: [String]
+    public var path: [FieldKey]
 
-    public init(path: [String]) {
+    public init(path: [FieldKey]) {
         self.path = path
     }
 
     public init(stringLiteral value: String) {
-        self.path = value.split(separator: ".").map(String.init)
+        self.path = value.split(separator: ".").map(String.init).map { .name($0) }
     }
 }

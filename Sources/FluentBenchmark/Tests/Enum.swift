@@ -19,7 +19,7 @@ private enum Bar: UInt8, Codable {
 private final class Foo: Model {
     static let schema = "foos"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "bar")

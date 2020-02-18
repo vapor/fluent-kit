@@ -17,7 +17,7 @@ public final class QueryBuilder<Model>
     
     public init(database: Database) {
         self.database = database
-        self.query = .init(schema: Model.schema, idKey: Model.key(for: \._$id))
+        self.query = .init(schema: Model.schema)
         self.eagerLoaders = []
         self.includeDeleted = false
         self.joinedModels = []
@@ -217,7 +217,7 @@ public final class QueryBuilder<Model>
                     return .field(
                         path: [field.key],
                         schema: joined.alias ?? type(of: joined.model).schema,
-                        alias: (joined.alias ?? type(of: joined.model).schema) + "_" + field.key
+                        alias: (joined.alias ?? type(of: joined.model).schema) + "_" + field.key.description
                     )
                 }
             }

@@ -33,7 +33,7 @@ extension FluentBenchmarker {
                 var baz: String
             }
 
-            @ID(key: FluentBenchmarker.idKey) var id: UUID?
+            @ID(key: .id) var id: UUID?
             @Field(key: "bar") var bar: Int
             @Field(key: "baz") var baz: Double
             @Field(key: "qux") var qux: String

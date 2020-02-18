@@ -120,7 +120,7 @@ public struct ModelValueFilter<Model> where Model: FluentKit.Model {
         self.value = rhs
     }
 
-    let path: [String]
+    let path: [FieldKey]
     let method: DatabaseQuery.Filter.Method
     let value: DatabaseQuery.Value
 }

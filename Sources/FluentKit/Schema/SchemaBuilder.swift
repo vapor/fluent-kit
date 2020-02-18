@@ -20,8 +20,20 @@ public final class SchemaBuilder {
         _ dataType: DatabaseSchema.DataType,
         _ constraints: DatabaseSchema.FieldConstraint...
     ) -> Self {
-        return self.field(.definition(
-            name: .string(name),
+        self.field(.definition(
+            name: .key(.name(name)),
+            dataType: dataType,
+            constraints: constraints
+        ))
+    }
+
+    public func field(
+        _ key: FieldKey,
+        _ dataType: DatabaseSchema.DataType,
+        _ constraints: DatabaseSchema.FieldConstraint...
+    ) -> Self {
+        self.field(.definition(
+            name: .key(key),
             dataType: dataType,
             constraints: constraints
         ))
@@ -34,7 +46,14 @@ public final class SchemaBuilder {
     
     public func unique(on fields: String...) -> Self {
         self.schema.constraints.append(.unique(
-            fields: fields.map { .string($0) }
+            fields: fields.map { .key(.name($0)) }
+        ))
+        return self
+    }
+
+    public func unique(on fields: FieldKey...) -> Self {
+        self.schema.constraints.append(.unique(
+            fields: fields.map { .key($0) }
         ))
         return self
     }
@@ -47,9 +66,26 @@ public final class SchemaBuilder {
         onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
     ) -> Self {
         self.schema.constraints.append(.foreignKey(
-            fields: [.string(field)],
+            fields: [.key(.name(field))],
             foreignSchema: foreignSchema,
-            foreignFields: [.string(foreignField)],
+            foreignFields: [.key(.name(foreignField))],
+            onDelete: onDelete,
+            onUpdate: onUpdate
+        ))
+        return self
+    }
+
+    public func foreignKey(
+        _ field: FieldKey,
+        references foreignSchema: String,
+        _ foreignField: FieldKey,
+        onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
+        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+    ) -> Self {
+        self.schema.constraints.append(.foreignKey(
+            fields: [.key(field)],
+            foreignSchema: foreignSchema,
+            foreignFields: [.key(foreignField)],
             onDelete: onDelete,
             onUpdate: onUpdate
         ))
@@ -57,7 +93,11 @@ public final class SchemaBuilder {
     }
     
     public func deleteField(_ name: String) -> Self {
-        return self.deleteField(.string(name))
+        return self.deleteField(.key(.name(name)))
+    }
+
+    public func deleteField(_ name: FieldKey) -> Self {
+        return self.deleteField(.key(name))
     }
     
     public func deleteField(_ name: DatabaseSchema.FieldName) -> Self {

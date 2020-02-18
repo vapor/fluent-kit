@@ -213,7 +213,7 @@ public struct ModelFieldFilter<Left, Right>
         self.rhsPath = [Right.init()[keyPath: rhs].field.key]
     }
 
-    let lhsPath: [String]
+    let lhsPath: [FieldKey]
     let method: DatabaseQuery.Filter.Method
-    let rhsPath: [String]
+    let rhsPath: [FieldKey]
 }

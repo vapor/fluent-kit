@@ -4,8 +4,6 @@ import NIO
 import XCTest
 
 public final class FluentBenchmarker {
-    public static var idKey: String = "id"
-
     public let database: Database
     
     public init(database: Database) {
