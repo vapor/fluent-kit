@@ -234,9 +234,9 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
             .all()
             .flatMapThrowing
-        { tos in
+        {
             var map: [From.IDValue: [To]] = [:]
-            for to in tos {
+            for to in $0 {
                 let fromID = try to.joined(Through.self)[keyPath: from].id
                 map[fromID, default: []].append(to)
             }
