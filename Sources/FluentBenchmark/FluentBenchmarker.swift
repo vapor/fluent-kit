@@ -51,6 +51,7 @@ public final class FluentBenchmarker {
         try self.testRead()
         try self.testRelationMethods()
         try self.testSameChildrenFromKey()
+        try self.testSet()
         try self.testSiblingsAttach()
         try self.testSiblingsEagerLoad()
         try self.testSoftDelete()
