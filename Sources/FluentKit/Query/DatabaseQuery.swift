@@ -22,7 +22,7 @@ public struct DatabaseQuery: CustomStringConvertible {
                 case maximum
                 case custom(Any)
             }
-            
+
             public var description: String {
                 switch self {
                 case .custom(let custom):

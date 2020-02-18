@@ -1,4 +1,4 @@
-@testable import FluentKit
+import FluentKit
 import Foundation
 import NIO
 import XCTest
