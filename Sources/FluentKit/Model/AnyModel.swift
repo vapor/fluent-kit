@@ -1,16 +1,15 @@
-public protocol AnyModel: class, CustomStringConvertible, Codable {
+public protocol AnyModel: Fields {
     static var schema: String { get }
-    init()
 }
 
-extension AnyModel {
+extension Fields {
     // MARK: Description
 
     public var description: String {
         var info: [InfoKey: CustomStringConvertible] = [:]
 
-        if !self.input.isEmpty {
-            info["input"] = self.input
+        if !self.input.fields.isEmpty {
+            info["input"] = self.input.fields
         }
 
         if let output = self.anyID.cachedOutput {
@@ -64,20 +63,6 @@ extension AnyModel {
             }
         }
         fatalError("Property not found on model: \(property)")
-    }
-
-    var input: [FieldKey: DatabaseQuery.Value] {
-        var input: [FieldKey: DatabaseQuery.Value] = [:]
-        for (_, field) in self.fields {
-            input[field.key] = field.inputValue
-        }
-        return input
-    }
-
-    func output(from output: DatabaseOutput) throws {
-        try self.properties.forEach { (_, property) in
-            try property.output(from: output)
-        }
     }
 }
 

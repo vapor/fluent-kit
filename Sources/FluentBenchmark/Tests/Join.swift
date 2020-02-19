@@ -83,8 +83,8 @@ extension FluentBenchmarker {
             // test manual join
             do {
                 let matches = try Match.query(on: self.database)
-                    .join(HomeTeam.self, on: \Match.$homeTeam == \Team.$id)
-                    .join(AwayTeam.self, on: \Match.$awayTeam == \Team.$id)
+                    .join(HomeTeam.self, on: \Match.$homeTeam.$id == \Team.$id)
+                    .join(AwayTeam.self, on: \Match.$awayTeam.$id == \Team.$id)
                     .filter(HomeTeam.self, \Team.$name == "a")
                     .all().wait()
 

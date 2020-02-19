@@ -18,7 +18,8 @@ extension QueryBuilder {
         alias: String? = nil
     ) -> Self
         where Field: FieldRepresentable,
-            Field.Model == Joined
+            Field.Model == Joined,
+            Joined: FluentKit.Model
     {
         self.sort(Joined.self, Joined.key(for: field), direction, alias: alias)
     }

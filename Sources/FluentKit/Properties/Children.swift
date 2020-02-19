@@ -4,7 +4,7 @@ extension Model {
 }
 
 @propertyWrapper
-public final class ModelChildren<From, To>: AnyProperty
+public final class ModelChildren<From, To>
     where From: Model, To: Model
 {
     // MARK: ID
@@ -95,8 +95,16 @@ public final class ModelChildren<From, To>: AnyProperty
         }
         return to.create(on: database)
     }
+}
 
-    // MARK: Property
+extension ModelChildren: AnyProperty {
+    var keys: [FieldKey] {
+        []
+    }
+    
+    func input(to input: inout DatabaseInput) {
+        // children never has input
+    }
 
     func output(from output: DatabaseOutput) throws {
         let key = From.key(for: \._$id)
@@ -105,7 +113,6 @@ public final class ModelChildren<From, To>: AnyProperty
         }
     }
 
-    // MARK: Codable
     func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
@@ -122,9 +129,9 @@ extension ModelChildren.Key: CustomStringConvertible {
     var description: String {
         switch self {
         case .optional(let keyPath):
-            return To.key(for: keyPath).description
+            return To.key(for: keyPath.appending(path: \.$id)).description
         case .required(let keyPath):
-            return To.key(for: keyPath).description
+            return To.key(for: keyPath.appending(path: \.$id)).description
         }
     }
 }

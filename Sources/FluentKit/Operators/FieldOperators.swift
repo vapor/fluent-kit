@@ -208,9 +208,9 @@ public struct ModelFieldFilter<Left, Right>
     )
         where LeftField: FieldRepresentable, RightField: FieldRepresentable
     {
-        self.lhsPath = [Left.init()[keyPath: lhs].field.key]
+        self.lhsPath = [Left.init()[keyPath: lhs].key]
         self.method = method
-        self.rhsPath = [Right.init()[keyPath: rhs].field.key]
+        self.rhsPath = [Right.init()[keyPath: rhs].key]
     }
 
     let lhsPath: [FieldKey]

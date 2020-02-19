@@ -115,7 +115,7 @@ public struct ModelValueFilter<Model> where Model: FluentKit.Model {
     )
         where Field: FieldRepresentable
     {
-        self.path = [Model.init()[keyPath: lhs].field.key]
+        self.path = [Model.init()[keyPath: lhs].key]
         self.method = method
         self.value = rhs
     }

@@ -13,6 +13,15 @@ public struct DatabaseOutput {
     }
 }
 
+extension DatabaseOutput {
+    func prefixed(by string: String) -> DatabaseOutput {
+        .init(
+            database: self.database,
+            row: self.row.prefixed(by: string)
+        )
+    }
+}
+
 public protocol DatabaseRow: CustomStringConvertible {
     func contains(field: FieldKey) -> Bool
     func decode<T>(

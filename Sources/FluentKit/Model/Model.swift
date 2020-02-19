@@ -4,15 +4,22 @@ public protocol Model: AnyModel {
     var id: IDValue? { get set }
 }
 
-extension Model {
+public protocol Fields: class, Codable, CustomStringConvertible {
+    init()
+}
+
+extension Fields {
     public static func key<Field>(for field: KeyPath<Self, Field>) -> FieldKey
         where Field: FieldRepresentable
     {
-        return Self.init()[keyPath: field].field.key
+         Self.init()[keyPath: field].key
     }
+}
+
+extension Model {
 
     public static func query(on database: Database) -> QueryBuilder<Self> {
-        return .init(database: database)
+        .init(database: database)
     }
 
     public static func find(_ id: Self.IDValue?, on database: Database) -> EventLoopFuture<Self?> {
@@ -26,7 +33,7 @@ extension Model {
 
     /// Indicates whether the model has fields that have been set, but the model has not yet been saved to the database.
     public var hasChanges: Bool {
-        return !self.input.isEmpty
+        return !self.input.fields.isEmpty
     }
 
     public func requireID() throws -> IDValue {

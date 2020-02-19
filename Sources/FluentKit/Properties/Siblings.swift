@@ -4,7 +4,7 @@ extension Model {
 }
 
 @propertyWrapper
-public final class ModelSiblings<From, To, Through>: AnyProperty
+public final class ModelSiblings<From, To, Through>
     where From: Model, To: Model, Through: Model
 {
     public enum AttachMethod {
@@ -155,6 +155,16 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
             .join(self.to)
             .filter(Through.self, self.from.appending(path: \.$id) == fromID)
     }
+}
+
+extension ModelSiblings: AnyProperty {
+    var keys: [FieldKey] {
+        []
+    }
+    
+    func input(to input: inout DatabaseInput) {
+        // siblings never has input
+    }
 
     func output(from output: DatabaseOutput) throws {
         let key = From.key(for: \._$id)
@@ -162,8 +172,6 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
-
-    // MARK: Codable
 
     func encode(to encoder: Encoder) throws {
         if let rows = self.value {
@@ -179,8 +187,8 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
 
 extension ModelSiblings: Relation {
     public var name: String {
-        let fromKey = Through.key(for: self.from)
-        let toKey = Through.key(for: self.to)
+        let fromKey = Through.key(for: self.from.appending(path: \.$id))
+        let toKey = Through.key(for: self.to.appending(path: \.$id))
         return "Siblings<\(From.self), \(To.self), \(Through.self)>(from: \(fromKey), to: \(toKey))"
     }
 

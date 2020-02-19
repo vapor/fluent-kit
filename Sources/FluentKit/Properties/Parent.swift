@@ -38,7 +38,7 @@ public final class ModelParent<From, To>
 
 extension ModelParent: Relation {
     public var name: String {
-        "Parent<\(From.self), \(To.self)>(key: \(self.key))"
+        "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -48,13 +48,19 @@ extension ModelParent: Relation {
     }
 }
 
-extension ModelParent: FieldRepresentable {
-    public var field: ModelField<From, To.IDValue> {
-        return self.$id
-    }
-}
-
 extension ModelParent: AnyProperty {
+    var keys: [FieldKey] {
+        self.$id.keys
+    }
+    
+    func input(to input: inout DatabaseInput) {
+        self.$id.input(to: &input)
+    }
+
+    func output(from output: DatabaseOutput) throws {
+        try self.$id.output(from: output)
+    }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -72,8 +78,6 @@ extension ModelParent: AnyProperty {
         // TODO: allow for nested decoding
     }
 }
-
-extension ModelParent: AnyField { }
 
 extension ModelParent: EagerLoadable {
     public static func eagerLoad<Builder>(

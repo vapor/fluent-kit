@@ -11,8 +11,11 @@ public final class QueryBuilder<Model>
     public var eagerLoaders: [AnyEagerLoader]
 
     struct JoinedModel {
-        let model: AnyModel
+        let model: AnyModel & Fields
         let alias: String?
+        var schema: String {
+            self.alias ?? type(of: self.model).schema
+        }
     }
     
     public init(database: Database) {
@@ -127,7 +130,7 @@ public final class QueryBuilder<Model>
         copy.query.fields = [.field(path: [fieldKey], schema: Model.schema, alias: nil)]
         return copy.all().map {
             $0.map {
-                $0[keyPath: key].field.wrappedValue
+                $0[keyPath: key].wrappedValue
             }
         }
     }
@@ -137,14 +140,15 @@ public final class QueryBuilder<Model>
         _ key: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
         where Field: FieldRepresentable,
-            Field.Model == Joined
+            Field.Model == Joined,
+            Joined: FluentKit.Model
     {
         let copy = self.copy()
         let fieldKey = Joined.key(for: key)
         copy.query.fields = [.field(path: [fieldKey], schema: Model.schema, alias: nil)]
         return copy.all().flatMapThrowing {
             try $0.map {
-                try $0.joined(Joined.self)[keyPath: key].field.wrappedValue
+                try $0.joined(Joined.self)[keyPath: key].wrappedValue
             }
         }
     }
@@ -204,19 +208,19 @@ public final class QueryBuilder<Model>
 
         if query.fields.isEmpty {
             // default fields
-            query.fields = Model().fields.map { (_, field) in
+            query.fields = Model().keys.map { field in
                 return .field(
-                    path: [field.key],
+                    path: [field],
                     schema: Model.schema,
                     alias: nil
                 )
             }
             for joined in self.joinedModels {
-                query.fields += joined.model.fields.map { (_, field) in
-                    return .field(
-                        path: [field.key],
-                        schema: joined.alias ?? type(of: joined.model).schema,
-                        alias: (joined.alias ?? type(of: joined.model).schema) + "_" + field.key.description
+                query.fields += joined.model.keys.map { field in
+                    .field(
+                        path: [field],
+                        schema: joined.schema,
+                        alias: joined.schema + "_" + field.description
                     )
                 }
             }
@@ -224,9 +228,10 @@ public final class QueryBuilder<Model>
         
         // check if model is soft-deletable and should be excluded
         if !self.includeDeleted {
-            Model().excludeDeleted(from: &query)
-            self.joinedModels
-                .forEach { $0.model.excludeDeleted(from: &query) }
+            Model().excludeDeleted(from: &query, schema: Model.schema)
+            self.joinedModels.forEach {
+                $0.model.excludeDeleted(from: &query, schema: $0.schema)
+            }
         }
         
         self.database.logger.info("\(self.query)")

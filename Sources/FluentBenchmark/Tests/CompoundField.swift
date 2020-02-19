@@ -1,29 +1,20 @@
 extension FluentBenchmarker {
-    public func testNestedModel() throws {
+    public func testCompoundField() throws {
         try runTest(#function, [
             UserMigration(),
             UserSeed()
         ]) {
             let users = try User.query(on: self.database)
-                .filter(\.$pet, "type", .equal, User.Pet.Animal.cat)
+                .filter(\.$pet.$type == .cat)
                 .all().wait()
 
             guard let user = users.first, users.count == 1 else {
-                XCTFail("unexpected user count")
+                XCTFail("Unexpected user count: \(users.count)")
                 return
             }
-            guard user.name == "Tanner" else {
-                XCTFail("unexpected user name")
-                return
-            }
-            guard user.pet.name == "Ziz" else {
-                XCTFail("unexpected pet name")
-                return
-            }
-            guard user.pet.type == .cat else {
-                XCTFail("unexpected pet type")
-                return
-            }
+            XCTAssertEqual(user.name, "Tanner")
+            XCTAssertEqual(user.pet.name, "Ziz")
+            XCTAssertEqual(user.pet.type, .cat)
 
             struct UserJSON: Equatable, Codable {
                 var id: UUID
@@ -35,8 +26,11 @@ extension FluentBenchmarker {
                 var type: String
             }
             // {"id":...,"name":"Tanner","pet":{"name":"Ziz","type":"cat"}}
-            let expected = UserJSON(id: user.id!, name: "Tanner", pet: .init(name: "Ziz", type: "cat"))
-
+            let expected = UserJSON(
+                id: user.id!,
+                name: "Tanner",
+                pet: .init(name: "Ziz", type: "cat")
+            )
             let decoded = try JSONDecoder().decode(UserJSON.self, from: JSONEncoder().encode(user))
             guard decoded == expected else {
                 XCTFail("unexpected output")
@@ -47,13 +41,6 @@ extension FluentBenchmarker {
 }
 
 private final class User: Model {
-    struct Pet: Codable {
-        enum Animal: String, Codable {
-            case cat, dog
-        }
-        var name: String
-        var type: Animal
-    }
     static let schema = "users"
 
     @ID(key: .id)
@@ -62,7 +49,7 @@ private final class User: Model {
     @Field(key: "name")
     var name: String
 
-    @Field(key: "pet")
+    @CompoundField(prefix: "pet")
     var pet: Pet
 
     @OptionalParent(key: "bf_id")
@@ -81,12 +68,32 @@ private final class User: Model {
     }
 }
 
+private final class Pet: Fields {
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "type")
+    var type: Animal
+
+    init() { }
+
+    init(name: String, type: Animal) {
+        self.name = name
+        self.type = type
+    }
+}
+
+private enum Animal: String, Codable {
+    case cat, dog
+}
+
 private struct UserMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
-            .field("pet", .json, .required)
+            .field("pet_name", .string, .required)
+            .field("pet_type", .string, .required)
             .field("bf_id", .uuid)
             .create()
     }

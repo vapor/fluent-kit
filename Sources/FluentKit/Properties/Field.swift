@@ -1,11 +1,11 @@
-extension Model {
+extension Fields {
     public typealias Field<Value> = ModelField<Self, Value>
         where Value: Codable
 }
 
 @propertyWrapper
-public final class ModelField<Model, Value>: AnyField, FieldRepresentable
-    where Model: FluentKit.Model, Value: Codable
+public final class ModelField<Model, Value>
+    where Model: FluentKit.Fields, Value: Codable
 {
     public let key: FieldKey
     var outputValue: Value?
@@ -33,7 +33,7 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
             } else if let value = self.outputValue {
                 return value
             } else {
-                fatalError("Cannot access field before it is initialized or fetched")
+                fatalError("Cannot access field before it is initialized or fetched: \(self.key)")
             }
         }
         set {
@@ -44,8 +44,18 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
     public init(key: FieldKey) {
         self.key = key
     }
+}
 
-    // MARK: Property
+extension ModelField: FieldRepresentable { }
+
+extension ModelField: AnyProperty {
+    var keys: [FieldKey] {
+        [self.key]
+    }
+
+    func input(to input: inout DatabaseInput) {
+        input.fields[self.key] = self.inputValue
+    }
 
     func output(from output: DatabaseOutput) throws {
         if output.contains(self.key) {
@@ -82,34 +92,8 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
 }
 
 public protocol FieldRepresentable {
-    associatedtype Model: FluentKit.Model
+    associatedtype Model: Fields
     associatedtype Value: Codable
-    var field: Model.Field<Value> { get }
-}
-
-protocol AnyField: AnyProperty {
     var key: FieldKey { get }
-    var inputValue: DatabaseQuery.Value? { get set }
-}
-
-extension AnyField where Self: FieldRepresentable {
-    var key: FieldKey {
-        return self.field.key
-    }
-
-    var inputValue: DatabaseQuery.Value? {
-        get { self.field.inputValue }
-        set { self.field.inputValue = newValue }
-    }
-}
-
-extension AnyModel {
-    var fields: [(String, AnyField)] {
-        self.properties.compactMap {
-            guard let value = $1 as? AnyField else {
-                return nil
-            }
-            return ($0, value)
-        }
-    }
+    var wrappedValue: Value { get }
 }
