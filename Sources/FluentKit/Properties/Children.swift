@@ -122,9 +122,9 @@ extension ModelChildren.Key: CustomStringConvertible {
     var description: String {
         switch self {
         case .optional(let keyPath):
-            return To.key(for: keyPath)
+            return To.key(for: keyPath).description
         case .required(let keyPath):
-            return To.key(for: keyPath)
+            return To.key(for: keyPath).description
         }
     }
 }

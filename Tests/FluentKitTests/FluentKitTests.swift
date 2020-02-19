@@ -6,7 +6,7 @@ import FluentSQL
 
 final class FluentKitTests: XCTestCase {
     func testMigrationLogNames() throws {
-        XCTAssertEqual(MigrationLog.key(for: \.$id), "id")
+        XCTAssertEqual(MigrationLog.key(for: \.$id), .id)
         XCTAssertEqual(MigrationLog.key(for: \.$name), "name")
         XCTAssertEqual(MigrationLog.key(for: \.$batch), "batch")
         XCTAssertEqual(MigrationLog.key(for: \.$createdAt), "created_at")
@@ -14,10 +14,10 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testGalaxyPlanetNames() throws {
-        XCTAssertEqual(Galaxy.key(for: \.$id), "id")
+        XCTAssertEqual(Galaxy.key(for: \.$id), .id)
         XCTAssertEqual(Galaxy.key(for: \.$name), "name")
 
-        XCTAssertEqual(Planet.key(for: \.$id), "id")
+        XCTAssertEqual(Planet.key(for: \.$id), .id)
         XCTAssertEqual(Planet.key(for: \.$name), "name")
         XCTAssertEqual(Planet.key(for: \.$star.$id), "star_id")
     }
@@ -79,12 +79,12 @@ final class FluentKitTests: XCTestCase {
         
         _ = try? Planet.query(on: db).unique().count(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "fluentAggregate" FROM "planets" LIMIT 1"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "aggregate" FROM "planets" LIMIT 1"#)
         db.reset()
         
         _ = try? Planet.query(on: db).unique().sum(\.$id).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "fluentAggregate" FROM "planets" LIMIT 1"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "aggregate" FROM "planets" LIMIT 1"#)
         db.reset()
     }
 

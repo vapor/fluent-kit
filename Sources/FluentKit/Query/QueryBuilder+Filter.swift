@@ -28,7 +28,7 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter<Value>(
-        _ fieldName: String,
+        _ fieldName: FieldKey,
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
@@ -43,9 +43,9 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ lhsFieldName: String,
+        _ lhsFieldName: FieldKey,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhsFieldName: String
+        _ rhsFieldName: FieldKey
     ) -> Self {
         self.filter(
             .field(path: [lhsFieldName], schema: Model.schema, alias: nil),

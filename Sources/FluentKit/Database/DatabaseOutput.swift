@@ -2,11 +2,11 @@ public struct DatabaseOutput {
     public let database: Database
     public let row: DatabaseRow
     
-    public func contains(_ field: String) -> Bool {
+    public func contains(_ field: FieldKey) -> Bool {
         return self.row.contains(field: field)
     }
 
-    public func decode<T>(_ field: String, as: T.Type = T.self) throws -> T
+    public func decode<T>(_ field: FieldKey, as: T.Type = T.self) throws -> T
         where T: Decodable
     {
         return try self.row.decode(field: field, as: T.self, for: self.database)
@@ -14,9 +14,9 @@ public struct DatabaseOutput {
 }
 
 public protocol DatabaseRow: CustomStringConvertible {
-    func contains(field: String) -> Bool
+    func contains(field: FieldKey) -> Bool
     func decode<T>(
-        field: String,
+        field: FieldKey,
         as type: T.Type,
         for database: Database
     ) throws -> T
@@ -43,16 +43,16 @@ private struct PrefixingOutput: DatabaseRow {
         return self.wrapped.description
     }
 
-    func contains(field: String) -> Bool {
-        return self.wrapped.contains(field: self.prefix + field)
+    func contains(field: FieldKey) -> Bool {
+        return self.wrapped.contains(field: .prefixed(self.prefix, field))
     }
 
     func decode<T>(
-        field: String,
+        field: FieldKey,
         as type: T.Type,
         for database: Database
     ) throws -> T where T : Decodable {
-        return try self.wrapped.decode(field: self.prefix + field, as: T.self, for: database)
+        return try self.wrapped.decode(field: .prefixed(self.prefix, field), as: T.self, for: database)
     }
 }
 
@@ -66,11 +66,11 @@ private struct CombinedOutput: DatabaseRow {
     var first: DatabaseRow
     var second: DatabaseRow
 
-    func contains(field: String) -> Bool {
+    func contains(field: FieldKey) -> Bool {
         return self.first.contains(field: field) || self.second.contains(field: field)
     }
 
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
+    func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T
         where T : Decodable
     {
         if self.first.contains(field: field) {
@@ -78,7 +78,7 @@ private struct CombinedOutput: DatabaseRow {
         } else if self.second.contains(field: field) {
             return try self.second.decode(field: field, as: T.self, for: database)
         } else {
-            throw FluentError.missingField(name: field)
+            throw FluentError.missingField(name: field.description)
         }
     }
 

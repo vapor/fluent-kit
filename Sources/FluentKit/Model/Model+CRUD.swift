@@ -154,17 +154,17 @@ extension Array where Element: FluentKit.Model {
 
 // MARK: Private
 private struct SavedInput: DatabaseRow {
-    var input: [String: DatabaseQuery.Value]
+    var input: [FieldKey: DatabaseQuery.Value]
     
-    init(_ input: [String: DatabaseQuery.Value]) {
+    init(_ input: [FieldKey: DatabaseQuery.Value]) {
         self.input = input
     }
     
-    func contains(field: String) -> Bool {
+    func contains(field: FieldKey) -> Bool {
         return self.input[field] != nil
     }
     
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T where T : Decodable {
+    func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T where T : Decodable {
         if let value = self.input[field] {
             // not in output, get from saved input
             switch value {
@@ -174,7 +174,7 @@ private struct SavedInput: DatabaseRow {
                 fatalError("Invalid input type: \(value)")
             }
         } else {
-            throw FluentError.missingField(name: field)
+            throw FluentError.missingField(name: field.description)
         }
     }
     

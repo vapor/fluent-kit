@@ -7,7 +7,7 @@ extension Model {
 public final class ModelField<Model, Value>: AnyField, FieldRepresentable
     where Model: FluentKit.Model, Value: Codable
 {
-    public let key: String
+    public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
 
@@ -41,7 +41,7 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
         }
     }
 
-    public init(key: String) {
+    public init(key: FieldKey) {
         self.key = key
     }
 
@@ -54,7 +54,7 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
                 self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(
-                    name: self.key,
+                    name: self.key.description,
                     valueType: Value.self,
                     error: error
                 )
@@ -88,12 +88,12 @@ public protocol FieldRepresentable {
 }
 
 protocol AnyField: AnyProperty {
-    var key: String { get }
+    var key: FieldKey { get }
     var inputValue: DatabaseQuery.Value? { get set }
 }
 
 extension AnyField where Self: FieldRepresentable {
-    var key: String {
+    var key: FieldKey {
         return self.field.key
     }
 

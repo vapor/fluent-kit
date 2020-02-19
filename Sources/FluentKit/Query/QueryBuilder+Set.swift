@@ -2,12 +2,12 @@ extension QueryBuilder {
     // MARK: Set
     
     @discardableResult
-    public func set(_ data: [String: DatabaseQuery.Value]) -> Self {
+    public func set(_ data: [FieldKey: DatabaseQuery.Value]) -> Self {
         self.set([data])
     }
 
     @discardableResult
-    public func set(_ data: [[String: DatabaseQuery.Value]]) -> Self {
+    public func set(_ data: [[FieldKey: DatabaseQuery.Value]]) -> Self {
         assert(self.query.fields.isEmpty, "Conflicting query fields already exist.")
         // ensure there is at least one
         guard let keys = data.first?.keys else {

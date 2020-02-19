@@ -18,7 +18,7 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
 
     public let trigger: TimestampTrigger
 
-    public var key: String {
+    public var key: FieldKey {
         return self.field.key
     }
 
@@ -44,7 +44,7 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
         }
     }
 
-    public init(key: String, on trigger: TimestampTrigger) {
+    public init(key: FieldKey, on trigger: TimestampTrigger) {
         self.field = .init(key: key)
         self.trigger = trigger
     }

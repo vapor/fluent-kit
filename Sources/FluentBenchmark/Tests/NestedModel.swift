@@ -56,7 +56,7 @@ private final class User: Model {
     }
     static let schema = "users"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")

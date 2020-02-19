@@ -24,7 +24,7 @@ extension QueryBuilder {
     }
 
     public func sort(
-        _ field: String,
+        _ field: FieldKey,
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self {
         self.sort(Model.self, field, direction, alias: nil)
@@ -32,7 +32,7 @@ extension QueryBuilder {
 
     public func sort<Joined>(
         _ model: Joined.Type,
-        _ field: String,
+        _ field: FieldKey,
         _ direction: DatabaseQuery.Sort.Direction = .ascending,
         alias: String? = nil
     ) -> Self

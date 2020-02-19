@@ -64,7 +64,7 @@ extension FluentBenchmarker {
 private final class Trash: Model {
     static let schema = "trash"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "contents")

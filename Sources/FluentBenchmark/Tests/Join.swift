@@ -134,7 +134,7 @@ extension FluentBenchmarker {
 private final class Team: Model {
     static let schema = "teams"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")
@@ -170,7 +170,7 @@ private struct TeamMigration: Migration {
 private final class Match: Model {
     static let schema = "matches"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")
@@ -237,7 +237,7 @@ private struct TeamMatchSeed: Migration {
 private final class School: Model {
     static let schema = "schools"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")
@@ -323,7 +323,7 @@ private struct SchoolSeed: Migration {
 private final class City: Model {
     static let schema = "cities"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")

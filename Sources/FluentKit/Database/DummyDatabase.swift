@@ -61,13 +61,13 @@ public final class DummyDatabaseDriver: DatabaseDriver {
 // MARK: Private
 
 private struct DummyRow: DatabaseRow {
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
+    func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T
         where T: Decodable
     {
         return try T(from: DummyDecoder())
     }
 
-    func contains(field: String) -> Bool {
+    func contains(field: FieldKey) -> Bool {
         return true
     }
     

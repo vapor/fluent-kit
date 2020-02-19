@@ -5,7 +5,7 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func key<Field>(for field: KeyPath<Self, Field>) -> String
+    public static func key<Field>(for field: KeyPath<Self, Field>) -> FieldKey
         where Field: FieldRepresentable
     {
         return Self.init()[keyPath: field].field.key

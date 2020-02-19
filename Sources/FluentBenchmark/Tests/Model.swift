@@ -3,7 +3,7 @@ extension FluentBenchmarker {
         final class User: Model {
             static let schema = "users"
 
-            @ID(key: FluentBenchmarker.idKey)
+            @ID(key: .id)
             var id: UUID?
 
             @Field(key: "name")
@@ -43,7 +43,7 @@ extension FluentBenchmarker {
         final class Todo: Model {
             static let schema = "todos"
 
-            @ID(key: FluentBenchmarker.idKey)
+            @ID(key: .id)
             var id: UUID?
 
             @Field(key: "title")
@@ -143,7 +143,7 @@ extension FluentBenchmarker {
 private final class Foo: Model {
     static let schema = "foos"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "bar")

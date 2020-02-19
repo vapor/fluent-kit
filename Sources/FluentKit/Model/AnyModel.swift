@@ -66,8 +66,8 @@ extension AnyModel {
         fatalError("Property not found on model: \(property)")
     }
 
-    var input: [String: DatabaseQuery.Value] {
-        var input: [String: DatabaseQuery.Value] = [:]
+    var input: [FieldKey: DatabaseQuery.Value] {
+        var input: [FieldKey: DatabaseQuery.Value] = [:]
         for (_, field) in self.fields {
             input[field.key] = field.inputValue
         }
