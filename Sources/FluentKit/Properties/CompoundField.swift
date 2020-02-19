@@ -30,8 +30,12 @@ public final class CompoundFieldProperty<Model, Value>
         }
     }
 
-    public init(prefix: String, separator: String = "_") {
-        self.prefix = prefix + separator
+    public init(prefix: String) {
+        self.prefix = prefix
+    }
+
+    public convenience init(key: String, separator: String = "_") {
+        self.init(prefix: key + separator)
     }
 
     public subscript<Field>(
