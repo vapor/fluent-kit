@@ -39,6 +39,7 @@ extension Database {
 
 public protocol DatabaseDriver {
     func makeDatabase(with context: DatabaseContext) -> Database
+    func closeConnections()
     func shutdown()
 }
 

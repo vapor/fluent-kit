@@ -50,6 +50,10 @@ public final class DummyDatabaseDriver: DatabaseDriver {
         DummyDatabase(context: context)
     }
 
+    public func closeConnections() {
+        // Do nothing. This is more for closing the connections in a connection pool.
+    }
+
     public func shutdown() {
         self.didShutdown = true
     }

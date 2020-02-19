@@ -82,6 +82,12 @@ public final class Databases {
         }
     }
 
+    public func closeConnections(_ id: DatabaseID? = nil) {
+        if let driver = self.driver(id) {
+            driver.closeConnections()
+        }
+    }
+
     public func shutdown() {
         for driver in self.drivers.values {
             driver.shutdown()
