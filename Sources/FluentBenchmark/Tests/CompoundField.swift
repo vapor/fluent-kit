@@ -49,7 +49,7 @@ private final class User: Model {
     @Field(key: "name")
     var name: String
 
-    @CompoundField(prefix: "pet")
+    @CompoundField(key: "pet")
     var pet: Pet
 
     init() { }

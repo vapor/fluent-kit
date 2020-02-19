@@ -2,7 +2,7 @@ import Foundation
 
 /// Stores information about `Migration`s that have been run.
 public final class MigrationLog: Model {
-    public static let schema = "fluent"
+    public static let schema = "_fluent_migrations"
 
     public static var migration: Migration {
         return MigrationLogMigration()
@@ -36,7 +36,7 @@ public final class MigrationLog: Model {
 
 private struct MigrationLogMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("fluent")
+        return database.schema("_fluent_migrations")
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("batch", .int, .required)
@@ -46,6 +46,6 @@ private struct MigrationLogMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("fluent").delete()
+        return database.schema("_fluent_migrations").delete()
     }
 }
