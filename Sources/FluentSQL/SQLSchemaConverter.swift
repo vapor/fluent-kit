@@ -220,6 +220,8 @@ public struct SQLSchemaConverter {
             return "id"
         case .string(let name):
             return name
+        case .aggregate:
+            return key.description
         case .prefixed(let prefix, let key):
             return prefix + self.key(key)
         }

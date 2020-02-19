@@ -109,7 +109,7 @@ extension QueryBuilder {
             guard let res = res else {
                 throw FluentError.noResults
             }
-            return try res._$id.cachedOutput!.decode("fluentAggregate", as: Result.self)
+            return try res._$id.cachedOutput!.decode(.aggregate, as: Result.self)
         }
     }
 }

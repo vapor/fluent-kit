@@ -17,6 +17,7 @@ public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, 
     case id
     case string(String)
     case prefixed(String, FieldKey)
+    case aggregate
 
     public var description: String {
         switch self {
@@ -24,6 +25,8 @@ public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, 
             return "id"
         case .string(let name):
             return name
+        case .aggregate:
+            return "aggregate"
         case .prefixed(let prefix, let key):
             return prefix + key.description
         }
