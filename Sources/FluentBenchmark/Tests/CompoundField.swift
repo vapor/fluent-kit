@@ -25,17 +25,13 @@ extension FluentBenchmarker {
                 var name: String
                 var type: String
             }
-            // {"id":...,"name":"Tanner","pet":{"name":"Ziz","type":"cat"}}
             let expected = UserJSON(
                 id: user.id!,
                 name: "Tanner",
                 pet: .init(name: "Ziz", type: "cat")
             )
             let decoded = try JSONDecoder().decode(UserJSON.self, from: JSONEncoder().encode(user))
-            guard decoded == expected else {
-                XCTFail("unexpected output")
-                return
-            }
+            XCTAssertEqual(decoded, expected)
         }
     }
 }
