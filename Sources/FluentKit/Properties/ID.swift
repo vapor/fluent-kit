@@ -91,6 +91,10 @@ public final class ModelID<Model, Value>: AnyID, FieldRepresentable
     }
 
     public init(key: FieldKey, generatedBy generator: Generator? = nil) {
+        // Ensure that @ID is using the special .id key.
+        // Additional identifying fields can be added using @Field
+        // with a unique constraint.
+        assert(key == .id, "@ID key must be .id.")
         self.field = .init(key: key)
         self.generator = generator ?? Generator.default(for: Value.self)
         self.exists = false
