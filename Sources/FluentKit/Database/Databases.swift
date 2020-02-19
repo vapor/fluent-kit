@@ -107,6 +107,21 @@ public final class Databases {
         return driver.makeDatabase(with: context)
     }
 
+    public func reinitialize(_ id: DatabaseID? = nil) {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+
+        guard
+            let driver = self.drivers[id ?? self.getDefaultID()],
+            let configuration = self.configurations[id ?? self.getDefaultID()]
+        else {
+            fatalError("You can't reinitialize something that wasn't initialized in the first place.")
+        }
+
+        driver.shutdown()
+        self.drivers[id ?? self.getDefaultID()] = configuration.makeDriver(for: self)
+    }
+
     public func shutdown() {
         self.lock.lock()
         defer { self.lock.unlock() }
