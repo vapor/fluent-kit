@@ -9,7 +9,7 @@ public final class MigrationLog: Model {
     }
 
     @ID(key: .id)
-    public var id: Int?
+    public var id: UUID?
 
     @Field(key: "name")
     public var name: String
@@ -25,7 +25,7 @@ public final class MigrationLog: Model {
 
     public init() { }
 
-    public init(id: Int? = nil, name: String, batch: Int) {
+    public init(id: IDValue? = nil, name: String, batch: Int) {
         self.id = id
         self.name = name
         self.batch = batch
@@ -34,10 +34,10 @@ public final class MigrationLog: Model {
     }
 }
 
-private final class MigrationLogMigration: Migration {
+private struct MigrationLogMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("fluent")
-            .field(.id, .int, .identifier(auto: true))
+            .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("batch", .int, .required)
             .field("created_at", .datetime)

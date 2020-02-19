@@ -17,12 +17,12 @@ extension FluentBenchmarker {
             try migrator.prepareBatch().wait()
 
             let logs = try MigrationLog.query(on: self.database)
+                .sort(\.$batch, .ascending)
                 .all().wait()
                 .map { $0.batch }
             XCTAssertEqual(logs, [1, 1, 2], "batch did not increment")
 
             try migrator.revertAllBatches().wait()
-
         }
     }
 
