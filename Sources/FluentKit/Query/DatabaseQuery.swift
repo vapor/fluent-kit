@@ -4,6 +4,30 @@ public struct DatabaseQuery: CustomStringConvertible {
         case read
         case update
         case delete
+        case aggregate(Aggregate)
+        case custom(Any)
+    }
+
+    public enum Aggregate: CustomStringConvertible {
+        public enum Method {
+            case count
+            case sum
+            case average
+            case minimum
+            case maximum
+            case custom(Any)
+        }
+
+        public var description: String {
+            switch self {
+            case .custom(let custom):
+                return "\(custom)"
+            case .fields(let method, let field):
+                return "\(method)(\(field))"
+            }
+        }
+
+        case fields(method: Method, field: Field)
         case custom(Any)
     }
 
@@ -13,33 +37,8 @@ public struct DatabaseQuery: CustomStringConvertible {
     }
     
     public enum Field: CustomStringConvertible {
-        public enum Aggregate: CustomStringConvertible {
-            public enum Method {
-                case count
-                case sum
-                case average
-                case minimum
-                case maximum
-                case custom(Any)
-            }
-
-            public var description: String {
-                switch self {
-                case .custom(let custom):
-                    return "\(custom)"
-                case .fields(let method, let fields):
-                    return "\(method)(\(fields))"
-                }
-            }
-            
-            case fields(method: Method, fields: [Field])
-            case custom(Any)
-        }
-        
         public var description: String {
             switch self {
-            case .aggregate(let aggregate):
-                return aggregate.description
             case .field(let path, let schema, let alias):
                 var description = path.map { $0.description }.joined(separator: ".")
                 if let schema = schema {
@@ -53,8 +52,7 @@ public struct DatabaseQuery: CustomStringConvertible {
                 return "\(custom)"
             }
         }
-        
-        case aggregate(Aggregate)
+
         case field(path: [FieldKey], schema: String?, alias: String?)
         case custom(Any)
     }

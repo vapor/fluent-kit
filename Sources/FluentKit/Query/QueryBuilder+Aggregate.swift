@@ -73,7 +73,7 @@ extension QueryBuilder {
     }
 
     public func aggregate<Field, Result>(
-        _ method: DatabaseQuery.Field.Aggregate.Method,
+        _ method: DatabaseQuery.Aggregate.Method,
         _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
@@ -83,7 +83,7 @@ extension QueryBuilder {
     }
 
     public func aggregate<Result>(
-        _ method: DatabaseQuery.Field.Aggregate.Method,
+        _ method: DatabaseQuery.Aggregate.Method,
         _ fieldName: FieldKey,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
@@ -94,22 +94,29 @@ extension QueryBuilder {
         // read IDs from the aggreate reply when performing
         // the eager load subqueries.
         copy.eagerLoaders = .init()
+
         // Remove all sorts since they may be incompatible with aggregates.
         copy.query.sorts = []
-        copy.query.fields = [.aggregate(.fields(
+
+        // Set custom action.
+        copy.query.action = .aggregate(.fields(
             method: method,
-            fields: [.field(
+            field: .field(
                 path: [fieldName],
                 schema: Model.schema,
-                alias: nil)
-            ]
-        ))]
+                alias: nil
+            )
+        ))
 
-        return copy.first().flatMapThrowing { res in
-            guard let res = res else {
-                throw FluentError.noResults
+        let promise = self.database.eventLoop.makePromise(of: Result.self)
+        copy.run { output in
+            do {
+                let result = try output.decode(.aggregate, as: Result.self)
+                promise.succeed(result)
+            } catch {
+                promise.fail(error)
             }
-            return try res._$id.cachedOutput!.decode(.aggregate, as: Result.self)
-        }
+        }.cascadeFailure(to: promise)
+        return promise.futureResult
     }
 }

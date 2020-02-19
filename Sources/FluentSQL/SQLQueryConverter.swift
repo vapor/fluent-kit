@@ -7,7 +7,7 @@ public struct SQLQueryConverter {
     public func convert(_ fluent: DatabaseQuery) -> SQLExpression {
         let sql: SQLExpression
         switch fluent.action {
-        case .read: sql = self.select(fluent)
+        case .read, .aggregate: sql = self.select(fluent)
         case .create: sql = self.insert(fluent)
         case .update: sql = self.update(fluent)
         case .delete: sql = self.delete(fluent)
@@ -40,13 +40,15 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        // Only make the entire query DISTINCT if there are no aggregates.
-        // Otherwise the aggregates will make use of the DISTINCT directly.
-        select.isDistinct = query.isUnique && !query.fields.contains {
-            if case .aggregate(_) = $0 { return true } else { return false }
-        }
         select.tables.append(SQLIdentifier(query.schema))
-        select.columns = query.fields.map { self.field($0, query.isUnique) }
+        switch query.action {
+        case .read:
+            select.isDistinct = query.isUnique
+            select.columns = query.fields.map(self.field)
+        case .aggregate(let aggregate):
+            select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
+        default: break
+        }
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
         select.orderBy = query.sorts.map(self.sort)
@@ -149,12 +151,8 @@ public struct SQLQueryConverter {
             return custom(any)
         }
     }
-    
+
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
-        self.field(field, false)
-    }
-    
-    private func field(_ field: DatabaseQuery.Field, _ isUnique: Bool) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
@@ -181,29 +179,32 @@ public struct SQLQueryConverter {
             default:
                 fatalError("Deep SQL JSON nesting not yet supported.")
             }
-        case .aggregate(let agg):
-            switch agg {
-            case .custom(let any):
-                return any as! SQLExpression
-            case .fields(let method, let fields):
-                let name: String
-                switch method {
-                case .average: name = "AVG"
-                case .count: name = "COUNT"
-                case .sum: name = "SUM"
-                case .maximum: name = "MAX"
-                case .minimum: name = "MIN"
-                case .custom(let custom): name = custom as! String
-                }
-                return SQLAlias(
-                    SQLFunction(
-                        name,
-                        args: isUnique ?
-                            [SQLDistinct(fields.map(self.field))]
-                            : fields.map { self.field($0) }),
-                        as: SQLIdentifier(FieldKey.aggregate.description)
-                    )
+        }
+    }
+
+    private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> SQLExpression {
+        switch aggregate {
+        case .custom(let any):
+            return any as! SQLExpression
+        case .fields(let method, let field):
+            let name: String
+            switch method {
+            case .average: name = "AVG"
+            case .count: name = "COUNT"
+            case .sum: name = "SUM"
+            case .maximum: name = "MAX"
+            case .minimum: name = "MIN"
+            case .custom(let custom): name = custom as! String
             }
+            return SQLAlias(
+                SQLFunction(
+                    name,
+                    args: isUnique
+                        ? [SQLDistinct(self.field(field))]
+                        : [self.field(field)]
+                ),
+                as: SQLIdentifier(FieldKey.aggregate.description)
+            )
         }
     }
     
