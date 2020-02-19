@@ -3,7 +3,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.database.configuration.middleware.append(UserMiddleware())
+            self.databases.middleware.use(UserMiddleware())
 
             let user = User(name: "A")
             // create

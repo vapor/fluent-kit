@@ -42,11 +42,9 @@ public protocol DatabaseDriver {
     func shutdown()
 }
 
-public final class DatabaseConfiguration {
-    public var middleware: [AnyModelMiddleware]
-    public init() {
-        self.middleware = []
-    }
+public protocol DatabaseConfiguration {
+    var middleware: [AnyModelMiddleware] { get set }
+    func makeDriver(for databases: Databases) -> DatabaseDriver
 }
 
 public struct DatabaseContext {

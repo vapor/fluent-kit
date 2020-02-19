@@ -3,14 +3,12 @@ import NIO
 public struct DummyDatabase: Database {
     public var context: DatabaseContext
     
-    public init(
-        context: DatabaseContext = .init(
-            configuration: .init(),
+    public init(context: DatabaseContext? = nil) {
+        self.context = context ?? .init(
+            configuration: DummyDatabaseConfiguration(middleware: []),
             logger: .init(label: "codes.vapor.test"),
             eventLoop: EmbeddedEventLoop()
         )
-    ) {
-        self.context = context
     }
     
     public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
@@ -30,6 +28,14 @@ public struct DummyDatabase: Database {
     
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         self.eventLoop.makeSucceededFuture(())
+    }
+}
+
+public struct DummyDatabaseConfiguration: DatabaseConfiguration {
+    public var middleware: [AnyModelMiddleware]
+
+    public func makeDriver(for databases: Databases) -> DatabaseDriver {
+        DummyDatabaseDriver(on: databases.eventLoopGroup)
     }
 }
 
