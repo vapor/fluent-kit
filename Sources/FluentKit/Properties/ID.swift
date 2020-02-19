@@ -30,7 +30,12 @@ public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, 
     }
 
     public init(stringLiteral value: String) {
-        self = .name(value)
+        switch value {
+        case "id", "_id":
+            self = .id
+        default:
+            self = .name(value)
+        }
     }
 }
 

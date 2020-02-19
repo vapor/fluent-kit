@@ -1,14 +1,4 @@
 extension FluentBenchmarker {
-    public func testNonstandardIDKey() throws {
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(baz: "qux")
-            try foo.save(on: self.database).wait()
-            XCTAssertNotNil(foo.id)
-        }
-    }
-
     public func testAutoincrementingID() throws {
         try self.runTest(#function, [
             FooMigration()
@@ -26,8 +16,8 @@ extension FluentBenchmarker {
 private final class Foo: Model {
     static let schema = "foos"
 
-    @ID(key: "bar")
-    var id: UUID?
+    @ID(key: .id)
+    var id: Int?
 
     @Field(key: "baz")
     var baz: String
@@ -43,7 +33,7 @@ private final class Foo: Model {
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("foos")
-            .field("bar", .uuid, .identifier(auto: false))
+            .field(.id, .int, .identifier(auto: true))
             .field("baz", .string, .required)
             .create()
     }

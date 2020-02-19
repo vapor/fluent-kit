@@ -38,7 +38,6 @@ public final class FluentBenchmarker {
         try self.testMultipleSet()
         try self.testNestedModel()
         try self.testNewModelDecode()
-        try self.testNonstandardIDKey()
         try self.testNullifyField()
         try self.testOptionalParent()
         try self.testPagination()
