@@ -52,19 +52,12 @@ private final class User: Model {
     @CompoundField(prefix: "pet")
     var pet: Pet
 
-    @OptionalParent(key: "bf_id")
-    var bestFriend: User?
-
-    @Children(for: \.$bestFriend)
-    var friends: [User]
-
     init() { }
 
-    init(id: IDValue? = nil, name: String, pet: Pet, bestFriend: User? = nil) {
+    init(id: IDValue? = nil, name: String, pet: Pet) {
         self.id = id
         self.name = name
         self.pet = pet
-        self.$bestFriend.id = bestFriend?.id
     }
 }
 
@@ -94,7 +87,6 @@ private struct UserMigration: Migration {
             .field("name", .string, .required)
             .field("pet_name", .string, .required)
             .field("pet_type", .string, .required)
-            .field("bf_id", .uuid)
             .create()
     }
 
