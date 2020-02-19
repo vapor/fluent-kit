@@ -32,7 +32,7 @@ private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
-            .field("bar", .json, .required)
+            .field("bar", .array(of: .string), .required)
             .create()
     }
 
