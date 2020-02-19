@@ -37,6 +37,6 @@ public struct NestedPath: ExpressibleByStringLiteral {
     }
 
     public init(stringLiteral value: String) {
-        self.path = value.split(separator: ".").map(String.init).map { .name($0) }
+        self.path = value.split(separator: ".").map(String.init).map { .string($0) }
     }
 }

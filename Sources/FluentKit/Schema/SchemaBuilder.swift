@@ -16,18 +16,6 @@ public final class SchemaBuilder {
     }
 
     public func field(
-        _ name: String,
-        _ dataType: DatabaseSchema.DataType,
-        _ constraints: DatabaseSchema.FieldConstraint...
-    ) -> Self {
-        self.field(.definition(
-            name: .key(.name(name)),
-            dataType: dataType,
-            constraints: constraints
-        ))
-    }
-
-    public func field(
         _ key: FieldKey,
         _ dataType: DatabaseSchema.DataType,
         _ constraints: DatabaseSchema.FieldConstraint...
@@ -43,34 +31,10 @@ public final class SchemaBuilder {
         self.schema.createFields.append(field)
         return self
     }
-    
-    public func unique(on fields: String...) -> Self {
-        self.schema.constraints.append(.unique(
-            fields: fields.map { .key(.name($0)) }
-        ))
-        return self
-    }
 
     public func unique(on fields: FieldKey...) -> Self {
         self.schema.constraints.append(.unique(
             fields: fields.map { .key($0) }
-        ))
-        return self
-    }
-
-    public func foreignKey(
-        _ field: String,
-        references foreignSchema: String,
-        _ foreignField: String,
-        onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
-        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
-    ) -> Self {
-        self.schema.constraints.append(.foreignKey(
-            fields: [.key(.name(field))],
-            foreignSchema: foreignSchema,
-            foreignFields: [.key(.name(foreignField))],
-            onDelete: onDelete,
-            onUpdate: onUpdate
         ))
         return self
     }
@@ -90,10 +54,6 @@ public final class SchemaBuilder {
             onUpdate: onUpdate
         ))
         return self
-    }
-    
-    public func deleteField(_ name: String) -> Self {
-        return self.deleteField(.key(.name(name)))
     }
 
     public func deleteField(_ name: FieldKey) -> Self {

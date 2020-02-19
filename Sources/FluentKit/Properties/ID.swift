@@ -15,14 +15,14 @@ extension Model {
 
 public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
     case id
-    case name(String)
+    case string(String)
     case prefixed(String, FieldKey)
 
     public var description: String {
         switch self {
         case .id:
             return "id"
-        case .name(let name):
+        case .string(let name):
             return name
         case .prefixed(let prefix, let key):
             return prefix + key.description
@@ -34,7 +34,7 @@ public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, 
         case "id", "_id":
             self = .id
         default:
-            self = .name(value)
+            self = .string(value)
         }
     }
 }

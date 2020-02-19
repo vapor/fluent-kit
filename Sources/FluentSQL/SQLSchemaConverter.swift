@@ -218,7 +218,7 @@ public struct SQLSchemaConverter {
         switch key {
         case .id:
             return "id"
-        case .name(let name):
+        case .string(let name):
             return name
         case .prefixed(let prefix, let key):
             return prefix + self.key(key)
