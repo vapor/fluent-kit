@@ -66,18 +66,24 @@ public final class DummyDatabaseDriver: DatabaseDriver {
 
 // MARK: Private
 
-private struct DummyRow: DatabaseRow {
-    func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T
+public struct DummyRow: DatabaseRow {
+    public init() { }
+    
+    public func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T
         where T: Decodable
     {
-        return try T(from: DummyDecoder())
+        if T.self is UUID.Type {
+            return UUID() as! T
+        } else {
+            return try T(from: DummyDecoder())
+        }
     }
 
-    func contains(field: FieldKey) -> Bool {
+    public func contains(field: FieldKey) -> Bool {
         return true
     }
     
-    var description: String {
+    public var description: String {
         return "<dummy>"
     }
 }
@@ -118,7 +124,11 @@ private struct DummyDecoder: Decoder {
         }
         
         func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
-            return try T.init(from: DummyDecoder())
+            if T.self is UUID.Type {
+                return UUID() as! T
+            } else {
+                return try T.init(from: DummyDecoder())
+            }
         }
         
         func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
@@ -244,7 +254,11 @@ private struct DummyDecoder: Decoder {
         }
         
         func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-            return try T(from: DummyDecoder())
+            if T.self is UUID.Type {
+                return UUID() as! T
+            } else {
+                return try T(from: DummyDecoder())
+            }
         }
     }
     
