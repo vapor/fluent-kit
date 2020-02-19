@@ -84,6 +84,19 @@ public final class Databases {
         }
     }
 
+    public func reinitialize(_ id: DatabaseID? = nil) {
+        let identifier = id ?? self.getDefaultID()
+        guard
+            let driver = self.drivers[identifier],
+            let factory = self.factories[identifier]
+        else {
+            fatalError("You can't reinitialize something that was never initialized in the first place.")
+        }
+
+        driver.shutdown()
+        self.drivers[identifier] = factory.makeDriver(self)
+    }
+
     public func shutdown() {
         for driver in self.drivers.values {
             driver.shutdown()
