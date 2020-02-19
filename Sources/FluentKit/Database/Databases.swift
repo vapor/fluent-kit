@@ -4,14 +4,16 @@ import Foundation
 public final class Databases {
     public let eventLoopGroup: EventLoopGroup
     public let threadPool: NIOThreadPool
-    
+
     private var drivers: [DatabaseID: DatabaseDriver]
+    private var factories: [DatabaseID: DatabaseDriverFactory]
     private var configurations: [DatabaseID: DatabaseConfiguration]
     
     private var defaultID: DatabaseID?
     
     public init(threadPool: NIOThreadPool, on eventLoopGroup: EventLoopGroup) {
         self.drivers = [:]
+        self.factories = [:]
         self.configurations = [:]
         self.eventLoopGroup = eventLoopGroup
         self.threadPool = threadPool
@@ -22,19 +24,13 @@ public final class Databases {
         as id: DatabaseID,
         isDefault: Bool? = nil
     ) {
-        self.use(factory.makeDriver(self), as: id, isDefault: isDefault)
-    }
-    
-    public func use(
-        _ driver: DatabaseDriver,
-        as id: DatabaseID,
-        isDefault: Bool? = nil
-    ) {
-        self.drivers[id] = driver
+        self.factories[id] = factory
+
         if self.configurations[id] == nil {
             self.configurations[id] = .init()
         }
-        if isDefault == true || self.defaultID == nil && isDefault != false {
+
+        if isDefault == true || (self.defaultID == nil && isDefault != false) {
             self.defaultID = id
         }
     }
@@ -57,7 +53,13 @@ public final class Databases {
     }
     
     public func driver(_ id: DatabaseID? = nil) -> DatabaseDriver? {
-        self.drivers[id ?? self.getDefaultID()]
+        if let driver = self.drivers[id ?? self.getDefaultID()] { return driver }
+
+        guard let factory = self.factories[id ?? self.getDefaultID()] else { return nil }
+        let driver = factory.makeDriver(self)
+
+        self.drivers[id ?? self.getDefaultID()] = driver
+        return driver
     }
     
     public func `default`(to id: DatabaseID) {
@@ -86,6 +88,8 @@ public final class Databases {
         for driver in self.drivers.values {
             driver.shutdown()
         }
+
+        self.drivers.removeAll()
     }
     
     private func getDefaultID() -> DatabaseID {
