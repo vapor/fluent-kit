@@ -4,10 +4,17 @@ import NIO
 import XCTest
 
 public final class FluentBenchmarker {
-    public let database: Database
+    public let databases: Databases
+
+    public var database: Database {
+        self.databases.database(
+            logger: .init(label: "codes.fluent.benchmarker"),
+            on: self.databases.eventLoopGroup.next()
+        )!
+    }
     
-    public init(database: Database) {
-        self.database = database
+    public init(databases: Databases) {
+        self.databases = databases
     }
 
     public func testAll() throws {
