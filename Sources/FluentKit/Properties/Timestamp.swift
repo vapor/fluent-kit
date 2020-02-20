@@ -1,5 +1,5 @@
-extension Model {
-    public typealias Timestamp = ModelTimestamp<Self>
+extension Fields {
+    public typealias Timestamp = TimestampProperty<Self>
 }
 
 public enum TimestampTrigger {
@@ -9,12 +9,12 @@ public enum TimestampTrigger {
 }
 
 @propertyWrapper
-public final class ModelTimestamp<Model>
-    where Model: FluentKit.Model
+public final class TimestampProperty<Model>
+    where Model: FluentKit.Fields
 {
     public typealias Value = Date?
 
-    public let field: ModelField<Model, Date?>
+    public let field: FieldProperty<Model, Date?>
 
     public let trigger: TimestampTrigger
 
@@ -31,7 +31,7 @@ public final class ModelTimestamp<Model>
         }
     }
 
-    public var projectedValue: ModelTimestamp<Model> {
+    public var projectedValue: TimestampProperty<Model> {
         return self
     }
 
@@ -54,7 +54,7 @@ public final class ModelTimestamp<Model>
     }
 }
 
-extension ModelTimestamp: AnyProperty {
+extension TimestampProperty: AnyProperty {
     var keys: [FieldKey] {
         [self.key]
     }
@@ -76,9 +76,9 @@ extension ModelTimestamp: AnyProperty {
     }
 }
 
-extension ModelTimestamp: AnyTimestamp { }
+extension TimestampProperty: AnyTimestamp { }
 
-extension ModelTimestamp: FieldRepresentable {
+extension TimestampProperty: FieldRepresentable {
     public var path: [FieldKey] {
         self.field.path
     }

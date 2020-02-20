@@ -6,8 +6,8 @@ extension AnyModel {
     public var description: String {
         var info: [InfoKey: CustomStringConvertible] = [:]
 
-        if !self.input.fields.isEmpty {
-            info["input"] = self.input.fields
+        if !self.input.values.isEmpty {
+            info["input"] = self.input.values
         }
 
         if let output = self.anyID.cachedOutput {

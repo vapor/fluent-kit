@@ -1,49 +1,10 @@
-public protocol RandomGeneratable {
-    static func generateRandom() -> Self
-}
-
-extension UUID: RandomGeneratable {
-    public static func generateRandom() -> UUID {
-        return .init()
-    }
-}
-
 extension Model {
-    public typealias ID<Value> = ModelID<Self, Value>
+    public typealias ID<Value> = IDProperty<Self, Value>
         where Value: Codable
 }
 
-public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
-    case id
-    case string(String)
-    case prefixed(String, FieldKey)
-    case aggregate
-
-    public var description: String {
-        switch self {
-        case .id:
-            return "id"
-        case .string(let name):
-            return name
-        case .aggregate:
-            return "aggregate"
-        case .prefixed(let prefix, let key):
-            return prefix + key.description
-        }
-    }
-
-    public init(stringLiteral value: String) {
-        switch value {
-        case "id", "_id":
-            self = .id
-        default:
-            self = .string(value)
-        }
-    }
-}
-
 @propertyWrapper
-public final class ModelID<Model, Value>
+public final class IDProperty<Model, Value>
     where Model: FluentKit.Model, Value: Codable
 {
     public enum Generator {
@@ -80,7 +41,7 @@ public final class ModelID<Model, Value>
         }
     }
 
-    public var projectedValue: ModelID<Model, Value> {
+    public var projectedValue: IDProperty<Model, Value> {
         return self
     }
     
@@ -137,7 +98,7 @@ public final class ModelID<Model, Value>
     }
 }
 
-extension ModelID: AnyProperty {
+extension IDProperty: AnyProperty {
     var keys: [FieldKey] {
         self.field.keys
     }
@@ -161,16 +122,10 @@ extension ModelID: AnyProperty {
     }
 }
 
-extension ModelID: FieldRepresentable {
+extension IDProperty: FieldRepresentable {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-extension ModelID: AnyID { }
-
-protocol AnyID: AnyProperty {
-    func generate()
-    var exists: Bool { get set }
-    var cachedOutput: DatabaseOutput? { get set }
-}
+extension IDProperty: AnyID { }

@@ -57,8 +57,8 @@ extension CompoundFieldProperty: AnyProperty {
 
     func input(to input: inout DatabaseInput) {
         if let value = self.value {
-            value.input.fields.forEach { (name, value) in
-                input.fields[.prefixed(self.prefix, name)] = value
+            value.input.values.forEach { (name, value) in
+                input.values[.prefixed(self.prefix, name)] = value
             }
         }
     }

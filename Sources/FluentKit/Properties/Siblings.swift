@@ -1,10 +1,10 @@
 extension Model {
-    public typealias Siblings<To, Through> = ModelSiblings<Self, To, Through>
+    public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
         where To: Model, Through: Model
 }
 
 @propertyWrapper
-public final class ModelSiblings<From, To, Through>
+public final class SiblingsProperty<From, To, Through>
     where From: Model, To: Model, Through: Model
 {
     public enum AttachMethod {
@@ -42,7 +42,7 @@ public final class ModelSiblings<From, To, Through>
         }
     }
 
-    public var projectedValue: ModelSiblings<From, To, Through> {
+    public var projectedValue: SiblingsProperty<From, To, Through> {
         return self
     }
 
@@ -157,7 +157,7 @@ public final class ModelSiblings<From, To, Through>
     }
 }
 
-extension ModelSiblings: AnyProperty {
+extension SiblingsProperty: AnyProperty {
     var keys: [FieldKey] {
         []
     }
@@ -185,7 +185,7 @@ extension ModelSiblings: AnyProperty {
     }
 }
 
-extension ModelSiblings: Relation {
+extension SiblingsProperty: Relation {
     public var name: String {
         let fromKey = Through.path(for: self.from.appending(path: \.$id))
         let toKey = Through.path(for: self.to.appending(path: \.$id))
@@ -199,7 +199,7 @@ extension ModelSiblings: Relation {
     }
 }
 
-extension ModelSiblings: EagerLoadable {
+extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
         to builder: Builder

@@ -50,7 +50,7 @@ extension NestedFieldProperty: AnyProperty {
 
     func input(to input: inout DatabaseInput) {
         if let value = self.value {
-            input.fields[self.key] = .bind(value)
+            input.values[self.key] = .bind(value)
         }
     }
 

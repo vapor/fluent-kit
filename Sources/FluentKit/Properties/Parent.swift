@@ -1,13 +1,13 @@
 extension Model {
-    public typealias Parent<To> = ModelParent<Self, To>
+    public typealias Parent<To> = ParentProperty<Self, To>
         where To: FluentKit.Model
 }
 
 @propertyWrapper
-public final class ModelParent<From, To>
+public final class ParentProperty<From, To>
     where From: Model, To: Model
 {
-    @ModelField<From, To.IDValue>
+    @FieldProperty<From, To.IDValue>
     public var id: To.IDValue
 
     public var wrappedValue: To {
@@ -20,7 +20,7 @@ public final class ModelParent<From, To>
         set { fatalError("use $ prefix to access") }
     }
 
-    public var projectedValue: ModelParent<From, To> {
+    public var projectedValue: ParentProperty<From, To> {
         return self
     }
 
@@ -36,7 +36,7 @@ public final class ModelParent<From, To>
     }
 }
 
-extension ModelParent: Relation {
+extension ParentProperty: Relation {
     public var name: String {
         "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
@@ -48,7 +48,7 @@ extension ModelParent: Relation {
     }
 }
 
-extension ModelParent: AnyProperty {
+extension ParentProperty: AnyProperty {
     var keys: [FieldKey] {
         self.$id.keys
     }
@@ -79,7 +79,7 @@ extension ModelParent: AnyProperty {
     }
 }
 
-extension ModelParent: EagerLoadable {
+extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
         to builder: Builder

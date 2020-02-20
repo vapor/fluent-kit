@@ -1,13 +1,13 @@
 extension Model {
-    public typealias OptionalParent<To> = ModelOptionalParent<Self, To>
+    public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
         where To: Model
 }
 
 @propertyWrapper
-public final class ModelOptionalParent<From, To>
+public final class OptionalParentProperty<From, To>
     where From: Model, To: Model
 {
-    @ModelField<From, To.IDValue?>
+    @FieldProperty<From, To.IDValue?>
     public var id: To.IDValue?
 
     public var wrappedValue: To? {
@@ -19,7 +19,7 @@ public final class ModelOptionalParent<From, To>
         }
     }
 
-    public var projectedValue: ModelOptionalParent<From, To> {
+    public var projectedValue: OptionalParentProperty<From, To> {
         return self
     }
 
@@ -35,7 +35,7 @@ public final class ModelOptionalParent<From, To>
     }
 }
 
-extension ModelOptionalParent: Relation {
+extension OptionalParentProperty: Relation {
     public var name: String {
         "OptionalParent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
@@ -47,7 +47,7 @@ extension ModelOptionalParent: Relation {
     }
 }
 
-extension ModelOptionalParent: AnyProperty {
+extension OptionalParentProperty: AnyProperty {
     var keys: [FieldKey] {
         self.$id.keys
     }
@@ -78,7 +78,7 @@ extension ModelOptionalParent: AnyProperty {
     }
 }
 
-extension ModelOptionalParent: EagerLoadable {
+extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
         to builder: Builder

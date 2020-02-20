@@ -19,7 +19,7 @@ extension Model {
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
         Self.query(on: database)
-            .set(self.input.fields)
+            .set(self.input.values)
             .action(.create)
             .run { promise.succeed($0) }
             .cascadeFailure(to: promise)
@@ -27,9 +27,9 @@ extension Model {
             var input = self.input
             if self._$id.generator == .database {
                 let idKey = Self()._$id.key
-                input.fields[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input.fields).output(for: database))
+            try self.output(from: SavedInput(input.values).output(for: database))
         }
     }
     
@@ -45,12 +45,12 @@ extension Model {
         let input = self.input
         return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .set(input.fields)
+            .set(input.values)
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(input.fields).output(for: database))
+            try self.output(from: SavedInput(input.values).output(for: database))
         }
     }
     
@@ -97,12 +97,12 @@ extension Model {
         return Self.query(on: database)
             .withDeleted()
             .filter(\._$id == self.id!)
-            .set(self.input.fields)
+            .set(self.input.values)
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(self.input.fields).output(for: database))
+            try self.output(from: SavedInput(self.input.values).output(for: database))
             self._$id.exists = true
         }
     }
@@ -141,7 +141,7 @@ extension Array where Element: FluentKit.Model {
             $0.touchTimestamps(.create)
             $0.touchTimestamps(.update)
         }
-        builder.set(self.map { $0.input.fields })
+        builder.set(self.map { $0.input.values })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { created in

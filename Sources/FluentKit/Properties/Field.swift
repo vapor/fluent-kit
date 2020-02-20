@@ -1,21 +1,21 @@
 extension Fields {
-    public typealias Field<Value> = ModelField<Self, Value>
+    public typealias Field<Value> = FieldProperty<Self, Value>
         where Value: Codable
 }
 
 @propertyWrapper
-public final class ModelField<Model, Value>
+public final class FieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: Codable
 {
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
 
-    public var field: ModelField<Model, Value> {
+    public var field: FieldProperty<Model, Value> {
         return self
     }
     
-    public var projectedValue: ModelField<Model, Value> {
+    public var projectedValue: FieldProperty<Model, Value> {
         return self
     }
 
@@ -46,19 +46,19 @@ public final class ModelField<Model, Value>
     }
 }
 
-extension ModelField: FieldRepresentable {
+extension FieldProperty: FieldRepresentable {
     public var path: [FieldKey] {
         [self.key]
     }
 }
 
-extension ModelField: AnyProperty {
+extension FieldProperty: AnyProperty {
     var keys: [FieldKey] {
         [self.key]
     }
 
     func input(to input: inout DatabaseInput) {
-        input.fields[self.key] = self.inputValue
+        input.values[self.key] = self.inputValue
     }
 
     func output(from output: DatabaseOutput) throws {
@@ -93,11 +93,4 @@ extension ModelField: AnyProperty {
             self.wrappedValue = try container.decode(Value.self)
         }
     }
-}
-
-public protocol FieldRepresentable {
-    associatedtype Model: Fields
-    associatedtype Value: Codable
-    var path: [FieldKey] { get }
-    var wrappedValue: Value { get }
 }

@@ -1,10 +1,10 @@
 extension Model {
-    public typealias Children<To> = ModelChildren<Self, To>
+    public typealias Children<To> = ChildrenProperty<Self, To>
         where To: FluentKit.Model
 }
 
 @propertyWrapper
-public final class ModelChildren<From, To>
+public final class ChildrenProperty<From, To>
     where From: Model, To: Model
 {
     // MARK: ID
@@ -44,7 +44,7 @@ public final class ModelChildren<From, To>
         }
     }
 
-    public var projectedValue: ModelChildren<From, To> {
+    public var projectedValue: ChildrenProperty<From, To> {
         return self
     }
     
@@ -97,7 +97,7 @@ public final class ModelChildren<From, To>
     }
 }
 
-extension ModelChildren: AnyProperty {
+extension ChildrenProperty: AnyProperty {
     var keys: [FieldKey] {
         []
     }
@@ -125,7 +125,7 @@ extension ModelChildren: AnyProperty {
     }
 }
 
-extension ModelChildren.Key: CustomStringConvertible {
+extension ChildrenProperty.Key: CustomStringConvertible {
     var description: String {
         switch self {
         case .optional(let keyPath):
@@ -136,7 +136,7 @@ extension ModelChildren.Key: CustomStringConvertible {
     }
 }
 
-extension ModelChildren: Relation {
+extension ChildrenProperty: Relation {
     public var name: String {
         "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
@@ -148,7 +148,7 @@ extension ModelChildren: Relation {
     }
 }
 
-extension ModelChildren: EagerLoadable {
+extension ChildrenProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Children<To>>,
         to builder: Builder
