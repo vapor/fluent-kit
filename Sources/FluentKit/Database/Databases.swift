@@ -25,10 +25,8 @@ public final class Databases {
         ) {
             self.databases.lock.lock()
             defer { self.databases.lock.unlock() }
-            let id = id ?? self.databases.getDefaultID()
-            guard var configuration = self.databases.configurations[id] else {
-                fatalError("No database configuration registered for \(id).")
-            }
+            let id = id ?? self.databases._requireDefaultID()
+            var configuration = self.databases._requireConfiguration(for: id)
             configuration.middleware.append(middleware)
             self.databases.configurations[id] = configuration
         }
@@ -76,7 +74,7 @@ public final class Databases {
     public func configuration(for id: DatabaseID? = nil) -> DatabaseConfiguration? {
         self.lock.lock()
         defer { self.lock.unlock() }
-        return self.configurations[id ?? self.getDefaultID()]
+        return self.configurations[id ?? self._requireDefaultID()]
     }
     
     public func database(
@@ -86,12 +84,10 @@ public final class Databases {
     ) -> Database? {
         self.lock.lock()
         defer { self.lock.unlock() }
-        let id = id ?? self.getDefaultID()
+        let id = id ?? self._requireDefaultID()
         var logger = logger
         logger[metadataKey: "database-id"] = .string(id.string)
-        guard let configuration = self.configurations[id] else {
-            fatalError("No datatabase configuration registered for \(id).")
-        }
+        let configuration = self._requireConfiguration(for: id)
         let context = DatabaseContext(
             configuration: configuration,
             logger: logger,
@@ -111,16 +107,11 @@ public final class Databases {
     public func reinitialize(_ id: DatabaseID? = nil) {
         self.lock.lock()
         defer { self.lock.unlock() }
-
-        guard
-            let driver = self.drivers[id ?? self.getDefaultID()],
-            let configuration = self.configurations[id ?? self.getDefaultID()]
-        else {
-            fatalError("You can't reinitialize something that wasn't initialized in the first place.")
+        let id = id ?? self._requireDefaultID()
+        if let driver = self.drivers[id] {
+            self.drivers[id] = nil
+            driver.shutdown()
         }
-
-        driver.shutdown()
-        self.drivers[id ?? self.getDefaultID()] = configuration.makeDriver(for: self)
     }
 
     public func shutdown() {
@@ -131,8 +122,15 @@ public final class Databases {
         }
         self.drivers = [:]
     }
+
+    private func _requireConfiguration(for id: DatabaseID) -> DatabaseConfiguration {
+        guard let configuration = self.configurations[id] else {
+            fatalError("No datatabase configuration registered for \(id).")
+        }
+        return configuration
+    }
     
-    private func getDefaultID() -> DatabaseID {
+    private func _requireDefaultID() -> DatabaseID {
         guard let id = self.defaultID else {
             fatalError("No default database configured.")
         }
