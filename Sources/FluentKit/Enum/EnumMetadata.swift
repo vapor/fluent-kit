@@ -25,7 +25,7 @@ final class EnumMetadata: Model {
 
 private struct EnumMetadataMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("_fluent_enums")
+        database.schema("_fluent_enums")
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("case", .string, .required)
@@ -34,6 +34,6 @@ private struct EnumMetadataMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("_fluent_enums").delete()
+        database.schema("_fluent_enums").delete()
     }
 }

@@ -37,7 +37,7 @@ public struct MoonMigration: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("moons")
+        database.schema("moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("craters", .int, .required)
@@ -47,7 +47,7 @@ public struct MoonMigration: Migration {
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("moons").delete()
+        database.schema("moons").delete()
     }
 }
 

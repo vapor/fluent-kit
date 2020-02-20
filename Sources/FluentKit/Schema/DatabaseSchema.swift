@@ -51,6 +51,19 @@ public struct DatabaseSchema {
     }
     
     public enum FieldConstraint {
+        public static func references(
+            _ schema: String,
+            _ field: String,
+            onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
+            onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+        ) -> Self {
+            .foreignKey(
+                field: .string(schema: schema, field: field),
+                onDelete: onDelete,
+                onUpdate: onUpdate
+            )
+        }
+
         case required
         case identifier(auto: Bool)
         case foreignKey(
@@ -83,6 +96,11 @@ public struct DatabaseSchema {
         )
         case custom(Any)
     }
+
+    public enum FieldUpdate {
+        case dataType(name: FieldName, dataType: DataType)
+        case custom(Any)
+    }
     
     public enum FieldName {
         case key(FieldKey)
@@ -97,7 +115,7 @@ public struct DatabaseSchema {
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]
-    public var updateFields: [FieldDefinition]
+    public var updateFields: [FieldUpdate]
     public var deleteFields: [FieldName]
     public var constraints: [Constraint]
     

@@ -87,7 +87,7 @@ private final class Trash: Model {
 
 private struct TrashMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Trash.schema)
+        database.schema("trash")
             .field("id", .uuid, .identifier(auto: false), .custom("UNIQUE"))
             .field("contents", .string, .required)
             .field("deleted_at", .datetime)
@@ -95,6 +95,6 @@ private struct TrashMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Trash.schema).delete()
+        database.schema("trash").delete()
     }
 }

@@ -1,6 +1,6 @@
 extension Database {
     public func `enum`(_ name: String) -> EnumBuilder {
-        return .init(database: self, name: name)
+        .init(database: self, name: name)
     }
 }
 
@@ -14,7 +14,7 @@ public final class EnumBuilder {
     }
 
     public func `case`(_ name: String) -> Self {
-        self.enum.cases.append(name)
+        self.enum.createCases.append(name)
         return self
     }
 
@@ -23,82 +23,22 @@ public final class EnumBuilder {
         return self
     }
 
-    public func delete() -> EventLoopFuture<Void> {
-        self.enum.action = .delete
+    public func create() -> EventLoopFuture<DatabaseSchema.DataType> {
+        self.enum.action = .create
         return self.database.execute(enum: self.enum).flatMap {
-            self.deleteMetadata()
+            self.enum.generateDatatype(on: self.database)
         }
     }
 
     public func update() -> EventLoopFuture<DatabaseSchema.DataType> {
         self.enum.action = .update
         return self.database.execute(enum: self.enum).flatMap {
-            self.generateDatatype()
+            self.enum.generateDatatype(on: self.database)
         }
     }
 
-    public func create() -> EventLoopFuture<DatabaseSchema.DataType> {
-        self.enum.action = .create
-        return self.database.execute(enum: self.enum).flatMap {
-            self.generateDatatype()
-        }
-    }
-
-    // MARK: Private
-
-    private func generateDatatype() -> EventLoopFuture<DatabaseSchema.DataType> {
-        self.initializeMetadata().flatMap {
-            self.updateMetadata()
-        }.flatMap { _ in
-            // Fetch the latest cases.
-            EnumMetadata.query(on: self.database).filter(\.$name == self.enum.name).all()
-        }.map { cases in
-            // Convert latest cases to usable DataType.
-            .enum(.init(
-                name: self.enum.name,
-                cases: cases.map { $0.case }
-            ))
-        }
-    }
-
-    private func initializeMetadata() -> EventLoopFuture<Void> {
-        // Check to see if the table exists.
-        EnumMetadata.query(on: self.database).count().map { _ in
-            // Ignore count.
-        }.flatMapError { error in
-            // Table does not exist, create it.
-            EnumMetadata.migration.prepare(on: self.database)
-        }
-    }
-
-    private func updateMetadata() -> EventLoopFuture<Void> {
-        // Create all new enum cases.
-        let create = self.enum.cases.map {
-            EnumMetadata(name: self.enum.name, case: $0)
-        }.create(on: self.database)
-        // Delete all old enum cases.
-        let delete = EnumMetadata.query(on: self.database)
-            .filter(\.$name == self.enum.name)
-            .filter(\.$case ~~ self.enum.deleteCases)
-            .delete()
-        return create.and(delete).map { _ in }
-    }
-
-    private func deleteMetadata() -> EventLoopFuture<Void> {
-        // Delete all cases for this enum.
-        EnumMetadata.query(on: self.database)
-            .filter(\.$name == self.enum.name)
-            .delete()
-            .flatMap
-        { _ in
-            EnumMetadata.query(on: self.database).count()
-        }.flatMap { count in
-            // If no enums are left, remove table.
-            if count == 0 {
-                return EnumMetadata.migration.revert(on: self.database)
-            } else {
-                return self.database.eventLoop.makeSucceededFuture(())
-            }
-        }
+    public func delete() -> EventLoopFuture<Void> {
+        self.enum.action = .update
+        return self.database.execute(enum: self.enum)
     }
 }

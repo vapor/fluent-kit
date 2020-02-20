@@ -117,15 +117,14 @@ public struct SQLSchemaConverter {
         }
     }
 
-    private func fieldUpdate(_ fieldDefinition: DatabaseSchema.FieldDefinition) -> SQLExpression {
+    private func fieldUpdate(_ fieldDefinition: DatabaseSchema.FieldUpdate) -> SQLExpression {
         switch fieldDefinition {
         case .custom(let any):
             return custom(any)
-        case .definition(let name, let dataType, let constraints):
-            return SQLModifyColumn(
+        case .dataType(let name, let dataType):
+            return SQLAlterColumnDefinitionType(
                 column: self.fieldName(name),
-                dataType: self.dataType(dataType),
-                constraints: constraints.map(self.fieldConstraint)
+                dataType: self.dataType(dataType)
             )
         }
     }

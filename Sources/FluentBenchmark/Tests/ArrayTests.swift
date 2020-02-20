@@ -74,6 +74,63 @@ extension FluentBenchmarker {
             XCTAssertEqual(fetched?.bar, foo.bar)
         }
     }
+
+    public func testArrayStringBackedEnum() throws {
+        try self.runTest(#function, [
+            UserMigration(),
+        ]) {
+            // test array w/ 2 values
+            do {
+                let user = User(roles: [.admin, .employee])
+                try user.create(on: self.database).wait()
+                let fetched = try User.find(user.id, on: self.database).wait()
+                XCTAssertEqual(fetched?.roles, user.roles)
+            }
+            // test empty array
+            do {
+                let user = User(roles: [])
+                try user.create(on: self.database).wait()
+                let fetched = try User.find(user.id, on: self.database).wait()
+                XCTAssertEqual(fetched?.roles, user.roles)
+            }
+        }
+    }
+}
+
+private enum Role: String, Codable, Equatable {
+    case admin
+    case employee
+    case client
+}
+
+private final class User: Model {
+    static let schema = "users"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "roles")
+    var roles: [Role]
+
+    init() { }
+
+    init(id: UUID? = nil, roles: [Role]) {
+        self.id = id
+        self.roles = roles
+    }
+}
+
+private struct UserMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users")
+            .field(.id, .uuid, .identifier(auto: false))
+            .field("roles", .array(of: .string), .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users").delete()
+    }
 }
 
 private final class Foo: Model {

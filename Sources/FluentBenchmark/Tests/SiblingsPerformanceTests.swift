@@ -162,7 +162,7 @@ private final class Expedition: Model {
 
 private struct ExpeditionMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Expedition.schema)
+        database.schema("expeditions")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("area", .string)
@@ -171,7 +171,7 @@ private struct ExpeditionMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Expedition.schema).delete()
+        database.schema("expeditions").delete()
     }
 }
 
