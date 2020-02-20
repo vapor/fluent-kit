@@ -1,16 +1,6 @@
 import struct Foundation.Date
 import struct Foundation.UUID
 
-private protocol _OptionalType {
-    static var _wrappedType: Any.Type { get }
-}
-
-extension Optional: _OptionalType {
-    static var _wrappedType: Any.Type {
-        return Wrapped.self
-    }
-}
-
 public struct DatabaseSchema {
     public enum Action {
         case create
@@ -107,6 +97,7 @@ public struct DatabaseSchema {
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]
+    public var updateFields: [FieldDefinition]
     public var deleteFields: [FieldName]
     public var constraints: [Constraint]
     
@@ -114,6 +105,7 @@ public struct DatabaseSchema {
         self.action = .create
         self.schema = schema
         self.createFields = []
+        self.updateFields = []
         self.deleteFields = []
         self.constraints = []
     }

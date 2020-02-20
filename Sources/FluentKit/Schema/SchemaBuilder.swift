@@ -1,5 +1,3 @@
-import NIO
-
 extension Database {
     public func schema(_ schema: String) -> SchemaBuilder {
         return .init(database: self, schema: schema)
@@ -53,6 +51,23 @@ public final class SchemaBuilder {
             onDelete: onDelete,
             onUpdate: onUpdate
         ))
+        return self
+    }
+
+    public func updateField(
+        _ key: FieldKey,
+        _ dataType: DatabaseSchema.DataType,
+        _ constraints: DatabaseSchema.FieldConstraint...
+    ) -> Self {
+        self.updateField(.definition(
+            name: .key(key),
+            dataType: dataType,
+            constraints: constraints
+        ))
+    }
+
+    public func updateField(_ field: DatabaseSchema.FieldDefinition) -> Self {
+        self.schema.updateFields.append(field)
         return self
     }
 

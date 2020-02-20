@@ -114,7 +114,7 @@ public struct DatabaseQuery: CustomStringConvertible {
                         return inverse ? "<" : ">"
                     }
                 case .subset(let inverse):
-                    return inverse ? "!∈" : "∈"
+                    return inverse ? "!~~" : "~~"
                 case .contains(let inverse, let contains):
                     return (inverse ? "!" : "") + "\(contains)"
                 case .custom(let any):
@@ -153,6 +153,7 @@ public struct DatabaseQuery: CustomStringConvertible {
         case dictionary([String: Value])
         case array([Value])
         case null
+        case enumCase(String)
         case `default`
         case custom(Any)
 
@@ -168,6 +169,8 @@ public struct DatabaseQuery: CustomStringConvertible {
                 return dictionary.description
             case .array(let array):
                 return array.description
+            case .enumCase(let string):
+                return string
             case .null:
                 return "nil"
             case .default:

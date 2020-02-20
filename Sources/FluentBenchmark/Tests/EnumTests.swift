@@ -1,7 +1,20 @@
 extension FluentBenchmarker {
-    public func testUInt8BackedEnum() throws {
-        try runTest(#function, [
+    public func testEnums() throws {
+        try self.runTest(#function, [
             FooMigration()
+        ]) {
+            let foo = Foo(bar: .baz)
+            try foo.save(on: self.database).wait()
+
+            let fetched = try Foo.find(foo.id, on: self.database).wait()
+            XCTAssertEqual(fetched?.bar, .baz)
+        }
+    }
+
+    public func testAddEnumCase() throws {
+        try self.runTest(#function, [
+            FooMigration(),
+            BarAddQuuzMigration()
         ]) {
             let foo = Foo(bar: .baz)
             try foo.save(on: self.database).wait()
@@ -12,8 +25,8 @@ extension FluentBenchmarker {
     }
 }
 
-private enum Bar: UInt8, Codable {
-    case baz, qux
+private enum Bar: String, Codable {
+    case baz, qux, quuz
 }
 
 private final class Foo: Model {
@@ -22,7 +35,7 @@ private final class Foo: Model {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "bar")
+    @Enum(key: "bar")
     var bar: Bar
 
     init() { }
@@ -36,13 +49,48 @@ private final class Foo: Model {
 
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("foos")
-            .field("id", .uuid, .identifier(auto: false))
-            .field("bar", .uint8, .required)
+        database.enum("bar")
+            .case("baz")
+            .case("qux")
             .create()
+            .flatMap
+        { bar in
+            database.schema("foos")
+                .field("id", .uuid, .identifier(auto: false))
+                .field("bar", bar, .required)
+                .create()
+        }
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("foos").delete()
+        database.schema("foos").delete().flatMap {
+            database.enum("bar").delete()
+        }
+    }
+}
+
+private struct BarAddQuuzMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.enum("bar")
+            .case("quuz")
+            .update()
+            .flatMap
+        { bar in
+            database.schema("foos")
+                .updateField("bar", bar)
+                .update()
+        }
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.enum("bar")
+            .deleteCase("quuz")
+            .update()
+            .flatMap
+        { bar in
+            database.schema("foos")
+                .updateField("bar", bar)
+                .update()
+        }
     }
 }

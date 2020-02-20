@@ -10,6 +10,10 @@ public protocol Database {
         schema: DatabaseSchema
     ) -> EventLoopFuture<Void>
 
+    func execute(
+        enum: DatabaseEnum
+    ) -> EventLoopFuture<Void>
+
     func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
     func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>

@@ -238,6 +238,8 @@ public struct SQLQueryConverter {
                     op: inverse ? SQLBinaryOperator.notLike : SQLBinaryOperator.like,
                     right: right
                 )
+            case (.subset, .array(let array)) where array.isEmpty:
+                return SQLLiteral.boolean(false)
             default:
                 return SQLBinaryExpression(
                     left: self.field(field),
@@ -305,6 +307,8 @@ public struct SQLQueryConverter {
             return SQLBind(DictValues(dict: dict))
         case .default:
             return SQLLiteral.default
+        case .enumCase(let string):
+            return SQLLiteral.string(string)
         case .custom(let any):
             return custom(any)
         }
