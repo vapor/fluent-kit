@@ -43,7 +43,7 @@ public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, 
 }
 
 @propertyWrapper
-public final class ModelID<Model, Value>: AnyID, FieldRepresentable
+public final class ModelID<Model, Value>
     where Model: FluentKit.Model, Value: Codable
 {
     public enum Generator {
@@ -135,6 +135,16 @@ public final class ModelID<Model, Value>: AnyID, FieldRepresentable
             break
         }
     }
+}
+
+extension ModelID: AnyProperty {
+    var keys: [FieldKey] {
+        self.field.keys
+    }
+
+    func input(to input: inout DatabaseInput) {
+        self.field.input(to: &input)
+    }
 
     func output(from output: DatabaseOutput) throws {
         self.exists = true
@@ -151,7 +161,10 @@ public final class ModelID<Model, Value>: AnyID, FieldRepresentable
     }
 }
 
-protocol AnyID: AnyField {
+extension ModelID: FieldRepresentable { }
+extension ModelID: AnyID { }
+
+protocol AnyID: AnyProperty {
     func generate()
     var exists: Bool { get set }
     var cachedOutput: DatabaseOutput? { get set }

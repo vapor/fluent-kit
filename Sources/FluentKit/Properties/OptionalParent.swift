@@ -30,14 +30,14 @@ public final class ModelOptionalParent<From, To>
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
-        return To.query(on: database)
+        To.query(on: database)
             .filter(\._$id == self.id)
     }
 }
 
 extension ModelOptionalParent: Relation {
     public var name: String {
-        "OptionalParent<\(From.self), \(To.self)>(key: \(self.key))"
+        "OptionalParent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -47,13 +47,19 @@ extension ModelOptionalParent: Relation {
     }
 }
 
-extension ModelOptionalParent: FieldRepresentable {
-    public var field: ModelField<From, To.IDValue?> {
-        return self.$id
-    }
-}
-
 extension ModelOptionalParent: AnyProperty {
+    var keys: [FieldKey] {
+        self.$id.keys
+    }
+    
+    func input(to input: inout DatabaseInput) {
+        self.$id.input(to: &input)
+    }
+
+    func output(from output: DatabaseOutput) throws {
+        try self.$id.output(from: output)
+    }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -71,8 +77,6 @@ extension ModelOptionalParent: AnyProperty {
         // TODO: allow for nested decoding
     }
 }
-
-extension ModelOptionalParent: AnyField { }
 
 extension ModelOptionalParent: EagerLoadable {
     public static func eagerLoad<Builder>(

@@ -9,7 +9,7 @@ public enum TimestampTrigger {
 }
 
 @propertyWrapper
-public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
+public final class ModelTimestamp<Model>
     where Model: FluentKit.Model
 {
     public typealias Value = Date?
@@ -52,6 +52,16 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
     public func touch(date: Date?) {
         self.inputValue = .bind(date)
     }
+}
+
+extension ModelTimestamp: AnyProperty {
+    var keys: [FieldKey] {
+        [self.key]
+    }
+    
+    func input(to input: inout DatabaseInput) {
+        self.field.input(to: &input)
+    }
 
     func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
@@ -66,7 +76,12 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
     }
 }
 
-protocol AnyTimestamp: AnyField {
+extension ModelTimestamp: AnyTimestamp { }
+
+extension ModelTimestamp: FieldRepresentable { }
+
+protocol AnyTimestamp: AnyProperty {
+    var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
 }
@@ -77,7 +92,7 @@ extension AnyTimestamp {
     }
 }
 
-extension AnyModel {
+extension Fields {
     var timestamps: [(String, AnyTimestamp)] {
         self.properties.compactMap {
             guard let value = $1 as? AnyTimestamp else {
@@ -103,14 +118,14 @@ extension AnyModel {
         return self.timestamps.filter({ $0.1.trigger == .delete }).first?.1
     }
 
-    func excludeDeleted(from query: inout DatabaseQuery) {
+    func excludeDeleted(from query: inout DatabaseQuery, schema: String) {
         guard let timestamp = self.deletedTimestamp else {
             return
         }
 
         let deletedAtField = DatabaseQuery.Field.field(
             path: [timestamp.key],
-            schema: Self.schema,
+            schema: schema,
             alias: nil
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)

@@ -4,6 +4,17 @@ import NIO
 import SQLKit
 
 public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+    struct Configuration: DatabaseConfiguration {
+        func makeDriver(for databases: Databases) -> DatabaseDriver {
+            fatalError()
+        }
+
+        var middleware: [AnyModelMiddleware]
+        init() {
+            self.middleware = []
+        }
+    }
+
     public var dialect: SQLDialect {
         DummyDatabaseDialect()
     }
@@ -13,7 +24,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
 
     public init() {
         self.context = .init(
-            configuration: .init(),
+            configuration: Configuration(),
             logger: .init(label: "test"),
             eventLoop: EmbeddedEventLoop()
         )
@@ -29,6 +40,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
+        onRow(DummyRow())
         return self.eventLoop.makeSucceededFuture(())
     }
     

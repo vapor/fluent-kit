@@ -1,4 +1,4 @@
-extension AnyModel {
+extension Fields {
     // MARK: Codable
 
     public init(from decoder: Decoder) throws {

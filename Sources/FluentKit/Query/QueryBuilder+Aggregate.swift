@@ -79,7 +79,7 @@ extension QueryBuilder {
     ) -> EventLoopFuture<Result>
         where Field: FieldRepresentable, Result: Codable
     {
-        self.aggregate(method, Model()[keyPath: field].field.key, as: Result.self)
+        self.aggregate(method, Model.key(for: field), as: Result.self)
     }
 
     public func aggregate<Result>(

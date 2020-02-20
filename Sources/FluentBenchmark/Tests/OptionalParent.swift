@@ -41,7 +41,7 @@ extension FluentBenchmarker {
             // https://github.com/vapor/fluent-kit/issues/85
             let users2 = try User.query(on: self.database)
                 .with(\.$bestFriend)
-                .filter(\.$bestFriend == nil)
+                .filter(\.$bestFriend.$id == nil)
                 .all().wait()
             XCTAssertEqual(users2.count, 1)
             XCTAssert(users2.first?.bestFriend == nil)
