@@ -1,10 +1,8 @@
-public protocol AnyModel: Fields {
+public protocol AnyModel: Fields, CustomStringConvertible {
     static var schema: String { get }
 }
 
-extension Fields {
-    // MARK: Description
-
+extension AnyModel {
     public var description: String {
         var info: [InfoKey: CustomStringConvertible] = [:]
 
@@ -47,15 +45,17 @@ extension Fields {
         return joined
     }
 
-    // MARK: Internal
-
     var anyID: AnyID {
         guard let id = Mirror(reflecting: self).descendant("_id") as? AnyID else {
             fatalError("id property must be declared using @ID")
         }
         return id
     }
+}
 
+extension Fields {
+
+    // MARK: Internal
     func label(for property: AnyProperty) -> String {
         for (label, p) in self.properties {
             if property === p {

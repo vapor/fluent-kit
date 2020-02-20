@@ -26,7 +26,7 @@ extension Model {
         return promise.futureResult.flatMapThrowing { output in
             var input = self.input
             if self._$id.generator == .database {
-                let idKey = Self.key(for: \._$id)
+                let idKey = Self()._$id.key
                 input.fields[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
             try self.output(from: SavedInput(input.fields).output(for: database))

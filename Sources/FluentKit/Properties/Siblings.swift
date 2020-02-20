@@ -152,7 +152,7 @@ public final class ModelSiblings<From, To, Through>
         }
 
         return To.query(on: database)
-            .join(self.to)
+            .join(Through.self, on: \To._$id == self.to.appending(path: \.$id))
             .filter(Through.self, self.from.appending(path: \.$id) == fromID)
     }
 }
@@ -167,7 +167,7 @@ extension ModelSiblings: AnyProperty {
     }
 
     func output(from output: DatabaseOutput) throws {
-        let key = From.key(for: \._$id)
+        let key = From()._$id.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
@@ -187,8 +187,8 @@ extension ModelSiblings: AnyProperty {
 
 extension ModelSiblings: Relation {
     public var name: String {
-        let fromKey = Through.key(for: self.from.appending(path: \.$id))
-        let toKey = Through.key(for: self.to.appending(path: \.$id))
+        let fromKey = Through.path(for: self.from.appending(path: \.$id))
+        let toKey = Through.path(for: self.to.appending(path: \.$id))
         return "Siblings<\(From.self), \(To.self), \(Through.self)>(from: \(fromKey), to: \(toKey))"
     }
 
@@ -238,7 +238,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         let from = From()[keyPath: self.relationKey].from
         let to = From()[keyPath: self.relationKey].to
         return To.query(on: database)
-            .join(to)
+            .join(Through.self, on: \To._$id == to.appending(path: \.$id))
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
             .all()
             .flatMapThrowing

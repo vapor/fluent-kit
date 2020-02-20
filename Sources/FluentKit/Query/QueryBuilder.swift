@@ -126,8 +126,7 @@ public final class QueryBuilder<Model>
             Field.Model == Model
     {
         let copy = self.copy()
-        let fieldKey = Model.key(for: key)
-        copy.query.fields = [.field(path: [fieldKey], schema: Model.schema, alias: nil)]
+        copy.query.fields = [.field(path:  Model.path(for: key), schema: Model.schema, alias: nil)]
         return copy.all().map {
             $0.map {
                 $0[keyPath: key].wrappedValue
@@ -144,8 +143,7 @@ public final class QueryBuilder<Model>
             Joined: FluentKit.Model
     {
         let copy = self.copy()
-        let fieldKey = Joined.key(for: key)
-        copy.query.fields = [.field(path: [fieldKey], schema: Model.schema, alias: nil)]
+        copy.query.fields = [.field(path: Joined.path(for: key), schema: Model.schema, alias: nil)]
         return copy.all().flatMapThrowing {
             try $0.map {
                 try $0.joined(Joined.self)[keyPath: key].wrappedValue

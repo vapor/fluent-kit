@@ -107,7 +107,7 @@ extension ModelChildren: AnyProperty {
     }
 
     func output(from output: DatabaseOutput) throws {
-        let key = From.key(for: \._$id)
+        let key = From()._$id.field.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
@@ -129,9 +129,9 @@ extension ModelChildren.Key: CustomStringConvertible {
     var description: String {
         switch self {
         case .optional(let keyPath):
-            return To.key(for: keyPath.appending(path: \.$id)).description
+            return To.path(for: keyPath.appending(path: \.$id)).description
         case .required(let keyPath):
-            return To.key(for: keyPath.appending(path: \.$id)).description
+            return To.path(for: keyPath.appending(path: \.$id)).description
         }
     }
 }

@@ -171,13 +171,13 @@ public struct SQLQueryConverter {
                 } else {
                     return SQLIdentifier(self.key(key))
                 }
-            case 2:
-                // row->".code" = 4
-                // return SQLRaw("\(path[0])->>'\(path[1])'")
-                // return SQLRaw("JSON_EXTRACT(\(path[0]), '$.\(path[1])')")
-                return self.delegate.nestedFieldExpression(self.key(path[0]), [self.key(path[1])])
+            case 2...:
+                return self.delegate.nestedFieldExpression(
+                    self.key(path[0]),
+                    path[1...].map(self.key)
+                )
             default:
-                fatalError("Deep SQL JSON nesting not yet supported.")
+                fatalError("Field path must not be empty.")
             }
         }
     }

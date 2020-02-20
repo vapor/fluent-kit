@@ -32,7 +32,7 @@ extension QueryBuilder {
         where Field: FieldRepresentable,
             Field.Model == Model
     {
-        self.query.fields.append(.field(path: [Model.key(for: field)], schema: nil, alias: nil))
+        self.query.fields.append(.field(path: Model.path(for: field), schema: nil, alias: nil))
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))

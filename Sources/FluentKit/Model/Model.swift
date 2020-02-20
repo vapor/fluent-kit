@@ -4,15 +4,15 @@ public protocol Model: AnyModel {
     var id: IDValue? { get set }
 }
 
-public protocol Fields: class, Codable, CustomStringConvertible {
+public protocol Fields: class, Codable {
     init()
 }
 
 extension Fields {
-    public static func key<Field>(for field: KeyPath<Self, Field>) -> FieldKey
+    public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
         where Field: FieldRepresentable
     {
-         Self.init()[keyPath: field].key
+         Self.init()[keyPath: field].path
     }
 }
 
