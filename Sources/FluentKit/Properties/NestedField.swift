@@ -36,7 +36,7 @@ public final class NestedFieldProperty<Model, Value>
     public subscript<Field>(
          dynamicMember keyPath: KeyPath<Value, Field>
     ) -> _NestedField<Value, Field>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Value
     {
         .init(root: self.key, field: Value()[keyPath: keyPath])
@@ -78,13 +78,13 @@ extension NestedFieldProperty: AnyProperty {
 }
 
 public struct _NestedField<Model, Field>
-    where Model: FluentKit.Fields, Field: FieldRepresentable
+    where Model: FluentKit.Fields, Field: FieldProtocol
 {
     public let root: FieldKey
     public let field: Field
 }
 
-extension _NestedField: FieldRepresentable {
+extension _NestedField: FieldProtocol {
     public var wrappedValue: Field.Value {
         self.field.wrappedValue
     }

@@ -46,7 +46,7 @@ public final class FieldProperty<Model, Value>
     }
 }
 
-extension FieldProperty: FieldRepresentable {
+extension FieldProperty: FieldProtocol {
     public var path: [FieldKey] {
         [self.key]
     }

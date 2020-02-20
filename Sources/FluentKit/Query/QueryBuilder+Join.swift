@@ -79,8 +79,8 @@ public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
 ) -> JoinFilter<Foreign, Local, ForeignField.Value>
     where
-    Foreign: Model, ForeignField: FieldRepresentable,
-    Local: Model, LocalField: FieldRepresentable,
+    Foreign: Model, ForeignField: FieldProtocol,
+    Local: Model, LocalField: FieldProtocol,
     ForeignField.Value == LocalField.Value
 {
     return .init(foreign: Foreign.path(for: rhs), local: Local.path(for: lhs))
@@ -90,8 +90,8 @@ public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
 ) -> JoinFilter<Foreign, Local, ForeignField.Value>
     where
-    Foreign: Model, ForeignField: FieldRepresentable,
-    Local: Model, LocalField: FieldRepresentable,
+    Foreign: Model, ForeignField: FieldProtocol,
+    Local: Model, LocalField: FieldProtocol,
     ForeignField.Value == Optional<LocalField.Value>
 {
     return .init(foreign: Foreign.path(for: rhs), local: Local.path(for: lhs))
@@ -102,8 +102,8 @@ public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
 ) -> JoinFilter<Foreign, Local, LocalField.Value>
     where
-    Foreign: Model, ForeignField: FieldRepresentable,
-    Local: Model, LocalField: FieldRepresentable,
+    Foreign: Model, ForeignField: FieldProtocol,
+    Local: Model, LocalField: FieldProtocol,
     Optional<ForeignField.Value> == LocalField.Value
 {
     return .init(foreign: Foreign.path(for: rhs), local: Local.path(for: lhs))

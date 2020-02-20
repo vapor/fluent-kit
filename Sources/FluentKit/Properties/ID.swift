@@ -122,7 +122,7 @@ extension IDProperty: AnyProperty {
     }
 }
 
-extension IDProperty: FieldRepresentable {
+extension IDProperty: FieldProtocol {
     public var path: [FieldKey] {
         self.field.path
     }

@@ -122,7 +122,7 @@ public final class QueryBuilder<Model>
     }
 
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         let copy = self.copy()
@@ -138,7 +138,7 @@ public final class QueryBuilder<Model>
         _ joined: Joined.Type,
         _ key: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Joined,
             Joined: FluentKit.Model
     {

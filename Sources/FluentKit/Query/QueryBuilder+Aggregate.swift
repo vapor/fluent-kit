@@ -6,21 +6,21 @@ extension QueryBuilder {
     }
 
     public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.aggregate(.count, key, as: Int.self)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.aggregate(.sum, key)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -28,14 +28,14 @@ extension QueryBuilder {
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.aggregate(.average, key)
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -43,14 +43,14 @@ extension QueryBuilder {
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -58,14 +58,14 @@ extension QueryBuilder {
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -77,7 +77,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Field: FieldRepresentable, Result: Codable
+        where Field: FieldProtocol, Result: Codable
     {
         self.aggregate(method, Model.path(for: field), as: Result.self)
     }

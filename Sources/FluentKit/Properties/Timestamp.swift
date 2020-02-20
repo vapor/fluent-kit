@@ -78,7 +78,7 @@ extension TimestampProperty: AnyProperty {
 
 extension TimestampProperty: AnyTimestamp { }
 
-extension TimestampProperty: FieldRepresentable {
+extension TimestampProperty: FieldProtocol {
     public var path: [FieldKey] {
         self.field.path
     }

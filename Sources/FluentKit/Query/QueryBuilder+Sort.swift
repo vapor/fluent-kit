@@ -5,7 +5,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.sort(Model.self, Model.path(for: field), direction, alias: nil)
@@ -31,7 +31,7 @@ extension QueryBuilder {
         _ direction: DatabaseQuery.Sort.Direction = .ascending,
         alias: String? = nil
     ) -> Self
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Joined,
             Joined: FluentKit.Model
     {

@@ -29,7 +29,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
     ) -> Self
-        where Field: FieldRepresentable,
+        where Field: FieldProtocol,
             Field.Model == Model
     {
         self.query.fields.append(.field(path: Model.path(for: field), schema: nil, alias: nil))

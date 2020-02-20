@@ -4,7 +4,7 @@ public protocol Fields: class, Codable {
 
 extension Fields {
     public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
-        where Field: FieldRepresentable
+        where Field: FieldProtocol
     {
          Self.init()[keyPath: field].path
     }
