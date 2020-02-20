@@ -1,5 +1,5 @@
 extension FluentBenchmarker {
-    public func testTimestampable() throws {
+    public func testTimestamp() throws {
         try runTest(#function, [
             UserMigration(),
         ]) {

@@ -61,7 +61,7 @@ public final class MoonSeed: Migration {
                 switch planet.name {
                 case "Earth":
                     moons = [
-                        .init(name: "Luna", craters: 10, comets: 10)
+                        .init(name: "Moon", craters: 10, comets: 10)
                     ]
                 case "Mars":
                     moons = [

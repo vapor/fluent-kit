@@ -1,5 +1,10 @@
 extension FluentBenchmarker {
-    public func testUniqueFields() throws {
+    public func testUnique() throws {
+        try self.testUnique_fields()
+        try self.testUnique_duplicateKey()
+    }
+
+    private func testUnique_fields() throws {
         try self.runTest(#function, [
             FooMigration(),
         ]) {
@@ -15,7 +20,7 @@ extension FluentBenchmarker {
     }
 
     // https://github.com/vapor/fluent-kit/issues/112
-    public func testDuplicatedUniquePropertyName() throws {
+    public func testUnique_duplicateKey() throws {
         try runTest(#function, [
             BarMigration(),
             BazMigration()

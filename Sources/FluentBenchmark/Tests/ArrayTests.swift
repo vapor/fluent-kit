@@ -1,51 +1,13 @@
 extension FluentBenchmarker {
     public func testArray() throws {
-        struct Qux: Codable {
-            var foo: String
-        }
+        try self.testArray_basic()
+        try self.testArray_set()
+        try self.testArray_stringEnum()
+    }
 
-        final class Foo: Model {
-            static let schema = "foos"
-
-            struct _Migration: Migration {
-                func prepare(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("foos")
-                        .field("id", .uuid, .identifier(auto: false))
-                        .field("bar", .array(of: .int), .required)
-                        .field("baz", .array(of: .string))
-                        .field("qux", .array(of: .json), .required)
-                        .create()
-                }
-
-                func revert(on database: Database) -> EventLoopFuture<Void> {
-                    return database.schema("foos").delete()
-                }
-            }
-
-            @ID(key: .id)
-            var id: UUID?
-
-            @Field(key: "bar")
-            var bar: [Int]
-
-            @Field(key: "baz")
-            var baz: [String]?
-
-            @Field(key: "qux")
-            var qux: [Qux]
-
-            init() { }
-
-            init(id: UUID? = nil, bar: [Int], baz: [String]?, qux: [Qux]) {
-                self.id = id
-                self.bar = bar
-                self.baz = baz
-                self.qux = qux
-            }
-        }
-
+    private func testArray_basic() throws {
         try runTest(#function, [
-            Foo._Migration(),
+            FooMigration(),
         ]) {
             let new = Foo(
                 bar: [1, 2, 3],
@@ -64,18 +26,18 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testSet() throws {
+    private func testArray_set() throws {
         try self.runTest(#function, [
-            FooMigration(),
+            FooSetMigration(),
         ]) {
-            let foo = Foo(bar: ["a", "b", "c"])
+            let foo = FooSet(bar: ["a", "b", "c"])
             try foo.create(on: self.database).wait()
-            let fetched = try Foo.find(foo.id, on: self.database).wait()
+            let fetched = try FooSet.find(foo.id, on: self.database).wait()
             XCTAssertEqual(fetched?.bar, foo.bar)
         }
     }
 
-    public func testArrayStringBackedEnum() throws {
+    private func testArray_stringEnum() throws {
         try self.runTest(#function, [
             UserMigration(),
         ]) {
@@ -94,6 +56,50 @@ extension FluentBenchmarker {
                 XCTAssertEqual(fetched?.roles, user.roles)
             }
         }
+    }
+}
+
+private struct Qux: Codable {
+    var foo: String
+}
+
+private final class Foo: Model {
+    static let schema = "foos"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "bar")
+    var bar: [Int]
+
+    @Field(key: "baz")
+    var baz: [String]?
+
+    @Field(key: "qux")
+    var qux: [Qux]
+
+    init() { }
+
+    init(id: UUID? = nil, bar: [Int], baz: [String]?, qux: [Qux]) {
+        self.id = id
+        self.bar = bar
+        self.baz = baz
+        self.qux = qux
+    }
+}
+
+private struct FooMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("bar", .array(of: .int), .required)
+            .field("baz", .array(of: .string))
+            .field("qux", .array(of: .json), .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos").delete()
     }
 }
 
@@ -133,7 +139,7 @@ private struct UserMigration: Migration {
     }
 }
 
-private final class Foo: Model {
+private final class FooSet: Model {
     static let schema = "foos"
 
     @ID(key: "id")
@@ -150,7 +156,7 @@ private final class Foo: Model {
     }
 }
 
-private struct FooMigration: Migration {
+private struct FooSetMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))

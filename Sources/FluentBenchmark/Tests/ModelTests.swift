@@ -1,34 +1,12 @@
 extension FluentBenchmarker {
-    public func testUUIDModel() throws {
-        final class User: Model {
-            static let schema = "users"
+    public func testModel() throws {
+        try self.testModel_uuid()
+        try self.testModel_decode()
+        try self.testModel_nullField()
+        try self.testModel_idGeneration()
+    }
 
-            @ID(key: .id)
-            var id: UUID?
-
-            @Field(key: "name")
-            var name: String
-
-            init() { }
-            init(id: UUID? = nil, name: String) {
-                self.id = id
-                self.name = name
-            }
-        }
-
-        struct UserMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("users")
-                    .field("id", .uuid, .identifier(auto: false))
-                    .field("name", .string, .required)
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("users").delete()
-            }
-        }
-
+    private func testModel_uuid() throws {
         try self.runTest(#function, [
             UserMigration(),
         ]) {
@@ -39,36 +17,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testNewModelDecode() throws {
-        final class Todo: Model {
-            static let schema = "todos"
-
-            @ID(key: .id)
-            var id: UUID?
-
-            @Field(key: "title")
-            var title: String
-
-            init() { }
-            init(id: UUID? = nil, title: String) {
-                self.id = id
-                self.title = title
-            }
-        }
-
-        struct TodoMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("todos")
-                    .field("id", .uuid, .identifier(auto: false))
-                    .field("title", .string, .required)
-                    .create()
-            }
-
-            func revert(on database: Database) -> EventLoopFuture<Void> {
-                return database.schema("todos").delete()
-            }
-        }
-
+    private func testModel_decode() throws {
         try self.runTest(#function, [
             TodoMigration(),
         ]) {
@@ -84,7 +33,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testNullifyField() throws {
+    public func testModel_nullField() throws {
         try runTest(#function, [
             FooMigration(),
         ]) {
@@ -115,7 +64,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testIdentifierGeneration() throws {
+    public func testModel_idGeneration() throws {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {
@@ -167,5 +116,63 @@ private struct FooMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("foos").delete()
+    }
+}
+
+private final class User: Model {
+    static let schema = "users"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    init() { }
+    init(id: UUID? = nil, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
+private struct UserMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("name", .string, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users").delete()
+    }
+}
+
+private final class Todo: Model {
+    static let schema = "todos"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "title")
+    var title: String
+
+    init() { }
+    init(id: UUID? = nil, title: String) {
+        self.id = id
+        self.title = title
+    }
+}
+
+private struct TodoMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("todos")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("title", .string, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("todos").delete()
     }
 }

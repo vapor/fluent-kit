@@ -1,6 +1,10 @@
 extension FluentBenchmarker {
-    public func testSameChildrenFromKey() throws {
-        try runTest(#function, [
+    public func testChildren() throws {
+        try self.testChildren_with()
+    }
+
+    private func testChildren_with() throws {
+        try self.runTest(#function, [
             FooMigration(),
             BarMigration(),
             BazMigration()

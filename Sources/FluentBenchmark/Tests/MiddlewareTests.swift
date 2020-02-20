@@ -1,5 +1,5 @@
 extension FluentBenchmarker {
-    public func testModelMiddleware() throws {
+    public func testMiddleware() throws {
         try self.runTest(#function, [
             UserMigration(),
         ]) {

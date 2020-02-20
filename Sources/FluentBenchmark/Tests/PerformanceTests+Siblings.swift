@@ -1,7 +1,7 @@
 import XCTest
 
 extension FluentBenchmarker {
-    public func testSiblingsPerformance() throws {
+    internal func testPerformance_siblings() throws {
         try self.runTest(#function, [
             PersonMigration(),
             ExpeditionMigration(),

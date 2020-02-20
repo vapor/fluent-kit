@@ -1,5 +1,12 @@
 extension FluentBenchmarker {
-    public func testCreate() throws {
+    public func testCRUD() throws {
+        try self.testCRUD_create()
+        try self.testCRUD_read()
+        try self.testCRUD_update()
+        try self.testCRUD_delete()
+    }
+
+    private func testCRUD_create() throws {
         try self.runTest(#function, [
             GalaxyMigration()
         ]) {
@@ -26,7 +33,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testRead() throws {
+    private func testCRUD_read() throws {
         try runTest(#function, [
             GalaxyMigration(),
             GalaxySeed()
@@ -45,7 +52,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testUpdate() throws {
+    private func testCRUD_update() throws {
         try runTest(#function, [
             GalaxyMigration()
         ]) {
@@ -67,7 +74,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testDelete() throws {
+    private func testCRUD_delete() throws {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {

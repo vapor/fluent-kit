@@ -1,5 +1,11 @@
 extension FluentBenchmarker {
-    public func testEnums() throws {
+    public func testEnum() throws {
+        try self.testEnum_basic()
+        try self.testEnum_addCase()
+        try self.testEnum_raw()
+    }
+
+    private func testEnum_basic() throws {
         try self.runTest(#function, [
             FooMigration()
         ]) {
@@ -11,7 +17,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testAddEnumCase() throws {
+    private func testEnum_addCase() throws {
         try self.runTest(#function, [
             FooMigration(),
             BarAddQuuzMigration()
@@ -21,6 +27,18 @@ extension FluentBenchmarker {
 
             let fetched = try Foo.find(foo.id, on: self.database).wait()
             XCTAssertEqual(fetched?.bar, .baz)
+        }
+    }
+
+    public func testEnum_raw() throws {
+        try runTest(#function, [
+            PetMigration()
+        ]) {
+            let pet = Pet(type: .cat)
+            try pet.save(on: self.database).wait()
+
+            let fetched = try Pet.find(pet.id, on: self.database).wait()
+            XCTAssertEqual(fetched?.type, .cat)
         }
     }
 }
@@ -92,5 +110,41 @@ private struct BarAddQuuzMigration: Migration {
                 .updateField("bar", bar)
                 .update()
         }
+    }
+}
+
+
+private enum Animal: UInt8, Codable {
+    case dog, cat
+}
+
+private final class Pet: Model {
+    static let schema = "pets"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "type")
+    var type: Animal
+
+    init() { }
+
+    init(id: IDValue? = nil, type: Animal) {
+        self.id = id
+        self.type = type
+    }
+}
+
+
+private struct PetMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("pets")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("type", .uint8, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("pets").delete()
     }
 }

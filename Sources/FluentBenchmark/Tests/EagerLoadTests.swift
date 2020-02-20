@@ -1,5 +1,15 @@
 extension FluentBenchmarker {
-    public func testEagerLoading() throws {
+    public func testEagerLoad() throws {
+        try self.testEagerLoad_nesting()
+        try self.testEagerLoad_children()
+        try self.testEagerLoad_parent()
+        try self.testEagerLoad_siblings()
+        try self.testEagerLoad_parentJSON()
+        try self.testEagerLoad_childrenJSON()
+        try self.testEagerLoad_emptyChildren()
+    }
+
+    private func testEagerLoad_nesting() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -16,7 +26,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testEagerLoadChildren() throws {
+    private func testEagerLoad_children() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -41,7 +51,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testEagerLoadParent() throws {
+    private func testEagerLoad_parent() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -61,30 +71,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testEagerLoadParentJSON() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
-            let planets = try Planet.query(on: self.database)
-                .with(\.$star)
-                .all().wait()
-
-            try print(prettyJSON(planets))
-        }
-    }
-
-    public func testEagerLoadChildrenJSON() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
-            let galaxies = try Galaxy.query(on: self.database)
-                .with(\.$stars)
-                .all().wait()
-            try print(prettyJSON(galaxies))
-        }
-    }
-
-    public func testSiblingsEagerLoad() throws {
+    private func testEagerLoad_siblings() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -110,8 +97,31 @@ extension FluentBenchmarker {
         }
     }
 
+    private func testEagerLoad_parentJSON() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .with(\.$star)
+                .all().wait()
+
+            try print(prettyJSON(planets))
+        }
+    }
+
+    private func testEagerLoad_childrenJSON() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let galaxies = try Galaxy.query(on: self.database)
+                .with(\.$stars)
+                .all().wait()
+            try print(prettyJSON(galaxies))
+        }
+    }
+
     // https://github.com/vapor/fluent-kit/issues/117
-    public func testEmptyEagerLoadChildren() throws {
+    private func testEagerLoad_emptyChildren() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {

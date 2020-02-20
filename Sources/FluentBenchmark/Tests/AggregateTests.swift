@@ -1,5 +1,10 @@
 extension FluentBenchmarker {
-    public func testAggregates() throws {
+    public func testAggregate() throws {
+        try self.testAggregate_all()
+        try self.testAggregate_emptyDatabase()
+    }
+
+    private func testAggregate_all() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -37,8 +42,9 @@ extension FluentBenchmarker {
                 .max(\.$name).wait()
             XCTAssertEqual(maxNameWithEagerLoads, "Pinwheel Galaxy")
         }
+    }
 
-        // empty db
+    private func testAggregate_emptyDatabase() throws {
         try self.runTest(#function, [
             SolarSystem(seed: false)
         ]) {

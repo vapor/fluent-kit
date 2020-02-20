@@ -1,5 +1,11 @@
 extension FluentBenchmarker {
     public func testJoin() throws {
+        try self.testJoin_basic()
+        try self.testJoin_sameTable()
+        try self.testJoin_fieldFilter()
+    }
+
+    private func testJoin_basic() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -36,7 +42,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testMultipleJoinSameTable() throws {
+    private func testJoin_sameTable() throws {
         try self.runTest(#function, [
             TeamMigration(),
             MatchMigration(),
@@ -99,7 +105,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testJoinedFieldFilter() throws {
+    private func testJoin_fieldFilter() throws {
         // seeded db
         try runTest(#function, [
             CityMigration(),

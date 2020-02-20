@@ -1,5 +1,10 @@
 extension FluentBenchmarker {
-    public func testBatchCreate() throws {
+    public func testBatch() throws {
+        try self.testBatch_create()
+        try self.testBatch_update()
+    }
+
+    private func testBatch_create() throws {
         try runTest(#function, [
             GalaxyMigration()
         ]) {
@@ -13,7 +18,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testBatchUpdate() throws {
+    private func testBatch_update() throws {
         try runTest(#function, [
             GalaxyMigration(),
             GalaxySeed()

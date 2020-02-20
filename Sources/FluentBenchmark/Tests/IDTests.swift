@@ -1,5 +1,9 @@
 extension FluentBenchmarker {
-    public func testAutoincrementingID() throws {
+    public func testID() throws {
+        try self.testID_autoincrementing()
+    }
+    
+    private func testID_autoincrementing() throws {
         try self.runTest(#function, [
             FooMigration()
         ]) {
