@@ -9,7 +9,7 @@ extension QueryBuilder {
     ) -> Self
         where Field: FieldRepresentable, Field.Model == Model
     {
-        self.filter(Model.key(for: field), method, value)
+        self.filter(Model.path(for: field), method, value)
     }
 
     @discardableResult
@@ -23,7 +23,7 @@ extension QueryBuilder {
             Right: FieldRepresentable,
             Right.Model == Model
     {
-        self.filter(Model.key(for: lhsField), method, Model.key(for: rhsField))
+        self.filter(Model.path(for: lhsField), method, Model.path(for: rhsField))
     }
 
     @discardableResult
@@ -34,8 +34,19 @@ extension QueryBuilder {
     ) -> Self
         where Value: Codable
     {
+        self.filter([fieldName], method, value)
+    }
+
+    @discardableResult
+    public func filter<Value>(
+        _ fieldPath: [FieldKey],
+        _ method: DatabaseQuery.Filter.Method,
+        _ value: Value
+    ) -> Self
+        where Value: Codable
+    {
         self.filter(.field(
-            path: [fieldName],
+            path: fieldPath,
             schema: Model.schema,
             alias: nil
         ), method, .bind(value))
@@ -43,14 +54,23 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ lhsFieldName: FieldKey,
+        _ leftName: FieldKey,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhsFieldName: FieldKey
+        _ rightName: FieldKey
+    ) -> Self {
+        self.filter([leftName], method, [rightName])
+    }
+
+    @discardableResult
+    public func filter(
+        _ leftPath: [FieldKey],
+        _ method: DatabaseQuery.Filter.Method,
+        _ rightPath: [FieldKey]
     ) -> Self {
         self.filter(
-            .field(path: [lhsFieldName], schema: Model.schema, alias: nil),
+            .field(path: leftPath, schema: Model.schema, alias: nil),
             method,
-            .field(path: [rhsFieldName], schema: Model.schema, alias: nil)
+            .field(path: rightPath, schema: Model.schema, alias: nil)
         )
     }
 

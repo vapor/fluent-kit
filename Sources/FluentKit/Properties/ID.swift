@@ -161,7 +161,12 @@ extension ModelID: AnyProperty {
     }
 }
 
-extension ModelID: FieldRepresentable { }
+extension ModelID: FieldRepresentable {
+    public var path: [FieldKey] {
+        self.field.path
+    }
+}
+
 extension ModelID: AnyID { }
 
 protocol AnyID: AnyProperty {

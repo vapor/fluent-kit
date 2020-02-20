@@ -6,20 +6,20 @@ import FluentSQL
 
 final class FluentKitTests: XCTestCase {
     func testMigrationLogNames() throws {
-        XCTAssertEqual(MigrationLog.key(for: \.$id), .id)
-        XCTAssertEqual(MigrationLog.key(for: \.$name), "name")
-        XCTAssertEqual(MigrationLog.key(for: \.$batch), "batch")
-        XCTAssertEqual(MigrationLog.key(for: \.$createdAt), "created_at")
-        XCTAssertEqual(MigrationLog.key(for: \.$updatedAt), "updated_at")
+        XCTAssertEqual(MigrationLog.path(for: \.$id), [.id])
+        XCTAssertEqual(MigrationLog.path(for: \.$name), ["name"])
+        XCTAssertEqual(MigrationLog.path(for: \.$batch), ["batch"])
+        XCTAssertEqual(MigrationLog.path(for: \.$createdAt), ["created_at"])
+        XCTAssertEqual(MigrationLog.path(for: \.$updatedAt), ["updated_at"])
     }
 
     func testGalaxyPlanetNames() throws {
-        XCTAssertEqual(Galaxy.key(for: \.$id), .id)
-        XCTAssertEqual(Galaxy.key(for: \.$name), "name")
+        XCTAssertEqual(Galaxy.path(for: \.$id), [.id])
+        XCTAssertEqual(Galaxy.path(for: \.$name), ["name"])
 
-        XCTAssertEqual(Planet.key(for: \.$id), .id)
-        XCTAssertEqual(Planet.key(for: \.$name), "name")
-        XCTAssertEqual(Planet.key(for: \.$star.$id), "star_id")
+        XCTAssertEqual(Planet.path(for: \.$id), [.id])
+        XCTAssertEqual(Planet.path(for: \.$name), ["name"])
+        XCTAssertEqual(Planet.path(for: \.$star.$id), ["star_id"])
     }
 
     func testGalaxyPlanetSorts() throws {
@@ -29,7 +29,10 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
         db.reset()
         
-        _ = try Planet.query(on: db).join(\.$star).sort(\Star.$name, .ascending).all().wait()
+        _ = try Planet.query(on: db)
+            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .sort(Star.self, \.$name, .ascending)
+            .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
         db.reset()
@@ -39,7 +42,10 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."id" DESC"#), true)
         db.reset()
         
-        _ = try Planet.query(on: db).join(\.$star).sort(\Star.$id, .ascending).all().wait()
+        _ = try Planet.query(on: db)
+            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .sort(Star.self, \.$id, .ascending)
+            .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."id" ASC"#), true)
         db.reset()
@@ -49,7 +55,10 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
         db.reset()
         
-        _ = try Planet.query(on: db).join(\.$star).sort(Star.self, "name", .ascending).all().wait()
+        _ = try Planet.query(on: db)
+            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .sort(Star.self, "name", .ascending)
+            .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
         db.reset()

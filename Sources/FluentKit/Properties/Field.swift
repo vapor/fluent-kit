@@ -46,7 +46,11 @@ public final class ModelField<Model, Value>
     }
 }
 
-extension ModelField: FieldRepresentable { }
+extension ModelField: FieldRepresentable {
+    public var path: [FieldKey] {
+        [self.key]
+    }
+}
 
 extension ModelField: AnyProperty {
     var keys: [FieldKey] {
@@ -94,6 +98,6 @@ extension ModelField: AnyProperty {
 public protocol FieldRepresentable {
     associatedtype Model: Fields
     associatedtype Value: Codable
-    var key: FieldKey { get }
+    var path: [FieldKey] { get }
     var wrappedValue: Value { get }
 }

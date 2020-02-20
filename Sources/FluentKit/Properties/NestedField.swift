@@ -1,17 +1,16 @@
 extension Fields {
-    public typealias CompoundField<Value> = CompoundFieldProperty<Self, Value>
+    public typealias NestedField<Value> = NestedFieldProperty<Self, Value>
         where Value: Fields
 }
 
 @propertyWrapper @dynamicMemberLookup
-public final class CompoundFieldProperty<Model, Value>
+public final class NestedFieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
-    public let prefix: String
-
+    public let key: FieldKey
     public var value: Value?
 
-    public var projectedValue: CompoundFieldProperty<Model, Value> {
+    public var projectedValue: NestedFieldProperty<Model, Value> {
         return self
     }
 
@@ -30,43 +29,33 @@ public final class CompoundFieldProperty<Model, Value>
         }
     }
 
-    public init(prefix: String) {
-        self.prefix = prefix
-    }
-
-    public convenience init(key: String, separator: String = "_") {
-        self.init(prefix: key + separator)
+    public init(key: FieldKey) {
+        self.key = key
     }
 
     public subscript<Field>(
          dynamicMember keyPath: KeyPath<Value, Field>
-    ) -> _CompoundField<Value, Field>
+    ) -> _NestedField<Value, Field>
         where Field: FieldRepresentable,
             Field.Model == Value
     {
-        .init(prefix: self.prefix, field: Value()[keyPath: keyPath])
+        .init(root: self.key, field: Value()[keyPath: keyPath])
     }
 }
 
-extension CompoundFieldProperty: AnyProperty {
+extension NestedFieldProperty: AnyProperty {
     var keys: [FieldKey] {
-        self.wrappedValue.keys.map {
-            .prefixed(self.prefix, $0)
-        }
+        [self.key]
     }
 
     func input(to input: inout DatabaseInput) {
         if let value = self.value {
-            value.input.fields.forEach { (name, value) in
-                input.fields[.prefixed(self.prefix, name)] = value
-            }
+            input.fields[self.key] = .bind(value)
         }
     }
 
     func output(from output: DatabaseOutput) throws {
-        let value = Value()
-        try value.output(from: output.prefixed(by: self.prefix))
-        self.value = value
+        self.value = try output.decode(self.key)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -88,24 +77,19 @@ extension CompoundFieldProperty: AnyProperty {
     }
 }
 
-public struct _CompoundField<Model, Field>
+public struct _NestedField<Model, Field>
     where Model: FluentKit.Fields, Field: FieldRepresentable
 {
-    public let prefix: String
+    public let root: FieldKey
     public let field: Field
 }
 
-extension _CompoundField: FieldRepresentable {
+extension _NestedField: FieldRepresentable {
     public var wrappedValue: Field.Value {
         self.field.wrappedValue
     }
 
     public var path: [FieldKey] {
-        guard !self.field.path.isEmpty else {
-            return []
-        }
-        var path = self.field.path
-        path[0] = .prefixed(self.prefix, path[0])
-        return path
+        [self.root] + self.field.path
     }
 }

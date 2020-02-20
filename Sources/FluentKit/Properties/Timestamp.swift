@@ -78,7 +78,11 @@ extension ModelTimestamp: AnyProperty {
 
 extension ModelTimestamp: AnyTimestamp { }
 
-extension ModelTimestamp: FieldRepresentable { }
+extension ModelTimestamp: FieldRepresentable {
+    public var path: [FieldKey] {
+        self.field.path
+    }
+}
 
 protocol AnyTimestamp: AnyProperty {
     var key: FieldKey { get }

@@ -67,14 +67,14 @@ extension ModelParent: AnyProperty {
             try container.encode(parent)
         } else {
             try container.encode([
-                To.key(for: \._$id).description: self.id
+                "id": self.id
             ])
         }
     }
 
     func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id).description)))
+        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
         // TODO: allow for nested decoding
     }
 }

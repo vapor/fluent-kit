@@ -4,7 +4,7 @@ extension FluentBenchmarker {
             SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
-                .join(\.$star)
+                .join(Star.self, on: \Planet.$star.$id == \Star.$id)
                 .all().wait()
 
             for planet in planets {
@@ -108,21 +108,21 @@ extension FluentBenchmarker {
             SchoolSeed()
         ]) {
             let smallSchools = try School.query(on: self.database)
-                .join(\.$city)
+                .join(City.self, on: \School.$city.$id == \City.$id)
                 .filter(\School.$pupils < \City.$averagePupils)
                 .all()
                 .wait()
             XCTAssertEqual(smallSchools.count, 3)
 
             let largeSchools = try School.query(on: self.database)
-                .join(\.$city)
+                .join(City.self, on: \School.$city.$id == \City.$id)
                 .filter(\School.$pupils > \City.$averagePupils)
                 .all()
                 .wait()
             XCTAssertEqual(largeSchools.count, 4)
 
             let averageSchools = try School.query(on: self.database)
-                .join(\.$city)
+                .join(City.self, on: \School.$city.$id == \City.$id)
                 .filter(\School.$pupils == \City.$averagePupils)
                 .all()
                 .wait()
