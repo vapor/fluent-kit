@@ -210,7 +210,9 @@ public struct DatabaseQuery: CustomStringConvertible {
         case count(Int)
         case custom(Any)
     }
-    
+
+    public var schema: String
+    public var customIDKey: FieldKey?
     public var isUnique: Bool
     public var fields: [Field]
     public var action: Action
@@ -220,7 +222,6 @@ public struct DatabaseQuery: CustomStringConvertible {
     public var sorts: [Sort]
     public var limits: [Limit]
     public var offsets: [Offset]
-    public var schema: String
     
     public var description: String {
         var parts = [

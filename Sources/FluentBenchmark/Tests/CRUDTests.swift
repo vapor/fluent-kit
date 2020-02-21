@@ -12,7 +12,7 @@ extension FluentBenchmarker {
         ]) {
             let galaxy = Galaxy(name: "Messier")
             galaxy.name += " 82"
-            try galaxy.save(on: self.database).wait()
+            try! galaxy.save(on: self.database).wait()
             XCTAssertNotNil(galaxy.id)
 
             guard let fetched = try Galaxy.query(on: self.database)

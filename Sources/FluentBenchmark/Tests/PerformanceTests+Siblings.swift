@@ -80,7 +80,7 @@ private struct ExpeditionPeopleSeed: Migration {
 private final class Person: Model {
     static let schema = "people"
 
-    @ID(key: "id", generatedBy: .random)
+    @ID
     var id: UUID?
 
     @Field(key: "first_name")
@@ -124,7 +124,7 @@ private struct PersonMigration: Migration {
 private final class Expedition: Model {
     static let schema = "expeditions"
 
-    @ID(key: "id", generatedBy: .random)
+    @ID(key: "id")
     var id: UUID?
 
     @Field(key: "name")

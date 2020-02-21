@@ -13,6 +13,10 @@ public final class SchemaBuilder {
         self.schema = .init(schema: schema)
     }
 
+    public func id() -> Self {
+        self.field(.id, .uuid, .identifier(auto: false))
+    }
+
     public func field(
         _ key: FieldKey,
         _ dataType: DatabaseSchema.DataType,

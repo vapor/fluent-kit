@@ -53,25 +53,24 @@ public final class FluentBenchmarker {
 
     internal func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
         self.log("Running \(name)...")
+
+        // Prepare migrations.
         for migration in migrations {
-            do {
-                try migration.prepare(on: self.database).wait()
-            } catch {
-                self.log("Migration failed: \(error) ")
-                self.log("Attempting to revert existing migrations...")
-                try migration.revert(on: self.database).wait()
-                try migration.prepare(on: self.database).wait()
-            }
+            try migration.prepare(on: self.database).wait()
         }
+
         var e: Error?
         do {
             try test()
         } catch {
             e = error
         }
+
+        // Revert migrations
         for migration in migrations.reversed() {
             try migration.revert(on: self.database).wait()
         }
+
         if let error = e {
             throw error
         }
