@@ -239,7 +239,11 @@ public struct SQLQueryConverter {
                     right: right
                 )
             case (.subset, .array(let array)) where array.isEmpty:
-                return SQLLiteral.boolean(false)
+                return SQLBinaryExpression(
+                    left: SQLLiteral.numeric("1"),
+                    op: SQLBinaryOperator.equal,
+                    right: SQLLiteral.numeric("0")
+                )
             default:
                 return SQLBinaryExpression(
                     left: self.field(field),
