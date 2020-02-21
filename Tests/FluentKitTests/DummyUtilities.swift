@@ -59,6 +59,11 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.sqlSerializers.append(sqlSerializer)
         return self.eventLoop.makeSucceededFuture(())
     }
+
+    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        // do nothing
+        return self.eventLoop.makeSucceededFuture(())
+    }
     
     public func withConnection<T>(
         _ closure: @escaping (Database) -> EventLoopFuture<T>
