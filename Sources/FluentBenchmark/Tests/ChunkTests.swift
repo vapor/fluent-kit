@@ -1,5 +1,9 @@
 extension FluentBenchmarker {
-    public func testChunkedFetch() throws {
+    public func testChunk() throws {
+        try self.testChunk_fetch()
+    }
+
+    private func testChunk_fetch() throws {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {

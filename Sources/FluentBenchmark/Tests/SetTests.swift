@@ -1,5 +1,9 @@
 extension FluentBenchmarker {
-    public func testMultipleSet() throws {
+    public func testSet() throws {
+        try self.testSet_multiple()
+    }
+    
+    private func testSet_multiple() throws {
         try runTest(#function, [
             TestMigration(),
         ]) {

@@ -36,7 +36,7 @@ public final class MigrationLog: Model {
 
 private struct MigrationLogMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("_fluent_migrations")
+        database.schema("_fluent_migrations")
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("batch", .int, .required)
@@ -46,6 +46,6 @@ private struct MigrationLogMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("_fluent_migrations").delete()
+        database.schema("_fluent_migrations").delete()
     }
 }

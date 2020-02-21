@@ -54,13 +54,26 @@ public final class IDProperty<Model, Value>
         }
     }
 
-    public init(key: FieldKey, generatedBy generator: Generator? = nil) {
-        // Ensure that @ID is using the special .id key.
-        // Additional identifying fields can be added using @Field
-        // with a unique constraint.
-        assert(key == .id, "@ID key must be .id.")
+    public convenience init(key: FieldKey = .id) {
+        guard Value.self is UUID.Type else {
+            // Ensure the default @ID type is using UUID which
+            // is the only identifier type supported by all drivers.
+            fatalError("@ID requires UUID, use @ID(custom:generatedBy:) for \(Value.self).")
+        }
+        guard key == .id else {
+            // Ensure the default @ID is using the special .id key
+            // which is the only identifier key supported by all drivers.
+            //
+            // Additional identifying fields can be added using @Field
+            // with a unique constraint.
+            fatalError("@ID requires .id key, use @ID(custom:generatedBy:) for key '\(key)'.")
+        }
+        self.init(custom: .id, generatedBy: .random)
+    }
+
+    public init(custom key: FieldKey, generatedBy generator: Generator) {
         self.field = .init(key: key)
-        self.generator = generator ?? Generator.default(for: Value.self)
+        self.generator = generator
         self.exists = false
         self.cachedOutput = nil
     }

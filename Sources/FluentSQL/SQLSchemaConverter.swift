@@ -26,8 +26,7 @@ public struct SQLSchemaConverter {
         var update = SQLAlterTable(name: self.name(schema.schema))
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
-        // todo:
-        // update.modifyColumns
+        update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
         return update
     }
     
@@ -117,6 +116,18 @@ public struct SQLSchemaConverter {
             )
         }
     }
+
+    private func fieldUpdate(_ fieldDefinition: DatabaseSchema.FieldUpdate) -> SQLExpression {
+        switch fieldDefinition {
+        case .custom(let any):
+            return custom(any)
+        case .dataType(let name, let dataType):
+            return SQLAlterColumnDefinitionType(
+                column: self.fieldName(name),
+                dataType: self.dataType(dataType)
+            )
+        }
+    }
     
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> SQLExpression {
         switch fieldName {
@@ -181,8 +192,8 @@ public struct SQLSchemaConverter {
             return SQLDataType.int
         case .uint64:
             return SQLDataType.int
-        case .enum:
-            fatalError("SQL enums not yet supported.")
+        case .enum(let value):
+            return SQLEnumDataType(cases: value.cases)
         case .time:
             return SQLRaw("TIME")
         case .float:

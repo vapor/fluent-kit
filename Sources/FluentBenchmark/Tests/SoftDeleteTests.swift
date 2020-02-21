@@ -1,5 +1,10 @@
 extension FluentBenchmarker {
     public func testSoftDelete() throws {
+        try self.testSoftDelete_model()
+        try self.testSoftDelete_query()
+    }
+
+    private func testSoftDelete_model() throws {
         func testCounts(allCount: Int, realCount: Int) throws {
             let all = try Trash.query(on: self.database).all().wait()
             guard all.count == allCount else {
@@ -13,7 +18,7 @@ extension FluentBenchmarker {
             }
         }
 
-        try runTest(#function, [
+    try self.runTest(#function, [
             TrashMigration(),
         ]) {
             // save two users
@@ -36,8 +41,8 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testSoftDeleteWithQuery() throws {
-        try runTest(#function, [
+    private func testSoftDelete_query() throws {
+        try self.runTest(#function, [
             TrashMigration()
         ]) {
             // a is scheduled for soft-deletion
@@ -87,7 +92,7 @@ private final class Trash: Model {
 
 private struct TrashMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Trash.schema)
+        database.schema("trash")
             .field("id", .uuid, .identifier(auto: false), .custom("UNIQUE"))
             .field("contents", .string, .required)
             .field("deleted_at", .datetime)
@@ -95,6 +100,6 @@ private struct TrashMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Trash.schema).delete()
+        database.schema("trash").delete()
     }
 }

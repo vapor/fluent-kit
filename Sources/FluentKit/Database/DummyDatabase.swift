@@ -29,6 +29,10 @@ public struct DummyDatabase: Database {
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         self.eventLoop.makeSucceededFuture(())
     }
+
+    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        self.eventLoop.makeSucceededFuture(())
+    }
 }
 
 public struct DummyDatabaseConfiguration: DatabaseConfiguration {

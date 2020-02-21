@@ -1,7 +1,12 @@
 import FluentSQL
 
 extension FluentBenchmarker {
-    public func testFieldFilter() throws {
+    public func testFilter() throws {
+        try self.testFilter_field()
+        try self.testFilter_sqlValue()
+    }
+
+    private func testFilter_field() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -19,7 +24,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testSQLValueFilter() throws {
+    private func testFilter_sqlValue() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {

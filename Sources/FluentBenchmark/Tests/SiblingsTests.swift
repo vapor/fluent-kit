@@ -1,5 +1,9 @@
 extension FluentBenchmarker {
-    public func testSiblingsAttach() throws {
+    public func testSiblings() throws {
+        try self.testSiblings_attach()
+    }
+
+    private func testSiblings_attach() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {

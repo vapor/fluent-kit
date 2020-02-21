@@ -1,16 +1,6 @@
 import struct Foundation.Date
 import struct Foundation.UUID
 
-private protocol _OptionalType {
-    static var _wrappedType: Any.Type { get }
-}
-
-extension Optional: _OptionalType {
-    static var _wrappedType: Any.Type {
-        return Wrapped.self
-    }
-}
-
 public struct DatabaseSchema {
     public enum Action {
         case create
@@ -61,6 +51,19 @@ public struct DatabaseSchema {
     }
     
     public enum FieldConstraint {
+        public static func references(
+            _ schema: String,
+            _ field: String,
+            onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
+            onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+        ) -> Self {
+            .foreignKey(
+                field: .string(schema: schema, field: field),
+                onDelete: onDelete,
+                onUpdate: onUpdate
+            )
+        }
+
         case required
         case identifier(auto: Bool)
         case foreignKey(
@@ -93,6 +96,11 @@ public struct DatabaseSchema {
         )
         case custom(Any)
     }
+
+    public enum FieldUpdate {
+        case dataType(name: FieldName, dataType: DataType)
+        case custom(Any)
+    }
     
     public enum FieldName {
         case key(FieldKey)
@@ -107,6 +115,7 @@ public struct DatabaseSchema {
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]
+    public var updateFields: [FieldUpdate]
     public var deleteFields: [FieldName]
     public var constraints: [Constraint]
     
@@ -114,6 +123,7 @@ public struct DatabaseSchema {
         self.action = .create
         self.schema = schema
         self.createFields = []
+        self.updateFields = []
         self.deleteFields = []
         self.constraints = []
     }

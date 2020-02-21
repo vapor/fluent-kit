@@ -1,6 +1,10 @@
 extension FluentBenchmarker {
-    public func testSameChildrenFromKey() throws {
-        try runTest(#function, [
+    public func testChildren() throws {
+        try self.testChildren_with()
+    }
+
+    private func testChildren_with() throws {
+        try self.runTest(#function, [
             FooMigration(),
             BarMigration(),
             BazMigration()
@@ -58,7 +62,7 @@ private struct FooMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("foos").delete()
+        database.schema("foos").delete()
     }
 }
 
@@ -120,7 +124,7 @@ private final class Baz: Model {
 
 private struct BazMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("bazs")
+        database.schema("bazs")
             .field("id", .uuid, .identifier(auto: false))
             .field("baz", .double, .required)
             .field("foo_id", .uuid, .required)
@@ -128,6 +132,6 @@ private struct BazMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("bazs").delete()
+        database.schema("bazs").delete()
     }
 }

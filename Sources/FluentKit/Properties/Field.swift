@@ -10,10 +10,6 @@ public final class FieldProperty<Model, Value>
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-
-    public var field: FieldProperty<Model, Value> {
-        return self
-    }
     
     public var projectedValue: FieldProperty<Model, Value> {
         return self

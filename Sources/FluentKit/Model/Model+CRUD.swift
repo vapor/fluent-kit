@@ -170,6 +170,8 @@ private struct SavedInput: DatabaseRow {
             switch value {
             case .bind(let encodable):
                 return encodable as! T
+            case .enumCase(let string):
+                return string as! T
             default:
                 fatalError("Invalid input type: \(value)")
             }

@@ -1,5 +1,10 @@
 extension FluentBenchmarker {
     public func testMigrator() throws {
+        try self.testMigrator_success()
+        try self.testMigrator_error()
+    }
+
+    private func testMigrator_success() throws {
         try self.runTest(#function, []) {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())
@@ -26,7 +31,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testMigratorError() throws {
+    private func testMigrator_error() throws {
         try self.runTest(#function, []) {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())

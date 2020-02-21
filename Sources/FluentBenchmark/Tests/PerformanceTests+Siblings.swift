@@ -1,7 +1,7 @@
 import XCTest
 
 extension FluentBenchmarker {
-    public func testSiblingsPerformance() throws {
+    internal func testPerformance_siblings() throws {
         try self.runTest(#function, [
             PersonMigration(),
             ExpeditionMigration(),
@@ -80,7 +80,7 @@ private struct ExpeditionPeopleSeed: Migration {
 private final class Person: Model {
     static let schema = "people"
 
-    @ID(key: "id", generatedBy: .random)
+    @ID
     var id: UUID?
 
     @Field(key: "first_name")
@@ -124,7 +124,7 @@ private struct PersonMigration: Migration {
 private final class Expedition: Model {
     static let schema = "expeditions"
 
-    @ID(key: "id", generatedBy: .random)
+    @ID(key: "id")
     var id: UUID?
 
     @Field(key: "name")
@@ -162,7 +162,7 @@ private final class Expedition: Model {
 
 private struct ExpeditionMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Expedition.schema)
+        database.schema("expeditions")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("area", .string)
@@ -171,7 +171,7 @@ private struct ExpeditionMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Expedition.schema).delete()
+        database.schema("expeditions").delete()
     }
 }
 

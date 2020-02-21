@@ -18,26 +18,32 @@ public final class QueryBuilder<Model>
         }
     }
     
-    public init(database: Database) {
-        self.database = database
-        self.query = .init(schema: Model.schema)
-        self.eagerLoaders = []
-        self.includeDeleted = false
-        self.joinedModels = []
+    public convenience init(database: Database) {
+        self.init(
+            query: .init(schema: Model.schema),
+            database: database
+        )
     }
 
     private init(
         query: DatabaseQuery,
         database: Database,
-        eagerLoaders: [AnyEagerLoader],
-        includeDeleted: Bool,
-        joinedModels: [JoinedModel]
+        eagerLoaders: [AnyEagerLoader] = [],
+        includeDeleted: Bool = false,
+        joinedModels: [JoinedModel] = []
     ) {
         self.query = query
         self.database = database
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
         self.joinedModels = joinedModels
+        // Pass through custom ID key for database if used.
+        let idKey = Model()._$id.key
+        switch idKey {
+        case .id: break
+        default:
+            self.query.customIDKey = idKey
+        }
     }
 
     public func copy() -> QueryBuilder<Model> {

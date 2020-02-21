@@ -1,5 +1,3 @@
-import NIO
-
 extension Database {
     public func schema(_ schema: String) -> SchemaBuilder {
         return .init(database: self, schema: schema)
@@ -9,10 +7,14 @@ extension Database {
 public final class SchemaBuilder {
     let database: Database
     public var schema: DatabaseSchema
-    
+
     init(database: Database, schema: String) {
         self.database = database
         self.schema = .init(schema: schema)
+    }
+
+    public func id() -> Self {
+        self.field(.id, .uuid, .identifier(auto: false))
     }
 
     public func field(
@@ -26,7 +28,7 @@ public final class SchemaBuilder {
             constraints: constraints
         ))
     }
-    
+
     public func field(_ field: DatabaseSchema.FieldDefinition) -> Self {
         self.schema.createFields.append(field)
         return self
@@ -56,47 +58,42 @@ public final class SchemaBuilder {
         return self
     }
 
+    public func updateField(
+        _ key: FieldKey,
+        _ dataType: DatabaseSchema.DataType
+    ) -> Self {
+        self.updateField(.dataType(
+            name: .key(key),
+            dataType: dataType
+        ))
+    }
+
+    public func updateField(_ field: DatabaseSchema.FieldUpdate) -> Self {
+        self.schema.updateFields.append(field)
+        return self
+    }
+
     public func deleteField(_ name: FieldKey) -> Self {
         return self.deleteField(.key(name))
     }
-    
+
     public func deleteField(_ name: DatabaseSchema.FieldName) -> Self {
         self.schema.deleteFields.append(name)
         return self
     }
-    
-    public func delete() -> EventLoopFuture<Void> {
-        self.schema.action = .delete
-        return self.database.execute(schema: self.schema)
-    }
-    
-    public func update() -> EventLoopFuture<Void> {
-        self.schema.action = .update
-        return self.database.execute(schema: self.schema)
-    }
-    
+
     public func create() -> EventLoopFuture<Void> {
         self.schema.action = .create
         return self.database.execute(schema: self.schema)
     }
-}
 
-// MARK: - FieldConstraints
-
-extension DatabaseSchema.FieldConstraint {
-    public static func references(
-        _ schema: String,
-        _ field: String
-    ) -> Self {
-        return .foreignKey(field: .string(schema: schema, field: field), onDelete: .noAction, onUpdate: .noAction)
+    public func update() -> EventLoopFuture<Void> {
+        self.schema.action = .update
+        return self.database.execute(schema: self.schema)
     }
 
-    public static func references(
-        _ schema: String,
-        _ field: String,
-        onDelete: DatabaseSchema.Constraint.ForeignKeyAction,
-        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction
-    ) -> Self {
-        return .foreignKey(field: .string(schema: schema, field: field), onDelete: onDelete, onUpdate: onUpdate)
+    public func delete() -> EventLoopFuture<Void> {
+        self.schema.action = .delete
+        return self.database.execute(schema: self.schema)
     }
 }

@@ -18,80 +18,59 @@ public final class FluentBenchmarker {
     }
 
     public func testAll() throws {
-        try self.testAggregates()
+        try self.testAggregate()
         try self.testArray()
-        try self.testAsyncCreate()
-        try self.testBatchCreate()
-        try self.testBatchUpdate()
-        try self.testChunkedFetch()
+        try self.testBatch()
+        try self.testChildren()
+        try self.testChunk()
         try self.testCompoundField()
-        try self.testCreate()
-        try self.testCustomID()
-        try self.testDelete()
-        try self.testDuplicatedUniquePropertyName()
-        try self.testEagerLoadChildren()
-        try self.testEagerLoadChildrenJSON()
-        try self.testEagerLoadParent()
-        try self.testEagerLoadParentJSON()
-        try self.testEmptyEagerLoadChildren()
-        try self.testFieldFilter()
+        try self.testCRUD()
+        try self.testEagerLoad()
+        try self.testEnum()
+        try self.testFilter()
         try self.testGroup()
-        try self.testIdentifierGeneration()
+        try self.testID()
         try self.testJoin()
-        try self.testJoinedFieldFilter()
+        try self.testMiddleware()
         try self.testMigrator()
-        try self.testMigratorError()
-        try self.testModelMiddleware()
-        try self.testMultipleJoinSameTable()
-        try self.testMultipleSet()
-        try self.testNewModelDecode()
-        try self.testNullifyField()
+        try self.testModel()
+        try self.testNestedField()
         try self.testOptionalParent()
         try self.testPagination()
-        try self.testParentGet()
-        try self.testParentSerialization()
+        try self.testParent()
         try self.testPerformance()
         try self.testRange()
-        try self.testRead()
-        try self.testRelationMethods()
-        try self.testSameChildrenFromKey()
         try self.testSet()
-        try self.testSiblingsAttach()
-        try self.testSiblingsEagerLoad()
+        try self.testSiblings()
         try self.testSoftDelete()
-        try self.testSoftDeleteWithQuery()
         try self.testSort()
-        try self.testTimestampable()
+        try self.testTimestamp()
         try self.testTransaction()
-        try self.testUInt8BackedEnum()
-        try self.testUUIDModel()
-        try self.testUniqueFields()
-        try self.testUpdate()
+        try self.testUnique()
     }
 
     // MARK: Utilities
 
     internal func runTest(_ name: String, _ migrations: [Migration], _ test: () throws -> ()) throws {
         self.log("Running \(name)...")
+
+        // Prepare migrations.
         for migration in migrations {
-            do {
-                try migration.prepare(on: self.database).wait()
-            } catch {
-                self.log("Migration failed: \(error) ")
-                self.log("Attempting to revert existing migrations...")
-                try migration.revert(on: self.database).wait()
-                try migration.prepare(on: self.database).wait()
-            }
+            try migration.prepare(on: self.database).wait()
         }
+
         var e: Error?
         do {
             try test()
         } catch {
             e = error
         }
+
+        // Revert migrations
         for migration in migrations.reversed() {
             try migration.revert(on: self.database).wait()
         }
+
         if let error = e {
             throw error
         }
