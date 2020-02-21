@@ -261,7 +261,7 @@ final class FluentKitTests: XCTestCase {
 final class Planet2: Model {
     static let schema = "planets"
     
-    @ID(key: "id")
+    @ID(custom: "id", generatedBy: .database)
     var id: Int?
     
     @Field(key: "name")
