@@ -6,21 +6,24 @@ extension QueryBuilder {
     }
 
     public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
         self.aggregate(.count, key, as: Int.self)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
         self.aggregate(.sum, key)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -28,14 +31,16 @@ extension QueryBuilder {
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
         self.aggregate(.average, key)
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -43,14 +48,16 @@ extension QueryBuilder {
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
         self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -58,14 +65,16 @@ extension QueryBuilder {
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
         self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Value: OptionalType,
             Field.Model == Model
     {
@@ -77,24 +86,17 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Field: FieldProtocol, Result: Codable
+        where
+            Field: QueryField,
+            Field.Model == Model,
+            Result: Codable
     {
-        self.aggregate(method, Model.path(for: field), as: Result.self)
+        self.aggregate(method, .key(for: field), as: Result.self)
     }
 
     public func aggregate<Result>(
         _ method: DatabaseQuery.Aggregate.Method,
-        _ fieldName: FieldKey,
-        as type: Result.Type = Result.self
-    ) -> EventLoopFuture<Result>
-        where Result: Codable
-    {
-        self.aggregate(method, [fieldName], as: Result.self)
-    }
-
-    public func aggregate<Result>(
-        _ method: DatabaseQuery.Aggregate.Method,
-        _ fieldPath: [FieldKey],
+        _ field: FieldKey,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable
@@ -109,14 +111,12 @@ extension QueryBuilder {
         copy.query.sorts = []
 
         // Set custom action.
-        copy.query.action = .aggregate(.fields(
-            method: method,
-            field: .field(
-                path: fieldPath,
-                schema: Model.schema,
-                alias: nil
+        copy.query.action = .aggregate(
+            .field(
+                .field(field, schema: Model.schema),
+                method
             )
-        ))
+        )
 
         let promise = self.database.eventLoop.makePromise(of: Result.self)
         copy.run { output in

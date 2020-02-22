@@ -29,7 +29,7 @@ extension Model {
                 let idKey = Self()._$id.key
                 input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input.values).output(for: database))
+            try self.output(from: SavedInput(input.values))
         }
     }
     
@@ -50,7 +50,7 @@ extension Model {
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(input.values).output(for: database))
+            try self.output(from: SavedInput(input.values))
         }
     }
     
@@ -102,7 +102,7 @@ extension Model {
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(self.input.values).output(for: database))
+            try self.output(from: SavedInput(self.input.values))
             self._$id.exists = true
         }
     }
@@ -153,18 +153,25 @@ extension Array where Element: FluentKit.Model {
 }
 
 // MARK: Private
-private struct SavedInput: DatabaseRow {
+private struct SavedInput: DatabaseOutput {
     var input: [FieldKey: DatabaseQuery.Value]
     
     init(_ input: [FieldKey: DatabaseQuery.Value]) {
         self.input = input
     }
+
+    func schema(_ schema: String) -> DatabaseOutput {
+        #warning("TODO: improve?")
+        return self
+    }
     
-    func contains(field: FieldKey) -> Bool {
+    func contains(_ field: FieldKey) -> Bool {
         return self.input[field] != nil
     }
     
-    func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T where T : Decodable {
+    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+        where T : Decodable
+    {
         if let value = self.input[field] {
             // not in output, get from saved input
             switch value {

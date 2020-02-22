@@ -43,7 +43,7 @@ public final class EnumProperty<Model, Value>
     }
 }
 
-extension EnumProperty: FieldProtocol {
+extension EnumProperty: FilterField {
     public var path: [FieldKey] {
         self.field.path
     }

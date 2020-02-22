@@ -1,5 +1,6 @@
 public protocol AnyModel: Fields, CustomStringConvertible {
     static var schema: String { get }
+    init()
 }
 
 extension AnyModel {
@@ -11,7 +12,7 @@ extension AnyModel {
         }
 
         if let output = self.anyID.cachedOutput {
-            info["output"] = output.row
+            info["output"] = output
         }
 
         return "\(Self.self)(\(info.debugDescription.dropFirst().dropLast()))"
@@ -19,29 +20,14 @@ extension AnyModel {
 
     // MARK: Joined
 
-    public func joined<Joined>(_ model: Joined.Type) throws -> Joined.Model
-        where Joined: ModelAlias
-    {
-        guard let output = self.anyID.cachedOutput else {
-            fatalError("Can only access joined models using models fetched from database.")
-        }
-        let joined = Joined.Model()
-        try joined.output(
-            from: output.row.prefixed(by: Joined.alias + "_").output(for: output.database)
-        )
-        return joined
-    }
-
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
-        where Joined: FluentKit.Model
+        where Joined: Schema
     {
         guard let output = self.anyID.cachedOutput else {
             fatalError("Can only access joined models using models fetched from database.")
         }
         let joined = Joined()
-        try joined.output(
-            from: output.row.prefixed(by: Joined.schema + "_").output(for: output.database)
-        )
+        try joined.output(from: output.schema(Joined.schemaOrAlias))
         return joined
     }
 

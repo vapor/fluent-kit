@@ -42,11 +42,13 @@ public final class FieldProperty<Model, Value>
     }
 }
 
-extension FieldProperty: FieldProtocol {
+extension FieldProperty: FilterField {
     public var path: [FieldKey] {
         [self.key]
     }
 }
+
+extension FieldProperty: QueryField { }
 
 extension FieldProperty: AnyProperty {
     var keys: [FieldKey] {

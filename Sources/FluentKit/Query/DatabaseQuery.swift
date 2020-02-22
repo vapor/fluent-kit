@@ -8,6 +8,11 @@ public struct DatabaseQuery: CustomStringConvertible {
         case custom(Any)
     }
 
+    public enum Field {
+        case field(FieldKey, schema: String)
+        case custom(Any)
+    }
+
     public enum Aggregate: CustomStringConvertible {
         public enum Method {
             case count
@@ -22,42 +27,21 @@ public struct DatabaseQuery: CustomStringConvertible {
             switch self {
             case .custom(let custom):
                 return "\(custom)"
-            case .fields(let method, let field):
+            case .field(let method, let field):
                 return "\(method)(\(field))"
             }
         }
 
-        case fields(method: Method, field: Field)
-        case custom(Any)
-    }
-
-    public enum Schema {
-        case schema(name: String, alias: String?)
-        case custom(Any)
-    }
-    
-    public enum Field: CustomStringConvertible {
-        public var description: String {
-            switch self {
-            case .field(let path, let schema, let alias):
-                var description = path.map { $0.description }.joined(separator: ".")
-                if let schema = schema {
-                    description = schema + "." + description
-                }
-                if let alias = alias {
-                    description = description + " as " + alias
-                }
-                return description
-            case .custom(let custom):
-                return "\(custom)"
-            }
-        }
-
-        case field(path: [FieldKey], schema: String?, alias: String?)
+        case field(Field, Method)
         case custom(Any)
     }
     
     public enum Filter: CustomStringConvertible {
+        public enum Field {
+            case path([FieldKey], schema: String)
+            case custom(Any)
+        }
+
         public enum Method: CustomStringConvertible {
             public static var equal: Method {
                 return .equality(inverse: false)
@@ -183,10 +167,18 @@ public struct DatabaseQuery: CustomStringConvertible {
     
     public enum Join {
         public enum Method {
-            case inner, left, right, outer
+            case inner
+            case left
             case custom(Any)
         }
-        case join(schema: Schema, foreign: Field, local: Field, method: Method)
+
+        case join(
+            schema: String,
+            alias: String?,
+            Method,
+            foreign: Field,
+            local: Field
+        )
         case custom(Any)
     }
 
@@ -196,8 +188,7 @@ public struct DatabaseQuery: CustomStringConvertible {
             case descending
             case custom(Any)
         }
-        
-        case sort(field: Field, direction: Direction)
+        case sort(Field, Direction)
         case custom(Any)
     }
 
@@ -225,6 +216,7 @@ public struct DatabaseQuery: CustomStringConvertible {
     
     public var description: String {
         var parts = [
+            "query",
             "\(self.action)",
             self.schema
         ]

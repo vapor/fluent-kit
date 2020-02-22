@@ -41,7 +41,7 @@ public final class CompoundFieldProperty<Model, Value>
     public subscript<Field>(
          dynamicMember keyPath: KeyPath<Value, Field>
     ) -> _CompoundField<Value, Field>
-        where Field: FieldProtocol,
+        where Field: FilterField,
             Field.Model == Value
     {
         .init(prefix: self.prefix, field: Value()[keyPath: keyPath])
@@ -89,13 +89,13 @@ extension CompoundFieldProperty: AnyProperty {
 }
 
 public struct _CompoundField<Model, Field>
-    where Model: FluentKit.Fields, Field: FieldProtocol
+    where Model: FluentKit.Fields, Field: FilterField
 {
     public let prefix: String
     public let field: Field
 }
 
-extension _CompoundField: FieldProtocol {
+extension _CompoundField: FilterField {
     public var wrappedValue: Field.Value {
         self.field.wrappedValue
     }

@@ -135,10 +135,12 @@ extension IDProperty: AnyProperty {
     }
 }
 
-extension IDProperty: FieldProtocol {
+extension IDProperty: FilterField {
     public var path: [FieldKey] {
         self.field.path
     }
 }
+
+extension IDProperty: QueryField { }
 
 extension IDProperty: AnyID { }

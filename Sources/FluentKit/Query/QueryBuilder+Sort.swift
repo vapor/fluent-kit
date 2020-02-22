@@ -5,24 +5,18 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
-        self.sort(Model.self, Model.path(for: field), direction, alias: nil)
+        self.sort(.key(for: field), direction)
     }
 
     public func sort(
         _ field: FieldKey,
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self {
-        self.sort(Model.self, [field], direction, alias: nil)
-    }
-
-    public func sort(
-        _ field: [FieldKey],
-        _ direction: DatabaseQuery.Sort.Direction = .ascending
-    ) -> Self {
-        self.sort(Model.self, field, direction, alias: nil)
+        self.sort(.field(field, schema: Model.schema), direction)
     }
 
     public func sort<Joined, Field>(
@@ -31,11 +25,12 @@ extension QueryBuilder {
         _ direction: DatabaseQuery.Sort.Direction = .ascending,
         alias: String? = nil
     ) -> Self
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Joined,
-            Joined: FluentKit.Model
+            Joined: Schema
     {
-        self.sort(Joined.self, Joined.path(for: field), direction, alias: alias)
+        self.sort(Joined.self, .key(for: field), direction, alias: alias)
     }
 
     public func sort<Joined>(
@@ -44,24 +39,16 @@ extension QueryBuilder {
         _ direction: DatabaseQuery.Sort.Direction = .ascending,
         alias: String? = nil
     ) -> Self
-        where Joined: FluentKit.Model
+        where Joined: Schema
     {
-        self.sort(Joined.self, [field], direction, alias: alias)
+        self.sort(.field(field, schema: Joined.schema), direction)
     }
 
-    public func sort<Joined>(
-        _ model: Joined.Type,
-        _ fieldPath: [FieldKey],
-        _ direction: DatabaseQuery.Sort.Direction = .ascending,
-        alias: String? = nil
-    ) -> Self
-        where Joined: FluentKit.Model
-    {
-        self.query.sorts.append(.sort(field: .field(
-            path: fieldPath,
-            schema: alias ?? Joined.schema,
-            alias: nil
-        ), direction: direction))
+    public func sort(
+        _ field: DatabaseQuery.Field,
+        _ direction: DatabaseQuery.Sort.Direction = .ascending
+    ) -> Self {
+        self.query.sorts.append(.sort(field, direction))
         return self
     }
 }

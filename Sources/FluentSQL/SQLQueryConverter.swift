@@ -29,7 +29,7 @@ public struct SQLQueryConverter {
         var update = SQLUpdate(table: SQLIdentifier(query.schema))
         for (i, field) in query.fields.enumerated() {
             update.values.append(SQLBinaryExpression(
-                left: self.field(field),
+                left: self.field(field, ignoreSchema: true),
                 op: SQLBinaryOperator.equal,
                 right: self.value(query.input[0][i])
             ))
@@ -44,7 +44,17 @@ public struct SQLQueryConverter {
         switch query.action {
         case .read:
             select.isDistinct = query.isUnique
-            select.columns = query.fields.map(self.field)
+            select.columns = query.fields.map { field in
+                switch field {
+                case .custom(let any):
+                    return custom(any)
+                case .field(let key, let schema):
+                    return SQLAlias(
+                        SQLColumn(self.key(key), table: schema),
+                        as: SQLIdentifier(schema + "_" + self.key(key))
+                    )
+                }
+            }
         case .aggregate(let aggregate):
             select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
         default: break
@@ -73,7 +83,9 @@ public struct SQLQueryConverter {
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
         var insert = SQLInsert(table: SQLIdentifier(query.schema))
-        insert.columns = query.fields.map(self.field)
+        insert.columns = query.fields.map { field in
+            self.field(field, ignoreSchema: true)
+        }
         insert.values = query.input.map { row in
             return row.map(self.value)
         }
@@ -115,10 +127,16 @@ public struct SQLQueryConverter {
         switch join {
         case .custom(let any):
             return custom(any)
-        case .join(let schema, let foreign, let local, let method):
+        case .join(let schema, let alias, let method, let foreign, let local):
+            let table: SQLExpression
+            if let alias = alias {
+                table = SQLAlias(SQLIdentifier(schema), as: SQLIdentifier(alias))
+            } else {
+                table = SQLIdentifier(schema)
+            }
             return SQLJoin(
                 method: self.joinMethod(method),
-                table: self.schema(schema),
+                table: table,
                 expression: SQLBinaryExpression(
                     left: self.field(local),
                     op: SQLBinaryOperator.equal,
@@ -127,50 +145,26 @@ public struct SQLQueryConverter {
             )
         }
     }
-
-    private func schema(_ schema: DatabaseQuery.Schema) -> SQLExpression {
-        switch schema {
-        case .schema(let name, let alias):
-            if let alias = alias {
-                return SQLAlias(SQLIdentifier(name), as: SQLIdentifier(alias))
-            } else {
-                return SQLIdentifier(name)
-            }
-        case .custom(let any):
-            return custom(any)
-        }
-    }
     
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> SQLExpression {
         switch method {
         case .inner: return SQLJoinMethod.inner
         case .left: return SQLJoinMethod.left
-        case .right: return SQLJoinMethod.right
-        case .outer: return SQLJoinMethod.outer
+//        case .right: return SQLJoinMethod.right
+//        case .outer: return SQLJoinMethod.outer
         case .custom(let any):
             return custom(any)
         }
     }
 
-    private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+    private func field(_ field: DatabaseQuery.Filter.Field) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
-        case .field(let path, let schema, let alias):
-            // TODO: if joins don't exist, use short column name
+        case .path(let path, let schema):
             switch path.count {
             case 1:
-                let key = path[0]
-                if let schema = schema {
-                    let id = SQLColumn(SQLIdentifier(self.key(key)), table: SQLIdentifier(schema))
-                    if let alias = alias {
-                        return SQLAlias(id, as: SQLIdentifier(alias))
-                    } else {
-                        return id
-                    }
-                } else {
-                    return SQLIdentifier(self.key(key))
-                }
+                return SQLColumn(self.key(path[0]), table: schema)
             case 2...:
                 return self.delegate.nestedFieldExpression(
                     self.key(path[0]),
@@ -182,11 +176,28 @@ public struct SQLQueryConverter {
         }
     }
 
+    private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+        self.field(field, ignoreSchema: false)
+    }
+
+    private func field(_ field: DatabaseQuery.Field, ignoreSchema: Bool) -> SQLExpression {
+        switch field {
+        case .custom(let any):
+            return custom(any)
+        case .field(let key, let schema):
+            if ignoreSchema {
+                return SQLIdentifier(self.key(key))
+            } else {
+                return SQLColumn(self.key(key), table: schema)
+            }
+        }
+    }
+
     private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> SQLExpression {
         switch aggregate {
         case .custom(let any):
             return any as! SQLExpression
-        case .fields(let method, let field):
+        case .field(let field, let method):
             let name: String
             switch method {
             case .average: name = "AVG"
