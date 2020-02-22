@@ -1,3 +1,5 @@
+import NIO
+
 public protocol AnyModel: Fields, CustomStringConvertible {
     static var schema: String { get }
 }
@@ -46,12 +48,35 @@ extension AnyModel {
     }
 
     var anyID: AnyID {
-        guard let id = Mirror(reflecting: self).descendant("_id") as? AnyID else {
-            fatalError("id property must be declared using @ID")
+        let mirror = Mirror(reflecting: self)
+        let children = mirror.children
+        
+        let table = idTable.currentValue ?? AnyIDTable()
+        let value: Any
+        
+        if let index = table.ids.first(where: { $0.typeId == ObjectIdentifier(Self.self) })?.1 {
+            value = children[index].value
+        } else {
+            guard let index = children.firstIndex(where: { $0.label == "_id" }) else {
+                fatalError("id property must be declared using @ID")
+            }
+            
+            value = children[index].value
         }
-        return id
+        
+        assert(value is AnyID, "id property did not conform to AnyID, make sure it's declared using @ID")
+        
+        return value as! AnyID
     }
 }
+
+private final class AnyIDTable {
+    var ids: [(typeId: ObjectIdentifier, offset: AnyIndex)] = []
+    
+    init() {}
+}
+
+private let idTable = ThreadSpecificVariable<AnyIDTable>()
 
 extension Fields {
 
