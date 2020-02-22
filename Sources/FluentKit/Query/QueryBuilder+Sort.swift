@@ -41,7 +41,7 @@ extension QueryBuilder {
     ) -> Self
         where Joined: Schema
     {
-        self.sort(.field(field, schema: Joined.schema), direction)
+        self.sort(.field(field, schema: Joined.schemaOrAlias), direction)
     }
 
     public func sort(

@@ -48,20 +48,20 @@ extension ParentProperty: Relation {
     }
 }
 
-extension ParentProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension ParentProperty: AnyField {
+    public var keys: [FieldKey] {
         self.$id.keys
     }
     
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         self.$id.input(to: &input)
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         try self.$id.output(from: output)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
             try container.encode(parent)
@@ -72,7 +72,7 @@ extension ParentProperty: AnyProperty {
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
         // TODO: allow for nested decoding

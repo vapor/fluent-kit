@@ -54,24 +54,24 @@ public final class TimestampProperty<Model>
     }
 }
 
-extension TimestampProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension TimestampProperty: AnyField {
+    public var keys: [FieldKey] {
         [self.key]
     }
     
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         self.field.input(to: &input)
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }
@@ -84,7 +84,7 @@ extension TimestampProperty: FilterField {
     }
 }
 
-protocol AnyTimestamp: AnyProperty {
+protocol AnyTimestamp: AnyField {
     var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)

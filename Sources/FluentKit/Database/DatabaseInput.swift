@@ -1,6 +1,6 @@
-struct DatabaseInput {
-    var values: [FieldKey: DatabaseQuery.Value]
-    init() {
+public struct DatabaseInput {
+    public var values: [FieldKey: DatabaseQuery.Value]
+    public init() {
         self.values = [:]
     }
 }

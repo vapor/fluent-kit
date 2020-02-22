@@ -97,30 +97,30 @@ public final class ChildrenProperty<From, To>
     }
 }
 
-extension ChildrenProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension ChildrenProperty: AnyField {
+    public var keys: [FieldKey] {
         []
     }
     
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         // children never has input
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         let key = From()._$id.field.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         // don't decode
     }
 }

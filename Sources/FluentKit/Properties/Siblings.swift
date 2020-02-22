@@ -157,30 +157,30 @@ public final class SiblingsProperty<From, To, Through>
     }
 }
 
-extension SiblingsProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension SiblingsProperty: AnyField {
+    public var keys: [FieldKey] {
         []
     }
     
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         // siblings never has input
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         let key = From()._$id.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         // don't decode
     }
 }

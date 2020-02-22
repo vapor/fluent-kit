@@ -111,26 +111,26 @@ public final class IDProperty<Model, Value>
     }
 }
 
-extension IDProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension IDProperty: AnyField {
+    public var keys: [FieldKey] {
         self.field.keys
     }
 
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         self.field.input(to: &input)
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         self.exists = true
         self.cachedOutput = output
         try self.field.output(from: output)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }

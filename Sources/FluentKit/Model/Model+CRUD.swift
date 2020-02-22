@@ -161,7 +161,6 @@ private struct SavedInput: DatabaseOutput {
     }
 
     func schema(_ schema: String) -> DatabaseOutput {
-        #warning("TODO: improve?")
         return self
     }
     

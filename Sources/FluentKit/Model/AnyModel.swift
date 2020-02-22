@@ -1,6 +1,7 @@
-public protocol AnyModel: Fields, CustomStringConvertible {
-    static var schema: String { get }
-    init()
+public protocol AnyModel: Schema, CustomStringConvertible { }
+
+extension AnyModel {
+    public static var alias: String? { nil }
 }
 
 extension AnyModel {
@@ -36,19 +37,6 @@ extension AnyModel {
             fatalError("id property must be declared using @ID")
         }
         return id
-    }
-}
-
-extension Fields {
-
-    // MARK: Internal
-    func label(for property: AnyProperty) -> String {
-        for (label, p) in self.properties {
-            if property === p {
-                return label
-            }
-        }
-        fatalError("Property not found on model: \(property)")
     }
 }
 

@@ -43,27 +43,27 @@ public final class NestedFieldProperty<Model, Value>
     }
 }
 
-extension NestedFieldProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension NestedFieldProperty: AnyField {
+    public var keys: [FieldKey] {
         [self.key]
     }
 
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         if let value = self.value {
             input.values[self.key] = .bind(value)
         }
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         self.value = try output.decode(self.key, as: Value.self)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let valueType = Value.self as? AnyOptionalType.Type {
             if container.decodeNil() {

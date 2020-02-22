@@ -78,21 +78,13 @@ extension FluentBenchmarker {
             }
 
             final class HomeTeam: ModelAlias {
-                static let schema = Team.schema
-                static let alias: String? = "home_teams"
-                let model: Team
-                init() {
-                    self.model = .init()
-                }
+                static let name = "home_teams"
+                let model = Team()
             }
 
             final class AwayTeam: ModelAlias {
-                static let schema = Team.schema
-                static let alias: String? = "away_teams"
-                let model: Team
-                init() {
-                    self.model = .init()
-                }
+                static let name = "away_teams"
+                let model = Team()
             }
 
             // test manual join
@@ -101,6 +93,7 @@ extension FluentBenchmarker {
                     .join(HomeTeam.self, on: \Match.$homeTeam.$id == \HomeTeam.$id)
                     .join(AwayTeam.self, on: \Match.$awayTeam.$id == \AwayTeam.$id)
                     .filter(HomeTeam.self, \.$name == "a")
+                    .sort(AwayTeam.self, \.$name)
                     .all().wait()
 
                 for match in matches {

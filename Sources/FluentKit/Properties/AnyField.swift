@@ -1,4 +1,4 @@
-protocol AnyProperty: class {
+public protocol AnyField: class {
     var keys: [FieldKey] { get }
     func input(to input: inout DatabaseInput)
     func output(from output: DatabaseOutput) throws
