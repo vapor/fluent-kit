@@ -84,7 +84,7 @@ extension Fields {
     func label(for property: AnyProperty) -> String {
         for (label, p) in self.properties {
             if property === p {
-                return label
+                return String(label)
             }
         }
         fatalError("Property not found on model: \(property)")

@@ -97,7 +97,7 @@ extension AnyTimestamp {
 }
 
 extension Fields {
-    var timestamps: [(String, AnyTimestamp)] {
+    var timestamps: [(Substring, AnyTimestamp)] {
         self.properties.compactMap {
             guard let value = $1 as? AnyTimestamp else {
                 return nil

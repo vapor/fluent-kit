@@ -7,7 +7,7 @@ protocol AnyProperty: class {
 }
 
 extension Fields {
-    var properties: [(String, AnyProperty)] {
+    var properties: [(Substring, AnyProperty)] {
         return Mirror(reflecting: self)
             .children
             .compactMap
@@ -19,7 +19,7 @@ extension Fields {
                 return nil
             }
             // remove underscore
-            return (String(label.dropFirst()), property)
+            return (label.dropFirst(), property)
         }
     }
 }

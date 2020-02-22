@@ -5,7 +5,7 @@ extension Fields {
         self.init()
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let decoder = ContainerDecoder(container: container, key: .string(label))
+            let decoder = ContainerDecoder(container: container, key: .string(String(label)))
             try property.decode(from: decoder)
         }
     }
@@ -13,7 +13,7 @@ extension Fields {
     public func encode(to encoder: Encoder) throws {
         let container = encoder.container(keyedBy: ModelCodingKey.self)
         try self.properties.forEach { label, property in
-            let encoder = ContainerEncoder(container: container, key: .string(label))
+            let encoder = ContainerEncoder(container: container, key: .string(String(label)))
             try property.encode(to: encoder)
         }
     }
