@@ -14,7 +14,7 @@ extension QueryBuilder {
             return self
         }
         // use first copy of keys to ensure correct ordering
-        self.query.fields = keys.map { .field(path: [$0], schema: nil, alias: nil) }
+        self.query.fields = keys.map { .field($0, schema: Model.schema) }
         for item in data {
             let input = keys.map { item[$0]! }
             self.query.input.append(input)
@@ -29,10 +29,13 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
     ) -> Self
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
-        self.query.fields.append(.field(path: Model.path(for: field), schema: nil, alias: nil))
+        self.query.fields.append(
+            .field(.key(for: field), schema: Model.schema)
+        )
         switch query.input.count {
         case 0: query.input = [[.bind(value)]]
         default: query.input[0].append(.bind(value))

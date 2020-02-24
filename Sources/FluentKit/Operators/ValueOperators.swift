@@ -1,30 +1,18 @@
 extension QueryBuilder {
     @discardableResult
     public func filter(_ filter: ModelValueFilter<Model>) -> Self {
-        return self.filter(
-            .field(path: filter.path, schema: Model.schema, alias: nil),
-            filter.method,
-            filter.value
-        )
+        self.filter(Model.self, filter)
     }
 
     @discardableResult
-    public func filter<Joined>(_ alias: Joined.Type, _ filter: ModelValueFilter<Joined>) -> Self
-        where Joined: FluentKit.Model
+    public func filter<Joined>(
+        _ schema: Joined.Type,
+        _ filter: ModelValueFilter<Joined>
+    ) -> Self
+        where Joined: Schema
     {
-        return self.filter(
-            .field(path: filter.path, schema: Joined.schema, alias: nil),
-            filter.method,
-            filter.value
-        )
-    }
-
-    @discardableResult
-    public func filter<Alias>(_ alias: Alias.Type, _ filter: ModelValueFilter<Alias.Model>) -> Self
-        where Alias: ModelAlias
-    {
-        return self.filter(
-            .field(path: filter.path, schema: Alias.alias, alias: nil),
+        self.filter(
+            .path(filter.path, schema: Joined.schemaOrAlias),
             filter.method,
             filter.value
         )
@@ -34,37 +22,37 @@ extension QueryBuilder {
 // MARK: Field.Value
 
 public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     lhs == .bind(rhs)
 }
 
 public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     lhs != .bind(rhs)
 }
 
 public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     lhs >= .bind(rhs)
 }
 
 public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     lhs > .bind(rhs)
 }
 
 public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     lhs < .bind(rhs)
 }
 
 public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     lhs <= .bind(rhs)
 }
@@ -72,50 +60,50 @@ public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> M
 // MARK: DatabaseQuery.Value
 
 public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     .init(lhs, .equal, rhs)
 }
 
 public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     .init(lhs, .notEqual, rhs)
 }
 
 public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     .init(lhs, .greaterThanOrEqual, rhs)
 }
 
 public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     .init(lhs, .greaterThan, rhs)
 }
 
 public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     .init(lhs, .lessThan, rhs)
 }
 
 public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: Fields, Field: FilterField
 {
     .init(lhs, .lessThanOrEqual, rhs)
 }
 
-public struct ModelValueFilter<Model> where Model: FluentKit.Model {
+public struct ModelValueFilter<Model> where Model: Fields {
     init<Field>(
         _ lhs: KeyPath<Model, Field>,
         _ method: DatabaseQuery.Filter.Method,
         _ rhs: DatabaseQuery.Value
     )
-        where Field: FieldProtocol
+        where Field: FilterField
     {
-        self.path = Model.init()[keyPath: lhs].path
+        self.path = Model.path(for: lhs)
         self.method = method
         self.value = rhs
     }

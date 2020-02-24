@@ -5,20 +5,18 @@ extension FluentBenchmarker {
     }
 
     private func testSoftDelete_model() throws {
-        func testCounts(allCount: Int, realCount: Int) throws {
+        func testCounts(
+            allCount: Int,
+            realCount: Int,
+            line: UInt = #line
+        ) throws {
             let all = try Trash.query(on: self.database).all().wait()
-            guard all.count == allCount else {
-                XCTFail("all count should be \(allCount)")
-                return
-            }
+            XCTAssertEqual(all.count, allCount, "excluding deleted", line: line)
             let real = try Trash.query(on: self.database).withDeleted().all().wait()
-            guard real.count == realCount else {
-                XCTFail("real count should be \(realCount)")
-                return
-            }
+            XCTAssertEqual(real.count, realCount, "including deleted", line: line)
         }
 
-    try self.runTest(#function, [
+        try self.runTest(#function, [
             TrashMigration(),
         ]) {
             // save two users

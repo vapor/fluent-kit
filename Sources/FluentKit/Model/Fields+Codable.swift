@@ -1,10 +1,8 @@
 extension Fields {
-    // MARK: Codable
-
     public init(from decoder: Decoder) throws {
         self.init()
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.properties.forEach { label, property in
+        try self.fields.forEach { label, property in
             let decoder = ContainerDecoder(container: container, key: .string(label))
             try property.decode(from: decoder)
         }
@@ -12,7 +10,7 @@ extension Fields {
 
     public func encode(to encoder: Encoder) throws {
         let container = encoder.container(keyedBy: ModelCodingKey.self)
-        try self.properties.forEach { label, property in
+        try self.fields.forEach { label, property in
             let encoder = ContainerEncoder(container: container, key: .string(label))
             try property.encode(to: encoder)
         }

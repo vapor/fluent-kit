@@ -3,7 +3,7 @@ public protocol Database {
     
     func execute(
         query: DatabaseQuery,
-        onRow: @escaping (DatabaseRow) -> ()
+        onOutput: @escaping (DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void>
 
     func execute(

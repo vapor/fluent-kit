@@ -54,37 +54,37 @@ public final class TimestampProperty<Model>
     }
 }
 
-extension TimestampProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension TimestampProperty: AnyField {
+    public var keys: [FieldKey] {
         [self.key]
     }
     
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         self.field.input(to: &input)
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }
 
 extension TimestampProperty: AnyTimestamp { }
 
-extension TimestampProperty: FieldProtocol {
+extension TimestampProperty: FilterField {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-protocol AnyTimestamp: AnyProperty {
+protocol AnyTimestamp: AnyField {
     var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
@@ -97,14 +97,12 @@ extension AnyTimestamp {
 }
 
 extension Fields {
-    var timestamps: [(String, AnyTimestamp)] {
-        self.properties.compactMap {
-            guard let value = $1 as? AnyTimestamp else {
-                return nil
-            }
-            return ($0, value)
+    var timestamps: [String: AnyTimestamp] {
+        self.fields.compactMapValues {
+            $0 as? AnyTimestamp
         }
     }
+    
     func touchTimestamps(_ triggers: TimestampTrigger...) {
         return self.touchTimestamps(triggers)
     }
@@ -121,16 +119,17 @@ extension Fields {
     var deletedTimestamp: AnyTimestamp? {
         return self.timestamps.filter({ $0.1.trigger == .delete }).first?.1
     }
+}
 
-    func excludeDeleted(from query: inout DatabaseQuery, schema: String) {
-        guard let timestamp = self.deletedTimestamp else {
+extension Schema {
+    static func excludeDeleted(from query: inout DatabaseQuery) {
+        guard let timestamp = self.init().deletedTimestamp else {
             return
         }
 
-        let deletedAtField = DatabaseQuery.Field.field(
-            path: [timestamp.key],
-            schema: schema,
-            alias: nil
+        let deletedAtField = DatabaseQuery.Filter.Field.path(
+            [timestamp.key],
+            schema: self.schemaOrAlias
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
         let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(Date()))

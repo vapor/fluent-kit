@@ -11,9 +11,9 @@ public struct DummyDatabase: Database {
         )
     }
     
-    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         for _ in 0..<Int.random(in: 1..<42) {
-            onRow(DummyRow())
+            onOutput(DummyRow())
         }
         return self.eventLoop.makeSucceededFuture(())
     }
@@ -70,10 +70,14 @@ public final class DummyDatabaseDriver: DatabaseDriver {
 
 // MARK: Private
 
-public struct DummyRow: DatabaseRow {
+public struct DummyRow: DatabaseOutput {
     public init() { }
+
+    public func schema(_ schema: String) -> DatabaseOutput {
+        self
+    }
     
-    public func decode<T>(field: FieldKey, as type: T.Type, for database: Database) throws -> T
+    public func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
     {
         if T.self is UUID.Type {
@@ -83,7 +87,7 @@ public struct DummyRow: DatabaseRow {
         }
     }
 
-    public func contains(field: FieldKey) -> Bool {
+    public func contains(_ field: FieldKey) -> Bool {
         return true
     }
     

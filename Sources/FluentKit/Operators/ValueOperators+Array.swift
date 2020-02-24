@@ -2,7 +2,7 @@
 
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Model,
-        Field: FieldProtocol,
+        Field: FilterField,
         Values: Collection,
         Values.Element == Field.Value
 {
@@ -11,7 +11,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Model,
-        Field: FieldProtocol,
+        Field: FilterField,
         Field.Value: OptionalType,
         Field.Value.Wrapped: Codable,
         Values: Collection,
@@ -22,7 +22,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Model,
-        Field: FieldProtocol,
+        Field: FilterField,
         Values: Collection,
         Values.Element == Field.Value
 {
@@ -31,7 +31,7 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Model,
-        Field: FieldProtocol,
+        Field: FilterField,
         Field.Value: OptionalType,
         Field.Value.Wrapped: Codable,
         Values: Collection,
@@ -43,13 +43,13 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 // MARK: DatabaseQuery.Value
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: FluentKit.Model, Field: FilterField
 {
     .init(lhs, .subset(inverse: false), rhs)
 }
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: FieldProtocol
+    where Model: FluentKit.Model, Field: FilterField
 {
     .init(lhs, .subset(inverse: true), rhs)
 }

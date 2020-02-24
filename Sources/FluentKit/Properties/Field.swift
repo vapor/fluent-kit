@@ -42,22 +42,24 @@ public final class FieldProperty<Model, Value>
     }
 }
 
-extension FieldProperty: FieldProtocol {
+extension FieldProperty: FilterField {
     public var path: [FieldKey] {
         [self.key]
     }
 }
 
-extension FieldProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension FieldProperty: QueryField { }
+
+extension FieldProperty: AnyField {
+    public var keys: [FieldKey] {
         [self.key]
     }
 
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         input.values[self.key] = self.inputValue
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
@@ -72,12 +74,12 @@ extension FieldProperty: AnyProperty {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let valueType = Value.self as? AnyOptionalType.Type {
             if container.decodeNil() {

@@ -35,12 +35,15 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.sqlSerializers = []
     }
     
-    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+    public func execute(
+        query: DatabaseQuery,
+        onOutput: @escaping (DatabaseOutput) -> ()
+    ) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
-        onRow(DummyRow())
+        onOutput(DummyRow())
         return self.eventLoop.makeSucceededFuture(())
     }
     

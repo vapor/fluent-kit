@@ -7,7 +7,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Field.Value
     ) -> Self
-        where Field: FieldProtocol, Field.Model == Model
+        where Field: FilterField, Field.Model == Model
     {
         self.filter(Model.path(for: field), method, value)
     }
@@ -18,9 +18,9 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ rhsField: KeyPath<Model, Right>
     ) -> Self
-        where Left: FieldProtocol,
+        where Left: FilterField,
             Left.Model == Model,
-            Right: FieldProtocol,
+            Right: FilterField,
             Right.Model == Model
     {
         self.filter(Model.path(for: lhsField), method, Model.path(for: rhsField))
@@ -45,11 +45,11 @@ extension QueryBuilder {
     ) -> Self
         where Value: Codable
     {
-        self.filter(.field(
-            path: fieldPath,
-            schema: Model.schema,
-            alias: nil
-        ), method, .bind(value))
+        self.filter(
+            .path(fieldPath, schema: Model.schema),
+            method,
+            .bind(value)
+        )
     }
 
     @discardableResult
@@ -68,15 +68,15 @@ extension QueryBuilder {
         _ rightPath: [FieldKey]
     ) -> Self {
         self.filter(
-            .field(path: leftPath, schema: Model.schema, alias: nil),
+            .path(leftPath, schema: Model.schema),
             method,
-            .field(path: rightPath, schema: Model.schema, alias: nil)
+            .path(rightPath, schema: Model.schema)
         )
     }
 
     @discardableResult
     public func filter(
-        _ field: DatabaseQuery.Field,
+        _ field: DatabaseQuery.Filter.Field,
         _ method: DatabaseQuery.Filter.Method,
         _ value: DatabaseQuery.Value
     ) -> Self {
@@ -85,9 +85,9 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ lhsField: DatabaseQuery.Field,
+        _ lhsField: DatabaseQuery.Filter.Field,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhsField: DatabaseQuery.Field
+        _ rhsField: DatabaseQuery.Filter.Field
     ) -> Self {
         self.filter(.field(lhsField, method, rhsField))
     }

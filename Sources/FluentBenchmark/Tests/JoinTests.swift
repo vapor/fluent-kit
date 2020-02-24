@@ -68,7 +68,8 @@ extension FluentBenchmarker {
             // test fetching matches
             do {
                 let matches = try Match.query(on: self.database)
-                    .with(\.$awayTeam).with(\.$homeTeam)
+                    .with(\.$awayTeam)
+                    .with(\.$homeTeam)
                     .all().wait()
                 for match in matches {
                     XCTAssert(match.name.hasPrefix(match.homeTeam.name))
@@ -76,22 +77,23 @@ extension FluentBenchmarker {
                 }
             }
 
-            struct HomeTeam: ModelAlias {
-                typealias Model = Team
-                static var alias: String { "home_teams" }
+            final class HomeTeam: ModelAlias {
+                static let name = "home_teams"
+                let model = Team()
             }
 
-            struct AwayTeam: ModelAlias {
-                typealias Model = Team
-                static var alias: String { "away_teams" }
+            final class AwayTeam: ModelAlias {
+                static let name = "away_teams"
+                let model = Team()
             }
 
             // test manual join
             do {
                 let matches = try Match.query(on: self.database)
-                    .join(HomeTeam.self, on: \Match.$homeTeam.$id == \Team.$id)
-                    .join(AwayTeam.self, on: \Match.$awayTeam.$id == \Team.$id)
-                    .filter(HomeTeam.self, \Team.$name == "a")
+                    .join(HomeTeam.self, on: \Match.$homeTeam.$id == \HomeTeam.$id)
+                    .join(AwayTeam.self, on: \Match.$awayTeam.$id == \AwayTeam.$id)
+                    .filter(HomeTeam.self, \.$name == "a")
+                    .sort(AwayTeam.self, \.$name)
                     .all().wait()
 
                 for match in matches {

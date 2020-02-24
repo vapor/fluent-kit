@@ -1,6 +1,5 @@
 public protocol Model: AnyModel {
     associatedtype IDValue: Codable, Hashable
-
     var id: IDValue? { get set }
 }
 

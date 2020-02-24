@@ -43,30 +43,30 @@ public final class EnumProperty<Model, Value>
     }
 }
 
-extension EnumProperty: FieldProtocol {
+extension EnumProperty: FilterField {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-extension EnumProperty: AnyProperty {
-    var keys: [FieldKey] {
+extension EnumProperty: AnyField {
+    public var keys: [FieldKey] {
         self.field.keys
     }
 
-    func input(to input: inout DatabaseInput) {
+    public func input(to input: inout DatabaseInput) {
         self.field.input(to: &input)
     }
 
-    func output(from output: DatabaseOutput) throws {
+    public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }

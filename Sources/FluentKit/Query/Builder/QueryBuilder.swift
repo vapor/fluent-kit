@@ -7,36 +7,29 @@ public final class QueryBuilder<Model>
 
     public let database: Database
     internal var includeDeleted: Bool
-    internal var joinedModels: [JoinedModel]
+    internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
-
-    struct JoinedModel {
-        let model: AnyModel & Fields
-        let alias: String?
-        var schema: String {
-            self.alias ?? type(of: self.model).schema
-        }
-    }
     
     public convenience init(database: Database) {
         self.init(
             query: .init(schema: Model.schema),
-            database: database
+            database: database,
+            models: [Model.self]
         )
     }
 
     private init(
         query: DatabaseQuery,
         database: Database,
+        models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
-        includeDeleted: Bool = false,
-        joinedModels: [JoinedModel] = []
+        includeDeleted: Bool = false
     ) {
         self.query = query
         self.database = database
+        self.models = models
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
-        self.joinedModels = joinedModels
         // Pass through custom ID key for database if used.
         let idKey = Model()._$id.key
         switch idKey {
@@ -50,9 +43,9 @@ public final class QueryBuilder<Model>
         .init(
             query: self.query,
             database: self.database,
+            models: self.models,
             eagerLoaders: self.eagerLoaders,
-            includeDeleted: self.includeDeleted,
-            joinedModels: self.joinedModels
+            includeDeleted: self.includeDeleted
         )
     }
 
@@ -128,11 +121,12 @@ public final class QueryBuilder<Model>
     }
 
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
-        where Field: FieldProtocol,
+        where
+            Field: QueryField,
             Field.Model == Model
     {
         let copy = self.copy()
-        copy.query.fields = [.field(path:  Model.path(for: key), schema: Model.schema, alias: nil)]
+        copy.query.fields = [.field(Model.key(for: key), schema: Model.schema)]
         return copy.all().map {
             $0.map {
                 $0[keyPath: key].wrappedValue
@@ -142,17 +136,18 @@ public final class QueryBuilder<Model>
 
     public func all<Joined, Field>(
         _ joined: Joined.Type,
-        _ key: KeyPath<Joined, Field>
+        _ field: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
-        where Field: FieldProtocol,
-            Field.Model == Joined,
-            Joined: FluentKit.Model
+        where
+            Joined: Schema,
+            Field: QueryField,
+            Field.Model == Joined
     {
         let copy = self.copy()
-        copy.query.fields = [.field(path: Joined.path(for: key), schema: Model.schema, alias: nil)]
+        copy.query.fields = [.field(.key(for: field), schema: Joined.schemaOrAlias)]
         return copy.all().flatMapThrowing {
             try $0.map {
-                try $0.joined(Joined.self)[keyPath: key].wrappedValue
+                try $0.joined(Joined.self)[keyPath: field].wrappedValue
             }
         }
     }
@@ -177,7 +172,7 @@ public final class QueryBuilder<Model>
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
-                try model.output(from: output)
+                try model.output(from: output.schema(Model.schema))
                 all.append(model)
                 return model
             }))
@@ -210,47 +205,40 @@ public final class QueryBuilder<Model>
         // so that run can be called multiple times
         var query = self.query
 
+        // If fields are not being manually selected,
+        // add fields from all models being queried.
         if query.fields.isEmpty {
-            // default fields
-            query.fields = Model().keys.map { field in
-                return .field(
-                    path: [field],
-                    schema: Model.schema,
-                    alias: nil
-                )
-            }
-            for joined in self.joinedModels {
-                query.fields += joined.model.keys.map { field in
-                    .field(
-                        path: [field],
-                        schema: joined.schema,
-                        alias: joined.schema + "_" + field.description
-                    )
+            for model in self.models {
+                query.fields += model.keys.map { key in
+                    .field(key, schema: model.schemaOrAlias)
                 }
             }
         }
         
-        // check if model is soft-deletable and should be excluded
+        // If deleted models aren't included, add filters
+        // to exclude them for each model being queried.
         if !self.includeDeleted {
-            Model().excludeDeleted(from: &query, schema: Model.schema)
-            self.joinedModels.forEach {
-                $0.model.excludeDeleted(from: &query, schema: $0.schema)
+            for model in self.models {
+                model.excludeDeleted(from: &query)
             }
         }
         
         self.database.logger.info("\(self.query)")
 
-        let done = self.database.execute(query: query) { row in
-            assert(self.database.eventLoop.inEventLoop,
-                   "database driver output was not on eventloop")
-            onOutput(row.output(for: self.database))
+        let done = self.database.execute(query: query) { output in
+            assert(
+                self.database.eventLoop.inEventLoop,
+                "database driver output was not on eventloop"
+            )
+            onOutput(output)
         }
         
         done.whenComplete { _ in
-            assert(self.database.eventLoop.inEventLoop,
-                   "database driver output was not on eventloop")
+            assert(
+                self.database.eventLoop.inEventLoop,
+                "database driver output was not on eventloop"
+            )
         }
-        
         return done
     }
 }
