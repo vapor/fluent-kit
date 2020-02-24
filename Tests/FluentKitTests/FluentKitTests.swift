@@ -69,7 +69,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).all(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets""#)
         db.reset()
     }
     
@@ -78,7 +78,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).unique().all(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets""#)
         db.reset()
         
         _ = try Planet.query(on: db).unique().all().wait()

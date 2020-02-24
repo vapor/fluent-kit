@@ -11,9 +11,9 @@ public struct DummyDatabase: Database {
         )
     }
     
-    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         for _ in 0..<Int.random(in: 1..<42) {
-            onRow(DummyRow())
+            onOutput(DummyRow())
         }
         return self.eventLoop.makeSucceededFuture(())
     }
