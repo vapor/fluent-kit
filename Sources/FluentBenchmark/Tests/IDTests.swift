@@ -1,9 +1,18 @@
 extension FluentBenchmarker {
-    public func testID() throws {
+    public func testID(
+        autoincrement: Bool = true,
+        custom: Bool = true
+    ) throws {
         try self.testID_default()
-        try self.testID_string()
-        try self.testID_autoincrementing()
-        try self.testID_customAutoincrementing()
+        if custom {
+            try self.testID_string()
+        }
+        if autoincrement {
+            try self.testID_autoincrementing()
+        }
+        if custom && autoincrement {
+            try self.testID_customAutoincrementing()
+        }
     }
 
     private func testID_default() throws {

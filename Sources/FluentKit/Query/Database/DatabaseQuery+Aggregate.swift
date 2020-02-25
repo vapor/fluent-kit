@@ -16,7 +16,7 @@ extension DatabaseQuery {
 extension DatabaseQuery.Aggregate: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .field(let method, let field):
+        case .field(let field, let method):
             return "\(method)(\(field))"
         case .custom(let custom):
             return "custom(\(custom))"

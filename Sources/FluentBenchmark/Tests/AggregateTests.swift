@@ -1,10 +1,10 @@
 extension FluentBenchmarker {
-    public func testAggregate() throws {
-        try self.testAggregate_all()
-        try self.testAggregate_emptyDatabase()
+    public func testAggregate(max: Bool = true) throws {
+        try self.testAggregate_all(max: max)
+        try self.testAggregate_emptyDatabase(max: max)
     }
 
-    private func testAggregate_all() throws {
+    private func testAggregate_all(max: Bool) throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -25,10 +25,12 @@ extension FluentBenchmarker {
                 .count().wait()
             XCTAssertEqual(emptyCount, 0)
 
-            // max id
-            let maxName = try Planet.query(on: self.database)
-                .max(\.$name).wait()
-            XCTAssertEqual(maxName, "Venus")
+            // max
+            if max {
+                let maxName = try Planet.query(on: self.database)
+                    .max(\.$name).wait()
+                XCTAssertEqual(maxName, "Venus")
+            }
 
             // eager loads ignored
             let countWithEagerLoads = try Galaxy.query(on: self.database)
@@ -37,14 +39,16 @@ extension FluentBenchmarker {
             XCTAssertEqual(countWithEagerLoads, 4)
 
             // eager loads ignored again
-            let maxNameWithEagerLoads = try Galaxy.query(on: self.database)
-                .with(\.$stars)
-                .max(\.$name).wait()
-            XCTAssertEqual(maxNameWithEagerLoads, "Pinwheel Galaxy")
+            if max {
+                let maxNameWithEagerLoads = try Galaxy.query(on: self.database)
+                    .with(\.$stars)
+                    .max(\.$name).wait()
+                XCTAssertEqual(maxNameWithEagerLoads, "Pinwheel Galaxy")
+            }
         }
     }
 
-    private func testAggregate_emptyDatabase() throws {
+    private func testAggregate_emptyDatabase(max: Bool) throws {
         try self.runTest(#function, [
             SolarSystem(seed: false)
         ]) {
@@ -53,11 +57,13 @@ extension FluentBenchmarker {
                 .count().wait()
             XCTAssertEqual(count, 0)
 
-            // maxid
+            // max
+            if max {
             let maxName = try Planet.query(on: self.database)
                 .max(\.$name).wait()
             // expect error?
             XCTAssertNil(maxName)
+            }
         }
     }
 }

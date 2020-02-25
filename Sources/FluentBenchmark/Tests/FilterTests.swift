@@ -1,9 +1,11 @@
 import FluentSQL
 
 extension FluentBenchmarker {
-    public func testFilter() throws {
+    public func testFilter(sql: Bool = true) throws {
         try self.testFilter_field()
-        try self.testFilter_sqlValue()
+        if sql {
+            try self.testFilter_sqlValue()
+        }
     }
 
     private func testFilter_field() throws {
