@@ -1,10 +1,10 @@
 extension Model {
-    public typealias Siblings<To, Through> = ModelSiblings<Self, To, Through>
+    public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
         where To: Model, Through: Model
 }
 
 @propertyWrapper
-public final class ModelSiblings<From, To, Through>: AnyProperty
+public final class SiblingsProperty<From, To, Through>
     where From: Model, To: Model, Through: Model
 {
     public enum AttachMethod {
@@ -42,7 +42,7 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
         }
     }
 
-    public var projectedValue: ModelSiblings<From, To, Through> {
+    public var projectedValue: SiblingsProperty<From, To, Through> {
         return self
     }
 
@@ -152,35 +152,43 @@ public final class ModelSiblings<From, To, Through>: AnyProperty
         }
 
         return To.query(on: database)
-            .join(self.to)
+            .join(Through.self, on: \To._$id == self.to.appending(path: \.$id))
             .filter(Through.self, self.from.appending(path: \.$id) == fromID)
     }
+}
 
-    func output(from output: DatabaseOutput) throws {
-        let key = From.key(for: \._$id)
+extension SiblingsProperty: AnyField {
+    public var keys: [FieldKey] {
+        []
+    }
+    
+    public func input(to input: inout DatabaseInput) {
+        // siblings never has input
+    }
+
+    public func output(from output: DatabaseOutput) throws {
+        let key = From()._$id.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
-    // MARK: Codable
-
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         // don't decode
     }
 }
 
-extension ModelSiblings: Relation {
+extension SiblingsProperty: Relation {
     public var name: String {
-        let fromKey = Through.key(for: self.from)
-        let toKey = Through.key(for: self.to)
+        let fromKey = Through.path(for: self.from.appending(path: \.$id))
+        let toKey = Through.path(for: self.to.appending(path: \.$id))
         return "Siblings<\(From.self), \(To.self), \(Through.self)>(from: \(fromKey), to: \(toKey))"
     }
 
@@ -191,7 +199,7 @@ extension ModelSiblings: Relation {
     }
 }
 
-extension ModelSiblings: EagerLoadable {
+extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
         to builder: Builder
@@ -230,7 +238,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         let from = From()[keyPath: self.relationKey].from
         let to = From()[keyPath: self.relationKey].to
         return To.query(on: database)
-            .join(to)
+            .join(Through.self, on: \To._$id == to.appending(path: \.$id))
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
             .all()
             .flatMapThrowing

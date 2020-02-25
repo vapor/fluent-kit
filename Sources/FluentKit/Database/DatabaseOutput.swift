@@ -1,84 +1,77 @@
-public struct DatabaseOutput {
-    public let database: Database
-    public let row: DatabaseRow
-    
-    public func contains(_ field: String) -> Bool {
-        return self.row.contains(field: field)
-    }
+public protocol DatabaseOutput: CustomStringConvertible {
+    func schema(_ schema: String) -> DatabaseOutput
+    func contains(_ field: FieldKey) -> Bool
+    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+        where T: Decodable
+}
 
-    public func decode<T>(_ field: String, as: T.Type = T.self) throws -> T
+extension DatabaseOutput {
+    func decode<T>(_ field: FieldKey) throws -> T
         where T: Decodable
     {
-        return try self.row.decode(field: field, as: T.self, for: self.database)
+        try self.decode(field, as: T.self)
     }
 }
 
-public protocol DatabaseRow: CustomStringConvertible {
-    func contains(field: String) -> Bool
-    func decode<T>(
-        field: String,
-        as type: T.Type,
-        for database: Database
-    ) throws -> T
-        where T: Decodable
-}
-
-extension DatabaseRow {
-    public func output(for database: Database) -> DatabaseOutput {
-        return .init(database: database, row: self)
-    }
-}
-
-extension DatabaseRow {
-    func prefixed(by string: String) -> DatabaseRow {
+extension DatabaseOutput {
+    func prefixed(by string: String) -> DatabaseOutput {
         return PrefixingOutput(wrapped: self, prefix: string)
     }
 }
 
-private struct PrefixingOutput: DatabaseRow {
-    let wrapped: DatabaseRow
+private struct PrefixingOutput: DatabaseOutput {
+    let wrapped: DatabaseOutput
     let prefix: String
 
     var description: String {
-        return self.wrapped.description
+        self.wrapped.description
     }
 
-    func contains(field: String) -> Bool {
-        return self.wrapped.contains(field: self.prefix + field)
+    func schema(_ schema: String) -> DatabaseOutput {
+        self.wrapped.schema(schema)
     }
 
-    func decode<T>(
-        field: String,
-        as type: T.Type,
-        for database: Database
-    ) throws -> T where T : Decodable {
-        return try self.wrapped.decode(field: self.prefix + field, as: T.self, for: database)
+    func contains(_ field: FieldKey) -> Bool {
+        self.wrapped.contains(.prefixed(self.prefix, field))
+    }
+
+    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+        where T : Decodable
+    {
+        try self.wrapped.decode(.prefixed(self.prefix, field))
     }
 }
 
-extension DatabaseRow {
-    func cascading(to output: DatabaseRow) -> DatabaseRow {
+extension DatabaseOutput {
+    func cascading(to output: DatabaseOutput) -> DatabaseOutput {
         return CombinedOutput(first: self, second: output)
     }
 }
 
-private struct CombinedOutput: DatabaseRow {
-    var first: DatabaseRow
-    var second: DatabaseRow
+private struct CombinedOutput: DatabaseOutput {
+    var first: DatabaseOutput
+    var second: DatabaseOutput
 
-    func contains(field: String) -> Bool {
-        return self.first.contains(field: field) || self.second.contains(field: field)
+    func contains(_ field: FieldKey) -> Bool {
+        self.first.contains(field) || self.second.contains(field)
     }
 
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
-        where T : Decodable
+    func schema(_ schema: String) -> DatabaseOutput {
+        CombinedOutput(
+            first: self.first.schema(schema),
+            second: self.second.schema(schema)
+        )
+    }
+
+    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+        where T: Decodable
     {
-        if self.first.contains(field: field) {
-            return try self.first.decode(field: field, as: T.self, for: database)
-        } else if self.second.contains(field: field) {
-            return try self.second.decode(field: field, as: T.self, for: database)
+        if self.first.contains(field) {
+            return try self.first.decode(field)
+        } else if self.second.contains(field) {
+            return try self.second.decode(field)
         } else {
-            throw FluentError.missingField(name: field)
+            throw FluentError.missingField(name: field.description)
         }
     }
 

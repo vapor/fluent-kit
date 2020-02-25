@@ -3,19 +3,17 @@ import NIO
 public struct DummyDatabase: Database {
     public var context: DatabaseContext
     
-    public init(
-        context: DatabaseContext = .init(
-            configuration: .init(),
+    public init(context: DatabaseContext? = nil) {
+        self.context = context ?? .init(
+            configuration: DummyDatabaseConfiguration(middleware: []),
             logger: .init(label: "codes.vapor.test"),
             eventLoop: EmbeddedEventLoop()
         )
-    ) {
-        self.context = context
     }
     
-    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         for _ in 0..<Int.random(in: 1..<42) {
-            onRow(DummyRow())
+            onOutput(DummyRow())
         }
         return self.eventLoop.makeSucceededFuture(())
     }
@@ -30,6 +28,18 @@ public struct DummyDatabase: Database {
     
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         self.eventLoop.makeSucceededFuture(())
+    }
+
+    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        self.eventLoop.makeSucceededFuture(())
+    }
+}
+
+public struct DummyDatabaseConfiguration: DatabaseConfiguration {
+    public var middleware: [AnyModelMiddleware]
+
+    public func makeDriver(for databases: Databases) -> DatabaseDriver {
+        DummyDatabaseDriver(on: databases.eventLoopGroup)
     }
 }
 
@@ -60,18 +70,28 @@ public final class DummyDatabaseDriver: DatabaseDriver {
 
 // MARK: Private
 
-private struct DummyRow: DatabaseRow {
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
+public struct DummyRow: DatabaseOutput {
+    public init() { }
+
+    public func schema(_ schema: String) -> DatabaseOutput {
+        self
+    }
+    
+    public func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
     {
-        return try T(from: DummyDecoder())
+        if T.self is UUID.Type {
+            return UUID() as! T
+        } else {
+            return try T(from: DummyDecoder())
+        }
     }
 
-    func contains(field: String) -> Bool {
+    public func contains(_ field: FieldKey) -> Bool {
         return true
     }
     
-    var description: String {
+    public var description: String {
         return "<dummy>"
     }
 }
@@ -112,7 +132,11 @@ private struct DummyDecoder: Decoder {
         }
         
         func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
-            return try T.init(from: DummyDecoder())
+            if T.self is UUID.Type {
+                return UUID() as! T
+            } else {
+                return try T.init(from: DummyDecoder())
+            }
         }
         
         func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
@@ -238,7 +262,11 @@ private struct DummyDecoder: Decoder {
         }
         
         func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-            return try T(from: DummyDecoder())
+            if T.self is UUID.Type {
+                return UUID() as! T
+            } else {
+                return try T(from: DummyDecoder())
+            }
         }
     }
     

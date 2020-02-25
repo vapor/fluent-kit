@@ -1,9 +1,7 @@
 public protocol Relation {
     associatedtype RelatedValue
-
     var name: String { get }
     var value: RelatedValue? { get set }
-
     func load(on database: Database) -> EventLoopFuture<Void>
 }
 

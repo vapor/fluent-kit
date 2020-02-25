@@ -19,17 +19,17 @@ extension Model {
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
         Self.query(on: database)
-            .set(self.input)
+            .set(self.input.values)
             .action(.create)
             .run { promise.succeed($0) }
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
             var input = self.input
             if self._$id.generator == .database {
-                let idKey = Self.key(for: \._$id)
-                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                let idKey = Self()._$id.key
+                input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input).output(for: database))
+            try self.output(from: SavedInput(input.values))
         }
     }
     
@@ -45,12 +45,12 @@ extension Model {
         let input = self.input
         return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .set(input)
+            .set(input.values)
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(input).output(for: database))
+            try self.output(from: SavedInput(input.values))
         }
     }
     
@@ -97,12 +97,12 @@ extension Model {
         return Self.query(on: database)
             .withDeleted()
             .filter(\._$id == self.id!)
-            .set(self.input)
+            .set(self.input.values)
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(self.input).output(for: database))
+            try self.output(from: SavedInput(self.input.values))
             self._$id.exists = true
         }
     }
@@ -141,7 +141,7 @@ extension Array where Element: FluentKit.Model {
             $0.touchTimestamps(.create)
             $0.touchTimestamps(.update)
         }
-        builder.set(self.map { $0.input })
+        builder.set(self.map { $0.input.values })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { created in
@@ -153,28 +153,36 @@ extension Array where Element: FluentKit.Model {
 }
 
 // MARK: Private
-private struct SavedInput: DatabaseRow {
-    var input: [String: DatabaseQuery.Value]
+private struct SavedInput: DatabaseOutput {
+    var input: [FieldKey: DatabaseQuery.Value]
     
-    init(_ input: [String: DatabaseQuery.Value]) {
+    init(_ input: [FieldKey: DatabaseQuery.Value]) {
         self.input = input
     }
+
+    func schema(_ schema: String) -> DatabaseOutput {
+        return self
+    }
     
-    func contains(field: String) -> Bool {
+    func contains(_ field: FieldKey) -> Bool {
         return self.input[field] != nil
     }
     
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T where T : Decodable {
+    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+        where T : Decodable
+    {
         if let value = self.input[field] {
             // not in output, get from saved input
             switch value {
             case .bind(let encodable):
                 return encodable as! T
+            case .enumCase(let string):
+                return string as! T
             default:
                 fatalError("Invalid input type: \(value)")
             }
         } else {
-            throw FluentError.missingField(name: field)
+            throw FluentError.missingField(name: field.description)
         }
     }
     

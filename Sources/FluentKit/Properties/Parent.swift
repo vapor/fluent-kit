@@ -1,13 +1,13 @@
 extension Model {
-    public typealias Parent<To> = ModelParent<Self, To>
+    public typealias Parent<To> = ParentProperty<Self, To>
         where To: FluentKit.Model
 }
 
 @propertyWrapper
-public final class ModelParent<From, To>
+public final class ParentProperty<From, To>
     where From: Model, To: Model
 {
-    @ModelField<From, To.IDValue>
+    @FieldProperty<From, To.IDValue>
     public var id: To.IDValue
 
     public var wrappedValue: To {
@@ -20,13 +20,13 @@ public final class ModelParent<From, To>
         set { fatalError("use $ prefix to access") }
     }
 
-    public var projectedValue: ModelParent<From, To> {
+    public var projectedValue: ParentProperty<From, To> {
         return self
     }
 
     public var value: To?
 
-    public init(key: String) {
+    public init(key: FieldKey) {
         self._id = .init(key: key)
     }
 
@@ -36,9 +36,9 @@ public final class ModelParent<From, To>
     }
 }
 
-extension ModelParent: Relation {
+extension ParentProperty: Relation {
     public var name: String {
-        "Parent<\(From.self), \(To.self)>(key: \(self.key))"
+        "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -48,34 +48,38 @@ extension ModelParent: Relation {
     }
 }
 
-extension ModelParent: FieldRepresentable {
-    public var field: ModelField<From, To.IDValue> {
-        return self.$id
+extension ParentProperty: AnyField {
+    public var keys: [FieldKey] {
+        self.$id.keys
     }
-}
+    
+    public func input(to input: inout DatabaseInput) {
+        self.$id.input(to: &input)
+    }
 
-extension ModelParent: AnyProperty {
-    func encode(to encoder: Encoder) throws {
+    public func output(from output: DatabaseOutput) throws {
+        try self.$id.output(from: output)
+    }
+
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
             try container.encode(parent)
         } else {
             try container.encode([
-                To.key(for: \._$id): self.id
+                "id": self.id
             ])
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
+        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
         // TODO: allow for nested decoding
     }
 }
 
-extension ModelParent: AnyField { }
-
-extension ModelParent: EagerLoadable {
+extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
         to builder: Builder

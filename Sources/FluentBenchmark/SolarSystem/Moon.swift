@@ -3,7 +3,7 @@ import FluentKit
 public final class Moon: Model {
     public static let schema = "moons"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     public var id: UUID?
 
     @Field(key: "name")
@@ -37,7 +37,7 @@ public struct MoonMigration: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("moons")
+        database.schema("moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("craters", .int, .required)
@@ -47,7 +47,7 @@ public struct MoonMigration: Migration {
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("moons").delete()
+        database.schema("moons").delete()
     }
 }
 
@@ -61,7 +61,7 @@ public final class MoonSeed: Migration {
                 switch planet.name {
                 case "Earth":
                     moons = [
-                        .init(name: "Luna", craters: 10, comets: 10)
+                        .init(name: "Moon", craters: 10, comets: 10)
                     ]
                 case "Mars":
                     moons = [

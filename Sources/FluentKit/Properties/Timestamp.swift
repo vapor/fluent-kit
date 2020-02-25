@@ -1,5 +1,5 @@
-extension Model {
-    public typealias Timestamp = ModelTimestamp<Self>
+extension Fields {
+    public typealias Timestamp = TimestampProperty<Self>
 }
 
 public enum TimestampTrigger {
@@ -9,16 +9,16 @@ public enum TimestampTrigger {
 }
 
 @propertyWrapper
-public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
-    where Model: FluentKit.Model
+public final class TimestampProperty<Model>
+    where Model: FluentKit.Fields
 {
     public typealias Value = Date?
 
-    public let field: ModelField<Model, Date?>
+    public let field: FieldProperty<Model, Date?>
 
     public let trigger: TimestampTrigger
 
-    public var key: String {
+    public var key: FieldKey {
         return self.field.key
     }
 
@@ -31,7 +31,7 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
         }
     }
 
-    public var projectedValue: ModelTimestamp<Model> {
+    public var projectedValue: TimestampProperty<Model> {
         return self
     }
 
@@ -44,7 +44,7 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
         }
     }
 
-    public init(key: String, on trigger: TimestampTrigger) {
+    public init(key: FieldKey, on trigger: TimestampTrigger) {
         self.field = .init(key: key)
         self.trigger = trigger
     }
@@ -52,21 +52,40 @@ public final class ModelTimestamp<Model>: AnyTimestamp, FieldRepresentable
     public func touch(date: Date?) {
         self.inputValue = .bind(date)
     }
+}
 
-    func output(from output: DatabaseOutput) throws {
+extension TimestampProperty: AnyField {
+    public var keys: [FieldKey] {
+        [self.key]
+    }
+    
+    public func input(to input: inout DatabaseInput) {
+        self.field.input(to: &input)
+    }
+
+    public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }
 
+extension TimestampProperty: AnyTimestamp { }
+
+extension TimestampProperty: FilterField {
+    public var path: [FieldKey] {
+        self.field.path
+    }
+}
+
 protocol AnyTimestamp: AnyField {
+    var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
 }
@@ -77,15 +96,13 @@ extension AnyTimestamp {
     }
 }
 
-extension AnyModel {
-    var timestamps: [(String, AnyTimestamp)] {
-        self.properties.compactMap {
-            guard let value = $1 as? AnyTimestamp else {
-                return nil
-            }
-            return ($0, value)
+extension Fields {
+    var timestamps: [String: AnyTimestamp] {
+        self.fields.compactMapValues {
+            $0 as? AnyTimestamp
         }
     }
+    
     func touchTimestamps(_ triggers: TimestampTrigger...) {
         return self.touchTimestamps(triggers)
     }
@@ -102,16 +119,17 @@ extension AnyModel {
     var deletedTimestamp: AnyTimestamp? {
         return self.timestamps.filter({ $0.1.trigger == .delete }).first?.1
     }
+}
 
-    func excludeDeleted(from query: inout DatabaseQuery) {
-        guard let timestamp = self.deletedTimestamp else {
+extension Schema {
+    static func excludeDeleted(from query: inout DatabaseQuery) {
+        guard let timestamp = self.init().deletedTimestamp else {
             return
         }
 
-        let deletedAtField = DatabaseQuery.Field.field(
-            path: [timestamp.key],
-            schema: Self.schema,
-            alias: nil
+        let deletedAtField = DatabaseQuery.Filter.Field.path(
+            [timestamp.key],
+            schema: self.schemaOrAlias
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
         let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(Date()))

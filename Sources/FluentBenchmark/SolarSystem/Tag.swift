@@ -3,7 +3,7 @@ import FluentKit
 public final class Tag: Model {
     public static let schema = "tags"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     public var id: UUID?
 
     @Field(key: "name")

@@ -1,13 +1,13 @@
 extension Model {
-    public typealias OptionalParent<To> = ModelOptionalParent<Self, To>
+    public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
         where To: Model
 }
 
 @propertyWrapper
-public final class ModelOptionalParent<From, To>
+public final class OptionalParentProperty<From, To>
     where From: Model, To: Model
 {
-    @ModelField<From, To.IDValue?>
+    @FieldProperty<From, To.IDValue?>
     public var id: To.IDValue?
 
     public var wrappedValue: To? {
@@ -19,25 +19,25 @@ public final class ModelOptionalParent<From, To>
         }
     }
 
-    public var projectedValue: ModelOptionalParent<From, To> {
+    public var projectedValue: OptionalParentProperty<From, To> {
         return self
     }
 
     public var value: To?
 
-    public init(key: String) {
+    public init(key: FieldKey) {
         self._id = .init(key: key)
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
-        return To.query(on: database)
+        To.query(on: database)
             .filter(\._$id == self.id)
     }
 }
 
-extension ModelOptionalParent: Relation {
+extension OptionalParentProperty: Relation {
     public var name: String {
-        "OptionalParent<\(From.self), \(To.self)>(key: \(self.key))"
+        "OptionalParent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
@@ -47,34 +47,38 @@ extension ModelOptionalParent: Relation {
     }
 }
 
-extension ModelOptionalParent: FieldRepresentable {
-    public var field: ModelField<From, To.IDValue?> {
-        return self.$id
+extension OptionalParentProperty: AnyField {
+    public var keys: [FieldKey] {
+        self.$id.keys
     }
-}
+    
+    public func input(to input: inout DatabaseInput) {
+        self.$id.input(to: &input)
+    }
 
-extension ModelOptionalParent: AnyProperty {
-    func encode(to encoder: Encoder) throws {
+    public func output(from output: DatabaseOutput) throws {
+        try self.$id.output(from: output)
+    }
+
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
             try container.encode(parent)
         } else {
             try container.encode([
-                To.key(for: \._$id): self.id
+                "id": self.id
             ])
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string(To.key(for: \._$id))))
+        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
         // TODO: allow for nested decoding
     }
 }
 
-extension ModelOptionalParent: AnyField { }
-
-extension ModelOptionalParent: EagerLoadable {
+extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
         to builder: Builder

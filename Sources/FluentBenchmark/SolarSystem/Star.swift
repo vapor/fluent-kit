@@ -3,7 +3,7 @@ import FluentKit
 public final class Star: Model {
     public static let schema = "stars"
 
-    @ID(key: FluentBenchmarker.idKey)
+    @ID(key: .id)
     public var id: UUID?
 
     @Field(key: "name")
@@ -25,7 +25,7 @@ public final class Star: Model {
 
 public struct StarMigration: Migration {
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("stars")
+        database.schema("stars")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("galaxy_id", .uuid, .required, .references("galaxies", "id"))
@@ -33,7 +33,7 @@ public struct StarMigration: Migration {
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema("stars").delete()
+        database.schema("stars").delete()
     }
 }
 

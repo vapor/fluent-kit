@@ -1,10 +1,10 @@
 extension Model {
-    public typealias Children<To> = ModelChildren<Self, To>
+    public typealias Children<To> = ChildrenProperty<Self, To>
         where To: FluentKit.Model
 }
 
 @propertyWrapper
-public final class ModelChildren<From, To>: AnyProperty
+public final class ChildrenProperty<From, To>
     where From: Model, To: Model
 {
     // MARK: ID
@@ -44,7 +44,7 @@ public final class ModelChildren<From, To>: AnyProperty
         }
     }
 
-    public var projectedValue: ModelChildren<From, To> {
+    public var projectedValue: ChildrenProperty<From, To> {
         return self
     }
     
@@ -95,41 +95,48 @@ public final class ModelChildren<From, To>: AnyProperty
         }
         return to.create(on: database)
     }
+}
 
-    // MARK: Property
+extension ChildrenProperty: AnyField {
+    public var keys: [FieldKey] {
+        []
+    }
+    
+    public func input(to input: inout DatabaseInput) {
+        // children never has input
+    }
 
-    func output(from output: DatabaseOutput) throws {
-        let key = From.key(for: \._$id)
+    public func output(from output: DatabaseOutput) throws {
+        let key = From()._$id.field.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
-    // MARK: Codable
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         // don't decode
     }
 }
 
-extension ModelChildren.Key: CustomStringConvertible {
+extension ChildrenProperty.Key: CustomStringConvertible {
     var description: String {
         switch self {
         case .optional(let keyPath):
-            return To.key(for: keyPath)
+            return To.path(for: keyPath.appending(path: \.$id)).description
         case .required(let keyPath):
-            return To.key(for: keyPath)
+            return To.path(for: keyPath.appending(path: \.$id)).description
         }
     }
 }
 
-extension ModelChildren: Relation {
+extension ChildrenProperty: Relation {
     public var name: String {
         "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
@@ -141,7 +148,7 @@ extension ModelChildren: Relation {
     }
 }
 
-extension ModelChildren: EagerLoadable {
+extension ChildrenProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Children<To>>,
         to builder: Builder

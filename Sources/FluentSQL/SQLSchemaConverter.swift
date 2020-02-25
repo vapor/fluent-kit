@@ -26,8 +26,7 @@ public struct SQLSchemaConverter {
         var update = SQLAlterTable(name: self.name(schema.schema))
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
-        // todo:
-        // update.modifyColumns
+        update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
         return update
     }
     
@@ -55,8 +54,8 @@ public struct SQLSchemaConverter {
                 switch field {
                 case .custom:
                     return ""
-                case .string(let name):
-                    return "\(table).\(name)"
+                case .key(let key):
+                    return "\(table).\(self.key(key))"
                 }
             }.joined(separator: "+")
         }
@@ -117,11 +116,23 @@ public struct SQLSchemaConverter {
             )
         }
     }
+
+    private func fieldUpdate(_ fieldDefinition: DatabaseSchema.FieldUpdate) -> SQLExpression {
+        switch fieldDefinition {
+        case .custom(let any):
+            return custom(any)
+        case .dataType(let name, let dataType):
+            return SQLAlterColumnDefinitionType(
+                column: self.fieldName(name),
+                dataType: self.dataType(dataType)
+            )
+        }
+    }
     
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> SQLExpression {
         switch fieldName {
-        case .string(let string):
-            return SQLIdentifier(string)
+        case .key(let key):
+            return SQLIdentifier(self.key(key))
         case .custom(let any):
             return custom(any)
         }
@@ -181,8 +192,8 @@ public struct SQLSchemaConverter {
             return SQLDataType.int
         case .uint64:
             return SQLDataType.int
-        case .enum:
-            fatalError("SQL enums not yet supported.")
+        case .enum(let value):
+            return SQLEnumDataType(cases: value.cases)
         case .time:
             return SQLRaw("TIME")
         case .float:
@@ -211,6 +222,19 @@ public struct SQLSchemaConverter {
             )
         case .custom(let any):
             return custom(any)
+        }
+    }
+
+    private func key(_ key: FieldKey) -> String {
+        switch key {
+        case .id:
+            return "id"
+        case .string(let name):
+            return name
+        case .aggregate:
+            return key.description
+        case .prefixed(let prefix, let key):
+            return prefix + self.key(key)
         }
     }
 }

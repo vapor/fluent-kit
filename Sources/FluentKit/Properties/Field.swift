@@ -1,21 +1,17 @@
-extension Model {
-    public typealias Field<Value> = ModelField<Self, Value>
+extension Fields {
+    public typealias Field<Value> = FieldProperty<Self, Value>
         where Value: Codable
 }
 
 @propertyWrapper
-public final class ModelField<Model, Value>: AnyField, FieldRepresentable
-    where Model: FluentKit.Model, Value: Codable
+public final class FieldProperty<Model, Value>
+    where Model: FluentKit.Fields, Value: Codable
 {
-    public let key: String
+    public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-
-    public var field: ModelField<Model, Value> {
-        return self
-    }
     
-    public var projectedValue: ModelField<Model, Value> {
+    public var projectedValue: FieldProperty<Model, Value> {
         return self
     }
 
@@ -33,7 +29,7 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
             } else if let value = self.outputValue {
                 return value
             } else {
-                fatalError("Cannot access field before it is initialized or fetched")
+                fatalError("Cannot access field before it is initialized or fetched: \(self.key)")
             }
         }
         set {
@@ -41,20 +37,36 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
         }
     }
 
-    public init(key: String) {
+    public init(key: FieldKey) {
         self.key = key
     }
+}
 
-    // MARK: Property
+extension FieldProperty: FilterField {
+    public var path: [FieldKey] {
+        [self.key]
+    }
+}
 
-    func output(from output: DatabaseOutput) throws {
+extension FieldProperty: QueryField { }
+
+extension FieldProperty: AnyField {
+    public var keys: [FieldKey] {
+        [self.key]
+    }
+
+    public func input(to input: inout DatabaseInput) {
+        input.values[self.key] = self.inputValue
+    }
+
+    public func output(from output: DatabaseOutput) throws {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
                 self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(
-                    name: self.key,
+                    name: self.key.description,
                     valueType: Value.self,
                     error: error
                 )
@@ -62,12 +74,12 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let valueType = Value.self as? AnyOptionalType.Type {
             if container.decodeNil() {
@@ -77,39 +89,6 @@ public final class ModelField<Model, Value>: AnyField, FieldRepresentable
             }
         } else {
             self.wrappedValue = try container.decode(Value.self)
-        }
-    }
-}
-
-public protocol FieldRepresentable {
-    associatedtype Model: FluentKit.Model
-    associatedtype Value: Codable
-    var field: Model.Field<Value> { get }
-}
-
-protocol AnyField: AnyProperty {
-    var key: String { get }
-    var inputValue: DatabaseQuery.Value? { get set }
-}
-
-extension AnyField where Self: FieldRepresentable {
-    var key: String {
-        return self.field.key
-    }
-
-    var inputValue: DatabaseQuery.Value? {
-        get { self.field.inputValue }
-        set { self.field.inputValue = newValue }
-    }
-}
-
-extension AnyModel {
-    var fields: [(String, AnyField)] {
-        self.properties.compactMap {
-            guard let value = $1 as? AnyField else {
-                return nil
-            }
-            return ($0, value)
         }
     }
 }

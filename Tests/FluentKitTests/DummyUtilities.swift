@@ -4,6 +4,17 @@ import NIO
 import SQLKit
 
 public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+    struct Configuration: DatabaseConfiguration {
+        func makeDriver(for databases: Databases) -> DatabaseDriver {
+            fatalError()
+        }
+
+        var middleware: [AnyModelMiddleware]
+        init() {
+            self.middleware = []
+        }
+    }
+
     public var dialect: SQLDialect {
         DummyDatabaseDialect()
     }
@@ -13,7 +24,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
 
     public init() {
         self.context = .init(
-            configuration: .init(),
+            configuration: Configuration(),
             logger: .init(label: "test"),
             eventLoop: EmbeddedEventLoop()
         )
@@ -24,11 +35,15 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.sqlSerializers = []
     }
     
-    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+    public func execute(
+        query: DatabaseQuery,
+        onOutput: @escaping (DatabaseOutput) -> ()
+    ) -> EventLoopFuture<Void> {
         var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
+        onOutput(DummyRow())
         return self.eventLoop.makeSucceededFuture(())
     }
     
@@ -45,6 +60,11 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
         sqlExpression.serialize(to: &sqlSerializer)
         self.sqlSerializers.append(sqlSerializer)
+        return self.eventLoop.makeSucceededFuture(())
+    }
+
+    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        // do nothing
         return self.eventLoop.makeSucceededFuture(())
     }
     
