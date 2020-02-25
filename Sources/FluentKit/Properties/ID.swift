@@ -58,7 +58,7 @@ public final class IDProperty<Model, Value>
         guard Value.self is UUID.Type else {
             // Ensure the default @ID type is using UUID which
             // is the only identifier type supported by all drivers.
-            fatalError("@ID requires UUID, use @ID(custom:generatedBy:) for \(Value.self).")
+            fatalError("@ID requires UUID, use @ID(custom:) for \(Value.self).")
         }
         guard key == .id else {
             // Ensure the default @ID is using the special .id key
@@ -66,14 +66,14 @@ public final class IDProperty<Model, Value>
             //
             // Additional identifying fields can be added using @Field
             // with a unique constraint.
-            fatalError("@ID requires .id key, use @ID(custom:generatedBy:) for key '\(key)'.")
+            fatalError("@ID requires .id key, use @ID(custom:) for key '\(key)'.")
         }
         self.init(custom: .id, generatedBy: .random)
     }
 
-    public init(custom key: FieldKey, generatedBy generator: Generator) {
+    public init(custom key: FieldKey, generatedBy generator: Generator? = nil) {
         self.field = .init(key: key)
-        self.generator = generator
+        self.generator = generator ?? .default(for: Value.self)
         self.exists = false
         self.cachedOutput = nil
     }
