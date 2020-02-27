@@ -49,9 +49,9 @@ public final class SchemaBuilder {
         onUpdate: DatabaseSchema.ForeignKeyAction = .noAction
     ) -> Self {
         self.schema.constraints.append(.foreignKey(
-            fields: [.key(field)],
-            foreignSchema: foreignSchema,
-            foreignFields: [.key(foreignField)],
+            [.key(field)],
+            foreignSchema,
+            [.key(foreignField)],
             onDelete: onDelete,
             onUpdate: onUpdate
         ))

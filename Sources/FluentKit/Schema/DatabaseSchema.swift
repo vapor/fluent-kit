@@ -58,8 +58,8 @@ public struct DatabaseSchema {
             onUpdate: ForeignKeyAction = .noAction
         ) -> Self {
             .foreignKey(
+                schema,
                 .key(field),
-                schema: schema,
                 onDelete: onDelete,
                 onUpdate: onUpdate
             )
@@ -68,8 +68,8 @@ public struct DatabaseSchema {
         case required
         case identifier(auto: Bool)
         case foreignKey(
+            _ schema: String,
             _ field: FieldName,
-            schema: String,
             onDelete: ForeignKeyAction,
             onUpdate: ForeignKeyAction
         )
@@ -78,7 +78,13 @@ public struct DatabaseSchema {
     
     public enum Constraint {
         case unique(fields: [FieldName])
-        case foreignKey(fields: [FieldName], foreignSchema: String, foreignFields: [FieldName], onDelete: ForeignKeyAction, onUpdate: ForeignKeyAction)
+        case foreignKey(
+            _ fields: [FieldName],
+            _ schema: String,
+            _ foreign: [FieldName],
+            onDelete: ForeignKeyAction,
+            onUpdate: ForeignKeyAction
+        )
         case custom(Any)
     }
 

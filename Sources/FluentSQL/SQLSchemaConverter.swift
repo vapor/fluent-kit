@@ -67,19 +67,18 @@ public struct SQLSchemaConverter {
                 algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
                 name: SQLIdentifier("uq:\(name)")
             )
-        case .foreignKey(fields: let fields, foreignSchema: let parent, foreignFields: let parentFields, onDelete: let onDelete, onUpdate: let onUpdate):
-            let name = identifier(fields + parentFields)
-
+        case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
+            let name = identifier(local + foreign)
             let reference = SQLForeignKey(
-                table: self.name(parent),
-                columns: parentFields.map(self.fieldName),
+                table: self.name(schema),
+                columns: foreign.map(self.fieldName),
                 onDelete: self.foreignKeyAction(onDelete),
                 onUpdate: self.foreignKeyAction(onUpdate)
             )
 
             return SQLConstraint(
                 algorithm: SQLTableConstraintAlgorithm.foreignKey(
-                    columns: fields.map(self.fieldName),
+                    columns: local.map(self.fieldName),
                     references: reference
                 ),
                 name: SQLIdentifier("fk:\(name)")
@@ -195,7 +194,7 @@ public struct SQLSchemaConverter {
             return SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):
             return SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
-        case .foreignKey(let field, let schema, let onDelete, let onUpdate):
+        case .foreignKey(let schema, let field, let onDelete, let onUpdate):
             return SQLColumnConstraintAlgorithm.references(
                 SQLIdentifier(schema),
                 self.fieldName(field),
