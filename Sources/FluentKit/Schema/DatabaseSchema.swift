@@ -53,12 +53,13 @@ public struct DatabaseSchema {
     public enum FieldConstraint {
         public static func references(
             _ schema: String,
-            _ field: String,
-            onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
-            onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+            _ field: FieldKey,
+            onDelete: ForeignKeyAction = .noAction,
+            onUpdate: ForeignKeyAction = .noAction
         ) -> Self {
             .foreignKey(
-                field: .string(schema: schema, field: field),
+                .key(field),
+                schema: schema,
                 onDelete: onDelete,
                 onUpdate: onUpdate
             )
@@ -67,9 +68,10 @@ public struct DatabaseSchema {
         case required
         case identifier(auto: Bool)
         case foreignKey(
-            field: ForeignFieldName,
-            onDelete: Constraint.ForeignKeyAction,
-            onUpdate: Constraint.ForeignKeyAction
+            _ field: FieldName,
+            schema: String,
+            onDelete: ForeignKeyAction,
+            onUpdate: ForeignKeyAction
         )
         case custom(Any)
     }
@@ -78,14 +80,14 @@ public struct DatabaseSchema {
         case unique(fields: [FieldName])
         case foreignKey(fields: [FieldName], foreignSchema: String, foreignFields: [FieldName], onDelete: ForeignKeyAction, onUpdate: ForeignKeyAction)
         case custom(Any)
+    }
 
-        public enum ForeignKeyAction {
-            case noAction
-            case restrict
-            case cascade
-            case setNull
-            case setDefault
-        }
+    public enum ForeignKeyAction {
+        case noAction
+        case restrict
+        case cascade
+        case setNull
+        case setDefault
     }
     
     public enum FieldDefinition {
@@ -105,11 +107,6 @@ public struct DatabaseSchema {
     public enum FieldName {
         case key(FieldKey)
         case custom(Any)
-    }
-
-    public enum ForeignFieldName {
-        case string(schema: String, field: String)
-        case custom(schema: Any, field: Any)
     }
 
     public var action: Action

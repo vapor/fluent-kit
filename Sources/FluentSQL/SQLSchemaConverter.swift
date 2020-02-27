@@ -73,8 +73,8 @@ public struct SQLSchemaConverter {
             let reference = SQLForeignKey(
                 table: self.name(parent),
                 columns: parentFields.map(self.fieldName),
-                onDelete: sqlForeignKeyAction(onDelete),
-                onUpdate: sqlForeignKeyAction(onUpdate)
+                onDelete: self.foreignKeyAction(onDelete),
+                onUpdate: self.foreignKeyAction(onUpdate)
             )
 
             return SQLConstraint(
@@ -89,8 +89,8 @@ public struct SQLSchemaConverter {
         }
     }
 
-    private func sqlForeignKeyAction(_ fkAction: DatabaseSchema.Constraint.ForeignKeyAction) -> SQLForeignKeyAction {
-        switch fkAction {
+    private func foreignKeyAction(_ action: DatabaseSchema.ForeignKeyAction) -> SQLForeignKeyAction {
+        switch action {
         case .noAction:
             return .noAction
         case .restrict:
@@ -134,24 +134,6 @@ public struct SQLSchemaConverter {
         case .key(let key):
             return SQLIdentifier(self.key(key))
         case .custom(let any):
-            return custom(any)
-        }
-    }
-
-    private func fieldName(_ fieldName: DatabaseSchema.ForeignFieldName) -> SQLExpression {
-        switch fieldName {
-        case .string(schema: _, field: let string):
-            return SQLIdentifier(string)
-        case .custom(schema: _, field: let any):
-            return custom(any)
-        }
-    }
-
-    private func tableName(_ fieldName: DatabaseSchema.ForeignFieldName) -> SQLExpression {
-        switch fieldName {
-        case .string(schema: let string, field: _):
-            return SQLIdentifier(string)
-        case .custom(schema: let any, field: _):
             return custom(any)
         }
     }
@@ -213,12 +195,12 @@ public struct SQLSchemaConverter {
             return SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):
             return SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
-        case .foreignKey(let parentField, onDelete: let onDelete, onUpdate: let onUpdate):
+        case .foreignKey(let field, let schema, let onDelete, let onUpdate):
             return SQLColumnConstraintAlgorithm.references(
-                self.tableName(parentField),
-                self.fieldName(parentField),
-                onDelete: sqlForeignKeyAction(onDelete),
-                onUpdate: sqlForeignKeyAction(onUpdate)
+                SQLIdentifier(schema),
+                self.fieldName(field),
+                onDelete: self.foreignKeyAction(onDelete),
+                onUpdate: self.foreignKeyAction(onUpdate)
             )
         case .custom(let any):
             return custom(any)

@@ -9,12 +9,12 @@ public final class ChildrenProperty<From, To>
 {
     // MARK: ID
 
-    enum Key {
+    public enum Key {
         case required(KeyPath<To, To.Parent<From>>)
         case optional(KeyPath<To, To.OptionalParent<From>>)
     }
 
-    let parentKey: Key
+    public let parentKey: Key
     var idValue: From.IDValue?
 
     // MARK: Wrapper
@@ -126,7 +126,7 @@ extension ChildrenProperty: AnyField {
 }
 
 extension ChildrenProperty.Key: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         switch self {
         case .optional(let keyPath):
             return To.path(for: keyPath.appending(path: \.$id)).description
