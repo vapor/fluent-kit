@@ -45,13 +45,13 @@ public final class SchemaBuilder {
         _ field: FieldKey,
         references foreignSchema: String,
         _ foreignField: FieldKey,
-        onDelete: DatabaseSchema.Constraint.ForeignKeyAction = .noAction,
-        onUpdate: DatabaseSchema.Constraint.ForeignKeyAction = .noAction
+        onDelete: DatabaseSchema.ForeignKeyAction = .noAction,
+        onUpdate: DatabaseSchema.ForeignKeyAction = .noAction
     ) -> Self {
         self.schema.constraints.append(.foreignKey(
-            fields: [.key(field)],
-            foreignSchema: foreignSchema,
-            foreignFields: [.key(foreignField)],
+            [.key(field)],
+            foreignSchema,
+            [.key(foreignField)],
             onDelete: onDelete,
             onUpdate: onUpdate
         ))
