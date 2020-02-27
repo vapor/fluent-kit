@@ -42,6 +42,9 @@ extension Model {
     private func _update(on database: Database) -> EventLoopFuture<Void> {
         self.touchTimestamps(.update)
         precondition(self._$id.exists)
+        guard self.hasChanges else {
+            return database.eventLoop.makeSucceededFuture(())
+        }
         let input = self.input
         return Self.query(on: database)
             .filter(\._$id == self.id!)

@@ -49,6 +49,41 @@ public final class QueryBuilder<Model>
         )
     }
 
+    // MARK: Fields
+
+    public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
+        where Field: QueryField, Field.Model == Model
+    {
+        self.field(Model.self, field)
+    }
+
+    public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
+        where Joined: Schema, Field: QueryField, Field.Model == Joined
+    {
+        self.fields(Joined.self, .key(for: field))
+    }
+
+    public func fields(_ fields: FieldKey...) -> Self {
+        self.fields(Model.self, fields)
+    }
+
+    public func fields(_ fields: [FieldKey]) -> Self {
+        self.fields(Model.self, fields)
+    }
+
+    public func fields<Joined>(_ joined: Joined.Type, _ fields: FieldKey...) -> Self
+        where Joined: Schema
+    {
+        self.fields(Joined.self, fields)
+    }
+
+    public func fields<Joined>(_ joined: Joined.Type, _ fields: [FieldKey]) -> Self
+        where Joined: Schema
+    {
+        self.query.fields += fields.map { .field($0, schema: Joined.schema) }
+        return self
+    }
+
     // MARK: Soft Delete
 
     public func withDeleted() -> Self {
