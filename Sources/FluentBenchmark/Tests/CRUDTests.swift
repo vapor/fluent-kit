@@ -60,6 +60,8 @@ extension FluentBenchmarker {
             try galaxy.save(on: self.database).wait()
             galaxy.name = "Milky Way"
             try galaxy.save(on: self.database).wait()
+            // Test save without changes.
+            try galaxy.save(on: self.database).wait()
 
             // verify
             let galaxies = try Galaxy.query(on: self.database).filter(\.$name == "Milky Way").all().wait()
