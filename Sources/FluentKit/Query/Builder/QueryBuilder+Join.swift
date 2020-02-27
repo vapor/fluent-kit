@@ -36,26 +36,26 @@ extension QueryBuilder {
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> JoinFilter<Foreign, Local, ForeignField.Value>
+) -> JoinFilter<Foreign, Local, ForeignField.FieldValue>
     where
-        ForeignField: QueryField,
+        ForeignField: FieldProtocol,
         ForeignField.Model == Foreign,
-        LocalField: QueryField,
+        LocalField: FieldProtocol,
         LocalField.Model == Local,
-        ForeignField.Value == LocalField.Value
+        ForeignField.FieldValue == LocalField.FieldValue
 {
     .init(foreign: .key(for: rhs), local: .key(for: lhs))
 }
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> JoinFilter<Foreign, Local, ForeignField.Value>
+) -> JoinFilter<Foreign, Local, ForeignField.FieldValue>
     where
-        ForeignField: QueryField,
+        ForeignField: FieldProtocol,
         ForeignField.Model == Foreign,
-        LocalField: QueryField,
+        LocalField: FieldProtocol,
         LocalField.Model == Local,
-        ForeignField.Value == Optional<LocalField.Value>
+        ForeignField.FieldValue == Optional<LocalField.FieldValue>
 {
     .init(foreign: .key(for: rhs), local: .key(for: lhs))
 }
@@ -63,13 +63,13 @@ public func == <Foreign, ForeignField, Local, LocalField>(
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> JoinFilter<Foreign, Local, LocalField.Value>
+) -> JoinFilter<Foreign, Local, LocalField.FieldValue>
     where
-        ForeignField: QueryField,
+        ForeignField: FieldProtocol,
         ForeignField.Model == Foreign,
-        LocalField: QueryField,
+        LocalField: FieldProtocol,
         LocalField.Model == Local,
-        Optional<ForeignField.Value> == LocalField.Value
+        Optional<ForeignField.FieldValue> == LocalField.FieldValue
 {
     .init(foreign: .key(for: rhs), local: .key(for: lhs))
 }

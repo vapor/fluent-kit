@@ -34,7 +34,7 @@ extension ModelAlias {
     ) -> AliasedField<Self, Field>
         where Field.Model == Model
     {
-        .init(key: Model.key(for: keyPath))
+        .init(field: self.model[keyPath: keyPath])
     }
 
     public subscript<Value>(
@@ -43,26 +43,58 @@ extension ModelAlias {
         self.model[keyPath: keyPath]
     }
 
-    public var fields: [String: AnyField] {
-        self.model.fields
+    public var properties: [String: AnyProperty] {
+        self.model.properties
     }
 }
 
-public struct AliasedField<Alias, Field>
-    where Alias: ModelAlias, Field: QueryField
+public final class AliasedField<Alias, Field>
+    where Alias: ModelAlias, Field: FieldProtocol
 {
-    public let key: FieldKey
+    public let field: Field
+    init(field: Field) {
+        self.field = field
+    }
 }
 
-extension AliasedField: QueryField {
-    public var path: [FieldKey] {
-        [self.key]
+extension AliasedField: PropertyProtocol {
+    public typealias Value = Field.Value
+}
+
+extension AliasedField: AnyProperty {
+    public func input(to input: inout DatabaseInput) {
+        self.field.input(to: &input)
     }
 
-    public var wrappedValue: Field.Value {
-        fatalError()
+    public func output(from output: DatabaseOutput) throws {
+        try self.field.output(from: output)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try self.field.encode(to: encoder)
+    }
+
+    public func decode(from decoder: Decoder) throws {
+        try self.field.decode(from: decoder)
+    }
+}
+
+extension AliasedField: FieldProtocol {
+    public var fieldValue: Field.FieldValue {
+        get {
+            self.field.fieldValue
+        }
+        set {
+            self.field.fieldValue = newValue
+        }
     }
 
     public typealias Model = Alias
-    public typealias Value = Field.Value
+    public typealias FieldValue = Field.FieldValue
+}
+
+extension AliasedField: AnyField {
+    public var keys: [FieldKey] {
+        self.field.keys
+    }
 }

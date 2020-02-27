@@ -27,10 +27,10 @@ extension QueryBuilder {
     @discardableResult
     public func set<Field>(
         _ field: KeyPath<Model, Field>,
-        to value: Field.Value
+        to value: Field.FieldValue
     ) -> Self
         where
-            Field: QueryField,
+            Field: FieldProtocol,
             Field.Model == Model
     {
         self.query.fields.append(

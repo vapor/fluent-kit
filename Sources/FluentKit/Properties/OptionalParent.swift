@@ -47,6 +47,21 @@ extension OptionalParentProperty: Relation {
     }
 }
 
+extension OptionalParentProperty: FieldProtocol {
+    public typealias FieldValue = To.IDValue?
+    public typealias Model = From
+    public typealias Value = To
+
+    public var fieldValue: To.IDValue? {
+        get {
+            self.$id.fieldValue
+        }
+        set {
+            self.$id.fieldValue = newValue
+        }
+    }
+}
+
 extension OptionalParentProperty: AnyField {
     public var keys: [FieldKey] {
         self.$id.keys

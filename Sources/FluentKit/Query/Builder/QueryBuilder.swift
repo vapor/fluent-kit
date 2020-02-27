@@ -52,13 +52,13 @@ public final class QueryBuilder<Model>
     // MARK: Fields
 
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
-        where Field: QueryField, Field.Model == Model
+        where Field: FieldProtocol, Field.Model == Model
     {
         self.field(Model.self, field)
     }
 
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
-        where Joined: Schema, Field: QueryField, Field.Model == Joined
+        where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
     {
         self.fields(Joined.self, .key(for: field))
     }
@@ -155,16 +155,17 @@ public final class QueryBuilder<Model>
             .map { $0.first }
     }
 
-    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
+    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.FieldValue]>
         where
-            Field: QueryField,
-            Field.Model == Model
+            Field: FieldProtocol,
+            Field.Model == Model,
+            Field.FieldValue == Field.Value
     {
         let copy = self.copy()
         copy.query.fields = [.field(Model.key(for: key), schema: Model.schema)]
         return copy.all().map {
             $0.map {
-                $0[keyPath: key].wrappedValue
+                $0[keyPath: key].fieldValue
             }
         }
     }
@@ -172,17 +173,18 @@ public final class QueryBuilder<Model>
     public func all<Joined, Field>(
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
-    ) -> EventLoopFuture<[Field.Value]>
+    ) -> EventLoopFuture<[Field.FieldValue]>
         where
             Joined: Schema,
-            Field: QueryField,
-            Field.Model == Joined
+            Field: FieldProtocol,
+            Field.Model == Joined,
+            Field.FieldValue == Field.Value
     {
         let copy = self.copy()
         copy.query.fields = [.field(.key(for: field), schema: Joined.schemaOrAlias)]
         return copy.all().flatMapThrowing {
             try $0.map {
-                try $0.joined(Joined.self)[keyPath: field].wrappedValue
+                try $0.joined(Joined.self)[keyPath: field].fieldValue
             }
         }
     }

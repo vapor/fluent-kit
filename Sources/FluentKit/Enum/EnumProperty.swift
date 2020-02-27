@@ -43,9 +43,22 @@ public final class EnumProperty<Model, Value>
     }
 }
 
-extension EnumProperty: FilterField {
-    public var path: [FieldKey] {
-        self.field.path
+//extension EnumProperty: FilterField {
+//    public var path: [FieldKey] {
+//        self.field.path
+//    }
+//}
+
+extension EnumProperty: FieldProtocol {
+    public typealias FieldValue = String
+
+    public var fieldValue: String {
+        get {
+            self.field.fieldValue
+        }
+        set {
+            self.field.fieldValue = newValue
+        }
     }
 }
 

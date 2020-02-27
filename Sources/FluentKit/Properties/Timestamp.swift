@@ -54,6 +54,19 @@ public final class TimestampProperty<Model>
     }
 }
 
+extension TimestampProperty: FieldProtocol {
+    public typealias FieldValue = Date?
+
+    public var fieldValue: Date? {
+        get {
+            self.field.fieldValue
+        }
+        set {
+            self.field.fieldValue = newValue
+        }
+    }
+}
+
 extension TimestampProperty: AnyField {
     public var keys: [FieldKey] {
         [self.key]
@@ -77,12 +90,6 @@ extension TimestampProperty: AnyField {
 }
 
 extension TimestampProperty: AnyTimestamp { }
-
-extension TimestampProperty: FilterField {
-    public var path: [FieldKey] {
-        self.field.path
-    }
-}
 
 protocol AnyTimestamp: AnyField {
     var key: FieldKey { get }

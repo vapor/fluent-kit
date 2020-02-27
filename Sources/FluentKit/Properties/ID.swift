@@ -111,6 +111,19 @@ public final class IDProperty<Model, Value>
     }
 }
 
+extension IDProperty: FieldProtocol {
+    public typealias FieldValue = Value?
+
+    public var fieldValue: Value? {
+        get {
+            self.field.fieldValue
+        }
+        set {
+            self.field.fieldValue = newValue
+        }
+    }
+}
+
 extension IDProperty: AnyField {
     public var keys: [FieldKey] {
         self.field.keys
@@ -134,13 +147,5 @@ extension IDProperty: AnyField {
         try self.field.decode(from: decoder)
     }
 }
-
-extension IDProperty: FilterField {
-    public var path: [FieldKey] {
-        self.field.path
-    }
-}
-
-extension IDProperty: QueryField { }
 
 extension IDProperty: AnyID { }

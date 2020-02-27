@@ -157,11 +157,12 @@ public final class SiblingsProperty<From, To, Through>
     }
 }
 
-extension SiblingsProperty: AnyField {
-    public var keys: [FieldKey] {
-        []
-    }
-    
+extension SiblingsProperty: PropertyProtocol {
+    public typealias Model = From
+    public typealias Value = To
+}
+
+extension SiblingsProperty: AnyProperty {
     public func input(to input: inout DatabaseInput) {
         // siblings never has input
     }

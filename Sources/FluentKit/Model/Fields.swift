@@ -1,12 +1,12 @@
 public protocol Fields: class, Codable {
-    var fields: [String: AnyField] { get }
+    var properties: [String: AnyProperty] { get }
     init()
 }
 
 extension FieldKey {
     public static func key<Model, Field>(for field: KeyPath<Model, Field>) -> Self
         where
-            Field: QueryField,
+            Field: FieldProtocol,
             Field.Model == Model
     {
         Model.key(for: field)
@@ -22,16 +22,16 @@ extension Fields {
 
     public static func key<Model, Field>(for field: KeyPath<Model, Field>) -> FieldKey
         where
-            Field: QueryField,
+            Field: FieldProtocol,
             Field.Model == Model
     {
-         Model.init()[keyPath: field].key
+         Model.init()[keyPath: field].keys[0]
     }
 
     public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
-        where Field: FilterField
+        where Field: FieldProtocol
     {
-         Self.init()[keyPath: field].path
+         Self.init()[keyPath: field].keys
     }
 
     /// Indicates whether the model has fields that have been set, but the model
@@ -42,25 +42,29 @@ extension Fields {
 
     public var input: DatabaseInput {
         var input = DatabaseInput()
-        self.fields.values.forEach { field in
+        self.properties.values.forEach { field in
             field.input(to: &input)
         }
         return input
     }
 
     public func output(from output: DatabaseOutput) throws {
-        try self.fields.values.forEach { field in
+        try self.properties.values.forEach { field in
             try field.output(from: output)
         }
     }
 
     public var fields: [String: AnyField] {
-        return .init(uniqueKeysWithValues:
+        self.properties.compactMapValues { $0 as? AnyField }
+    }
+
+    public var properties: [String: AnyProperty] {
+        .init(uniqueKeysWithValues:
             Mirror(reflecting: self).children.compactMap { child in
                 guard let label = child.label else {
                     return nil
                 }
-                guard let field = child.value as? AnyField else {
+                guard let field = child.value as? AnyProperty else {
                     return nil
                 }
                 // remove underscore

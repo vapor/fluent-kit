@@ -12,10 +12,27 @@ public final class FieldProperty<Model, Value>
     var inputValue: DatabaseQuery.Value?
     
     public var projectedValue: FieldProperty<Model, Value> {
-        return self
+        self
     }
 
     public var wrappedValue: Value {
+        get {
+            self.fieldValue
+        }
+        set {
+            self.fieldValue = newValue
+        }
+    }
+
+    public init(key: FieldKey) {
+        self.key = key
+    }
+}
+
+extension FieldProperty: FieldProtocol {
+    public typealias FieldValue = Value
+
+    public var fieldValue: Value {
         get {
             if let value = self.inputValue {
                 switch value {
@@ -36,19 +53,7 @@ public final class FieldProperty<Model, Value>
             self.inputValue = .bind(newValue)
         }
     }
-
-    public init(key: FieldKey) {
-        self.key = key
-    }
 }
-
-extension FieldProperty: FilterField {
-    public var path: [FieldKey] {
-        [self.key]
-    }
-}
-
-extension FieldProperty: QueryField { }
 
 extension FieldProperty: AnyField {
     public var keys: [FieldKey] {

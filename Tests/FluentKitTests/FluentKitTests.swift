@@ -255,7 +255,77 @@ final class FluentKitTests: XCTestCase {
         try [Planet2]().create(on: db).wait()
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
-    
+
+    func testCompoundModel() throws {
+        let tanner = CompoundUser(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
+        XCTAssertEqual(tanner.pet.name, "Ziz")
+        XCTAssertEqual(tanner.$pet.$name.fieldValue, "Ziz")
+    }
+
+    func testNestedModel() throws {
+        let tanner = NestedUser(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
+        XCTAssertEqual(tanner.pet.name, "Ziz")
+        XCTAssertEqual(tanner.$pet.$name.fieldValue, "Ziz")
+    }
+}
+
+final class CompoundUser: Model {
+    static let schema = "users"
+
+    @ID var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @CompoundField(key: "pet")
+    var pet: Pet
+
+    init() { }
+
+    init(id: UUID? = nil, name: String, pet: Pet) {
+        self.id = id
+        self.name = name
+        self.pet = pet
+    }
+}
+
+final class NestedUser: Model {
+    static let schema = "users"
+
+    @ID var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @NestedField(key: "pet")
+    var pet: Pet
+
+    init() { }
+
+    init(id: UUID? = nil, name: String, pet: Pet) {
+        self.id = id
+        self.name = name
+        self.pet = pet
+    }
+}
+
+enum Animal: String, Codable {
+    case cat, dog
+}
+
+final class Pet: Fields {
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "type")
+    var type: Animal
+
+    init() { }
+
+    init(name: String, type: Animal) {
+        self.name = name
+        self.type = type
+    }
 }
 
 final class Planet2: Model {

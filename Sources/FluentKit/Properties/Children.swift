@@ -97,11 +97,12 @@ public final class ChildrenProperty<From, To>
     }
 }
 
-extension ChildrenProperty: AnyField {
-    public var keys: [FieldKey] {
-        []
-    }
-    
+extension ChildrenProperty: PropertyProtocol {
+    public typealias Model = From
+    public typealias Value = To
+}
+
+extension ChildrenProperty: AnyProperty {
     public func input(to input: inout DatabaseInput) {
         // children never has input
     }

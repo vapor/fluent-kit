@@ -36,10 +36,78 @@ public final class NestedFieldProperty<Model, Value>
     public subscript<Field>(
          dynamicMember keyPath: KeyPath<Value, Field>
     ) -> _NestedField<Value, Field>
-        where Field: FilterField,
+        where Field: FieldProtocol,
             Field.Model == Value
     {
-        .init(root: self.key, field: Value()[keyPath: keyPath])
+        .init(root: self.key, field: self.wrappedValue[keyPath: keyPath])
+    }
+}
+
+public final class _NestedField<Model, Field>
+    where Model: FluentKit.Fields, Field: FieldProtocol
+{
+    public let root: FieldKey
+    public let field: Field
+    init(root: FieldKey, field: Field) {
+        self.root = root
+        self.field = field
+    }
+}
+
+extension _NestedField: PropertyProtocol {
+    public typealias Model = Field.Model
+    public typealias Value = Field.Value
+}
+
+extension _NestedField: AnyProperty {
+    public func input(to input: inout DatabaseInput) {
+        self.field.input(to: &input)
+    }
+
+    public func output(from output: DatabaseOutput) throws {
+        try self.field.output(from: output)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try self.field.encode(to: encoder)
+    }
+
+    public func decode(from decoder: Decoder) throws {
+        try self.field.decode(from: decoder)
+    }
+}
+
+extension _NestedField: FieldProtocol {
+    public var fieldValue: Field.FieldValue {
+        get {
+            self.field.fieldValue
+        }
+        set {
+            self.field.fieldValue = newValue
+        }
+    }
+
+    public typealias FieldValue = Field.FieldValue
+}
+
+extension _NestedField: AnyField {
+    public var keys: [FieldKey] {
+        [self.root] + self.field.keys
+    }
+}
+
+
+#warning("TODO: cleanup")
+extension NestedFieldProperty: FieldProtocol {
+    public typealias FieldValue = Value
+
+    public var fieldValue: Value {
+        get {
+            self.wrappedValue
+        }
+        set {
+            self.wrappedValue = newValue
+        }
     }
 }
 
@@ -74,22 +142,5 @@ extension NestedFieldProperty: AnyField {
         } else {
             self.wrappedValue = try container.decode(Value.self)
         }
-    }
-}
-
-public struct _NestedField<Model, Field>
-    where Model: FluentKit.Fields, Field: FilterField
-{
-    public let root: FieldKey
-    public let field: Field
-}
-
-extension _NestedField: FilterField {
-    public var wrappedValue: Field.Value {
-        self.field.wrappedValue
-    }
-
-    public var path: [FieldKey] {
-        [self.root] + self.field.path
     }
 }
