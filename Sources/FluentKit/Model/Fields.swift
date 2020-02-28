@@ -1,5 +1,5 @@
 public protocol Fields: class, Codable {
-    var properties: [String: AnyProperty] { get }
+    var properties: [AnyProperty] { get }
     init()
 }
 
@@ -34,23 +34,30 @@ extension Fields {
 
     public var input: DatabaseInput {
         var input = DatabaseInput()
-        self.properties.values.forEach { field in
+        self.properties.forEach { field in
             field.input(to: &input)
         }
         return input
     }
 
     public func output(from output: DatabaseOutput) throws {
-        try self.properties.values.forEach { field in
+        try self.properties.forEach { field in
             try field.output(from: output)
         }
     }
 
     public var fields: [AnyField] {
-        self.properties.values.flatMap { $0.fields }
+        self.properties.flatMap { $0.fields }
     }
 
-    public var properties: [String: AnyProperty] {
+
+    public var properties: [AnyProperty] {
+        Mirror(reflecting: self).children.compactMap {
+            $0.value as? AnyProperty
+        }
+    }
+
+    public var labeledProperties: [String: AnyProperty] {
         .init(uniqueKeysWithValues:
             Mirror(reflecting: self).children.compactMap { child in
                 guard let label = child.label else {

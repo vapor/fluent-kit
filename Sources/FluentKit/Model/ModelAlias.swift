@@ -43,7 +43,7 @@ extension ModelAlias {
         self.model[keyPath: keyPath]
     }
 
-    public var properties: [String: AnyProperty] {
+    public var properties: [AnyProperty] {
         self.model.properties
     }
 }

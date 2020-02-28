@@ -265,10 +265,14 @@ final class FluentKitTests: XCTestCase {
                 toy: .init(name: "Foo", type: .mouse)
             )
         )
+        for field in User().fields {
+            print(field.path)
+            print(field)
+            print()
+        }
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
-        XCTAssertEqual(tanner.$pet.$toy.$type.value, .mouse)
-        XCTAssertEqual(CompoundUser.path(for: \.$pet.$toy.$type), ["pet_toy_type"])
+        XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
     }
 }
 

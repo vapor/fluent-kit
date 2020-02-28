@@ -6,6 +6,15 @@ public protocol PropertyProtocol: AnyProperty {
     var anyFieldValueType: Any.Type { get }
 }
 
+public protocol AnyProperty: class {
+    var fields: [AnyField] { get }
+    var path: [FieldKey] { get }
+    func input(to input: inout DatabaseInput)
+    func output(from output: DatabaseOutput) throws
+    func encode(to encoder: Encoder) throws
+    func decode(from decoder: Decoder) throws
+}
+
 extension PropertyProtocol {
     public var anyFieldValue: Any? {
         self.value
@@ -16,16 +25,11 @@ extension PropertyProtocol {
     }
 }
 
-public protocol AnyProperty: class {
-    var fields: [AnyField] { get }
-    func input(to input: inout DatabaseInput)
-    func output(from output: DatabaseOutput) throws
-    func encode(to encoder: Encoder) throws
-    func decode(from decoder: Decoder) throws
+extension AnyProperty {
+    public var path: [FieldKey] {
+        return []
+    }
 }
 
 public protocol FieldProtocol: AnyField, PropertyProtocol { }
-
-public protocol AnyField: AnyProperty {
-    var path: [FieldKey] { get }
-}
+public protocol AnyField: AnyProperty { }
