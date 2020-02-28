@@ -8,5 +8,4 @@ extension Migration {
     public var name: String {
         return "\(Self.self)"
     }
-    
 }

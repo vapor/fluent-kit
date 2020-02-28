@@ -7,8 +7,6 @@ extension Model {
 public final class ChildrenProperty<From, To>
     where From: Model, To: Model
 {
-    // MARK: ID
-
     public enum Key {
         case required(KeyPath<To, To.Parent<From>>)
         case optional(KeyPath<To, To.OptionalParent<From>>)
@@ -17,7 +15,6 @@ public final class ChildrenProperty<From, To>
     public let parentKey: Key
     var idValue: From.IDValue?
 
-    // MARK: Wrapper
     public var value: [To]?
 
     public var description: String {
@@ -51,8 +48,6 @@ public final class ChildrenProperty<From, To>
     public var fromId: From.IDValue? {
         return self.idValue
     }
-
-    // MARK: Query
 
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {

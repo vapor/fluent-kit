@@ -22,13 +22,26 @@ extension QueryBuilder {
     ) -> Self
         where Foreign: Schema, Local: Schema
     {
+        self.join(Foreign.self, [foreignField], to: Local.self, [localField], method: method)
+    }
+
+    @discardableResult
+    private func join<Foreign, Local>(
+        _ foreign: Foreign.Type,
+        _ foreignPath: [FieldKey],
+        to local: Local.Type,
+        _ localPath: [FieldKey],
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self
+        where Foreign: Schema, Local: Schema
+    {
         self.models.append(Foreign.self)
         self.query.joins.append(.join(
             schema: Foreign.schema,
             alias: Foreign.alias,
             method,
-            foreign: .path([foreignField], schema: Foreign.schemaOrAlias),
-            local: .path([localField], schema: Local.schemaOrAlias)
+            foreign: .path(foreignPath, schema: Foreign.schemaOrAlias),
+            local: .path(localPath, schema: Local.schemaOrAlias)
         ))
         return self
     }
@@ -44,7 +57,7 @@ public func == <Foreign, ForeignField, Local, LocalField>(
         LocalField.Model == Local,
         ForeignField.Value == LocalField.Value
 {
-    .init(foreign: .key(for: rhs), local: .key(for: lhs))
+    .init(foreign: Foreign.path(for: rhs), local: Local.path(for: lhs))
 }
 
 public func == <Foreign, ForeignField, Local, LocalField>(
@@ -57,7 +70,7 @@ public func == <Foreign, ForeignField, Local, LocalField>(
         LocalField.Model == Local,
         ForeignField.Value == Optional<LocalField.Value>
 {
-    .init(foreign: .key(for: rhs), local: .key(for: lhs))
+    .init(foreign: Foreign.path(for: rhs), local: Local.path(for: lhs))
 }
 
 
@@ -71,13 +84,13 @@ public func == <Foreign, ForeignField, Local, LocalField>(
         LocalField.Model == Local,
         Optional<ForeignField.Value> == LocalField.Value
 {
-    .init(foreign: .key(for: rhs), local: .key(for: lhs))
+    .init(foreign: Foreign.path(for: rhs), local: Local.path(for: lhs))
 }
 
 
 public struct JoinFilter<Foreign, Local, Value>
     where Foreign: Fields, Local: Fields, Value: Codable
 {
-    let foreign: FieldKey
-    let local: FieldKey
+    let foreign: [FieldKey]
+    let local: [FieldKey]
 }

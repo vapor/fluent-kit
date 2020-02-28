@@ -156,6 +156,7 @@ extension Array where Element: FluentKit.Model {
 }
 
 // MARK: Private
+
 private struct SavedInput: DatabaseOutput {
     var input: [FieldKey: DatabaseQuery.Value]
     

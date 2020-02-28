@@ -57,8 +57,6 @@ extension EnumProperty: PropertyProtocol {
             }
         }
     }
-
-
 }
 
 extension EnumProperty: FieldProtocol { }

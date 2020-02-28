@@ -299,7 +299,7 @@ final class User: Model {
     @Timestamp(key: "deleted_at", on: .delete)
     var deletedAt: Date?
 
-    @CompoundField(key: "pet")
+    @Group(key: "pet")
     var pet: Pet
 
     init() { }
@@ -322,7 +322,7 @@ final class Pet: Fields {
     @Field(key: "type")
     var type: Animal
 
-    @CompoundField(key: "toy")
+    @Group(key: "toy")
     var toy: Toy
 
     init() { }

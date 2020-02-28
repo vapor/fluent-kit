@@ -91,7 +91,6 @@ extension AnyTimestamp {
 }
 
 extension Fields {
-    #warning("TODO: search nested?")
     var timestamps: [AnyTimestamp] {
         self.properties.compactMap {
             $0 as? AnyTimestamp

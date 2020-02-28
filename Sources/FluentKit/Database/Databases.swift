@@ -2,6 +2,14 @@ import Foundation
 import class NIOConcurrencyHelpers.Lock
 @_exported import class NIO.NIOThreadPool
 
+public struct DatabaseConfigurationFactory {
+    public let make: () -> DatabaseConfiguration
+
+    public init(make: @escaping () -> DatabaseConfiguration) {
+        self.make = make
+    }
+}
+
 public final class Databases {
     public let eventLoopGroup: EventLoopGroup
     public let threadPool: NIOThreadPool
@@ -135,13 +143,5 @@ public final class Databases {
             fatalError("No default database configured.")
         }
         return id
-    }
-}
-
-public struct DatabaseConfigurationFactory {
-    public let make: () -> DatabaseConfiguration
-    
-    public init(make: @escaping () -> DatabaseConfiguration) {
-        self.make = make
     }
 }

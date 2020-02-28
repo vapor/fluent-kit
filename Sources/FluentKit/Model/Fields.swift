@@ -3,35 +3,7 @@ public protocol Fields: class, Codable {
     init()
 }
 
-extension FieldKey {
-    public static func key<Model, Field>(for field: KeyPath<Model, Field>) -> Self
-        where
-            Field: FieldProtocol,
-            Field.Model == Model
-    {
-        Model.path(for: field)[0]
-    }
-}
-
 extension Fields {
-    public static var keys: [[FieldKey]] {
-        func collect(
-            _ properties: [AnyProperty],
-            prefix: [FieldKey] = [],
-            into keys: inout [[FieldKey]]
-        ) {
-            properties.forEach {
-                if $0 is AnyField {
-                    keys.append(prefix + $0.path)
-                }
-                collect($0.nested, prefix: prefix + $0.path, into: &keys)
-            }
-        }
-        var keys: [[FieldKey]] = []
-        collect(self.init().properties, into: &keys)
-        return keys
-    }
-
     public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
         where Field: FieldProtocol
     {
@@ -64,7 +36,9 @@ extension Fields {
         }
     }
 
-    public var labeledProperties: [String: AnyProperty] {
+    // Internal
+
+    var labeledProperties: [String: AnyProperty] {
         .init(uniqueKeysWithValues:
             Mirror(reflecting: self).children.compactMap { child in
                 guard let label = child.label else {
@@ -78,4 +52,23 @@ extension Fields {
             }
         )
     }
+
+    static var keys: [[FieldKey]] {
+        func collect(
+            _ properties: [AnyProperty],
+            prefix: [FieldKey] = [],
+            into keys: inout [[FieldKey]]
+        ) {
+            properties.forEach {
+                if $0 is AnyField {
+                    keys.append(prefix + $0.path)
+                }
+                collect($0.nested, prefix: prefix + $0.path, into: &keys)
+            }
+        }
+        var keys: [[FieldKey]] = []
+        collect(self.init().properties, into: &keys)
+        return keys
+    }
+
 }

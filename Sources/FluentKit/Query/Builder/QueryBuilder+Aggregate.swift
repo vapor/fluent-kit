@@ -91,12 +91,23 @@ extension QueryBuilder {
             Field.Model == Model,
             Result: Codable
     {
-        self.aggregate(method, .key(for: field), as: Result.self)
+        self.aggregate(method, Model.path(for: field), as: Result.self)
     }
+
 
     public func aggregate<Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ field: FieldKey,
+        as type: Result.Type = Result.self
+    ) -> EventLoopFuture<Result>
+        where Result: Codable
+    {
+        self.aggregate(method, [field])
+    }
+
+    public func aggregate<Result>(
+        _ method: DatabaseQuery.Aggregate.Method,
+        _ path: [FieldKey],
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable
@@ -113,7 +124,7 @@ extension QueryBuilder {
         // Set custom action.
         copy.query.action = .aggregate(
             .field(
-                .path([field], schema: Model.schema),
+                .path(path, schema: Model.schema),
                 method
             )
         )
