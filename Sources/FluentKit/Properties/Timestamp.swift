@@ -122,7 +122,7 @@ extension Schema {
             return
         }
 
-        let deletedAtField = DatabaseQuery.Filter.Field.path(
+        let deletedAtField = DatabaseQuery.Field.path(
             timestamp.path,
             schema: self.schemaOrAlias
         )

@@ -2,15 +2,6 @@ public indirect enum FieldKey {
     case id
     case string(String)
     case aggregate
-
-//    func prefixed(by prefix: String) -> Self {
-//        switch self {
-//        case .string(let string):
-//            return .string(prefix + string)
-//        case .id, .aggregate:
-//            fatalError("Cannot prefix special key: \(self).")
-//        }
-//    }
 }
 
 extension FieldKey: ExpressibleByStringLiteral {

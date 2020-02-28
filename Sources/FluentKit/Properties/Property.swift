@@ -4,7 +4,6 @@ public protocol PropertyProtocol: AnyProperty {
     var value: Value? { get set }
 }
 
-public protocol FieldProtocol: PropertyProtocol { }
 
 public protocol AnyProperty: class {
     static var anyValueType: Any.Type { get }
@@ -29,4 +28,5 @@ extension AnyProperty where Self: PropertyProtocol {
     }
 }
 
+public protocol FieldProtocol: AnyField, PropertyProtocol { }
 public protocol AnyField { }

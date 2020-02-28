@@ -27,8 +27,8 @@ extension QueryBuilder {
             schema: Foreign.schema,
             alias: Foreign.alias,
             method,
-            foreign: .field(path: [foreignField], schema: Foreign.schemaOrAlias),
-            local: .field(path: [localField], schema: Local.schemaOrAlias)
+            foreign: .path([foreignField], schema: Foreign.schemaOrAlias),
+            local: .path([localField], schema: Local.schemaOrAlias)
         ))
         return self
     }

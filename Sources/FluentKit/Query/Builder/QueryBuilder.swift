@@ -60,7 +60,7 @@ public final class QueryBuilder<Model>
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
     {
-        self.query.fields.append(.field(path: Joined.path(for: field), schema: Joined.schema))
+        self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
         return self
     }
 
@@ -141,7 +141,7 @@ public final class QueryBuilder<Model>
             Field.Model == Model
     {
         let copy = self.copy()
-        copy.query.fields = [.field(path: Model.path(for: key), schema: Model.schema)]
+        copy.query.fields = [.path(Model.path(for: key), schema: Model.schema)]
         return copy.all().map {
             $0.map {
                 $0[keyPath: key].value!
@@ -159,7 +159,7 @@ public final class QueryBuilder<Model>
             Field.Model == Joined
     {
         let copy = self.copy()
-        copy.query.fields = [.field(path: Joined.path(for: field), schema: Joined.schemaOrAlias)]
+        copy.query.fields = [.path(Joined.path(for: field), schema: Joined.schemaOrAlias)]
         return copy.all().flatMapThrowing {
             try $0.map {
                 try $0.joined(Joined.self)[keyPath: field].value!
@@ -225,7 +225,7 @@ public final class QueryBuilder<Model>
         if query.fields.isEmpty {
             for model in self.models {
                 query.fields += model.keys.map { path in
-                    .field(path: path, schema: model.schemaOrAlias)
+                    .path(path, schema: model.schemaOrAlias)
                 }
             }
         }

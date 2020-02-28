@@ -56,7 +56,7 @@ public struct SQLQueryConverter {
                 switch field {
                 case .custom(let any):
                     return custom(any)
-                case .field(let path, let schema):
+                case .path(let path, let schema):
                     return SQLAlias(
                         SQLColumn(self.path(path), table: schema),
                         as: SQLIdentifier(schema + "_" + self.path(path))
@@ -213,25 +213,6 @@ public struct SQLQueryConverter {
         }
     }
 
-    private func field(_ field: DatabaseQuery.Filter.Field) -> SQLExpression {
-        switch field {
-        case .custom(let any):
-            return custom(any)
-        case .path(let path, let schema):
-            return SQLColumn(self.path(path), table: schema)
-//            switch path.count {
-//            case 1:
-//            case 2...:
-//                return self.delegate.nestedFieldExpression(
-//                    self.key(path[0]),
-//                    path[1...].map(self.key)
-//                )
-//            default:
-//                fatalError("Field path must not be empty.")
-//            }
-        }
-    }
-
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
         self.field(field, ignoreSchema: false)
     }
@@ -240,7 +221,7 @@ public struct SQLQueryConverter {
         switch field {
         case .custom(let any):
             return custom(any)
-        case .field(let path, let schema):
+        case .path(let path, let schema):
             if ignoreSchema {
                 return SQLIdentifier(self.path(path))
             } else {

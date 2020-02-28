@@ -76,7 +76,7 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ field: DatabaseQuery.Filter.Field,
+        _ field: DatabaseQuery.Field,
         _ method: DatabaseQuery.Filter.Method,
         _ value: DatabaseQuery.Value
     ) -> Self {
@@ -85,9 +85,9 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ lhsField: DatabaseQuery.Filter.Field,
+        _ lhsField: DatabaseQuery.Field,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhsField: DatabaseQuery.Filter.Field
+        _ rhsField: DatabaseQuery.Field
     ) -> Self {
         self.filter(.field(lhsField, method, rhsField))
     }

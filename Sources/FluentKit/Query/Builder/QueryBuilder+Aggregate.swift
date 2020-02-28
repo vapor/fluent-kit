@@ -113,7 +113,7 @@ extension QueryBuilder {
         // Set custom action.
         copy.query.action = .aggregate(
             .field(
-                .field(path: [field], schema: Model.schema),
+                .path([field], schema: Model.schema),
                 method
             )
         )

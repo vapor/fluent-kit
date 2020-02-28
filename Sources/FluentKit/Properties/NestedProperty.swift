@@ -17,6 +17,7 @@ public final class NestedProperty<Model, Property>
     }
 }
 
+extension NestedProperty: AnyField where Property: AnyField { }
 extension NestedProperty: FieldProtocol where Property: FieldProtocol { }
 
 extension NestedProperty: PropertyProtocol {
