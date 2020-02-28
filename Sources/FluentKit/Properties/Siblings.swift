@@ -159,10 +159,14 @@ public final class SiblingsProperty<From, To, Through>
 
 extension SiblingsProperty: PropertyProtocol {
     public typealias Model = From
-    public typealias Value = To
+    public typealias Value = [To]
 }
 
 extension SiblingsProperty: AnyProperty {
+    public var fields: [AnyField] {
+        []
+    }
+
     public func input(to input: inout DatabaseInput) {
         // siblings never has input
     }

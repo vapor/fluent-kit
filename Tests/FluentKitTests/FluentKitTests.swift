@@ -257,19 +257,22 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testCompoundModel() throws {
-        let tanner = CompoundUser(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
+        let tanner = User(
+            name: "Tanner",
+            pet: .init(
+                name: "Ziz",
+                type: .cat,
+                toy: .init(name: "Foo", type: .mouse)
+            )
+        )
         XCTAssertEqual(tanner.pet.name, "Ziz")
-        XCTAssertEqual(tanner.$pet.$name.fieldValue, "Ziz")
-    }
-
-    func testNestedModel() throws {
-        let tanner = NestedUser(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
-        XCTAssertEqual(tanner.pet.name, "Ziz")
-        XCTAssertEqual(tanner.$pet.$name.fieldValue, "Ziz")
+        XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
+        XCTAssertEqual(tanner.$pet.$toy.$type.value, .mouse)
+        XCTAssertEqual(CompoundUser.path(for: \.$pet.$toy.$type), ["pet_toy_type"])
     }
 }
 
-final class CompoundUser: Model {
+final class User: Model {
     static let schema = "users"
 
     @ID var id: UUID?
@@ -278,26 +281,6 @@ final class CompoundUser: Model {
     var name: String
 
     @CompoundField(key: "pet")
-    var pet: Pet
-
-    init() { }
-
-    init(id: UUID? = nil, name: String, pet: Pet) {
-        self.id = id
-        self.name = name
-        self.pet = pet
-    }
-}
-
-final class NestedUser: Model {
-    static let schema = "users"
-
-    @ID var id: UUID?
-
-    @Field(key: "name")
-    var name: String
-
-    @NestedField(key: "pet")
     var pet: Pet
 
     init() { }
@@ -320,9 +303,32 @@ final class Pet: Fields {
     @Field(key: "type")
     var type: Animal
 
+    @CompoundField(key: "toy")
+    var toy: Toy
+
     init() { }
 
-    init(name: String, type: Animal) {
+    init(name: String, type: Animal, toy: Toy) {
+        self.name = name
+        self.type = type
+        self.toy = toy
+    }
+}
+
+enum ToyType: String, Codable {
+    case mouse, bone
+}
+
+final class Toy: Fields {
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "type")
+    var type: ToyType
+
+    init() { }
+
+    init(name: String, type: ToyType) {
         self.name = name
         self.type = type
     }

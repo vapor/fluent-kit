@@ -3,12 +3,11 @@ extension Fields {
         where Value: Fields
 }
 
-@propertyWrapper @dynamicMemberLookup
+@propertyWrapper
 public final class CompoundFieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
-    public let prefix: String
-
+    public let key: FieldKey
     public var value: Value?
 
     public var projectedValue: CompoundFieldProperty<Model, Value> {
@@ -17,70 +16,68 @@ public final class CompoundFieldProperty<Model, Value>
 
     public var wrappedValue: Value {
         get {
-            if let existing = self.value {
-                return existing
-            } else {
-                let new = Value()
-                self.value = new
-                return new
+            guard let value = self.value else {
+                fatalError("Cannot access unitialized Compound field.")
             }
+            return value
         }
         set {
             self.value = newValue
         }
     }
 
-    public init(prefix: String) {
-        self.prefix = prefix
+    public init(key: FieldKey) {
+        self.key = key
+        self.value = .init()
     }
+}
 
-    public convenience init(key: String, separator: String = "_") {
-        self.init(prefix: key + separator)
+extension CompoundFieldProperty: CompoundFieldPropertyProtocol {
+    public var prefix: [FieldKey] {
+        [self.key]
     }
+}
 
-    public subscript<Field>(
-         dynamicMember keyPath: KeyPath<Value, Field>
-    ) -> _CompoundField<Value, Field>
-        where Field: FieldProtocol,
-            Field.Model == Value
+@dynamicMemberLookup
+public protocol CompoundFieldPropertyProtocol: PropertyProtocol
+    where Value: Fields
+{
+    var prefix: [FieldKey] { get }
+    subscript<Property>(
+         dynamicMember keyPath: KeyPath<Value, Property>
+    ) -> PrefixedProperty<Value, Property>
+        where
+            Property: PropertyProtocol,
+            Property.Model == Value
+        { get }
+}
+
+extension CompoundFieldPropertyProtocol {
+    public subscript<Property>(
+         dynamicMember keyPath: KeyPath<Value, Property>
+    ) -> PrefixedProperty<Value, Property>
+        where Property: PropertyProtocol,
+            Property.Model == Value
     {
-        .init(prefix: self.prefix, field: self.wrappedValue[keyPath: keyPath])
+        self.value![keyPath: keyPath].prefixed(by: self.prefix)
     }
 }
 
-#warning("TODO: is this right")
-extension CompoundFieldProperty: FieldProtocol {
-    public typealias FieldValue = Value
+extension CompoundFieldProperty: PropertyProtocol { }
 
-    public var fieldValue: Value {
-        get {
-            self.wrappedValue
-        }
-        set {
-            self.wrappedValue = newValue
-        }
-    }
-}
-
-extension CompoundFieldProperty: AnyField {
-    public var keys: [FieldKey] {
-        Value.keys.map {
-            .prefixed(self.prefix, $0)
+extension CompoundFieldProperty: AnyProperty {
+    public var fields: [AnyField] {
+        self.wrappedValue.fields.map {
+            $0.prefixed(by: self.prefix)
         }
     }
 
     public func input(to input: inout DatabaseInput) {
-        if let value = self.value {
-            value.input.values.forEach { (name, value) in
-                input.values[.prefixed(self.prefix, name)] = value
-            }
-        }
+        input.values[self.key] = .dictionary(self.value!.input.values)
     }
 
     public func output(from output: DatabaseOutput) throws {
-        let value = Value()
-        try value.output(from: output.prefixed(by: self.prefix))
-        self.value = value
+        try self.value!.output(from: output.nested(self.key))
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -102,60 +99,112 @@ extension CompoundFieldProperty: AnyField {
     }
 }
 
-public final class _CompoundField<Model, Field>
-    where Model: FluentKit.Fields, Field: FieldProtocol
-{
-    public let prefix: String
-    public let field: Field
-    init(prefix: String, field: Field) {
+private extension AnyField {
+    func prefixed(by prefix: [FieldKey]) -> AnyField {
+        PrefixedAnyField(prefix: prefix, field: self)
+    }
+}
+
+private final class PrefixedAnyField: AnyField {
+    let prefix: [FieldKey]
+    let field: AnyField
+
+    init(prefix: [FieldKey], field: AnyField) {
         self.prefix = prefix
         self.field = field
     }
-}
 
-extension _CompoundField: PropertyProtocol {
-    public typealias Model = Field.Model
-    public typealias Value = Field.Value
-}
+    var path: [FieldKey] {
+        self.prefix + self.field.path
+    }
 
-extension _CompoundField: AnyProperty {
-    public func input(to input: inout DatabaseInput) {
+    var fields: [AnyField] {
+        [self]
+    }
+
+    func input(to input: inout DatabaseInput) {
         self.field.input(to: &input)
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    func decode(from decoder: Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }
 
-extension _CompoundField: FieldProtocol {
-    public var fieldValue: Field.FieldValue {
+private extension PropertyProtocol {
+    func prefixed(by prefix: [FieldKey]) -> PrefixedProperty<Model, Self> {
+        .init(prefix: prefix, property: self)
+    }
+}
+
+public final class PrefixedProperty<Model, Property>
+    where Model: Fields, Property: PropertyProtocol
+{
+    public let prefix: [FieldKey]
+    public let property: Property
+    init(prefix: [FieldKey], property: Property) {
+        self.prefix = prefix
+        self.property = property
+    }
+}
+
+extension PrefixedProperty: CompoundFieldPropertyProtocol
+    where Property: CompoundFieldPropertyProtocol
+{
+    public var prefix: [FieldKey] {
+        self.prefix + self.property.prefix
+    }
+}
+
+extension PrefixedProperty: PropertyProtocol {
+    public typealias Model = Property.Model
+    public typealias Value = Property.Value
+
+    public var value: Value? {
         get {
-            self.field.fieldValue
+            self.property.value
         }
         set {
-            self.field.fieldValue = newValue
+            self.property.value = newValue
         }
     }
-
-    public typealias FieldValue = Field.FieldValue
 }
 
-extension _CompoundField: AnyField {
-    public var keys: [FieldKey] {
-        guard !self.field.keys.isEmpty else {
-            return []
-        }
-        var path = self.field.keys
-        path[0] = .prefixed(self.prefix, path[0])
-        return path
+extension PrefixedProperty: AnyProperty {
+    public var fields: [AnyField] {
+        self.property.fields
+    }
+
+    public func input(to input: inout DatabaseInput) {
+        self.property.input(to: &input)
+    }
+
+    public func output(from output: DatabaseOutput) throws {
+        try self.property.output(from: output)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try self.property.encode(to: encoder)
+    }
+
+    public func decode(from decoder: Decoder) throws {
+        try self.property.decode(from: decoder)
     }
 }
+
+extension PrefixedProperty: FieldProtocol where Property: FieldProtocol { }
+
+extension PrefixedProperty: AnyField where Property: AnyField {
+    public var path: [FieldKey] {
+        self.prefix + self.property.path
+    }
+}
+

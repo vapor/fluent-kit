@@ -27,8 +27,8 @@ extension QueryBuilder {
             schema: Foreign.schema,
             alias: Foreign.alias,
             method,
-            foreign: .field(foreignField, schema: Foreign.schemaOrAlias),
-            local: .field(localField, schema: Local.schemaOrAlias)
+            foreign: .field(path: [foreignField], schema: Foreign.schemaOrAlias),
+            local: .field(path: [localField], schema: Local.schemaOrAlias)
         ))
         return self
     }
@@ -36,26 +36,26 @@ extension QueryBuilder {
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> JoinFilter<Foreign, Local, ForeignField.FieldValue>
+) -> JoinFilter<Foreign, Local, ForeignField.Value>
     where
         ForeignField: FieldProtocol,
         ForeignField.Model == Foreign,
         LocalField: FieldProtocol,
         LocalField.Model == Local,
-        ForeignField.FieldValue == LocalField.FieldValue
+        ForeignField.Value == LocalField.Value
 {
     .init(foreign: .key(for: rhs), local: .key(for: lhs))
 }
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> JoinFilter<Foreign, Local, ForeignField.FieldValue>
+) -> JoinFilter<Foreign, Local, ForeignField.Value>
     where
         ForeignField: FieldProtocol,
         ForeignField.Model == Foreign,
         LocalField: FieldProtocol,
         LocalField.Model == Local,
-        ForeignField.FieldValue == Optional<LocalField.FieldValue>
+        ForeignField.Value == Optional<LocalField.Value>
 {
     .init(foreign: .key(for: rhs), local: .key(for: lhs))
 }
@@ -63,13 +63,13 @@ public func == <Foreign, ForeignField, Local, LocalField>(
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> JoinFilter<Foreign, Local, LocalField.FieldValue>
+) -> JoinFilter<Foreign, Local, LocalField.Value>
     where
         ForeignField: FieldProtocol,
         ForeignField.Model == Foreign,
         LocalField: FieldProtocol,
         LocalField.Model == Local,
-        Optional<ForeignField.FieldValue> == LocalField.FieldValue
+        Optional<ForeignField.Value> == LocalField.Value
 {
     .init(foreign: .key(for: rhs), local: .key(for: lhs))
 }

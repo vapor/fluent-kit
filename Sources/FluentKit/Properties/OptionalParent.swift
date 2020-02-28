@@ -31,7 +31,7 @@ public final class OptionalParentProperty<From, To>
 
     public func query(on database: Database) -> QueryBuilder<To> {
         To.query(on: database)
-            .filter(\._$id == self.id)
+            .filter(\._$id == self.id!)
     }
 }
 
@@ -47,26 +47,16 @@ extension OptionalParentProperty: Relation {
     }
 }
 
-extension OptionalParentProperty: FieldProtocol {
-    public typealias FieldValue = To.IDValue?
+extension OptionalParentProperty: PropertyProtocol {
     public typealias Model = From
     public typealias Value = To
-
-    public var fieldValue: To.IDValue? {
-        get {
-            self.$id.fieldValue
-        }
-        set {
-            self.$id.fieldValue = newValue
-        }
-    }
 }
 
-extension OptionalParentProperty: AnyField {
-    public var keys: [FieldKey] {
-        self.$id.keys
+extension OptionalParentProperty: AnyProperty {
+    public var fields: [AnyField] {
+        self.$id.fields
     }
-    
+
     public func input(to input: inout DatabaseInput) {
         self.$id.input(to: &input)
     }
@@ -126,7 +116,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.OptionalParent<To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let ids = models.map {
+        let ids = models.compactMap {
             $0[keyPath: self.relationKey].id
         }
 

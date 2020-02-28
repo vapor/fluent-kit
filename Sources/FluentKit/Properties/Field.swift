@@ -17,10 +17,13 @@ public final class FieldProperty<Model, Value>
 
     public var wrappedValue: Value {
         get {
-            self.fieldValue
+            guard let value = self.value else {
+                fatalError("Cannot access field before it is initialized or fetched: \(self.key)")
+            }
+            return value
         }
         set {
-            self.fieldValue = newValue
+            self.value = newValue
         }
     }
 
@@ -29,15 +32,13 @@ public final class FieldProperty<Model, Value>
     }
 }
 
-extension FieldProperty: FieldProtocol {
-    public typealias FieldValue = Value
-
-    public var fieldValue: Value {
+extension FieldProperty: PropertyProtocol {
+    public var value: Value? {
         get {
             if let value = self.inputValue {
                 switch value {
                 case .bind(let bind):
-                    return bind as! Value
+                    return bind as? Value
                 case .default:
                     fatalError("Cannot access default field before it is initialized or fetched")
                 default:
@@ -46,7 +47,7 @@ extension FieldProperty: FieldProtocol {
             } else if let value = self.outputValue {
                 return value
             } else {
-                fatalError("Cannot access field before it is initialized or fetched: \(self.key)")
+                return nil
             }
         }
         set {
@@ -55,9 +56,17 @@ extension FieldProperty: FieldProtocol {
     }
 }
 
+extension FieldProperty: FieldProtocol { }
+
 extension FieldProperty: AnyField {
-    public var keys: [FieldKey] {
+    public var path: [FieldKey] {
         [self.key]
+    }
+}
+
+extension FieldProperty: AnyProperty {
+    public var fields: [AnyField] {
+        [self]
     }
 
     public func input(to input: inout DatabaseInput) {
@@ -65,7 +74,7 @@ extension FieldProperty: AnyField {
     }
 
     public func output(from output: DatabaseOutput) throws {
-        if output.contains(self.key) {
+        if output.contains([self.key]) {
             self.inputValue = nil
             do {
                 self.outputValue = try output.decode(self.key, as: Value.self)

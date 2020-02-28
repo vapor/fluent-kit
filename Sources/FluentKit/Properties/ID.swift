@@ -111,22 +111,29 @@ public final class IDProperty<Model, Value>
     }
 }
 
-extension IDProperty: FieldProtocol {
-    public typealias FieldValue = Value?
-
-    public var fieldValue: Value? {
+extension IDProperty: PropertyProtocol {
+    public var value: Value? {
         get {
-            self.field.fieldValue
+            #warning("TODO: optional field")
+            return self.field.value!
         }
         set {
-            self.field.fieldValue = newValue
+            self.field.value = newValue
         }
     }
 }
 
+extension IDProperty: FieldProtocol { }
+
 extension IDProperty: AnyField {
-    public var keys: [FieldKey] {
-        self.field.keys
+    public var path: [FieldKey] {
+        self.field.path
+    }
+}
+
+extension IDProperty: AnyProperty {
+    public var fields: [AnyField] {
+        self.field.fields
     }
 
     public func input(to input: inout DatabaseInput) {

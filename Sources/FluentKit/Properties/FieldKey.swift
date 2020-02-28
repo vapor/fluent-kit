@@ -1,22 +1,19 @@
-public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
+public indirect enum FieldKey {
     case id
     case string(String)
-    case prefixed(String, FieldKey)
     case aggregate
 
-    public var description: String {
-        switch self {
-        case .id:
-            return "id"
-        case .string(let name):
-            return name
-        case .aggregate:
-            return "aggregate"
-        case .prefixed(let prefix, let key):
-            return prefix + key.description
-        }
-    }
+//    func prefixed(by prefix: String) -> Self {
+//        switch self {
+//        case .string(let string):
+//            return .string(prefix + string)
+//        case .id, .aggregate:
+//            fatalError("Cannot prefix special key: \(self).")
+//        }
+//    }
+}
 
+extension FieldKey: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         switch value {
         case "id", "_id":
@@ -26,3 +23,20 @@ public indirect enum FieldKey: Equatable, Hashable, ExpressibleByStringLiteral, 
         }
     }
 }
+
+extension FieldKey: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .id:
+            return "id"
+        case .string(let name):
+            return name
+        case .aggregate:
+            return "aggregate"
+        }
+    }
+}
+
+extension FieldKey: Equatable { }
+
+extension FieldKey: Hashable { }

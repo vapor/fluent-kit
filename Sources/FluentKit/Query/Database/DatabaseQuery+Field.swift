@@ -1,6 +1,6 @@
 extension DatabaseQuery {
     public enum Field {
-        case field(FieldKey, schema: String)
+        case field(path: [FieldKey], schema: String)
         case custom(Any)
     }
 }

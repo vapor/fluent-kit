@@ -5,7 +5,7 @@ extension QueryBuilder {
     public func filter<Field>(
         _ field: KeyPath<Model, Field>,
         _ method: DatabaseQuery.Filter.Method,
-        _ value: Field.FieldValue
+        _ value: Field.Value
     ) -> Self
         where Field: FieldProtocol, Field.Model == Model
     {

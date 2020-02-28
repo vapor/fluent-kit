@@ -1,27 +1,37 @@
 public protocol DatabaseOutput: CustomStringConvertible {
     func schema(_ schema: String) -> DatabaseOutput
-    func contains(_ field: FieldKey) -> Bool
-    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+    func contains(_ path: [FieldKey]) -> Bool
+    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
         where T: Decodable
 }
 
 extension DatabaseOutput {
-    func decode<T>(_ field: FieldKey) throws -> T
+    public func contains(_ path: FieldKey...) -> Bool {
+        self.contains(path)
+    }
+    
+    public func decode<T>(_ path: [FieldKey]) throws -> T
         where T: Decodable
     {
-        try self.decode(field, as: T.self)
+        try self.decode(path, as: T.self)
+    }
+
+    public func decode<T>(_ path: FieldKey..., as type: T.Type = T.self) throws -> T
+        where T: Decodable
+    {
+        try self.decode(path, as: T.self)
     }
 }
 
 extension DatabaseOutput {
-    func prefixed(by string: String) -> DatabaseOutput {
-        return PrefixingOutput(wrapped: self, prefix: string)
+    func nested(_ key: FieldKey) -> DatabaseOutput {
+        return NestedOutput(wrapped: self, prefix: key)
     }
 }
 
-private struct PrefixingOutput: DatabaseOutput {
+private struct NestedOutput: DatabaseOutput {
     let wrapped: DatabaseOutput
-    let prefix: String
+    let prefix: FieldKey
 
     var description: String {
         self.wrapped.description
@@ -31,14 +41,14 @@ private struct PrefixingOutput: DatabaseOutput {
         self.wrapped.schema(schema)
     }
 
-    func contains(_ field: FieldKey) -> Bool {
-        self.wrapped.contains(.prefixed(self.prefix, field))
+    func contains(_ path: [FieldKey]) -> Bool {
+        self.wrapped.contains([self.prefix] + path)
     }
 
-    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
         where T : Decodable
     {
-        try self.wrapped.decode(.prefixed(self.prefix, field))
+        try self.wrapped.decode([self.prefix] + path)
     }
 }
 
@@ -52,8 +62,8 @@ private struct CombinedOutput: DatabaseOutput {
     var first: DatabaseOutput
     var second: DatabaseOutput
 
-    func contains(_ field: FieldKey) -> Bool {
-        self.first.contains(field) || self.second.contains(field)
+    func contains(_ path: [FieldKey]) -> Bool {
+        self.first.contains(path) || self.second.contains(path)
     }
 
     func schema(_ schema: String) -> DatabaseOutput {
@@ -63,15 +73,15 @@ private struct CombinedOutput: DatabaseOutput {
         )
     }
 
-    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
         where T: Decodable
     {
-        if self.first.contains(field) {
-            return try self.first.decode(field)
-        } else if self.second.contains(field) {
-            return try self.second.decode(field)
+        if self.first.contains(path) {
+            return try self.first.decode(path)
+        } else if self.second.contains(path) {
+            return try self.second.decode(path)
         } else {
-            throw FluentError.missingField(name: field.description)
+            throw FluentError.missingField(name: path.description)
         }
     }
 

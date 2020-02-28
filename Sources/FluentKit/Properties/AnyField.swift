@@ -1,48 +1,31 @@
 public protocol PropertyProtocol: AnyProperty {
     associatedtype Model: Fields
     associatedtype Value: Codable
+    var value: Value? { get set }
+    var anyFieldValue: Any? { get }
+    var anyFieldValueType: Any.Type { get }
+}
+
+extension PropertyProtocol {
+    public var anyFieldValue: Any? {
+        self.value
+    }
+
+    public var anyFieldValueType: Any.Type {
+        Value.self
+    }
 }
 
 public protocol AnyProperty: class {
+    var fields: [AnyField] { get }
     func input(to input: inout DatabaseInput)
     func output(from output: DatabaseOutput) throws
     func encode(to encoder: Encoder) throws
     func decode(from decoder: Decoder) throws
 }
 
-public protocol FieldProtocol: AnyField, PropertyProtocol {
-    associatedtype FieldValue: Codable
-    var fieldValue: FieldValue { get set }
-}
-
-extension FieldProtocol {
-    public var anyFieldValue: Any {
-        self.fieldValue
-    }
-
-    public var anyFieldValueType: Any.Type {
-        FieldValue.self
-    }
-}
+public protocol FieldProtocol: AnyField, PropertyProtocol { }
 
 public protocol AnyField: AnyProperty {
-    var keys: [FieldKey] { get }
-    var anyFieldValue: Any { get }
-    var anyFieldValueType: Any.Type { get }
-}
-
-public protocol FilterField {
-    associatedtype Model: Fields
-    associatedtype QueryValue: Codable
     var path: [FieldKey] { get }
-}
-
-public protocol QueryField: FilterField {
-    var key: FieldKey { get }
-}
-
-extension QueryField {
-    public var path: [FieldKey] {
-        [self.key]
-    }
 }

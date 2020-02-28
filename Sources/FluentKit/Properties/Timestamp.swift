@@ -54,22 +54,28 @@ public final class TimestampProperty<Model>
     }
 }
 
-extension TimestampProperty: FieldProtocol {
-    public typealias FieldValue = Date?
-
-    public var fieldValue: Date? {
+extension TimestampProperty: PropertyProtocol {
+    public var value: Date?? {
         get {
-            self.field.fieldValue
+            self.field.value
         }
         set {
-            self.field.fieldValue = newValue
+            self.field.value = newValue
         }
     }
 }
 
+extension TimestampProperty: FieldProtocol { }
+
 extension TimestampProperty: AnyField {
-    public var keys: [FieldKey] {
-        [self.key]
+    public var path: [FieldKey] {
+        self.field.path
+    }
+}
+
+extension TimestampProperty: AnyProperty {
+    public var fields: [AnyField] {
+        [self]
     }
     
     public func input(to input: inout DatabaseInput) {
@@ -104,8 +110,8 @@ extension AnyTimestamp {
 }
 
 extension Fields {
-    var timestamps: [String: AnyTimestamp] {
-        self.fields.compactMapValues {
+    var timestamps: [AnyTimestamp] {
+        self.fields.compactMap {
             $0 as? AnyTimestamp
         }
     }
@@ -116,7 +122,7 @@ extension Fields {
 
     private func touchTimestamps(_ triggers: [TimestampTrigger]) {
         let date = Date()
-        self.timestamps.forEach { (label, timestamp) in
+        self.timestamps.forEach { timestamp in
             if triggers.contains(timestamp.trigger) {
                 timestamp.touch(date: date)
             }
@@ -124,7 +130,7 @@ extension Fields {
     }
 
     var deletedTimestamp: AnyTimestamp? {
-        return self.timestamps.filter({ $0.1.trigger == .delete }).first?.1
+        self.timestamps.filter { $0.trigger == .delete }.first
     }
 }
 

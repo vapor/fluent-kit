@@ -60,27 +60,7 @@ public final class QueryBuilder<Model>
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
     {
-        self.fields(Joined.self, .key(for: field))
-    }
-
-    public func fields(_ fields: FieldKey...) -> Self {
-        self.fields(Model.self, fields)
-    }
-
-    public func fields(_ fields: [FieldKey]) -> Self {
-        self.fields(Model.self, fields)
-    }
-
-    public func fields<Joined>(_ joined: Joined.Type, _ fields: FieldKey...) -> Self
-        where Joined: Schema
-    {
-        self.fields(Joined.self, fields)
-    }
-
-    public func fields<Joined>(_ joined: Joined.Type, _ fields: [FieldKey]) -> Self
-        where Joined: Schema
-    {
-        self.query.fields += fields.map { .field($0, schema: Joined.schema) }
+        self.query.fields.append(.field(path: Joined.path(for: field), schema: Joined.schema))
         return self
     }
 
@@ -155,17 +135,16 @@ public final class QueryBuilder<Model>
             .map { $0.first }
     }
 
-    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.FieldValue]>
+    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
         where
             Field: FieldProtocol,
-            Field.Model == Model,
-            Field.FieldValue == Field.Value
+            Field.Model == Model
     {
         let copy = self.copy()
-        copy.query.fields = [.field(Model.key(for: key), schema: Model.schema)]
+        copy.query.fields = [.field(path: Model.path(for: key), schema: Model.schema)]
         return copy.all().map {
             $0.map {
-                $0[keyPath: key].fieldValue
+                $0[keyPath: key].value!
             }
         }
     }
@@ -173,18 +152,17 @@ public final class QueryBuilder<Model>
     public func all<Joined, Field>(
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
-    ) -> EventLoopFuture<[Field.FieldValue]>
+    ) -> EventLoopFuture<[Field.Value]>
         where
             Joined: Schema,
             Field: FieldProtocol,
-            Field.Model == Joined,
-            Field.FieldValue == Field.Value
+            Field.Model == Joined
     {
         let copy = self.copy()
-        copy.query.fields = [.field(.key(for: field), schema: Joined.schemaOrAlias)]
+        copy.query.fields = [.field(path: Joined.path(for: field), schema: Joined.schemaOrAlias)]
         return copy.all().flatMapThrowing {
             try $0.map {
-                try $0.joined(Joined.self)[keyPath: field].fieldValue
+                try $0.joined(Joined.self)[keyPath: field].value!
             }
         }
     }
@@ -246,8 +224,8 @@ public final class QueryBuilder<Model>
         // add fields from all models being queried.
         if query.fields.isEmpty {
             for model in self.models {
-                query.fields += model.keys.map { key in
-                    .field(key, schema: model.schemaOrAlias)
+                query.fields += model.keys.map { path in
+                    .field(path: path, schema: model.schemaOrAlias)
                 }
             }
         }

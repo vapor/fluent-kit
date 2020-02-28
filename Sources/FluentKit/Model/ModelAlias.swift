@@ -58,10 +58,24 @@ public final class AliasedField<Alias, Field>
 }
 
 extension AliasedField: PropertyProtocol {
+    public typealias Model = Alias
     public typealias Value = Field.Value
+
+    public var value: Field.Value? {
+        get {
+            self.field.value
+        }
+        set {
+            self.field.value = newValue
+        }
+    }
 }
 
 extension AliasedField: AnyProperty {
+    public var fields: [AnyField] {
+        self.field.fields
+    }
+
     public func input(to input: inout DatabaseInput) {
         self.field.input(to: &input)
     }
@@ -79,22 +93,10 @@ extension AliasedField: AnyProperty {
     }
 }
 
-extension AliasedField: FieldProtocol {
-    public var fieldValue: Field.FieldValue {
-        get {
-            self.field.fieldValue
-        }
-        set {
-            self.field.fieldValue = newValue
-        }
-    }
-
-    public typealias Model = Alias
-    public typealias FieldValue = Field.FieldValue
-}
+extension AliasedField: FieldProtocol { }
 
 extension AliasedField: AnyField {
-    public var keys: [FieldKey] {
-        self.field.keys
+    public var path: [FieldKey] {
+        self.field.path
     }
 }

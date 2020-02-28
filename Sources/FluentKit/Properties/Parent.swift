@@ -48,24 +48,14 @@ extension ParentProperty: Relation {
     }
 }
 
-extension ParentProperty: FieldProtocol {
-    public typealias FieldValue = To.IDValue
+extension ParentProperty: PropertyProtocol {
     public typealias Model = From
     public typealias Value = To
-
-    public var fieldValue: To.IDValue {
-        get {
-            self.$id.fieldValue
-        }
-        set {
-            self.$id.fieldValue = newValue
-        }
-    }
 }
 
-extension ParentProperty: AnyField {
-    public var keys: [FieldKey] {
-        self.$id.keys
+extension ParentProperty: AnyProperty {
+    public var fields: [AnyField] {
+        self.$id.fields
     }
     
     public func input(to input: inout DatabaseInput) {

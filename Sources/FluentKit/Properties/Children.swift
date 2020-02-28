@@ -99,17 +99,21 @@ public final class ChildrenProperty<From, To>
 
 extension ChildrenProperty: PropertyProtocol {
     public typealias Model = From
-    public typealias Value = To
+    public typealias Value = [To]
 }
 
 extension ChildrenProperty: AnyProperty {
+    public var fields: [AnyField] {
+        []
+    }
+
     public func input(to input: inout DatabaseInput) {
         // children never has input
     }
 
     public func output(from output: DatabaseOutput) throws {
         let key = From()._$id.field.key
-        if output.contains(key) {
+        if output.contains([key]) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }

@@ -58,8 +58,8 @@ extension Model {
     }
     
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
-            timestamp.1.touch()
+        if !force, let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first {
+            timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
@@ -92,10 +92,10 @@ extension Model {
     }
     
     private func _restore(on database: Database) -> EventLoopFuture<Void> {
-        guard let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first else {
+        guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
             fatalError("no delete timestamp on this model")
         }
-        timestamp.1.touch(date: nil)
+        timestamp.touch(date: nil)
         precondition(self._$id.exists)
         return Self.query(on: database)
             .withDeleted()
@@ -167,14 +167,14 @@ private struct SavedInput: DatabaseOutput {
         return self
     }
     
-    func contains(_ field: FieldKey) -> Bool {
-        return self.input[field] != nil
+    func contains(_ path: [FieldKey]) -> Bool {
+        get(path: path, from: .dictionary(self.input)) != nil
     }
     
-    func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
         where T : Decodable
     {
-        if let value = self.input[field] {
+        if let value = get(path: path, from: .dictionary(self.input)) {
             // not in output, get from saved input
             switch value {
             case .bind(let encodable):
@@ -185,11 +185,31 @@ private struct SavedInput: DatabaseOutput {
                 fatalError("Invalid input type: \(value)")
             }
         } else {
-            throw FluentError.missingField(name: field.description)
+            throw FluentError.missingField(name: path.description)
         }
     }
     
     var description: String {
         return self.input.description
+    }
+}
+
+private func get(path: [FieldKey], from input: DatabaseQuery.Value) -> DatabaseQuery.Value? {
+    switch path.count {
+    case 0:
+        return input
+    default:
+        switch input {
+        case .dictionary(let nested):
+            if let next = nested[path[0]] {
+                return get(path: .init(path[1...]), from: next)
+            } else {
+                // key not found.
+                return nil
+            }
+        default:
+            // not at end of key path
+            return nil
+        }
     }
 }

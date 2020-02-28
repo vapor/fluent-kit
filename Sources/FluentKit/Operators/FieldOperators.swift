@@ -186,9 +186,9 @@ public struct ModelFieldFilter<Left, Right>
     )
         where LeftField: FieldProtocol, RightField: FieldProtocol
     {
-        self.lhsPath = Left.init()[keyPath: lhs].keys
+        self.lhsPath = Left.init()[keyPath: lhs].path
         self.method = method
-        self.rhsPath = Right.init()[keyPath: rhs].keys
+        self.rhsPath = Right.init()[keyPath: rhs].path
     }
 
     let lhsPath: [FieldKey]

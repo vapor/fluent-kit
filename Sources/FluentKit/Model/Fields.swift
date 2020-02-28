@@ -9,29 +9,21 @@ extension FieldKey {
             Field: FieldProtocol,
             Field.Model == Model
     {
-        Model.key(for: field)
+        Model.path(for: field)[0]
     }
 }
 
 extension Fields {
-    public static var keys: [FieldKey] {
-        self.init().fields.values.flatMap {
-            $0.keys
+    public static var keys: [[FieldKey]] {
+        self.init().fields.flatMap {
+            $0.fields.map { $0.path }
         }
-    }
-
-    public static func key<Model, Field>(for field: KeyPath<Model, Field>) -> FieldKey
-        where
-            Field: FieldProtocol,
-            Field.Model == Model
-    {
-         Model.init()[keyPath: field].keys[0]
     }
 
     public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
         where Field: FieldProtocol
     {
-         Self.init()[keyPath: field].keys
+         Self.init()[keyPath: field].path
     }
 
     /// Indicates whether the model has fields that have been set, but the model
@@ -54,8 +46,8 @@ extension Fields {
         }
     }
 
-    public var fields: [String: AnyField] {
-        self.properties.compactMapValues { $0 as? AnyField }
+    public var fields: [AnyField] {
+        self.properties.values.flatMap { $0.fields }
     }
 
     public var properties: [String: AnyProperty] {
