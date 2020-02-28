@@ -265,11 +265,23 @@ final class FluentKitTests: XCTestCase {
                 toy: .init(name: "Foo", type: .mouse)
             )
         )
-        for field in User().fields {
-            print(field.path)
-            print(field)
-            print()
+
+        for path in User.keys {
+            print(path)
         }
+
+        func output(_ properties: [AnyProperty], depth: Int = 0) {
+            for property in properties {
+                print(
+                    String(repeating: "  ", count: depth),
+                    property.path,
+                    property
+                )
+                output(property.nested, depth: depth + 1)
+            }
+        }
+        output(User().properties)
+
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
         XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
@@ -283,6 +295,9 @@ final class User: Model {
 
     @Field(key: "name")
     var name: String
+
+    @Timestamp(key: "deleted_at", on: .delete)
+    var deletedAt: Date?
 
     @CompoundField(key: "pet")
     var pet: Pet
@@ -327,7 +342,7 @@ final class Toy: Fields {
     @Field(key: "name")
     var name: String
 
-    @Field(key: "type")
+    @Enum(key: "type")
     var type: ToyType
 
     init() { }

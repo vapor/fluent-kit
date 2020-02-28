@@ -15,9 +15,21 @@ extension FieldKey {
 
 extension Fields {
     public static var keys: [[FieldKey]] {
-        self.init().fields.flatMap {
-            $0.fields.map { $0.path }
+        func collect(
+            _ properties: [AnyProperty],
+            prefix: [FieldKey] = [],
+            into keys: inout [[FieldKey]]
+        ) {
+            properties.forEach {
+                if $0 is AnyField {
+                    keys.append(prefix + $0.path)
+                }
+                collect($0.nested, prefix: prefix + $0.path, into: &keys)
+            }
         }
+        var keys: [[FieldKey]] = []
+        collect(self.init().properties, into: &keys)
+        return keys
     }
 
     public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
@@ -45,11 +57,6 @@ extension Fields {
             try field.output(from: output)
         }
     }
-
-    public var fields: [AnyField] {
-        self.properties.flatMap { $0.fields }
-    }
-
 
     public var properties: [AnyProperty] {
         Mirror(reflecting: self).children.compactMap {

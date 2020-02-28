@@ -52,12 +52,12 @@ extension TimestampProperty: PropertyProtocol {
 extension TimestampProperty: FieldProtocol { }
 
 extension TimestampProperty: AnyProperty {
-    public var path: [FieldKey] {
-        self.field.path
+    public var nested: [AnyProperty] {
+        []
     }
 
-    public var fields: [AnyField] {
-        [self]
+    public var path: [FieldKey] {
+        self.field.path
     }
     
     public func input(to input: inout DatabaseInput) {
@@ -79,7 +79,7 @@ extension TimestampProperty: AnyProperty {
 
 extension TimestampProperty: AnyTimestamp { }
 
-protocol AnyTimestamp: AnyField {
+protocol AnyTimestamp: AnyProperty {
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
 }
@@ -91,8 +91,9 @@ extension AnyTimestamp {
 }
 
 extension Fields {
+    #warning("TODO: search nested?")
     var timestamps: [AnyTimestamp] {
-        self.fields.compactMap {
+        self.properties.compactMap {
             $0 as? AnyTimestamp
         }
     }

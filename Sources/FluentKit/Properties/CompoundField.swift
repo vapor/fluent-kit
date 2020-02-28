@@ -1,19 +1,21 @@
 extension Fields {
-    @available(*, deprecated, renamed: "CompoundField")
-    public typealias NestedField = CompoundField
+    @available(*, deprecated, renamed: "Group")
+    public typealias NestedField = Group
+    @available(*, deprecated, renamed: "Group")
+    public typealias CompoundField = Group
 
-    public typealias CompoundField<Value> = CompoundFieldProperty<Self, Value>
+    public typealias Group<Value> = GroupProperty<Self, Value>
         where Value: Fields
 }
 
 @propertyWrapper @dynamicMemberLookup
-public final class CompoundFieldProperty<Model, Value>
+public final class GroupProperty<Model, Value>
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
     public let key: FieldKey
     public var value: Value?
 
-    public var projectedValue: CompoundFieldProperty<Model, Value> {
+    public var projectedValue: GroupProperty<Model, Value> {
         return self
     }
 
@@ -36,19 +38,19 @@ public final class CompoundFieldProperty<Model, Value>
 
     public subscript<Property>(
          dynamicMember keyPath: KeyPath<Value, Property>
-    ) -> NestedProperty<Model, Property> {
+    ) -> NestedProperty<Model, Property>
+        where Property: PropertyProtocol
+    {
         .init(prefix: [self.key], property: self.value![keyPath: keyPath])
     }
 }
 
 
-extension CompoundFieldProperty: PropertyProtocol { }
+extension GroupProperty: PropertyProtocol { }
 
-extension CompoundFieldProperty: AnyProperty {
-    public var fields: [AnyField] {
-        self.wrappedValue.fields.map {
-            AnyCompoundField(key: self.key, base: $0)
-        }
+extension GroupProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        self.value!.properties
     }
 
     public var path: [FieldKey] {
@@ -72,50 +74,5 @@ extension CompoundFieldProperty: AnyProperty {
 
     public func decode(from decoder: Decoder) throws {
         self.value = try .init(from: decoder)
-    }
-}
-
-private final class AnyCompoundField {
-    let key: FieldKey
-    let base: AnyField
-    init(key: FieldKey, base: AnyField) {
-        self.key = key
-        self.base = base
-    }
-}
-
-extension AnyCompoundField: AnyField { }
-
-extension AnyCompoundField: AnyProperty {
-    var fields: [AnyField] {
-        [self]
-    }
-
-    var path: [FieldKey] {
-        [self.key] + self.base.path
-    }
-
-    var anyValue: Any? {
-        self.base.anyValue
-    }
-
-    static var anyValueType: Any.Type {
-        fatalError()
-    }
-
-    func input(to input: inout DatabaseInput) {
-        self.base.input(to: &input)
-    }
-
-    func output(from output: DatabaseOutput) throws {
-        try self.base.output(from: output)
-    }
-
-    func encode(to encoder: Encoder) throws {
-        try self.base.encode(to: encoder)
-    }
-
-    func decode(from decoder: Decoder) throws {
-        try self.base.decode(from: decoder)
     }
 }

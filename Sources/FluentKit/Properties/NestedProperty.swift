@@ -18,7 +18,6 @@ public final class NestedProperty<Model, Property>
 }
 
 extension NestedProperty: FieldProtocol where Property: FieldProtocol { }
-extension NestedProperty: AnyField where Property: AnyField { }
 
 extension NestedProperty: PropertyProtocol {
     public var path: [FieldKey] {
@@ -39,24 +38,23 @@ extension NestedProperty: PropertyProtocol {
 }
 
 extension NestedProperty: AnyProperty {
-    public var fields: [AnyField] {
-        self.property.fields
+    public var nested: [AnyProperty] {
+        fatalError()
     }
 
     public func input(to input: inout DatabaseInput) {
-        self.property.input(to: &input)
+        fatalError()
     }
 
     public func output(from output: DatabaseOutput) throws {
-        try self.property.output(from: output)
+        fatalError()
     }
 
     public func encode(to encoder: Encoder) throws {
-        try self.property.encode(to: encoder)
+        fatalError()
     }
 
     public func decode(from decoder: Decoder) throws {
-        try self.property.decode(from: decoder)
+        fatalError()
     }
-
 }

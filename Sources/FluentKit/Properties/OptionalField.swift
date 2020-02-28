@@ -56,14 +56,16 @@ extension OptionalFieldProperty: PropertyProtocol {
 extension OptionalFieldProperty: FieldProtocol { }
 
 extension OptionalFieldProperty: AnyField {
-    public var path: [FieldKey] {
-        [self.key]
-    }
+
 }
 
 extension OptionalFieldProperty: AnyProperty {
-    public var fields: [AnyField] {
-        [self]
+    public var nested: [AnyProperty] {
+        []
+    }
+
+    public var path: [FieldKey] {
+        [self.key]
     }
 
     public func input(to input: inout DatabaseInput) {

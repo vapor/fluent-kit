@@ -4,18 +4,22 @@ public protocol PropertyProtocol: AnyProperty {
     var value: Value? { get set }
 }
 
+public protocol FieldProtocol: PropertyProtocol { }
+
 public protocol AnyProperty: class {
     static var anyValueType: Any.Type { get }
     var anyValue: Any? { get }
-    var fields: [AnyField] { get }
+
     var path: [FieldKey] { get }
+    var nested: [AnyProperty] { get }
+
     func input(to input: inout DatabaseInput)
     func output(from output: DatabaseOutput) throws
     func encode(to encoder: Encoder) throws
     func decode(from decoder: Decoder) throws
 }
 
-extension PropertyProtocol {
+extension AnyProperty where Self: PropertyProtocol {
     public var anyValue: Any? {
         self.value
     }
@@ -25,6 +29,4 @@ extension PropertyProtocol {
     }
 }
 
-public protocol FieldProtocol: AnyField, PropertyProtocol { }
-
-public protocol AnyField: AnyProperty { }
+public protocol AnyField { }

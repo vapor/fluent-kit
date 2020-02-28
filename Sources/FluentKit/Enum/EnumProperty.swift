@@ -70,8 +70,8 @@ extension EnumProperty: AnyField {
 }
 
 extension EnumProperty: AnyProperty {
-    public var fields: [AnyField] {
-        [self.field]
+    public var nested: [AnyProperty] {
+        []
     }
 
     public func input(to input: inout DatabaseInput) {

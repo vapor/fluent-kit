@@ -53,14 +53,14 @@ extension OptionalParentProperty: PropertyProtocol {
 }
 
 extension OptionalParentProperty: AnyProperty {
-    public var fields: [AnyField] {
-        self.$id.fields
+    public var nested: [AnyProperty] {
+        [self.$id]
     }
 
     public var path: [FieldKey] {
-        self.$id.path
+        []
     }
-
+    
     public func input(to input: inout DatabaseInput) {
         self.$id.input(to: &input)
     }

@@ -72,8 +72,12 @@ extension AliasedField: PropertyProtocol {
 }
 
 extension AliasedField: AnyProperty {
-    public var fields: [AnyField] {
-        self.field.fields
+    public var path: [FieldKey] {
+        self.field.path
+    }
+
+    public var nested: [AnyProperty] {
+        self.field.nested
     }
 
     public func input(to input: inout DatabaseInput) {
@@ -94,9 +98,3 @@ extension AliasedField: AnyProperty {
 }
 
 extension AliasedField: FieldProtocol { }
-
-extension AliasedField: AnyField {
-    public var path: [FieldKey] {
-        self.field.path
-    }
-}

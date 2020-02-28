@@ -124,15 +124,14 @@ extension IDProperty: PropertyProtocol {
 
 extension IDProperty: FieldProtocol { }
 
-extension IDProperty: AnyField {
-    public var path: [FieldKey] {
-        self.field.path
-    }
-}
+extension IDProperty: AnyField { }
 
 extension IDProperty: AnyProperty {
-    public var fields: [AnyField] {
-        self.field.fields
+    public var nested: [AnyProperty] {
+        []
+    }
+    public var path: [FieldKey] {
+        self.field.path
     }
 
     public func input(to input: inout DatabaseInput) {

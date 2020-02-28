@@ -103,7 +103,7 @@ extension ChildrenProperty: PropertyProtocol {
 }
 
 extension ChildrenProperty: AnyProperty {
-    public var fields: [AnyField] {
+    public var nested: [AnyProperty] {
         []
     }
 

@@ -57,16 +57,15 @@ extension FieldProperty: PropertyProtocol {
 }
 
 extension FieldProperty: FieldProtocol { }
-
-extension FieldProperty: AnyField {
-    public var path: [FieldKey] {
-        [self.key]
-    }
-}
+extension FieldProperty: AnyField { }
 
 extension FieldProperty: AnyProperty {
-    public var fields: [AnyField] {
-        [self]
+    public var nested: [AnyProperty] {
+        []
+    }
+
+    public var path: [FieldKey] {
+        [self.key]
     }
 
     public func input(to input: inout DatabaseInput) {
