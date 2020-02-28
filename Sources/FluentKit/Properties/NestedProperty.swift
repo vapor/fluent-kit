@@ -17,6 +17,9 @@ public final class NestedProperty<Model, Property>
     }
 }
 
+extension NestedProperty: FieldProtocol where Property: FieldProtocol { }
+extension NestedProperty: AnyField where Property: AnyField { }
+
 extension NestedProperty: PropertyProtocol {
     public var path: [FieldKey] {
         self.prefix + self.property.path
@@ -57,6 +60,3 @@ extension NestedProperty: AnyProperty {
     }
 
 }
-
-extension NestedProperty: FieldProtocol where Property: FieldProtocol { }
-extension NestedProperty: AnyField where Property: AnyField & FieldProtocol { }
