@@ -1,26 +1,23 @@
 extension Fields {
-    public typealias Field<Value> = FieldProperty<Self, Value>
+    public typealias OptionalField<Value> = OptionalFieldProperty<Self, Value>
         where Value: Codable
 }
 
 @propertyWrapper
-public final class FieldProperty<Model, Value>
+public final class OptionalFieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: Codable
 {
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-    
-    public var projectedValue: FieldProperty<Model, Value> {
+
+    public var projectedValue: OptionalFieldProperty<Model, Value> {
         self
     }
 
-    public var wrappedValue: Value {
+    public var wrappedValue: Value? {
         get {
-            guard let value = self.value else {
-                fatalError("Cannot access field before it is initialized or fetched: \(self.key)")
-            }
-            return value
+            self.value
         }
         set {
             self.value = newValue
@@ -32,7 +29,7 @@ public final class FieldProperty<Model, Value>
     }
 }
 
-extension FieldProperty: PropertyProtocol {
+extension OptionalFieldProperty: PropertyProtocol {
     public var value: Value? {
         get {
             if let value = self.inputValue {
@@ -56,15 +53,15 @@ extension FieldProperty: PropertyProtocol {
     }
 }
 
-extension FieldProperty: FieldProtocol { }
+extension OptionalFieldProperty: FieldProtocol { }
 
-extension FieldProperty: AnyField {
+extension OptionalFieldProperty: AnyField {
     public var path: [FieldKey] {
         [self.key]
     }
 }
 
-extension FieldProperty: AnyProperty {
+extension OptionalFieldProperty: AnyProperty {
     public var fields: [AnyField] {
         [self]
     }
@@ -74,10 +71,10 @@ extension FieldProperty: AnyProperty {
     }
 
     public func output(from output: DatabaseOutput) throws {
-        if output.contains([self.key]) {
+        if output.contains(self.key) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(self.key, as: Value.self)
+                self.outputValue = try output.decode(self.key, as: Value?.self)
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
@@ -95,17 +92,10 @@ extension FieldProperty: AnyProperty {
 
     public func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-
-        if let valueType = Value.self as? AnyOptionalType.Type {
-            // Hacks for supporting optionals in @Field.
-            // Using @OptionalField is preferred moving forward.
-            if container.decodeNil() {
-                self.wrappedValue = (valueType.nil as! Value)
-            } else {
-                self.wrappedValue = try container.decode(Value.self)
-            }
+        if container.decodeNil() {
+            self.value = nil
         } else {
-            self.wrappedValue = try container.decode(Value.self)
+            self.value = try container.decode(Value.self)
         }
     }
 }

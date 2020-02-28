@@ -2,11 +2,11 @@ public protocol PropertyProtocol: AnyProperty {
     associatedtype Model: Fields
     associatedtype Value: Codable
     var value: Value? { get set }
-    var anyFieldValue: Any? { get }
-    var anyFieldValueType: Any.Type { get }
 }
 
 public protocol AnyProperty: class {
+    static var anyValueType: Any.Type { get }
+    var anyValue: Any? { get }
     var fields: [AnyField] { get }
     var path: [FieldKey] { get }
     func input(to input: inout DatabaseInput)
@@ -16,18 +16,12 @@ public protocol AnyProperty: class {
 }
 
 extension PropertyProtocol {
-    public var anyFieldValue: Any? {
+    public var anyValue: Any? {
         self.value
     }
 
-    public var anyFieldValueType: Any.Type {
+    public static var anyValueType: Any.Type {
         Value.self
-    }
-}
-
-extension AnyProperty {
-    public var path: [FieldKey] {
-        return []
     }
 }
 

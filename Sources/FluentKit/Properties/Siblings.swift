@@ -167,6 +167,10 @@ extension SiblingsProperty: AnyProperty {
         []
     }
 
+    public var path: [FieldKey] {
+        []
+    }
+
     public func input(to input: inout DatabaseInput) {
         // siblings never has input
     }

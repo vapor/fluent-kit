@@ -1,4 +1,7 @@
 extension Fields {
+    @available(*, deprecated, renamed: "CompoundField")
+    public typealias NestedField = CompoundField
+
     public typealias CompoundField<Value> = CompoundFieldProperty<Self, Value>
         where Value: Fields
 }
@@ -53,7 +56,10 @@ extension CompoundFieldProperty: AnyProperty {
     }
 
     public func input(to input: inout DatabaseInput) {
-        input.values[self.key] = .dictionary(self.value!.input.values)
+        let values = self.value!.input.values
+        if !values.isEmpty {
+            input.values[self.key] = .dictionary(values)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
@@ -87,6 +93,14 @@ extension AnyCompoundField: AnyProperty {
 
     var path: [FieldKey] {
         [self.key] + self.base.path
+    }
+
+    var anyValue: Any? {
+        self.base.anyValue
+    }
+
+    static var anyValueType: Any.Type {
+        fatalError()
     }
 
     func input(to input: inout DatabaseInput) {

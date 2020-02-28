@@ -107,6 +107,10 @@ extension ChildrenProperty: AnyProperty {
         []
     }
 
+    public var path: [FieldKey] {
+        []
+    }
+
     public func input(to input: inout DatabaseInput) {
         // children never has input
     }

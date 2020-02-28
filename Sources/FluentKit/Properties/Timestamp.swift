@@ -12,24 +12,8 @@ public enum TimestampTrigger {
 public final class TimestampProperty<Model>
     where Model: FluentKit.Fields
 {
-    public typealias Value = Date?
-
-    public let field: FieldProperty<Model, Date?>
-
+    public let field: Model.OptionalField<Date>
     public let trigger: TimestampTrigger
-
-    public var key: FieldKey {
-        return self.field.key
-    }
-
-    var inputValue: DatabaseQuery.Value? {
-        get {
-            return self.field.inputValue
-        }
-        set {
-            self.field.inputValue = newValue
-        }
-    }
 
     public var projectedValue: TimestampProperty<Model> {
         return self
@@ -37,10 +21,10 @@ public final class TimestampProperty<Model>
 
     public var wrappedValue: Date? {
         get {
-            return self.field.wrappedValue
+            self.value
         }
         set {
-            self.field.wrappedValue = newValue
+            self.value = newValue
         }
     }
 
@@ -50,12 +34,12 @@ public final class TimestampProperty<Model>
     }
 
     public func touch(date: Date?) {
-        self.inputValue = .bind(date)
+        self.field.inputValue = .bind(date)
     }
 }
 
 extension TimestampProperty: PropertyProtocol {
-    public var value: Date?? {
+    public var value: Date? {
         get {
             self.field.value
         }
@@ -67,13 +51,11 @@ extension TimestampProperty: PropertyProtocol {
 
 extension TimestampProperty: FieldProtocol { }
 
-extension TimestampProperty: AnyField {
+extension TimestampProperty: AnyProperty {
     public var path: [FieldKey] {
         self.field.path
     }
-}
 
-extension TimestampProperty: AnyProperty {
     public var fields: [AnyField] {
         [self]
     }
@@ -98,7 +80,6 @@ extension TimestampProperty: AnyProperty {
 extension TimestampProperty: AnyTimestamp { }
 
 protocol AnyTimestamp: AnyField {
-    var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
 }
@@ -141,7 +122,7 @@ extension Schema {
         }
 
         let deletedAtField = DatabaseQuery.Filter.Field.path(
-            [timestamp.key],
+            timestamp.path,
             schema: self.schemaOrAlias
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)

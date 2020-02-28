@@ -10,7 +10,7 @@ public final class NestedProperty<Model, Property>
         self.property = property
     }
 
-    subscript<Property>(
+    public subscript<Property>(
         dynamicMember keyPath: KeyPath<Value, Property>
     ) -> NestedProperty<Model, Property> {
         .init(prefix: self.path, property: self.value![keyPath: keyPath])

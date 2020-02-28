@@ -57,6 +57,10 @@ extension ParentProperty: AnyProperty {
     public var fields: [AnyField] {
         self.$id.fields
     }
+
+    public var path: [FieldKey] {
+        self.$id.path
+    }
     
     public func input(to input: inout DatabaseInput) {
         self.$id.input(to: &input)

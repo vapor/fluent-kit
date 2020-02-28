@@ -1,43 +1,49 @@
 extension FluentBenchmarker {
     public func testCompoundField() throws {
         try runTest(#function, [
-            UserMigration(),
-            UserSeed()
+            CompoundMoonMigration(),
+            CompoundMoonSeed()
         ]) {
-            let users = try User.query(on: self.database)
-                .filter(\.$pet.$type == .cat)
+            // Test filtering moons
+            let moons = try CompoundMoon.query(on: self.database)
+                .filter(\.$planet.$type == .smallRocky)
                 .all().wait()
 
-            guard let user = users.first, users.count == 1 else {
-                XCTFail("Unexpected user count: \(users.count)")
+            XCTAssertEqual(moons.count, 1)
+            guard let moon = moons.first else {
                 return
             }
-            XCTAssertEqual(user.name, "Tanner")
-            XCTAssertEqual(user.pet.name, "Ziz")
-            XCTAssertEqual(user.pet.type, .cat)
+            print(moon)
 
-            struct UserJSON: Equatable, Codable {
-                var id: UUID
-                var name: String
-                var pet: PetJSON
-            }
-            struct PetJSON: Equatable, Codable {
-                var name: String
-                var type: String
-            }
-            let expected = UserJSON(
-                id: user.id!,
-                name: "Tanner",
-                pet: .init(name: "Ziz", type: "cat")
-            )
-            let decoded = try JSONDecoder().decode(UserJSON.self, from: JSONEncoder().encode(user))
-            XCTAssertEqual(decoded, expected)
+            XCTAssertEqual(moon.name, "Moon")
+            XCTAssertEqual(moon.planet.name, "Earth")
+            XCTAssertEqual(moon.planet.type, .smallRocky)
+            XCTAssertEqual(moon.planet.star.name, "Sun")
+            XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
+
+            // Test JSON
+            let json = try prettyJSON(moon)
+            print(json)
+            let decoded = try JSONDecoder().decode(CompoundMoon.self, from: Data(json.utf8))
+            print(decoded)
+            XCTAssertEqual(decoded.name, "Moon")
+            XCTAssertEqual(decoded.planet.name, "Earth")
+            XCTAssertEqual(decoded.planet.type, .smallRocky)
+            XCTAssertEqual(decoded.planet.star.name, "Sun")
+            XCTAssertEqual(decoded.planet.star.galaxy.name, "Milky Way")
+
+            // Test deeper filter
+            let all = try CompoundMoon.query(on: self.database)
+                .filter(\.$planet.$star.$galaxy.$name == "Milky Way")
+                .all()
+                .wait()
+            XCTAssertEqual(all.count, 2)
         }
     }
 }
 
-private final class User: Model {
-    static let schema = "users"
+private final class CompoundMoon: Model {
+    static let schema = "moons"
 
     @ID(key: .id)
     var id: UUID?
@@ -45,61 +51,114 @@ private final class User: Model {
     @Field(key: "name")
     var name: String
 
-    @CompoundField(key: "pet")
-    var pet: Pet
+    final class Planet: Fields {
+        @Field(key: "name")
+        var name: String
+
+        enum PlanetType: String, Codable {
+            case smallRocky, gasGiant, dwarf
+        }
+
+        @Field(key: "type")
+        var type: PlanetType
+
+        final class Star: Fields {
+            @Field(key: "name")
+            var name: String
+
+            final class Galaxy: Fields {
+                @Field(key: "name")
+                var name: String
+
+                init() { }
+
+                init(name: String) {
+                    self.name = name
+                }
+            }
+
+            @CompoundField(key: "galaxy")
+            var galaxy: Galaxy
+
+            init() { }
+
+            init(name: String, galaxy: Galaxy) {
+                self.name = name
+                self.galaxy = galaxy
+            }
+        }
+
+        @CompoundField(key: "star")
+        var star: Star
+
+        init() { }
+
+        init(name: String, type: PlanetType, star: Star) {
+            self.name = name
+            self.type = type
+            self.star = star
+        }
+    }
+
+    @CompoundField(key: "planet")
+    var planet: Planet
 
     init() { }
 
-    init(id: IDValue? = nil, name: String, pet: Pet) {
+    init(id: IDValue? = nil, name: String, planet: Planet) {
         self.id = id
         self.name = name
-        self.pet = pet
+        self.planet = planet
     }
 }
 
-private final class Pet: Fields {
-    @Field(key: "name")
-    var name: String
 
-    @Field(key: "type")
-    var type: Animal
-
-    init() { }
-
-    init(name: String, type: Animal) {
-        self.name = name
-        self.type = type
-    }
-}
-
-private enum Animal: String, Codable {
-    case cat, dog
-}
-
-private struct UserMigration: Migration {
+private struct CompoundMoonMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("users")
+        database.schema("moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
-            .field("pet_name", .string, .required)
-            .field("pet_type", .string, .required)
+            .field("planet_name", .string, .required)
+            .field("planet_type", .string, .required)
+            .field("planet_star_name", .string, .required)
+            .field("planet_star_galaxy_name", .string, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("users").delete()
+        database.schema("moons").delete()
     }
 }
 
 
-private struct UserSeed: Migration {
+private struct CompoundMoonSeed: Migration {
     init() { }
 
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
-        let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog))
-        return logan.save(on: database)
-            .and(tanner.save(on: database))
+        let moon = CompoundMoon(
+            name: "Moon",
+            planet: .init(
+                name: "Earth",
+                type: .smallRocky,
+                star: .init(
+                    name: "Sun",
+                    galaxy: .init(name: "Milky Way")
+                )
+            )
+        )
+        let europa = CompoundMoon(
+            name: "Moon",
+            planet: .init(
+                name: "Jupiter",
+                type: .gasGiant,
+                star: .init(
+                    name: "Sun",
+                    galaxy: .init(name: "Milky Way")
+                )
+            )
+        )
+        return moon.save(on: database)
+            .and(europa.save(on: database))
             .map { _ in }
     }
 
