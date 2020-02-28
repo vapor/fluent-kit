@@ -4,6 +4,6 @@ public protocol RandomGeneratable {
 
 extension UUID: RandomGeneratable {
     public static func generateRandom() -> UUID {
-        return .init()
+        .init()
     }
 }

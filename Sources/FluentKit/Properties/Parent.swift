@@ -48,9 +48,18 @@ extension ParentProperty: Relation {
     }
 }
 
-extension ParentProperty: AnyField {
-    public var keys: [FieldKey] {
-        self.$id.keys
+extension ParentProperty: PropertyProtocol {
+    public typealias Model = From
+    public typealias Value = To
+}
+
+extension ParentProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        [self.$id]
+    }
+
+    public var path: [FieldKey] {
+        []
     }
     
     public func input(to input: inout DatabaseInput) {

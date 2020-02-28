@@ -1,5 +1,3 @@
-import Foundation
-
 /// Stores information about `Migration`s that have been run.
 public final class MigrationLog: Model {
     public static let schema = "_fluent_migrations"

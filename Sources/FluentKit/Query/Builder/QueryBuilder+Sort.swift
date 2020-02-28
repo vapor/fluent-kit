@@ -6,17 +6,24 @@ extension QueryBuilder {
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self
         where
-            Field: QueryField,
+            Field: FieldProtocol,
             Field.Model == Model
     {
-        self.sort(.key(for: field), direction)
+        self.sort(Model.path(for: field), direction)
     }
 
     public func sort(
-        _ field: FieldKey,
+        _ path: FieldKey,
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self {
-        self.sort(.field(field, schema: Model.schema), direction)
+        self.sort([path], direction)
+    }
+
+    public func sort(
+        _ path: [FieldKey],
+        _ direction: DatabaseQuery.Sort.Direction = .ascending
+    ) -> Self {
+        self.sort(.path(path, schema: Model.schema), direction)
     }
 
     public func sort<Joined, Field>(
@@ -26,22 +33,33 @@ extension QueryBuilder {
         alias: String? = nil
     ) -> Self
         where
-            Field: QueryField,
+            Field: FieldProtocol,
             Field.Model == Joined,
             Joined: Schema
     {
-        self.sort(Joined.self, .key(for: field), direction, alias: alias)
+        self.sort(Joined.self, Joined.path(for: field), direction, alias: alias)
     }
-
+    
     public func sort<Joined>(
         _ model: Joined.Type,
-        _ field: FieldKey,
+        _ path: FieldKey,
         _ direction: DatabaseQuery.Sort.Direction = .ascending,
         alias: String? = nil
     ) -> Self
         where Joined: Schema
     {
-        self.sort(.field(field, schema: Joined.schemaOrAlias), direction)
+        self.sort(Joined.self, [path], direction)
+    }
+
+    public func sort<Joined>(
+        _ model: Joined.Type,
+        _ path: [FieldKey],
+        _ direction: DatabaseQuery.Sort.Direction = .ascending,
+        alias: String? = nil
+    ) -> Self
+        where Joined: Schema
+    {
+        self.sort(.path(path, schema: Joined.schemaOrAlias), direction)
     }
 
     public func sort(

@@ -1,7 +1,7 @@
 extension DatabaseQuery {
     public enum Value {
         case bind(Encodable)
-        case dictionary([String: Value])
+        case dictionary([FieldKey: Value])
         case array([Value])
         case null
         case enumCase(String)

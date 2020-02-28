@@ -23,7 +23,7 @@ public final class IDProperty<Model, Value>
         }
     }
 
-    public let field: Model.Field<Value?>
+    public let field: Model.OptionalField<Value>
     public var exists: Bool
     let generator: Generator
     var cachedOutput: DatabaseOutput?
@@ -47,10 +47,10 @@ public final class IDProperty<Model, Value>
     
     public var wrappedValue: Value? {
         get {
-            return self.field.wrappedValue
+            return self.field.value
         }
         set {
-            self.field.wrappedValue = newValue
+            self.field.value = newValue
         }
     }
 
@@ -111,9 +111,27 @@ public final class IDProperty<Model, Value>
     }
 }
 
-extension IDProperty: AnyField {
-    public var keys: [FieldKey] {
-        self.field.keys
+extension IDProperty: PropertyProtocol {
+    public var value: Value? {
+        get {
+            return self.field.value
+        }
+        set {
+            self.field.value = newValue
+        }
+    }
+}
+
+extension IDProperty: FieldProtocol { }
+
+extension IDProperty: AnyField { }
+
+extension IDProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        []
+    }
+    public var path: [FieldKey] {
+        self.field.path
     }
 
     public func input(to input: inout DatabaseInput) {
@@ -135,12 +153,10 @@ extension IDProperty: AnyField {
     }
 }
 
-extension IDProperty: FilterField {
-    public var path: [FieldKey] {
-        self.field.path
-    }
-}
-
-extension IDProperty: QueryField { }
-
 extension IDProperty: AnyID { }
+
+protocol AnyID {
+    func generate()
+    var exists: Bool { get set }
+    var cachedOutput: DatabaseOutput? { get set }
+}

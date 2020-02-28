@@ -5,7 +5,7 @@ public struct DatabaseQuery {
     public var fields: [Field]
     public var action: Action
     public var filters: [Filter]
-    public var input: [[Value]]
+    public var input: [Value]
     public var joins: [Join]
     public var sorts: [Sort]
     public var limits: [Limit]

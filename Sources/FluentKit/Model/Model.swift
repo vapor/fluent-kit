@@ -27,9 +27,7 @@ extension Model {
         return id
     }
 
-    // MARK: Internal
-
-    var _$id: ID<IDValue> {
+    public var _$id: ID<IDValue> {
         self.anyID as! ID<IDValue>
     }
 }

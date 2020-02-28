@@ -20,6 +20,24 @@ public final class EnumProperty<Model, Value>
 
     public var wrappedValue: Value {
         get {
+            guard let value = self.value else {
+                fatalError("Cannot access enum field before it is initialized or fetched: \(self.field.key)")
+            }
+            return value
+        }
+        set {
+            self.value = newValue
+        }
+    }
+
+    public init(key: FieldKey) {
+        self.field = .init(key: key)
+    }
+}
+
+extension EnumProperty: PropertyProtocol {
+    public var value: Value? {
+        get {
             if let value = self.field.inputValue {
                 switch value {
                 case .enumCase(let string):
@@ -30,28 +48,28 @@ public final class EnumProperty<Model, Value>
             } else if let value = self.field.outputValue {
                 return Value(rawValue: value)!
             } else {
-                fatalError("Cannot access enum field before it is initialized or fetched: \(self.field.key)")
+                return nil
             }
         }
         set {
-            self.field.inputValue = .enumCase(newValue.rawValue)
+            self.field.inputValue = newValue.flatMap {
+                .enumCase($0.rawValue)
+            }
         }
-    }
-
-    public init(key: FieldKey) {
-        self.field = .init(key: key)
     }
 }
 
-extension EnumProperty: FilterField {
+extension EnumProperty: FieldProtocol { }
+
+extension EnumProperty: AnyField {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-extension EnumProperty: AnyField {
-    public var keys: [FieldKey] {
-        self.field.keys
+extension EnumProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        []
     }
 
     public func input(to input: inout DatabaseInput) {

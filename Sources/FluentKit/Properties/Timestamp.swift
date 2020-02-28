@@ -12,24 +12,8 @@ public enum TimestampTrigger {
 public final class TimestampProperty<Model>
     where Model: FluentKit.Fields
 {
-    public typealias Value = Date?
-
-    public let field: FieldProperty<Model, Date?>
-
+    public let field: Model.OptionalField<Date>
     public let trigger: TimestampTrigger
-
-    public var key: FieldKey {
-        return self.field.key
-    }
-
-    var inputValue: DatabaseQuery.Value? {
-        get {
-            return self.field.inputValue
-        }
-        set {
-            self.field.inputValue = newValue
-        }
-    }
 
     public var projectedValue: TimestampProperty<Model> {
         return self
@@ -37,10 +21,10 @@ public final class TimestampProperty<Model>
 
     public var wrappedValue: Date? {
         get {
-            return self.field.wrappedValue
+            self.value
         }
         set {
-            self.field.wrappedValue = newValue
+            self.value = newValue
         }
     }
 
@@ -50,13 +34,30 @@ public final class TimestampProperty<Model>
     }
 
     public func touch(date: Date?) {
-        self.inputValue = .bind(date)
+        self.field.inputValue = .bind(date)
     }
 }
 
-extension TimestampProperty: AnyField {
-    public var keys: [FieldKey] {
-        [self.key]
+extension TimestampProperty: PropertyProtocol {
+    public var value: Date? {
+        get {
+            self.field.value
+        }
+        set {
+            self.field.value = newValue
+        }
+    }
+}
+
+extension TimestampProperty: FieldProtocol { }
+
+extension TimestampProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        []
+    }
+
+    public var path: [FieldKey] {
+        self.field.path
     }
     
     public func input(to input: inout DatabaseInput) {
@@ -78,14 +79,7 @@ extension TimestampProperty: AnyField {
 
 extension TimestampProperty: AnyTimestamp { }
 
-extension TimestampProperty: FilterField {
-    public var path: [FieldKey] {
-        self.field.path
-    }
-}
-
-protocol AnyTimestamp: AnyField {
-    var key: FieldKey { get }
+protocol AnyTimestamp: AnyProperty {
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
 }
@@ -97,8 +91,8 @@ extension AnyTimestamp {
 }
 
 extension Fields {
-    var timestamps: [String: AnyTimestamp] {
-        self.fields.compactMapValues {
+    var timestamps: [AnyTimestamp] {
+        self.properties.compactMap {
             $0 as? AnyTimestamp
         }
     }
@@ -109,7 +103,7 @@ extension Fields {
 
     private func touchTimestamps(_ triggers: [TimestampTrigger]) {
         let date = Date()
-        self.timestamps.forEach { (label, timestamp) in
+        self.timestamps.forEach { timestamp in
             if triggers.contains(timestamp.trigger) {
                 timestamp.touch(date: date)
             }
@@ -117,7 +111,7 @@ extension Fields {
     }
 
     var deletedTimestamp: AnyTimestamp? {
-        return self.timestamps.filter({ $0.1.trigger == .delete }).first?.1
+        self.timestamps.filter { $0.trigger == .delete }.first
     }
 }
 
@@ -127,8 +121,8 @@ extension Schema {
             return
         }
 
-        let deletedAtField = DatabaseQuery.Filter.Field.path(
-            [timestamp.key],
+        let deletedAtField = DatabaseQuery.Field.path(
+            timestamp.path,
             schema: self.schemaOrAlias
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)

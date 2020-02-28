@@ -7,7 +7,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Field.Value
     ) -> Self
-        where Field: FilterField, Field.Model == Model
+        where Field: FieldProtocol, Field.Model == Model
     {
         self.filter(Model.path(for: field), method, value)
     }
@@ -18,9 +18,9 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ rhsField: KeyPath<Model, Right>
     ) -> Self
-        where Left: FilterField,
+        where Left: FieldProtocol,
             Left.Model == Model,
-            Right: FilterField,
+            Right: FieldProtocol,
             Right.Model == Model
     {
         self.filter(Model.path(for: lhsField), method, Model.path(for: rhsField))
@@ -76,7 +76,7 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ field: DatabaseQuery.Filter.Field,
+        _ field: DatabaseQuery.Field,
         _ method: DatabaseQuery.Filter.Method,
         _ value: DatabaseQuery.Value
     ) -> Self {
@@ -85,9 +85,9 @@ extension QueryBuilder {
 
     @discardableResult
     public func filter(
-        _ lhsField: DatabaseQuery.Filter.Field,
+        _ lhsField: DatabaseQuery.Field,
         _ method: DatabaseQuery.Filter.Method,
-        _ rhsField: DatabaseQuery.Filter.Field
+        _ rhsField: DatabaseQuery.Field
     ) -> Self {
         self.filter(.field(lhsField, method, rhsField))
     }

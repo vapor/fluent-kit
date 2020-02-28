@@ -1,10 +1,5 @@
 extension DatabaseQuery {
     public enum Filter {
-        public enum Field {
-            case path([FieldKey], schema: String)
-            case custom(Any)
-        }
-
         public enum Method {
             public static var equal: Method {
                 return .equality(inverse: false)
@@ -97,17 +92,6 @@ extension DatabaseQuery.Filter.Method: CustomStringConvertible {
             return (inverse ? "!" : "") + "\(contains)"
         case .custom(let any):
             return "custom(\(any))"
-        }
-    }
-}
-
-extension DatabaseQuery.Filter.Field: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .path(let path, let schema):
-            return "\(schema).\(path.map(\.description).joined(separator: "."))"
-        case .custom(let custom):
-            return "custom(\(custom))"
         }
     }
 }

@@ -157,8 +157,17 @@ public final class SiblingsProperty<From, To, Through>
     }
 }
 
-extension SiblingsProperty: AnyField {
-    public var keys: [FieldKey] {
+extension SiblingsProperty: PropertyProtocol {
+    public typealias Model = From
+    public typealias Value = [To]
+}
+
+extension SiblingsProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        []
+    }
+
+    public var path: [FieldKey] {
         []
     }
     

@@ -255,7 +255,102 @@ final class FluentKitTests: XCTestCase {
         try [Planet2]().create(on: db).wait()
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
-    
+
+    func testCompoundModel() throws {
+        let tanner = User(
+            name: "Tanner",
+            pet: .init(
+                name: "Ziz",
+                type: .cat,
+                toy: .init(name: "Foo", type: .mouse)
+            )
+        )
+
+        for path in User.keys {
+            print(path)
+        }
+
+        func output(_ properties: [AnyProperty], depth: Int = 0) {
+            for property in properties {
+                print(
+                    String(repeating: "  ", count: depth),
+                    property.path,
+                    property
+                )
+                output(property.nested, depth: depth + 1)
+            }
+        }
+        output(User().properties)
+
+        XCTAssertEqual(tanner.pet.name, "Ziz")
+        XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
+        XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
+    }
+}
+
+final class User: Model {
+    static let schema = "users"
+
+    @ID var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @Timestamp(key: "deleted_at", on: .delete)
+    var deletedAt: Date?
+
+    @Group(key: "pet")
+    var pet: Pet
+
+    init() { }
+
+    init(id: UUID? = nil, name: String, pet: Pet) {
+        self.id = id
+        self.name = name
+        self.pet = pet
+    }
+}
+
+enum Animal: String, Codable {
+    case cat, dog
+}
+
+final class Pet: Fields {
+    @Field(key: "name")
+    var name: String
+
+    @Field(key: "type")
+    var type: Animal
+
+    @Group(key: "toy")
+    var toy: Toy
+
+    init() { }
+
+    init(name: String, type: Animal, toy: Toy) {
+        self.name = name
+        self.type = type
+        self.toy = toy
+    }
+}
+
+enum ToyType: String, Codable {
+    case mouse, bone
+}
+
+final class Toy: Fields {
+    @Field(key: "name")
+    var name: String
+
+    @Enum(key: "type")
+    var type: ToyType
+
+    init() { }
+
+    init(name: String, type: ToyType) {
+        self.name = name
+        self.type = type
+    }
 }
 
 final class Planet2: Model {

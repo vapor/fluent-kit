@@ -1,111 +1,78 @@
 extension Fields {
-    public typealias CompoundField<Value> = CompoundFieldProperty<Self, Value>
+    @available(*, deprecated, renamed: "Group")
+    public typealias NestedField = Group
+    @available(*, deprecated, renamed: "Group")
+    public typealias CompoundField = Group
+
+    public typealias Group<Value> = GroupProperty<Self, Value>
         where Value: Fields
 }
 
 @propertyWrapper @dynamicMemberLookup
-public final class CompoundFieldProperty<Model, Value>
+public final class GroupProperty<Model, Value>
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
-    public let prefix: String
-
+    public let key: FieldKey
     public var value: Value?
 
-    public var projectedValue: CompoundFieldProperty<Model, Value> {
+    public var projectedValue: GroupProperty<Model, Value> {
         return self
     }
 
     public var wrappedValue: Value {
         get {
-            if let existing = self.value {
-                return existing
-            } else {
-                let new = Value()
-                self.value = new
-                return new
+            guard let value = self.value else {
+                fatalError("Cannot access unitialized Compound field.")
             }
+            return value
         }
         set {
             self.value = newValue
         }
     }
 
-    public init(prefix: String) {
-        self.prefix = prefix
+    public init(key: FieldKey) {
+        self.key = key
+        self.value = .init()
     }
 
-    public convenience init(key: String, separator: String = "_") {
-        self.init(prefix: key + separator)
-    }
-
-    public subscript<Field>(
-         dynamicMember keyPath: KeyPath<Value, Field>
-    ) -> _CompoundField<Value, Field>
-        where Field: FilterField,
-            Field.Model == Value
+    public subscript<Property>(
+         dynamicMember keyPath: KeyPath<Value, Property>
+    ) -> NestedProperty<Model, Property>
+        where Property: PropertyProtocol
     {
-        .init(prefix: self.prefix, field: Value()[keyPath: keyPath])
+        .init(prefix: [self.key], property: self.value![keyPath: keyPath])
     }
 }
 
-extension CompoundFieldProperty: AnyField {
-    public var keys: [FieldKey] {
-        Value.keys.map {
-            .prefixed(self.prefix, $0)
-        }
+
+extension GroupProperty: PropertyProtocol { }
+
+extension GroupProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        self.value!.properties
+    }
+
+    public var path: [FieldKey] {
+        [self.key]
     }
 
     public func input(to input: inout DatabaseInput) {
-        if let value = self.value {
-            value.input.values.forEach { (name, value) in
-                input.values[.prefixed(self.prefix, name)] = value
-            }
+        let values = self.value!.input.values
+        if !values.isEmpty {
+            input.values[self.key] = .dictionary(values)
         }
     }
 
     public func output(from output: DatabaseOutput) throws {
-        let value = Value()
-        try value.output(from: output.prefixed(by: self.prefix))
-        self.value = value
+        try self.value!.output(from: output.nested(self.key))
     }
 
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(self.wrappedValue)
+        try self.value!.encode(to: encoder)
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let valueType = Value.self as? AnyOptionalType.Type {
-            if container.decodeNil() {
-                self.wrappedValue = (valueType.nil as! Value)
-            } else {
-                self.wrappedValue = try container.decode(Value.self)
-            }
-        } else {
-            self.wrappedValue = try container.decode(Value.self)
-        }
-    }
-}
-
-public struct _CompoundField<Model, Field>
-    where Model: FluentKit.Fields, Field: FilterField
-{
-    public let prefix: String
-    public let field: Field
-}
-
-extension _CompoundField: FilterField {
-    public var wrappedValue: Field.Value {
-        self.field.wrappedValue
-    }
-
-    public var path: [FieldKey] {
-        guard !self.field.path.isEmpty else {
-            return []
-        }
-        var path = self.field.path
-        path[0] = .prefixed(self.prefix, path[0])
-        return path
+        self.value = try .init(from: decoder)
     }
 }

@@ -77,7 +77,7 @@ public struct DummyRow: DatabaseOutput {
         self
     }
     
-    public func decode<T>(_ field: FieldKey, as type: T.Type) throws -> T
+    public func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
         where T: Decodable
     {
         if T.self is UUID.Type {
@@ -87,7 +87,7 @@ public struct DummyRow: DatabaseOutput {
         }
     }
 
-    public func contains(_ field: FieldKey) -> Bool {
+    public func contains(_ path: [FieldKey]) -> Bool {
         return true
     }
     

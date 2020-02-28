@@ -1,9 +1,12 @@
+import FluentSQL
+
 extension FluentBenchmarker {
     public func testModel() throws {
         try self.testModel_uuid()
         try self.testModel_decode()
         try self.testModel_nullField()
         try self.testModel_idGeneration()
+        try self.testModel_jsonColumn()
     }
 
     private func testModel_uuid() throws {
@@ -33,7 +36,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testModel_nullField() throws {
+    private func testModel_nullField() throws {
         try runTest(#function, [
             FooMigration(),
         ]) {
@@ -64,7 +67,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testModel_idGeneration() throws {
+    private func testModel_idGeneration() throws {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {
@@ -84,6 +87,26 @@ extension FluentBenchmarker {
             guard a.id != b.id && b.id != c.id && a.id != c.id else {
                 XCTFail("ids should not be equal")
                 return
+            }
+        }
+    }
+
+    private func testModel_jsonColumn() throws {
+        try runTest(#function, [
+            BarMigration(),
+        ]) {
+            let bar = Bar(baz: .init(quux: "test"))
+            try bar.save(on: self.database).wait()
+
+            let fetched = try Bar.find(bar.id, on: self.database).wait()
+            XCTAssertEqual(fetched?.baz.quux, "test")
+
+            if self.database is SQLDatabase {
+                let bars = try Bar.query(on: self.database)
+                    .filter(.sql(json: "baz", "quux"), .equal, .bind("test"))
+                    .all()
+                    .wait()
+                XCTAssertEqual(bars.count, 1)
             }
         }
     }
@@ -174,5 +197,39 @@ private struct TodoMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema("todos").delete()
+    }
+}
+
+private final class Bar: Model {
+    static let schema = "bars"
+
+    @ID
+    var id: UUID?
+
+    struct Baz: Codable {
+        var quux: String
+    }
+
+    @Field(key: "baz")
+    var baz: Baz
+
+    init() { }
+
+    init(id: IDValue? = nil, baz: Baz) {
+        self.id = id
+        self.baz = baz
+    }
+}
+
+private struct BarMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("bars")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("baz", .json, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("bars").delete()
     }
 }

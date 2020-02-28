@@ -7,8 +7,6 @@ extension Model {
 public final class ChildrenProperty<From, To>
     where From: Model, To: Model
 {
-    // MARK: ID
-
     public enum Key {
         case required(KeyPath<To, To.Parent<From>>)
         case optional(KeyPath<To, To.OptionalParent<From>>)
@@ -17,7 +15,6 @@ public final class ChildrenProperty<From, To>
     public let parentKey: Key
     var idValue: From.IDValue?
 
-    // MARK: Wrapper
     public var value: [To]?
 
     public var description: String {
@@ -51,8 +48,6 @@ public final class ChildrenProperty<From, To>
     public var fromId: From.IDValue? {
         return self.idValue
     }
-
-    // MARK: Query
 
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
@@ -97,18 +92,27 @@ public final class ChildrenProperty<From, To>
     }
 }
 
-extension ChildrenProperty: AnyField {
-    public var keys: [FieldKey] {
+extension ChildrenProperty: PropertyProtocol {
+    public typealias Model = From
+    public typealias Value = [To]
+}
+
+extension ChildrenProperty: AnyProperty {
+    public var nested: [AnyProperty] {
         []
     }
-    
+
+    public var path: [FieldKey] {
+        []
+    }
+
     public func input(to input: inout DatabaseInput) {
         // children never has input
     }
 
     public func output(from output: DatabaseOutput) throws {
         let key = From()._$id.field.key
-        if output.contains(key) {
+        if output.contains([key]) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
