@@ -40,9 +40,9 @@ extension FieldProperty: PropertyProtocol {
                 case .bind(let bind):
                     return bind as? Value
                 case .default:
-                    fatalError("Cannot access default field for '\(key)' before it is initialized or fetched")
+                    fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 default:
-                    fatalError("Unexpected input value type for '\(key)': \(value)")
+                    fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
                 return value
