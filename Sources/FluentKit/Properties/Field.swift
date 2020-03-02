@@ -39,6 +39,8 @@ extension FieldProperty: PropertyProtocol {
                 switch value {
                 case .bind(let bind):
                     return bind as? Value
+                case .enumCase(let string):
+                    return string as? Value
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 default:
