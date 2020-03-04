@@ -130,6 +130,24 @@ public final class SiblingsProperty<From, To, Through>
         return pivot.save(on: database)
     }
 
+
+    public func detach(_ tos: [To], on database: Database) -> EventLoopFuture<Void> {
+        guard let fromID = self.idValue else {
+            fatalError("Cannot detach siblings relation to unsaved model.")
+        }
+        let toIDs = tos.map { to -> To.IDValue in
+            guard let toID = to.id else {
+                fatalError("Cannot detach unsaved model.")
+            }
+            return toID
+        }
+
+        return Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(self.to.appending(path: \.$id) ~~ toIDs)
+            .delete()
+    }
+
     public func detach(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             fatalError("Cannot attach siblings relation to unsaved model.")
