@@ -1,6 +1,7 @@
 extension FluentBenchmarker {
     public func testSiblings() throws {
         try self.testSiblings_attach()
+        try self.testSiblings_detachArray()
     }
 
     private func testSiblings_attach() throws {
@@ -59,4 +60,31 @@ extension FluentBenchmarker {
         }
     }
 
+    private func testSiblings_detachArray() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let inhabited = try Tag.query(on: self.database)
+                .filter(\.$name == "Inhabited")
+                .first().wait()!
+            let smallRocky = try Tag.query(on: self.database)
+                .filter(\.$name == "Small Rocky")
+                .first().wait()!
+            let earth = try Planet.query(on: self.database)
+                .filter(\.$name == "Earth")
+                .first().wait()!
+
+            // verify tag count
+            try XCTAssertEqual(earth.$tags.query(on: self.database).count().wait(), 2)
+
+            try earth.$tags.detach([smallRocky, inhabited], on: self.database).wait()
+
+            // check earth has tags removed
+            do {
+                let tags = try earth.$tags.query(on: self.database)
+                    .all().wait()
+                XCTAssertEqual(tags.count, 0)
+            }
+        }
+    }
 }
