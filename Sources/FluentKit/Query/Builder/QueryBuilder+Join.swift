@@ -9,7 +9,7 @@ extension QueryBuilder {
     ) -> Self
         where Foreign: Schema, Local: Schema
     {
-        self.join(Foreign.self, filter.foreign, to: Local.self, filter.local)
+        self.join(Foreign.self, filter.foreign, to: Local.self, filter.local , method: method)
     }
 
     @discardableResult
