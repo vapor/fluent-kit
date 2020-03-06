@@ -5,7 +5,9 @@ extension QueryBuilder {
     ) rethrows -> Self {
         let group = QueryBuilder(database: self.database)
         try closure(group)
-        self.query.filters.append(.group(group.query.filters, relation))
+        if !group.query.filters.isEmpty {
+            self.query.filters.append(.group(group.query.filters, relation))
+        }
         return self
     }
 }
