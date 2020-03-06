@@ -285,6 +285,15 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
         XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            let encoded = try encoder.encode(tanner)
+            let result = String(data:encoded, encoding: .utf8)!
+            let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"name":"Foo","type":"mouse"},"type":"cat"}}"#
+            XCTAssertEqual(result, expected)
+        }
     }
 }
 
