@@ -7,6 +7,7 @@ extension FluentBenchmarker {
             try self.testFilter_sqlValue()
         }
         try self.testFilter_group()
+        try self.testFilter_emptyGroup()
     }
 
     private func testFilter_field() throws {
@@ -60,6 +61,17 @@ extension FluentBenchmarker {
             default:
                 XCTFail("Unexpected planets count: \(planets.count)")
             }
+        }
+    }
+
+    private func testFilter_emptyGroup() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .group(.or) { _ in }
+                .all().wait()
+            XCTAssertEqual(planets.count, 9)
         }
     }
 }
