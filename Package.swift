@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "FluentKit", targets: ["FluentKit"]),
         .library(name: "FluentBenchmark", targets: ["FluentBenchmark"]),
         .library(name: "FluentSQL", targets: ["FluentSQL"]),
+        .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
@@ -29,9 +30,13 @@ let package = Package(
             .target(name: "FluentKit"),
             .product(name: "SQLKit", package: "sql-kit"),
         ]),
+        .target(name: "XCTFluent", dependencies: [
+            .target(name: "FluentKit")
+        ]),
         .testTarget(name: "FluentKitTests", dependencies: [
             .target(name: "FluentBenchmark"),
             .target(name: "FluentSQL"),
+            .target(name: "XCTFluent")
         ]),
     ]
 )

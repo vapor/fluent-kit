@@ -18,7 +18,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     public var dialect: SQLDialect {
         DummyDatabaseDialect()
     }
-    
+
     public let context: DatabaseContext
     public var sqlSerializers: [SQLSerializer]
 
@@ -30,7 +30,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         )
         self.sqlSerializers = []
     }
-    
+
     public func reset() {
         self.sqlSerializers = []
     }
@@ -46,7 +46,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         onOutput(DummyRow())
         return self.eventLoop.makeSucceededFuture(())
     }
-    
+
     public func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
         fatalError()
     }
@@ -73,7 +73,7 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     ) -> EventLoopFuture<T> {
         closure(self)
     }
-    
+
     public func shutdown() {
         //
     }
@@ -92,7 +92,7 @@ struct DummyDatabaseDialect: SQLDialect {
     var name: String {
         "dummy db"
     }
-    
+
     var identifierQuote: SQLExpression {
         return SQLRaw("\"")
     }
