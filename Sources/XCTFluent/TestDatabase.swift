@@ -22,19 +22,19 @@ import NIO
 ///     let db = TestDatabase()
 ///     db.append(queryResult: [])
 ///     db.append(queryResult: [
-///         TestRow(["id": 1, "name": "Boise"])
+///         TestOutput(["id": 1, "name": "Boise"])
 ///     ])
 ///
 /// Return multiple rows for one query:
 ///
 ///     let db = TestDatabase()
 ///     db.append([
-///         TestRow(["id": 1, ...]),
-///         TestRow(["id": 2, ...])
+///         TestOutput(["id": 1, ...]),
+///         TestOutput(["id": 2, ...])
 ///     ])
 public class TestDatabase: Database {
 
-    typealias MockResult = [DatabaseRow]
+    typealias MockResult = [DatabaseOutput]
 
     var mockResults: [MockResult] = []
 
@@ -42,7 +42,7 @@ public class TestDatabase: Database {
 
     public init(
         context: DatabaseContext = .init(
-            configuration: .init(),
+            configuration: TestDatabaseConfiguration(),
             logger: .init(label: "test"),
             eventLoop: EmbeddedEventLoop()
         )
@@ -54,11 +54,14 @@ public class TestDatabase: Database {
     /// be returned per query to the database. Running out of results
     /// will result in a failed `EventLoopFuture` with the
     /// `TestDatabaseError.ranOutOfResults` error.
-    public func append(queryResult: [DatabaseRow]) {
+    public func append(queryResult: [DatabaseOutput]) {
         mockResults.append(queryResult)
     }
 
-    public func execute(query: DatabaseQuery, onRow: @escaping (DatabaseRow) -> ()) -> EventLoopFuture<Void> {
+    public func execute(
+        query: DatabaseQuery,
+        onOutput: @escaping (DatabaseOutput) -> ()
+    ) -> EventLoopFuture<Void> {
 
         guard !mockResults.isEmpty else {
             return self.eventLoop.makeFailedFuture(TestDatabaseError.ranOutOfResults)
@@ -67,13 +70,21 @@ public class TestDatabase: Database {
         let result = mockResults.removeFirst()
 
         for row in result {
-            onRow(row)
+            onOutput(row)
         }
         return self.eventLoop.makeSucceededFuture(())
     }
 
+    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
+
     public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
+    }
+
+    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        self.eventLoop.makeSucceededFuture(())
     }
 
     public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
@@ -85,17 +96,21 @@ public enum TestDatabaseError: Error {
     case ranOutOfResults
 }
 
-public struct TestRow: DatabaseRow {
-    public func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T
+public struct TestOutput: DatabaseOutput {
+    public func schema(_ schema: String) -> DatabaseOutput {
+        self
+    }
+
+    public func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
         where T: Decodable
     {
-        if let res = dummyDecodedFields[field] as? T {
+        if let res = dummyDecodedFields[path] as? T {
             return res
         }
         throw TestRowDecodeError.wrongType
     }
 
-    public func contains(field: String) -> Bool {
+    public func contains(_ path: [FieldKey]) -> Bool {
         return true
     }
 
@@ -103,13 +118,40 @@ public struct TestRow: DatabaseRow {
         return "<dummy>"
     }
 
-    var dummyDecodedFields: [String: Any]
+    var dummyDecodedFields: [[FieldKey]: Any]
 
-    public init(_ mockFields: [String: Any]) {
+    public init(_ mockFields: [[FieldKey]: Any]) {
         self.dummyDecodedFields = mockFields
+    }
+
+    public init(_ mockFields: [FieldKey: Any]) {
+        self.dummyDecodedFields = Dictionary(
+            mockFields.map { (k, v) in ([k], v) },
+            uniquingKeysWith: { $1 }
+        )
+    }
+
+    public mutating func append(key: [FieldKey], value: Any) {
+        dummyDecodedFields[key] = value
+    }
+
+    public mutating func append(key: FieldKey, value: Any) {
+        dummyDecodedFields[[key]] = value
     }
 }
 
 public enum TestRowDecodeError: Error {
     case wrongType
+}
+
+public struct TestDatabaseConfiguration: DatabaseConfiguration {
+    public var middleware: [AnyModelMiddleware]
+
+    public func makeDriver(for databases: Databases) -> DatabaseDriver {
+        DummyDatabaseDriver(on: databases.eventLoopGroup)
+    }
+
+    public init(middleware: [AnyModelMiddleware] = []) {
+        self.middleware = middleware
+    }
 }

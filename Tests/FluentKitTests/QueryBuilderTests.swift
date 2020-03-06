@@ -15,13 +15,13 @@ final class QueryBuilderTests: XCTestCase {
     }
 
     func testFirstSingleResult() throws {
-        let planet = Planet(id: 10, name: "Tully", galaxyID: 1)
+        let planet = Planet(id: UUID(), name: "Tully")
         let db = TestDatabase()
         db.append(queryResult: [
-            TestRow([
+            TestOutput([
                 "id": planet.id as Any,
                 "name": planet.name,
-                "galaxy_id": planet.$galaxy.id
+                "star_id": UUID()
             ])
         ])
 
@@ -29,23 +29,21 @@ final class QueryBuilderTests: XCTestCase {
 
         XCTAssertEqual(planet.id, retrievedPlanet?.id)
         XCTAssertEqual(planet.name, retrievedPlanet?.name)
-        XCTAssertEqual(planet.$galaxy.id, retrievedPlanet?.$galaxy.id)
     }
 
     func testFirstManyResults() throws {
-        let planet = Planet(id: 10, name: "Tully", galaxyID: 1)
+        let planet = Planet(id: UUID(), name: "Tully")
         let db = TestDatabase()
         db.append(queryResult: [
-            TestRow([
+            TestOutput([
                 "id": planet.id as Any,
                 "name": planet.name,
-                "galaxy_id": planet.$galaxy.id
+                "star_id": UUID()
             ]),
-            TestRow([
-                "id": 1,
+            TestOutput([
+                "id": UUID(),
                 "name": "Nupeter",
-                "galaxy_id": 1
-
+                "star_id": UUID()
             ])
         ])
 
@@ -53,6 +51,5 @@ final class QueryBuilderTests: XCTestCase {
 
         XCTAssertEqual(planet.id, retrievedPlanet?.id)
         XCTAssertEqual(planet.name, retrievedPlanet?.name)
-        XCTAssertEqual(planet.$galaxy.id, retrievedPlanet?.$galaxy.id)
     }
 }
