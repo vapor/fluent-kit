@@ -19,17 +19,17 @@ extension Model {
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
         Self.query(on: database)
-            .set(self.input)
+            .set(self.input.values)
             .action(.create)
             .run { promise.succeed($0) }
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
             var input = self.input
             if self._$id.generator == .database {
-                let id = try output.decode("fluentID", as: Self.IDValue.self)
-                input[Self.key(for: \._$id)] = .bind(id)
+                let idKey = Self()._$id.key
+                input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input).output(for: database))
+            try self.output(from: SavedInput(input.values))
         }
     }
 
@@ -42,20 +42,24 @@ extension Model {
     private func _update(on database: Database) -> EventLoopFuture<Void> {
         self.touchTimestamps(.update)
         precondition(self._$id.exists)
+        guard self.hasChanges else {
+            return database.eventLoop.makeSucceededFuture(())
+        }
         let input = self.input
         return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .set(input)
+            .set(input.values)
             .action(.update)
             .run()
-            .flatMapThrowing {
-                try self.output(from: SavedInput(input).output(for: database))
+            .flatMapThrowing
+        {
+            try self.output(from: SavedInput(input.values))
         }
     }
 
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        if !force, let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first {
-            timestamp.1.touch()
+        if !force, let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first {
+            timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
@@ -75,8 +79,9 @@ extension Model {
             .filter(\._$id == self.id!)
             .action(.delete)
             .run()
-            .map {
-                self._$id.exists = false
+            .map
+        {
+            self._$id.exists = false
         }
     }
 
@@ -87,20 +92,21 @@ extension Model {
     }
 
     private func _restore(on database: Database) -> EventLoopFuture<Void> {
-        guard let timestamp = self.timestamps.filter({ $0.1.trigger == .delete }).first else {
+        guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
             fatalError("no delete timestamp on this model")
         }
-        timestamp.1.touch(date: nil)
+        timestamp.touch(date: nil)
         precondition(self._$id.exists)
         return Self.query(on: database)
             .withDeleted()
             .filter(\._$id == self.id!)
-            .set(self.input)
+            .set(self.input.values)
             .action(.update)
             .run()
-            .flatMapThrowing {
-                try self.output(from: SavedInput(self.input).output(for: database))
-                self._$id.exists = true
+            .flatMapThrowing
+        {
+            try self.output(from: SavedInput(self.input.values))
+            self._$id.exists = true
         }
     }
 
@@ -137,7 +143,7 @@ extension Array where Element: FluentKit.Model {
             $0._$id.generate()
             $0.touchTimestamps(.create, .update)
         }
-        builder.set(self.map { $0.input })
+        builder.set(self.map { $0.input.values })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { _ in
@@ -149,32 +155,61 @@ extension Array where Element: FluentKit.Model {
 }
 
 // MARK: Private
-private struct SavedInput: DatabaseRow {
-    var input: [String: DatabaseQuery.Value]
 
-    init(_ input: [String: DatabaseQuery.Value]) {
+private struct SavedInput: DatabaseOutput {
+    var input: [FieldKey: DatabaseQuery.Value]
+    
+    init(_ input: [FieldKey: DatabaseQuery.Value]) {
         self.input = input
     }
 
-    func contains(field: String) -> Bool {
-        return self.input[field] != nil
+    func schema(_ schema: String) -> DatabaseOutput {
+        return self
     }
-
-    func decode<T>(field: String, as type: T.Type, for database: Database) throws -> T where T : Decodable {
-        if let value = self.input[field] {
+    
+    func contains(_ path: [FieldKey]) -> Bool {
+        get(path: path, from: .dictionary(self.input)) != nil
+    }
+    
+    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+        where T : Decodable
+    {
+        if let value = get(path: path, from: .dictionary(self.input)) {
             // not in output, get from saved input
             switch value {
             case .bind(let encodable):
                 return encodable as! T
+            case .enumCase(let string):
+                return string as! T
             default:
                 fatalError("Invalid input type: \(value)")
             }
         } else {
-            throw FluentError.missingField(name: field)
+            throw FluentError.missingField(name: path.description)
         }
     }
 
     var description: String {
         return self.input.description
+    }
+}
+
+private func get(path: [FieldKey], from input: DatabaseQuery.Value) -> DatabaseQuery.Value? {
+    switch path.count {
+    case 0:
+        return input
+    default:
+        switch input {
+        case .dictionary(let nested):
+            if let next = nested[path[0]] {
+                return get(path: .init(path[1...]), from: next)
+            } else {
+                // key not found.
+                return nil
+            }
+        default:
+            // not at end of key path
+            return nil
+        }
     }
 }

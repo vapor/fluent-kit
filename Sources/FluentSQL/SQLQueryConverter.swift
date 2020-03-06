@@ -7,7 +7,7 @@ public struct SQLQueryConverter {
     public func convert(_ fluent: DatabaseQuery) -> SQLExpression {
         let sql: SQLExpression
         switch fluent.action {
-        case .read: sql = self.select(fluent)
+        case .read, .aggregate: sql = self.select(fluent)
         case .create: sql = self.insert(fluent)
         case .update: sql = self.update(fluent)
         case .delete: sql = self.delete(fluent)
@@ -27,11 +27,19 @@ public struct SQLQueryConverter {
     
     private func update(_ query: DatabaseQuery) -> SQLExpression {
         var update = SQLUpdate(table: SQLIdentifier(query.schema))
-        for (i, field) in query.fields.enumerated() {
+        guard case .dictionary(let nested) = query.input.first! else {
+            fatalError()
+        }
+        var keysAndValues: [[FieldKey]: DatabaseQuery.Value] = [:]
+        nested.forEach { (key, value) in
+            self.accumlateKeysAndValues(value, path: [key], keysAndValues: &keysAndValues)
+        }
+
+        keysAndValues.forEach { (path, value) in
             update.values.append(SQLBinaryExpression(
-                left: self.field(field),
+                left: SQLColumn(self.path(path)),
                 op: SQLBinaryOperator.equal,
-                right: self.value(query.input[0][i])
+                right: self.value(value)
             ))
         }
         update.predicate = self.filters(query.filters)
@@ -41,7 +49,24 @@ public struct SQLQueryConverter {
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
         select.tables.append(SQLIdentifier(query.schema))
-        select.columns = query.fields.map(self.field)
+        switch query.action {
+        case .read:
+            select.isDistinct = query.isUnique
+            select.columns = query.fields.map { field in
+                switch field {
+                case .custom(let any):
+                    return custom(any)
+                case .path(let path, let schema):
+                    return SQLAlias(
+                        SQLColumn(self.path(path), table: schema),
+                        as: SQLIdentifier(schema + "_" + self.path(path))
+                    )
+                }
+            }
+        case .aggregate(let aggregate):
+            select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
+        default: break
+        }
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
         select.orderBy = query.sorts.map(self.sort)
@@ -63,12 +88,64 @@ public struct SQLQueryConverter {
         }
         return select
     }
+
+    private func accumlateKeysAndValues(
+        _ value: DatabaseQuery.Value,
+        path: [FieldKey],
+        keysAndValues: inout [[FieldKey]: DatabaseQuery.Value]
+    ) {
+        switch value {
+        case .dictionary(let nested):
+            nested.forEach { (key, value) in
+                self.accumlateKeysAndValues(value, path: path + [key], keysAndValues: &keysAndValues)
+            }
+        default:
+            keysAndValues[path] = value
+        }
+    }
+
+    private func accumlateKeys(
+        _ value: DatabaseQuery.Value,
+        path: [FieldKey],
+        fields: inout [[FieldKey]]
+    ) {
+        switch value {
+        case .dictionary(let nested):
+            nested.forEach { (key, value) in
+                self.accumlateKeys(value, path: path + [key], fields: &fields)
+            }
+        default:
+            fields.append(path)
+        }
+    }
+
+    private func fetch(path: [FieldKey], from value: DatabaseQuery.Value) -> DatabaseQuery.Value {
+        switch value {
+        case .dictionary(let dictionary):
+            return self.fetch(path: Array(path[1...]), from: dictionary[path[0]]!)
+        default:
+            assert(path.count == 0)
+            return value
+        }
+    }
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
         var insert = SQLInsert(table: SQLIdentifier(query.schema))
-        insert.columns = query.fields.map(self.field)
-        insert.values = query.input.map { row in
-            return row.map(self.value)
+
+        guard case .dictionary(let nested) = query.input.first! else {
+            fatalError()
+        }
+        var fields: [[FieldKey]] = []
+        nested.forEach { (key, value) in
+            self.accumlateKeys(value, path: [key], fields: &fields)
+        }
+        insert.columns = fields.map { path in
+            SQLColumn(self.path(path))
+        }
+        insert.values = query.input.map { value in
+            fields.map { path in
+                self.fetch(path: path, from: value)
+            }.map(self.value)
         }
         return insert
     }
@@ -108,10 +185,16 @@ public struct SQLQueryConverter {
         switch join {
         case .custom(let any):
             return custom(any)
-        case .join(let schema, let foreign, let local, let method):
+        case .join(let schema, let alias, let method, let foreign, let local):
+            let table: SQLExpression
+            if let alias = alias {
+                table = SQLAlias(SQLIdentifier(schema), as: SQLIdentifier(alias))
+            } else {
+                table = SQLIdentifier(schema)
+            }
             return SQLJoin(
                 method: self.joinMethod(method),
-                table: self.schema(schema),
+                table: table,
                 expression: SQLBinaryExpression(
                     left: self.field(local),
                     op: SQLBinaryOperator.equal,
@@ -120,74 +203,56 @@ public struct SQLQueryConverter {
             )
         }
     }
-
-    private func schema(_ schema: DatabaseQuery.Schema) -> SQLExpression {
-        switch schema {
-        case .schema(let name, let alias):
-            if let alias = alias {
-                return SQLAlias(SQLIdentifier(name), as: SQLIdentifier(alias))
-            } else {
-                return SQLIdentifier(name)
-            }
-        case .custom(let any):
-            return custom(any)
-        }
-    }
     
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> SQLExpression {
         switch method {
         case .inner: return SQLJoinMethod.inner
         case .left: return SQLJoinMethod.left
-        case .right: return SQLJoinMethod.right
-        case .outer: return SQLJoinMethod.outer
         case .custom(let any):
             return custom(any)
         }
     }
-    
+
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+        self.field(field, ignoreSchema: false)
+    }
+
+    private func field(_ field: DatabaseQuery.Field, ignoreSchema: Bool) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
-        case .field(let path, let schema, let alias):
-            // TODO: if joins don't exist, use short column name
-            switch path.count {
-            case 1:
-                let name = path[0]
-                if let schema = schema {
-                    let id = SQLColumn(SQLIdentifier(name), table: SQLIdentifier(schema))
-                    if let alias = alias {
-                        return SQLAlias(id, as: SQLIdentifier(alias))
-                    } else {
-                        return id
-                    }
-                } else {
-                    return SQLIdentifier(name)
-                }
-            case 2:
-                // row->".code" = 4
-                // return SQLRaw("\(path[0])->>'\(path[1])'")
-                // return SQLRaw("JSON_EXTRACT(\(path[0]), '$.\(path[1])')")
-                return self.delegate.nestedFieldExpression(path[0], [path[1]])
-            default:
-                fatalError("Deep SQL JSON nesting not yet supported.")
+        case .path(let path, let schema):
+            if ignoreSchema {
+                return SQLIdentifier(self.path(path))
+            } else {
+                return SQLColumn(self.path(path), table: schema)
             }
-        case .aggregate(let agg):
-            switch agg {
-            case .custom(let any):
-                return any as! SQLExpression
-            case .fields(let method, let fields):
-                let name: String
-                switch method {
-                case .average: name = "AVG"
-                case .count: name = "COUNT"
-                case .sum: name = "SUM"
-                case .maximum: name = "MAX"
-                case .minimum: name = "MIN"
-                case .custom(let custom): name = custom as! String
-                }
-                return SQLAlias(SQLFunction(name, args: fields.map { self.field($0) }), as: SQLIdentifier("fluentAggregate"))
+        }
+    }
+
+    private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> SQLExpression {
+        switch aggregate {
+        case .custom(let any):
+            return any as! SQLExpression
+        case .field(let field, let method):
+            let name: String
+            switch method {
+            case .average: name = "AVG"
+            case .count: name = "COUNT"
+            case .sum: name = "SUM"
+            case .maximum: name = "MAX"
+            case .minimum: name = "MIN"
+            case .custom(let custom): name = custom as! String
             }
+            return SQLAlias(
+                SQLFunction(
+                    name,
+                    args: isUnique
+                        ? [SQLDistinct(self.field(field))]
+                        : [self.field(field)]
+                ),
+                as: SQLIdentifier(FieldKey.aggregate.description)
+            )
         }
     }
     
@@ -210,16 +275,22 @@ public struct SQLQueryConverter {
                 let right: SQLExpression
                 switch method {
                 case .anywhere:
-                    right = SQLRaw("%" + string.description + "%")
+                    right = SQLBind("%" + string.description + "%")
                 case .prefix:
-                    right = SQLRaw(string.description + "%")
+                    right = SQLBind(string.description + "%")
                 case .suffix:
-                    right = SQLRaw("%" + string.description)
+                    right = SQLBind("%" + string.description)
                 }
                 return SQLBinaryExpression(
                     left: self.field(field),
                     op: inverse ? SQLBinaryOperator.notLike : SQLBinaryOperator.like,
                     right: right
+                )
+            case (.subset, .array(let array)) where array.isEmpty:
+                return SQLBinaryExpression(
+                    left: SQLLiteral.numeric("1"),
+                    op: SQLBinaryOperator.equal,
+                    right: SQLLiteral.numeric("0")
                 )
             default:
                 return SQLBinaryExpression(
@@ -257,24 +328,7 @@ public struct SQLQueryConverter {
             return custom(any)
         }
     }
-    
-    struct DictValues: Encodable {
-        let dict: [String: DatabaseQuery.Value]
 
-        func encode(to encoder: Encoder) throws {
-            var keyed = encoder.container(keyedBy: StringCodingKey.self)
-            for (key, val) in self.dict {
-                let key = StringCodingKey(key)
-                switch val {
-                case .bind(let encodable):
-                    try keyed.encode(EncodableWrapper(encodable), forKey: key)
-                case .null:
-                    try keyed.encodeNil(forKey: key)
-                default: fatalError()
-                }
-            }
-        }
-    }
     
     private func value(_ value: DatabaseQuery.Value) -> SQLExpression {
         switch value {
@@ -284,10 +338,12 @@ public struct SQLQueryConverter {
             return SQLLiteral.null
         case .array(let values):
             return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(",")))
-        case .dictionary(let dict):
-            return SQLBind(DictValues(dict: dict))
+        case .dictionary:
+            fatalError()
         case .default:
             return SQLLiteral.default
+        case .enumCase(let string):
+            return SQLLiteral.string(string)
         case .custom(let any):
             return custom(any)
         }
@@ -322,6 +378,21 @@ public struct SQLQueryConverter {
             fatalError("Contains filter method not supported at this scope.")
         case .custom(let any):
             return custom(any)
+        }
+    }
+
+    private func path(_ path: [FieldKey]) -> String {
+        path.map(self.key).joined(separator: "_")
+    }
+
+    private func key(_ key: FieldKey) -> String {
+        switch key {
+        case .id:
+            return "id"
+        case .string(let name):
+            return name
+        case .aggregate:
+            return key.description
         }
     }
 }
