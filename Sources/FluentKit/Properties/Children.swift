@@ -1,39 +1,47 @@
+extension Model {
+    public typealias Children<To> = ChildrenProperty<Self, To>
+        where To: FluentKit.Model
+}
+
 @propertyWrapper
-public final class Children<From, To>: AnyProperty
+public final class ChildrenProperty<From, To>
     where From: Model, To: Model
 {
-    // MARK: ID
-
-    enum Key {
-        case required(KeyPath<To, Parent<From>>)
-        case optional(KeyPath<To, OptionalParent<From>>)
+    public enum Key {
+        case required(KeyPath<To, To.Parent<From>>)
+        case optional(KeyPath<To, To.OptionalParent<From>>)
     }
 
-    let parentKey: Key
-    private var eagerLoadedValue: [To]?
-    private var idValue: From.IDValue?
+    public let parentKey: Key
+    var idValue: From.IDValue?
 
-    // MARK: Wrapper
+    public var value: [To]?
 
-    public init(for parent: KeyPath<To, Parent<From>>) {
+    public var description: String {
+        self.idValue.debugDescription
+    }
+
+    public init(for parent: KeyPath<To, To.Parent<From>>) {
         self.parentKey = .required(parent)
     }
 
-    public init(for optionalParent: KeyPath<To, OptionalParent<From>>) {
+    public init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
         self.parentKey = .optional(optionalParent)
     }
 
     public var wrappedValue: [To] {
         get {
-            guard let eagerLoaded = self.eagerLoadedValue else {
-                fatalError("Children relation not eager loaded, use $ prefix to access")
+            guard let value = self.value else {
+                fatalError("Children relation not eager loaded, use $ prefix to access: \(name)")
             }
-            return eagerLoaded
+            return value
         }
-        set { fatalError("Use $ prefix to access") }
+        set {
+            fatalError("Children relation is get-only.")
+        }
     }
 
-    public var projectedValue: Children<From, To> {
+    public var projectedValue: ChildrenProperty<From, To> {
         return self
     }
     
@@ -41,9 +49,7 @@ public final class Children<From, To>: AnyProperty
         return self.idValue
     }
 
-    // MARK: Query
-
-    public func query(on database: Database) throws -> QueryBuilder<To> {
+    public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query children relation from unsaved model.")
         }
@@ -57,111 +63,164 @@ public final class Children<From, To>: AnyProperty
         return builder
     }
 
-    // MARK: Property
+    public func create(_ to: [To], on database: Database) -> EventLoopFuture<Void> {
+        guard let id = self.idValue else {
+            fatalError("Cannot save child to unsaved model.")
+        }
+        to.forEach {
+            switch self.parentKey {
+            case .required(let keyPath):
+                $0[keyPath: keyPath].id = id
+            case .optional(let keyPath):
+                $0[keyPath: keyPath].id = id
+            }
+        }
+        return to.create(on: database)
+    }
 
-    func output(from output: DatabaseOutput) throws {
-        let key = From.key(for: \._$id)
-        if output.contains(key) {
+    public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
+        guard let id = self.idValue else {
+            fatalError("Cannot save child to unsaved model.")
+        }
+        switch self.parentKey {
+        case .required(let keyPath):
+            to[keyPath: keyPath].id = id
+        case .optional(let keyPath):
+            to[keyPath: keyPath].id = id
+        }
+        return to.create(on: database)
+    }
+}
+
+extension ChildrenProperty: PropertyProtocol {
+    public typealias Model = From
+    public typealias Value = [To]
+}
+
+extension ChildrenProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        []
+    }
+
+    public var path: [FieldKey] {
+        []
+    }
+
+    public func input(to input: inout DatabaseInput) {
+        // children never has input
+    }
+
+    public func output(from output: DatabaseOutput) throws {
+        let key = From()._$id.field.key
+        if output.contains([key]) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
 
-    // MARK: Codable
-    func encode(to encoder: Encoder) throws {
-        if let rows = self.eagerLoadedValue {
+    public func encode(to encoder: Encoder) throws {
+        if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         // don't decode
     }
 }
 
-
-extension Children: EagerLoadable {
-    public var eagerLoaded: [To]? {
-        self.eagerLoadedValue
-    }
-
-    public func eagerLoad<Model>(to builder: QueryBuilder<Model>)
-        where Model: FluentKit.Model
-    {
-        builder.eagerLoads.requests[self.eagerLoadKey] = SubqueryEagerLoad(self.parentKey)
+extension ChildrenProperty.Key: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .optional(let keyPath):
+            return To.path(for: keyPath.appending(path: \.$id)).description
+        case .required(let keyPath):
+            return To.path(for: keyPath.appending(path: \.$id)).description
+        }
     }
 }
 
-extension Children: AnyEagerLoadable {
-    var eagerLoadKey: String {
-        let ref = To()
-        switch self.parentKey {
+extension ChildrenProperty: Relation {
+    public var name: String {
+        "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
+    }
+
+    public func load(on database: Database) -> EventLoopFuture<Void> {
+        self.query(on: database).all().map {
+            self.value = $0
+        }
+    }
+}
+
+extension ChildrenProperty: EagerLoadable {
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.Children<To>>,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = ChildrenEagerLoader(relationKey: relationKey)
+        builder.add(loader: loader)
+    }
+
+
+    public static func eagerLoad<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Children<To>>,
+        to builder: Builder
+    ) where
+        Loader: EagerLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughChildrenEagerLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
+}
+
+private struct ChildrenEagerLoader<From, To>: EagerLoader
+    where From: Model, To: Model
+{
+    let relationKey: KeyPath<From, From.Children<To>>
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let ids = models.map { $0.id! }
+
+        let builder = To.query(on: database)
+        let parentKey = From()[keyPath: self.relationKey].parentKey
+        switch parentKey {
         case .optional(let optional):
-            return "c:\(To.schema):\(ref[keyPath: optional].key)"
+            builder.filter(optional.appending(path: \.$id) ~~ Set(ids))
         case .required(let required):
-            return "c:\(To.schema):\(ref[keyPath: required].key)"
+            builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
-    }
-
-    var eagerLoadValueDescription: CustomStringConvertible? {
-        return self.eagerLoadedValue
-    }
-
-    func eagerLoad(from eagerLoads: EagerLoads) throws {
-        guard let request = eagerLoads.requests[self.eagerLoadKey] else {
-            return
-        }
-        if let subquery = request as? SubqueryEagerLoad {
-            self.eagerLoadedValue = try subquery.get(id: self.idValue!)
-        } else {
-            fatalError("unsupported eagerload request: \(type(of: request))")
-        }
-    }
-
-    final class SubqueryEagerLoad: EagerLoadRequest {
-        var storage: [To]
-        let parentKey: Key
-
-        var description: String {
-            return self.storage.description
-        }
-
-        init(_ parentKey: Key) {
-            self.storage = []
-            self.parentKey = parentKey
-        }
-
-        func prepare(query: inout DatabaseQuery) {
-            // do nothing
-        }
-
-        func run(models: [AnyModel], on database: Database) -> EventLoopFuture<Void> {
-            let ids: [From.IDValue] = models
-                .map { $0 as! From }
-                .map { $0.id! }
-
-            let builder = To.query(on: database)
-            switch self.parentKey {
-            case .optional(let optional):
-                builder.filter(optional.appending(path: \.$id), in: Set(ids))
-            case .required(let required):
-                builder.filter(required.appending(path: \.$id), in: Set(ids))
-            }
-            return builder.all()
-                .map { (children: [To]) -> Void in
-                    self.storage = children
-                }
-        }
-
-        func get(id: From.IDValue) throws -> [To] {
-            return self.storage.filter { child in
-                switch self.parentKey {
-                case .optional(let optional):
-                    return child[keyPath: optional].id == id
-                case .required(let required):
-                    return child[keyPath: required].id == id
+        return builder.all().map {
+            for model in models {
+                let id = model[keyPath: self.relationKey].idValue!
+                model[keyPath: self.relationKey].value = $0.filter { child in
+                    switch parentKey {
+                    case .optional(let optional):
+                        return child[keyPath: optional].id == id
+                    case .required(let required):
+                        return child[keyPath: required].id == id
+                    }
                 }
             }
         }
+    }
+}
+
+private struct ThroughChildrenEagerLoader<From, Through, Loader>: EagerLoader
+    where From: Model, Loader: EagerLoader, Loader.Model == Through
+{
+    let relationKey: KeyPath<From, From.Children<Through>>
+    let loader: Loader
+
+    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+        let throughs = models.flatMap {
+            $0[keyPath: self.relationKey].value!
+        }
+        return self.loader.run(models: throughs, on: database)
     }
 }

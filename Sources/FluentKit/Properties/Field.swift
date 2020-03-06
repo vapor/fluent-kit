@@ -1,55 +1,85 @@
+extension Fields {
+    public typealias Field<Value> = FieldProperty<Self, Value>
+        where Value: Codable
+}
+
 @propertyWrapper
-public final class Field<Value>: AnyField, FieldRepresentable
-    where Value: Codable
+public final class FieldProperty<Model, Value>
+    where Model: FluentKit.Fields, Value: Codable
 {
-    public let key: String
+    public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
+    
+    public var projectedValue: FieldProperty<Model, Value> {
+        self
+    }
 
-    public var field: Field<Value> {
-        return self
-    }
-    
-    public var projectedValue: Field<Value> {
-        return self
-    }
-    
     public var wrappedValue: Value {
+        get {
+            guard let value = self.value else {
+                fatalError("Cannot access field before it is initialized or fetched: \(self.key)")
+            }
+            return value
+        }
+        set {
+            self.value = newValue
+        }
+    }
+
+    public init(key: FieldKey) {
+        self.key = key
+    }
+}
+
+extension FieldProperty: PropertyProtocol {
+    public var value: Value? {
         get {
             if let value = self.inputValue {
                 switch value {
                 case .bind(let bind):
-                    return bind as! Value
+                    return bind as? Value
                 case .default:
-                    fatalError("Cannot access default field before it is initialized or fetched")
+                    fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 default:
-                    fatalError("Unexpected input value type: \(value)")
+                    fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
                 return value
             } else {
-                fatalError("Cannot access field before it is initialized or fetched")
+                return nil
             }
         }
         set {
-            self.inputValue = .bind(newValue)
+            self.inputValue = newValue.map { .bind($0) }
         }
     }
+}
 
-    public init(key: String) {
-        self.key = key
+extension FieldProperty: FieldProtocol { }
+extension FieldProperty: AnyField { }
+
+extension FieldProperty: AnyProperty {
+    public var nested: [AnyProperty] {
+        []
     }
 
-    // MARK: Property
+    public var path: [FieldKey] {
+        [self.key]
+    }
 
-    func output(from output: DatabaseOutput) throws {
-        if output.contains(self.key) {
+    public func input(to input: inout DatabaseInput) {
+        input.values[self.key] = self.inputValue
+    }
+
+    public func output(from output: DatabaseOutput) throws {
+        if output.contains([self.key]) {
             self.inputValue = nil
             do {
                 self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(
-                    name: self.key,
+                    name: self.key.description,
                     valueType: Value.self,
                     error: error
                 )
@@ -57,31 +87,24 @@ public final class Field<Value>: AnyField, FieldRepresentable
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        if let valueType = Value.self as? _Optional.Type {
+
+        if let valueType = Value.self as? AnyOptionalType.Type {
+            // Hacks for supporting optionals in @Field.
+            // Using @OptionalField is preferred moving forward.
             if container.decodeNil() {
-                self.wrappedValue = (valueType._none as! Value)
+                self.wrappedValue = (valueType.nil as! Value)
             } else {
                 self.wrappedValue = try container.decode(Value.self)
             }
         } else {
             self.wrappedValue = try container.decode(Value.self)
         }
-    }
-}
-
-
-private protocol _Optional {
-    static var _none: Any { get }
-}
-extension Optional: _Optional {
-    static var _none: Any {
-        return Self.none as Any
     }
 }

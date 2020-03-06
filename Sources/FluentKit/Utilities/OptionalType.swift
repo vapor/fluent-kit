@@ -1,5 +1,6 @@
 public protocol AnyOptionalType {
     static var wrappedType: Any.Type { get }
+    static var `nil`: Any { get }
     var wrappedValue: Any? { get }
 }
 
@@ -14,7 +15,11 @@ extension OptionalType {
 }
 
 extension Optional: OptionalType {
+    public static var `nil`: Any {
+        Self.none as Any
+    }
+
     public var wrappedValue: Any? {
-        return self
+        self
     }
 }
