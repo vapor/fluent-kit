@@ -14,12 +14,18 @@ public protocol Database {
         enum: DatabaseEnum
     ) -> EventLoopFuture<Void>
 
+    var inTransaction: Bool { get }
+
     func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
     func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 extension Database {
+    public var inTransaction: Bool {
+        false
+    }
+
     public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
         where Model: FluentKit.Model
     {
