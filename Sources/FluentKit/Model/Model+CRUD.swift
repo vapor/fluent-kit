@@ -6,13 +6,13 @@ extension Model {
             return self.create(on: database)
         }
     }
-    
+
     public func create(on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             model.handle(event, on: db)
         }.handle(.create, self, on: database)
     }
-    
+
     private func _create(on database: Database) -> EventLoopFuture<Void> {
         self.touchTimestamps(.create, .update)
         precondition(!self._$id.exists)
@@ -32,13 +32,13 @@ extension Model {
             try self.output(from: SavedInput(input.values))
         }
     }
-    
+
     public func update(on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
-    
+
     private func _update(on database: Database) -> EventLoopFuture<Void> {
         self.touchTimestamps(.update)
         precondition(self._$id.exists)
@@ -56,7 +56,7 @@ extension Model {
             try self.output(from: SavedInput(input.values))
         }
     }
-    
+
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         if !force, let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first {
             timestamp.touch()
@@ -69,7 +69,7 @@ extension Model {
             }.handle(.delete(force), self, on: database)
         }
     }
-    
+
     private func _delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         let query = Self.query(on: database)
         if force {
@@ -84,13 +84,13 @@ extension Model {
             self._$id.exists = false
         }
     }
-    
+
     public func restore(on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             model.handle(event, on: db)
         }.handle(.restore, self, on: database)
     }
-    
+
     private func _restore(on database: Database) -> EventLoopFuture<Void> {
         guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
             fatalError("no delete timestamp on this model")
@@ -109,7 +109,7 @@ extension Model {
             self._$id.exists = true
         }
     }
-    
+
     private func handle(_ event: ModelEvent, on db: Database) -> EventLoopFuture<Void> {
         switch event {
         case .create:
@@ -133,25 +133,24 @@ extension Array where Element: FluentKit.Model {
             // successful without doing anything.
             return database.eventLoop.makeSucceededFuture(())
         }
-        
+
         let builder = Element.query(on: database)
         self.forEach { model in
             precondition(!model._$id.exists)
         }
-        
+
         self.forEach {
             $0._$id.generate()
-            $0.touchTimestamps(.create)
-            $0.touchTimestamps(.update)
+            $0.touchTimestamps(.create, .update)
         }
         builder.set(self.map { $0.input.values })
         builder.query.action = .create
         var it = self.makeIterator()
-        return builder.run { created in
+        return builder.run { _ in
             let next = it.next()!
             next._$id.exists = true
         }
-        
+
     }
 }
 
@@ -189,7 +188,7 @@ private struct SavedInput: DatabaseOutput {
             throw FluentError.missingField(name: path.description)
         }
     }
-    
+
     var description: String {
         return self.input.description
     }
