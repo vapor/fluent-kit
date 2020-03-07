@@ -304,9 +304,9 @@ final class FluentKitTests: XCTestCase {
                 .count()
                 .wait()
             XCTAssertEqual(db.sqlSerializers.count, 1)
-            let extractedExpr: String = (db.sqlSerializers.first?.sql)!
+            let result: String = (db.sqlSerializers.first?.sql)!
             let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1"#
-            XCTAssertEqual(extractedExpr, expected)
+            XCTAssertEqual(result, expected)
             db.reset()
         }
 
@@ -318,9 +318,9 @@ final class FluentKitTests: XCTestCase {
                 .count()
                 .wait()
             XCTAssertEqual(db.sqlSerializers.count, 1)
-            let extractedExpr: String = (db.sqlSerializers.first?.sql)!
+            let result: String = (db.sqlSerializers.first?.sql)!
             let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" IS NOT NULL"#
-            XCTAssertEqual(extractedExpr, expected)
+            XCTAssertEqual(result, expected)
             db.reset()
         }
 
@@ -334,9 +334,9 @@ final class FluentKitTests: XCTestCase {
                 .count()
                 .wait()
             XCTAssertEqual(db.sqlSerializers.count, 1)
-            let extractedExpr: String = (db.sqlSerializers.first?.sql)!
+            let result: String = (db.sqlSerializers.first?.sql)!
             let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" = $2 AND "planets"."nickname" <> $3"#
-            XCTAssertEqual(extractedExpr, expected)
+            XCTAssertEqual(result, expected)
             db.reset()
         }
 
@@ -350,9 +350,9 @@ final class FluentKitTests: XCTestCase {
                 .count()
                 .wait()
             XCTAssertEqual(db.sqlSerializers.count, 1)
-            let extractedExpr: String = (db.sqlSerializers.first?.sql)!
+            let result: String = (db.sqlSerializers.first?.sql)!
             let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" IS NOT NULL AND "planets"."nickname" = $2"#
-            XCTAssertEqual(extractedExpr, expected)
+            XCTAssertEqual(result, expected)
             db.reset()
         }
     }
