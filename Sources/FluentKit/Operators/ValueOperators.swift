@@ -24,13 +24,13 @@ extension QueryBuilder {
 public func == <Model, Value>(lhs: KeyPath<Model, Model.Enum<Value>>, rhs: Value) -> ModelValueFilter<Model>
 where Model: Fields, Value: Codable, Value: RawRepresentable, Value.RawValue == String
 {
-    return lhs == .enumCase(rhs.rawValue)
+    lhs == .enumCase(rhs.rawValue)
 }
 
 public func != <Model, Value>(lhs: KeyPath<Model, Model.Enum<Value>>, rhs: Value) -> ModelValueFilter<Model>
     where Model: Fields, Value: Codable, Value: RawRepresentable, Value.RawValue == String
 {
-    return lhs != .enumCase(rhs.rawValue)
+    lhs != .enumCase(rhs.rawValue)
 }
 
 // MARK: Field.Value
@@ -38,7 +38,7 @@ public func != <Model, Value>(lhs: KeyPath<Model, Model.Enum<Value>>, rhs: Value
 public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    return lhs == .bind(rhs)
+    lhs == .bind(rhs)
 }
 
 public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
