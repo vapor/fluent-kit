@@ -42,6 +42,12 @@ extension EnumProperty: PropertyProtocol {
                 switch value {
                 case .enumCase(let string):
                     return Value(rawValue: string)!
+                case .bind(let string as String):
+                    guard let value = Value(rawValue: string) else {
+                        fatalError("Invalid enum case name '\(string)' for enum \(Value.self)")
+                    }
+
+                    return value
                 default:
                     fatalError("Unexpected enum input value type: \(value)")
                 }

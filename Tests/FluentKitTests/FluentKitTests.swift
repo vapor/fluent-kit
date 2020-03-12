@@ -249,7 +249,20 @@ final class FluentKitTests: XCTestCase {
             print(error)
         }
     }
-    
+
+    // GitHub PR: https://github.com/vapor/fluent-kit/pull/209
+    func testDecodeEnumProperty() throws {
+        let json = """
+        {"name": "Squeeky", "type": "mouse"}
+        """
+        do {
+            let toy = try JSONDecoder().decode(Toy.self, from: Data(json.utf8))
+            XCTAssertNotNil(toy.$type.value)
+        } catch {
+            return XCTFail("\(error)")
+        }
+    }
+
     func testCreateEmptyModelArrayDoesntQuery() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         try [Planet2]().create(on: db).wait()
