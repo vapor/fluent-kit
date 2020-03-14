@@ -6,18 +6,24 @@ extension FluentBenchmarker {
             // seed
             do {
                 let swift = User(
+                    id: UUID(uuidString: "11111111-1111-1111-1111-111111111111"),
                     name: "Swift",
                     pet: .init(name: "Foo", type: .dog),
                     bestFriend: nil
                 )
                 try swift.save(on: self.database).wait()
                 let vapor = User(
+                    id: UUID(uuidString: "22222222-2222-2222-2222-222222222222"),
                     name: "Vapor",
                     pet: .init(name: "Bar", type: .cat),
                     bestFriend: swift
                 )
                 try vapor.save(on: self.database).wait()
             }
+
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            encoder.outputFormatting = encoder.outputFormatting.union(.prettyPrinted)
 
             // test
             let users = try User.query(on: self.database)
@@ -29,9 +35,15 @@ extension FluentBenchmarker {
                 case "Swift":
                     XCTAssertEqual(user.bestFriend?.name, nil)
                     XCTAssertEqual(user.friends.count, 1)
+                    let encoded = try encoder.encode(user)
+                    let json = String(data:encoded, encoding: .utf8)!
+                    XCTAssertEqual(json, expectedUserSwiftWithFriendsJson)
                 case "Vapor":
                     XCTAssertEqual(user.bestFriend?.name, "Swift")
                     XCTAssertEqual(user.friends.count, 0)
+                    let encoded = try encoder.encode(user)
+                    let json = String(data:encoded, encoding: .utf8)!
+                    XCTAssertEqual(json, expectedUserVaporWithFriendsJson)
                 default:
                     XCTFail("unexpected name: \(user.name)")
                 }
@@ -45,6 +57,10 @@ extension FluentBenchmarker {
                 .all().wait()
             XCTAssertEqual(users2.count, 1)
             XCTAssert(users2.first?.bestFriend == nil)
+
+            let encoded = try encoder.encode(users2[0])
+            let json = String(data:encoded, encoding: .utf8)!
+            XCTAssertEqual(json, expectedUserSwiftJson)
         }
     }
 }
@@ -115,3 +131,69 @@ private struct UserSeed: Migration {
         return database.eventLoop.makeSucceededFuture(())
     }
 }
+
+let expectedUserSwiftJson = """
+{
+  "bestFriend" : {
+    "id" : null
+  },
+  "id" : "11111111-1111-1111-1111-111111111111",
+  "name" : "Swift",
+  "pet" : {
+    "name" : "Foo",
+    "type" : "dog"
+  }
+}
+"""
+
+let expectedUserVaporWithFriendsJson = """
+{
+  "bestFriend" : {
+    "bestFriend" : {
+      "id" : null
+    },
+    "id" : "11111111-1111-1111-1111-111111111111",
+    "name" : "Swift",
+    "pet" : {
+      "name" : "Foo",
+      "type" : "dog"
+    }
+  },
+  "friends" : [
+
+  ],
+  "id" : "22222222-2222-2222-2222-222222222222",
+  "name" : "Vapor",
+  "pet" : {
+    "name" : "Bar",
+    "type" : "cat"
+  }
+}
+"""
+
+let expectedUserSwiftWithFriendsJson = """
+{
+  "bestFriend" : {
+    "id" : null
+  },
+  "friends" : [
+    {
+      "bestFriend" : {
+        "id" : "11111111-1111-1111-1111-111111111111"
+      },
+      "id" : "22222222-2222-2222-2222-222222222222",
+      "name" : "Vapor",
+      "pet" : {
+        "name" : "Bar",
+        "type" : "cat"
+      }
+    }
+  ],
+  "id" : "11111111-1111-1111-1111-111111111111",
+  "name" : "Swift",
+  "pet" : {
+    "name" : "Foo",
+    "type" : "dog"
+  }
+}
+"""
