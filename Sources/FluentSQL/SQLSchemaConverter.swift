@@ -40,6 +40,9 @@ public struct SQLSchemaConverter {
         create.tableConstraints = schema.constraints.map {
             self.constraint($0, table: schema.schema)
         }
+        if !schema.exclusiveCreate {
+            create.ifNotExists = true
+        }
         return create
     }
     

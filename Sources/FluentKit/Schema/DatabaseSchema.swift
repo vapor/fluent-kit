@@ -121,6 +121,7 @@ public struct DatabaseSchema {
     public var updateFields: [FieldUpdate]
     public var deleteFields: [FieldName]
     public var constraints: [Constraint]
+    public var exclusiveCreate: Bool
     
     public init(schema: String) {
         self.action = .create
@@ -129,5 +130,6 @@ public struct DatabaseSchema {
         self.updateFields = []
         self.deleteFields = []
         self.constraints = []
+        self.exclusiveCreate = true
     }
 }

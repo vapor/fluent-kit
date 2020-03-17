@@ -206,6 +206,27 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
     }
     
+    func testIfNotExistsTableCreate() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema("planets")
+            .field("galaxy_id", .int64)
+            .ignoreExisting()
+            .create()
+            .wait()
+            
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE IF NOT EXISTS "planets"("galaxy_id" BIGINT)"#)
+        db.reset()
+
+        try db.schema("planets")
+            .field("galaxy_id", .int64)
+            .create()
+            .wait()
+            
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT)"#)
+    }
+    
     func testDecodeWithoutID() throws {
         let json = """
         {"name": "Earth", "moonCount": 1}
