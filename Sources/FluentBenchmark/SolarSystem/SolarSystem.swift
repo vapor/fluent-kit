@@ -31,9 +31,10 @@ public struct SolarSystem: Migration {
         } else {
             all = migrations
         }
-        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all) { migration in
-            migration.prepare(on: database)
-        }
+        let queue = EventLoopFutureQueue(eventLoop: database.eventLoop)
+        _ = queue.append(each: all) { migration in migration.prepare(on: database) }
+        _ = queue.append(each: all) { migration in migration.prepareLate(on: database) }
+        return queue.append(database.eventLoop.makeSucceededFuture(()), runningOn: .success)
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -43,8 +44,9 @@ public struct SolarSystem: Migration {
         } else {
             all = migrations
         }
-        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all.reversed()) { migration in
-            migration.revert(on: database)
-        }
+        let queue = EventLoopFutureQueue(eventLoop: database.eventLoop)
+        _ = queue.append(each: all.reversed()) { migration in migration.revertLate(on: database) }
+        _ = queue.append(each: all.reversed()) { migration in migration.revert(on: database) }
+        return queue.append(database.eventLoop.makeSucceededFuture(()), runningOn: .success)
     }
 }

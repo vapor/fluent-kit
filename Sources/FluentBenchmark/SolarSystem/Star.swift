@@ -14,6 +14,9 @@ public final class Star: Model {
 
     @Children(for: \.$star)
     public var planets: [Planet]
+    
+    @Field(key: "surface_temperature")
+    public var surfaceTemperature: Double?
 
     public init() { }
 
@@ -29,11 +32,24 @@ public struct StarMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("galaxy_id", .uuid, .required, .references("galaxies", "id"))
+            .field("surface_temperature", .float)
             .create()
+    }
+    
+    public func prepareLate(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("stars")
+            .updateField("surface_temperature", .double)
+            .update()
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema("stars").delete()
+    }
+    
+    public func revertLate(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("stars")
+            .updateField("surface_temperature", .float)
+            .update()
     }
 }
 

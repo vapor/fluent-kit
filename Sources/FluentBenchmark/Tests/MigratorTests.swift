@@ -25,7 +25,7 @@ extension FluentBenchmarker {
                 .sort(\.$batch, .ascending)
                 .all().wait()
                 .map { $0.batch }
-            XCTAssertEqual(logs, [1, 1, 2], "batch did not increment")
+            XCTAssertEqual(logs, [1, 1, 1, 1, 2, 2], "batch did not increment")
 
             try migrator.revertAllBatches().wait()
         }
@@ -53,6 +53,33 @@ extension FluentBenchmarker {
             try migrator.revertAllBatches().wait()
         }
     }
+    
+    private func testMigrator_multistage_error() throws {
+        try self.runTest(#function, []) {
+            let migrations = Migrations()
+            migrations.add(GalaxyMigration())
+            migrations.add(ErrorStage2Migration())
+            migrations.add(StarMigration())
+            
+            let migrator = Migrator(
+                databaseFactory: { _ in self.database },
+                migrations: migrations,
+                on: self.database.eventLoop
+            )
+            try migrator.setupIfNeeded().wait()
+            do {
+                try migrator.prepareBatch().wait()
+                XCTFail("Migration should have failed.")
+            } catch {
+                // success
+            }
+            let logs = try MigrationLog.query(on: self.database)
+                .sort(\.$stage, .ascending)
+                .all(\.$stage).wait()
+            XCTAssertEqual(logs, [1, 1, 1, 2], "stage 2 was not stopped")
+            try migrator.revertLastBatch().wait()
+        }
+    }
 }
 
 private struct ErrorMigration: Migration {
@@ -65,6 +92,28 @@ private struct ErrorMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+}
+
+private struct ErrorStage2Migration: Migration {
+    init() { }
+
+    struct Error: Swift.Error { }
+
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    func prepareLate(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeFailedFuture(Error())
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+    
+    func revertLate(on database: Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }
