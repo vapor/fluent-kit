@@ -34,11 +34,7 @@ public struct Migrator {
     // MARK: Setup
     
     public func setupIfNeeded() -> EventLoopFuture<Void> {
-        MigrationLog.query(on: self.database(nil)).all().map { migrations in
-            ()
-        }.flatMapError { error in
-            MigrationLog.migration.prepare(on: self.database(nil))
-        }
+        MigrationLog.migration.prepare(on: self.database(nil))
     }
     
     // MARK: Prepare

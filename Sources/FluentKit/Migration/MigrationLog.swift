@@ -41,6 +41,7 @@ private struct MigrationLogMigration: Migration {
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
             .unique(on: "name")
+            .ignoreExisting()
             .create()
     }
 

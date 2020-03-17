@@ -82,6 +82,11 @@ public final class SchemaBuilder {
         return self
     }
 
+    public func ignoreExisting() -> Self {
+        self.schema.exclusiveCreate = false
+        return self
+    }
+
     public func create() -> EventLoopFuture<Void> {
         self.schema.action = .create
         return self.database.execute(schema: self.schema)
