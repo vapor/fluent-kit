@@ -167,7 +167,7 @@ public struct Migrator {
     }
     
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        MigrationLog.query(on: self.database(nil)).max(\.$batch).map { $0 ?? 0 }
+        MigrationLog.query(on: self.database(nil)).sort(\.$batch, .descending).first().map { $0?.batch ?? 0 }
     }
     
     private func storedMigrations(matching names: [String], inverted: Bool) -> [Migrations.Item] {

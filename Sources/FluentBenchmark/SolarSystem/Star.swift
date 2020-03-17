@@ -23,6 +23,7 @@ public final class Star: Model {
     public init(id: IDValue? = nil, name: String) {
         self.id = id
         self.name = name
+        self.surfaceTemperature = 0.0
     }
 }
 
