@@ -11,7 +11,10 @@ public final class MigrationLog: Model {
 
     @Field(key: "name")
     public var name: String
-
+    
+    @Field(key: "stage")
+    public var stage: Int
+    
     @Field(key: "batch")
     public var batch: Int
 
@@ -23,9 +26,10 @@ public final class MigrationLog: Model {
 
     public init() { }
 
-    public init(id: IDValue? = nil, name: String, batch: Int) {
+    public init(id: IDValue? = nil, name: String, stage: Int = 1, batch: Int) {
         self.id = id
         self.name = name
+        self.stage = stage
         self.batch = batch
         self.createdAt = nil
         self.updatedAt = nil
@@ -37,10 +41,11 @@ private struct MigrationLogMigration: Migration {
         database.schema("_fluent_migrations")
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
+            .field("stage", .int, .required)
             .field("batch", .int, .required)
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
-            .unique(on: "name")
+            .unique(on: "name", "stage")
             .create()
     }
 

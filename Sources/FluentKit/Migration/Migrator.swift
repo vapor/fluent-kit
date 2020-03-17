@@ -46,23 +46,13 @@ public struct Migrator {
     
     public func prepareBatch() -> EventLoopFuture<Void> {
         // Get last batch number and list of waiting migrations.
-        return self.lastBatchNumber().and(self.unpreparedMigrations()).flatMap { lastBatch, migrations in
-            let queue = EventLoopFutureQueue(eventLoop: self.eventLoop)
-        
-            // Queue up the waiting migrations (first stage).
-            _ = queue.append(each: migrations, { item in
-                return item.migration.prepare(on: self.database(item.id))
-            })
-            
-            // Queue up the waiting migrations again (second stage) and save migration log.
-            _ = queue.append(each: migrations, { item in
-                return item.migration.prepareLate(on: self.database(item.id)).flatMap {
-                    MigrationLog(name: item.migration.name, batch: lastBatch + 1).save(on: self.database(nil))
-                }
-            })
-            
-            // Add a trailer future to the queue for cleanliness.
-            return queue.append { self.eventLoop.future() }
+        return self.lastBatchNumber().flatMap { lastBatch in
+            EventLoopFuture.and(
+                self.unpreparedMigrations(stage: 1),
+                self.unpreparedMigrations(stage: 2)
+            ).flatMap {
+                self.prepareBatch(stage1: $0, stage2: $1, as: lastBatch + 1)
+            }
         }
     }
     
@@ -75,117 +65,150 @@ public struct Migrator {
     }
     
     public func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        return self.preparedMigrations(batch: number)
-                   .flatMap { self.revertMigrationList($0) }
+        return EventLoopFuture.and(
+            self.preparedMigrations(stage: 1, batch: number),
+            self.preparedMigrations(stage: 2, batch: number)
+        )
+        .flatMap { self.revertBatch(stage1: $0, stage2: $1) }
     }
     
     public func revertAllBatches() -> EventLoopFuture<Void> {
-        return self.preparedMigrations()
-           .flatMap { self.revertMigrationList($0) }
-           .flatMap { self.revertMigrationLog() }
-    }
-    
-    private func revertMigrationList(_ migrations: [Migrations.Item]) -> EventLoopFuture<Void> {
-        let queue = EventLoopFutureQueue(eventLoop: self.eventLoop)
-    
-        // Queue up stage 2 revert first (reverse of prepare).
-        _ = queue.append(each: migrations, { item in
-            item.migration.revertLate(on: self.database(item.id))
-        })
-        
-        // Queue up stage 1 revert and delete migration log.
-        _ = queue.append(each: migrations, { item in
-            return item.migration.revert(on: self.database(item.id)).flatMap {
-                MigrationLog.query(on: self.database(nil)).filter(\.$name == item.migration.name).delete()
-            }
-        })
-        
-        // And as before a cleanliness trailer.
-        return queue.append { self.eventLoop.future() }
+        return EventLoopFuture.and(
+            self.preparedMigrations(stage: 1, batch: nil),
+            self.preparedMigrations(stage: 2, batch: nil)
+        )
+        .flatMap { self.revertBatch(stage1: $0, stage2: $1) }
+        .flatMap { self.revertMigrationLog() }
     }
     
     // MARK: Preview
     
     public func previewPrepareBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.unpreparedMigrations().map { items in
-            items.map { item  in
-                (item.migration, item.id)
-            }
+        EventLoopFuture.and(
+            self.unpreparedMigrations(stage: 1),
+            self.unpreparedMigrations(stage: 2)
+        )
+        .map { stage1, stage2 in
+            // Append stage 2 to stage 1, but filter out names already in stage 1 first. This is as close as
+            // this API can come to expressing the multi-stage behavior.
+            stage1 + stage2.filter { i2 in !stage1.contains { i1 in i1.migration.name == i2.migration.name } }
         }
+        .mapEach { ($0.migration, $0.id) }
     }
     
     public func previewRevertLastBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.lastBatchNumber().flatMap { lastBatch in
-            self.preparedMigrations(batch: lastBatch)
-        }.map { items in
-            items.map { item in
-                (item.migration, item.id)
-            }
-        }
+        self.lastBatchNumber().flatMap { lastBatch in self.previewRevertBatch(lastBatch) }
     }
     
     public func previewRevertBatch(number: Int) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.preparedMigrations(batch: number).map { items -> [(Migration, DatabaseID?)] in
-            items.map { item -> (Migration, DatabaseID?) in
-                return (item.migration, item.id)
-            }
-        }
+        self.previewRevertBatch(number)
     }
     
     public func previewRevertAllBatches() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.preparedMigrations().map { items -> [(Migration, DatabaseID?)] in
-            items.map { item -> (Migration, DatabaseID?) in
-                return (item.migration, item.id)
-            }
-        }
+        self.previewRevertBatch(nil)
     }
     
     // MARK: Private
+    
+    private func prepare(_ item: Migrations.Item, at stage: Int, as batch: Int) -> EventLoopFuture<Void> {
+        let call = (stage == 1 ? item.migration.prepare(on:) : item.migration.prepareLate(on:))
+
+        return call(self.database(item.id)).flatMap {
+            MigrationLog(name: item.migration.name, stage: stage, batch: batch).save(on: self.database(nil))
+        }
+    }
+    
+    private func revert(_ item: Migrations.Item, at stage: Int) -> EventLoopFuture<Void> {
+        let call = (stage == 1 ? item.migration.revert(on:) : item.migration.revertLate(on:))
+        
+        return call(self.database(item.id)).flatMap {
+            MigrationLog.query(on: self.database(nil))
+                .filter(\.$name == item.migration.name)
+                .filter(\.$stage == stage)
+                .delete()
+        }
+    }
+    
+    private func prepareBatch(stage1: [Migrations.Item], stage2: [Migrations.Item], as nextBatch: Int) -> EventLoopFuture<Void> {
+        let queue = EventLoopFutureQueue(eventLoop: self.eventLoop)
+    
+        // Queue stage 1 migrations and their logs, then stage 2 migrations and their logs.
+        _ = queue.append(each: stage1, { item in self.prepare(item, at: 1, as: nextBatch) })
+        _ = queue.append(each: stage2, { item in self.prepare(item, at: 2, as: nextBatch) })
+        
+        // Add a trailer future to the queue for cleanliness.
+        return queue.append(self.eventLoop.future(), runningOn: .success)
+    }
+    
+    private func revertBatch(stage1: [Migrations.Item], stage2: [Migrations.Item]) -> EventLoopFuture<Void> {
+        let queue = EventLoopFutureQueue(eventLoop: self.eventLoop)
+        
+        // Revert stage 2 first, then stage 1. Don't reverse the arrays, that was done by `preparedMigrations()`.
+        _ = queue.append(each: stage2, { item in self.revert(item, at: 2) })
+        _ = queue.append(each: stage1, { item in self.revert(item, at: 1) })
+        
+        // And as before a cleanliness trailer.
+        return queue.append(self.eventLoop.future(), runningOn: .success)
+    }
+    
+    private func previewRevertBatch(_ number: Int?) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+        return EventLoopFuture.and(
+            self.preparedMigrations(stage: 1, batch: number),
+            self.preparedMigrations(stage: 2, batch: number)
+        )
+        .map { stage1, stage2 in
+            stage2 + stage1.filter { i1 in !stage2.contains { i2 in i1.migration.name == i2.migration.name } }
+        }
+        .mapEach { ($0.migration, $0.id) }
+    }
     
     private func revertMigrationLog() -> EventLoopFuture<Void> {
         MigrationLog.migration.revert(on: self.database(nil))
     }
     
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        MigrationLog.query(on: self.database(nil)).sort(\.$batch, .descending).first().map { log in
-            log?.batch ?? 0
+        MigrationLog.query(on: self.database(nil)).max(\.$batch).map { $0 ?? 0 }
+    }
+    
+    private func storedMigrations(matching names: [String], inverted: Bool) -> [Migrations.Item] {
+        // This is a kinda yucky O(n^2) a lot of the time...
+        return self.migrations.storage.filter { item in
+            // Logic matrix:
+            // - Contains: True   Inverted: False   Result: True   (does contain)
+            // - Contains: False  Inverted: False   Result: False  (does not contain)
+            // - Contains: True   Inverted: True    Result: False  (does not exclude)
+            // - Contains: False  Inverted: True    Result: True   (does exclude)
+            // Basically, it's an XOR operation, except you can't do that with Bool.
+            return names.contains(item.migration.name) ? !inverted : inverted
         }
     }
     
-    private func preparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
-        MigrationLog.query(on: self.database(nil)).all().map { logs -> [Migrations.Item] in
-            self.migrations.storage.filter { storage in
-                logs.contains { log in
-                    storage.migration.name == log.name
-                }
-            }.reversed()
-        }
+    private func preparedMigrations(stage: Int, batch: Int?) -> EventLoopFuture<[Migrations.Item]> {
+        MigrationLog.query(on: self.database(nil))
+            .group(.and, { q in _ = batch.map { q.filter(\.$batch == $0) } })
+            .filter(\.$stage == stage)
+            .sort(\.$batch)
+            .all(\.$name)
+            .map { self.storedMigrations(matching: $0, inverted: false).reversed() }
     }
     
-    private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migrations.Item]> {
-        MigrationLog.query(on: self.database(nil)).filter(\.$batch == batch).all().map { logs in
-            self.migrations.storage.filter { storage in
-                logs.contains { log in
-                    storage.migration.name == log.name
-                }
-            }.reversed()
-        }
-    }
-    
-    private func unpreparedMigrations() -> EventLoopFuture<[Migrations.Item]> {
+    private func unpreparedMigrations(stage: Int) -> EventLoopFuture<[Migrations.Item]> {
         return MigrationLog.query(on: self.database(nil))
-            .all()
-            .map
-        { logs -> [Migrations.Item] in
-            // This is a kinda yucky O(n^2) if migrations are already run, but settles at or near
-            // O(n) for the case where none have run yet.
-            return self.migrations.storage.filter { item in
-                !logs.contains(where: { $0.name == item.migration.name })
-            }
-        }
+            .filter(\.$stage == stage)
+            .all(\.$name)
+            .map { self.storedMigrations(matching: $0, inverted: true) }
     }
     
     private func database(_ id: DatabaseID?) -> Database {
         self.databaseFactory(id)
     }
+}
+
+extension EventLoopFuture {
+    
+    /// Alternative syntax for `first.and(second)`.
+    public static func and<B>(_ first: EventLoopFuture<Value>, _ second: EventLoopFuture<B>) -> EventLoopFuture<(Value, B)> {
+        return first.and(second)
+    }
+
 }
