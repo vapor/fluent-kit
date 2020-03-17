@@ -3,6 +3,7 @@
 import XCTest
 import Foundation
 import FluentSQL
+import NIO
 
 final class FluentKitTests: XCTestCase {
     func testMigrationLogNames() throws {
@@ -307,6 +308,57 @@ final class FluentKitTests: XCTestCase {
             let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"name":"Foo","type":"mouse"},"type":"cat"}}"#
             XCTAssertEqual(result, expected)
         }
+    }
+    
+    func testTwoStageMigration() throws {
+        struct TestMigration: Migration {
+            let prepareClosure: () -> Void
+            let prepareLateClosure: () -> Void
+            let revertClosure: () -> Void
+            let revertLateClosure: () -> Void
+
+            func prepare(on database: Database) -> EventLoopFuture<Void> { database.eventLoop.future(self.prepareClosure()) }
+            func prepareLate(on database: Database) -> EventLoopFuture<Void> { database.eventLoop.future(self.prepareLateClosure()) }
+            func revert(on database: Database) -> EventLoopFuture<Void> { database.eventLoop.future(self.revertClosure()) }
+            func revertLate(on database: Database) -> EventLoopFuture<Void> { database.eventLoop.future(self.revertLateClosure()) }
+        }
+        
+        let prepare1Expectation = XCTestExpectation(description: "prepare() invoked")
+        let prepare2Expectation = XCTestExpectation(description: "prepareLate() invoked")
+        let revert1Expectation = XCTestExpectation(description: "revert() invoked")
+        let revert2Expectation = XCTestExpectation(description: "revertLate() invoked")
+        
+        let migration = TestMigration(
+            prepareClosure: { prepare1Expectation.fulfill() }, prepareLateClosure: { prepare2Expectation.fulfill() },
+            revertClosure: { revert1Expectation.fulfill() }, revertLateClosure: { revert2Expectation.fulfill() }
+        )
+        let migrations = Migrations()
+        migrations.add(migration)
+        
+        let db = DummyDatabaseForTestSQLSerializer()
+        let migrator = Migrator(databaseFactory: { _ in db }, migrations: migrations, on: db.eventLoop)
+        
+        let setupFuture = migrator.setupIfNeeded()
+        (db.eventLoop as! EmbeddedEventLoop).run()
+        _ = try XCTUnwrap(setupFuture.wait())
+        
+        let prepareFuture = migrator.prepareBatch()
+        (db.eventLoop as! EmbeddedEventLoop).run()
+        _ = try XCTUnwrap(prepareFuture.wait())
+        
+        let prepareExpectationResult = XCTWaiter.wait(for: [prepare1Expectation, prepare2Expectation], timeout: 0.1, enforceOrder: true)
+        XCTAssertEqual(prepareExpectationResult, .completed, "\(prepareExpectationResult.rawValue)")
+        
+        // Because the database isn't real, the test of reverting can't work; the migrator will never see
+        // any state that telss it there are any reversions to execute. Something to fix later.
+        /*
+        let revertFuture = migrator.revertLastBatch()
+        (db.eventLoop as! EmbeddedEventLoop).run()
+        _ = try XCTUnwrap(revertFuture.wait())
+        
+        let revertExpectationResult = XCTWaiter.wait(for: [revert2Expectation, revert1Expectation], timeout: 0.1, enforceOrder: true)
+        XCTAssertEqual(revertExpectationResult, .completed, "\(revertExpectationResult.rawValue)")
+        */
     }
 }
 
