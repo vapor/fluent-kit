@@ -1,4 +1,5 @@
 import NIO
+import AsyncKit
 
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model
@@ -201,9 +202,10 @@ public final class QueryBuilder<Model>
                     return self.database.eventLoop.makeSucceededFuture(())
                 }
                 // run eager loads
-                return .andAllSync(self.eagerLoaders.map { eagerLoad in
-                    { eagerLoad.anyRun(models: all, on: self.database) }
-                }, on: self.database.eventLoop)
+                return EventLoopFutureQueue(eventLoop: self.database.eventLoop)
+                    .append(each: self.eagerLoaders, { eagerLoad in
+                        eagerLoad.anyRun(models: all, on: self.database)
+                    })
             }
         } else {
             return done

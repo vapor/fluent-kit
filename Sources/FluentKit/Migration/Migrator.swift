@@ -189,36 +189,3 @@ public struct Migrator {
         self.databaseFactory(id)
     }
 }
-
-extension EventLoopFuture {
-    public static func andAllSync(
-        _ futures: [() -> EventLoopFuture<Void>],
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        let promise = eventLoop.makePromise(of: Void.self)
-        
-        var iterator = futures.makeIterator()
-        func handle(_ future: () -> EventLoopFuture<Void>) {
-            future().whenComplete { res in
-                switch res {
-                case .success:
-                    if let next = iterator.next() {
-                        handle(next)
-                    } else {
-                        promise.succeed(())
-                    }
-                case .failure(let error):
-                    promise.fail(error)
-                }
-            }
-        }
-        
-        if let first = iterator.next() {
-            handle(first)
-        } else {
-            promise.succeed(())
-        }
-        
-        return promise.futureResult
-    }
-}

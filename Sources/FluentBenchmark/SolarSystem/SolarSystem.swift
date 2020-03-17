@@ -1,3 +1,5 @@
+import AsyncKit
+
 private let migrations: [Migration] = [
     GalaxyMigration(),
     StarMigration(),
@@ -29,9 +31,9 @@ public struct SolarSystem: Migration {
         } else {
             all = migrations
         }
-        return .andAllSync(all.map { migration in
-            { migration.prepare(on: database) }
-        }, on: database.eventLoop)
+        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all) { migration in
+            migration.prepare(on: database)
+        }
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -41,8 +43,8 @@ public struct SolarSystem: Migration {
         } else {
             all = migrations
         }
-        return .andAllSync(all.reversed().map { migration in
-            { migration.revert(on: database) }
-        }, on: database.eventLoop)
+        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all.reversed()) { migration in
+            migration.revert(on: database)
+        }
     }
 }
