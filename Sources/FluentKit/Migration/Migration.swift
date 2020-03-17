@@ -2,10 +2,21 @@ public protocol Migration {
     var name: String { get }
     func prepare(on database: Database) -> EventLoopFuture<Void>
     func revert(on database: Database) -> EventLoopFuture<Void>
+
+    func prepareLate(on database: Database) -> EventLoopFuture<Void>
+    func revertLate(on database: Database) -> EventLoopFuture<Void>
 }
 
 extension Migration {
     public var name: String {
         return "\(Self.self)"
+    }
+    
+    public func prepareLate(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
+    }
+
+    public func revertLate(on database: Database) -> EventLoopFuture<Void> {
+        return database.eventLoop.makeSucceededFuture(())
     }
 }
