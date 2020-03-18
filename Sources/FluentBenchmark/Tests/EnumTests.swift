@@ -58,51 +58,39 @@ extension FluentBenchmarker {
                 .first()
                 .wait()
             XCTAssertEqual(fetched?.bar, .baz)
-        }
 
-        // not equal
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(bar: .baz)
-            try foo.save(on: self.database).wait()
+            // not equal
+            let foo2 = Foo(bar: .baz)
+            try foo2.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched2 = try Foo
                 .query(on: self.database)
                 .filter(\.$bar != .qux)
                 .first()
                 .wait()
-            XCTAssertEqual(fetched?.bar, .baz)
-        }
+            XCTAssertEqual(fetched2?.bar, .baz)
 
-        // in
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(bar: .baz)
-            try foo.save(on: self.database).wait()
+            // in
+            let foo3 = Foo(bar: .baz)
+            try foo3.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched3 = try Foo
                 .query(on: self.database)
                 .filter(\.$bar ~~ [.baz, .qux])
                 .first()
                 .wait()
-            XCTAssertEqual(fetched?.bar, .baz)
-        }
+            XCTAssertEqual(fetched3?.bar, .baz)
 
-        // not in
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(bar: .baz)
-            try foo.save(on: self.database).wait()
+            // not in
+            let foo4 = Foo(bar: .baz)
+            try foo4.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched4 = try Foo
                 .query(on: self.database)
                 .filter(\.$bar !~ [.qux])
                 .first()
                 .wait()
-            XCTAssertEqual(fetched?.bar, .baz)
+            XCTAssertEqual(fetched4?.bar, .baz)
         }
     }
 
@@ -120,51 +108,39 @@ extension FluentBenchmarker {
                 .first()
                 .wait()
             XCTAssertNil(fetched)
-        }
 
-        // not equal
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(bar: .baz)
-            try foo.save(on: self.database).wait()
+            // not equal
+            let foo2 = Foo(bar: .baz)
+            try foo2.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched2 = try Foo
                 .query(on: self.database)
                 .filter(\.$bar != .baz)
                 .first()
                 .wait()
-            XCTAssertNil(fetched)
-        }
+            XCTAssertNil(fetched2)
 
-        // in
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(bar: .baz)
-            try foo.save(on: self.database).wait()
+            // in
+            let foo3 = Foo(bar: .baz)
+            try foo3.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched3 = try Foo
                 .query(on: self.database)
                 .filter(\.$bar ~~ [.qux])
                 .first()
                 .wait()
-            XCTAssertNil(fetched)
-        }
+            XCTAssertNil(fetched3)
 
-        // not in
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
-            let foo = Foo(bar: .baz)
-            try foo.save(on: self.database).wait()
+            // not in
+            let foo4 = Foo(bar: .baz)
+            try foo4.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched4 = try Foo
                 .query(on: self.database)
                 .filter(\.$bar !~ [.baz, .qux])
                 .first()
                 .wait()
-            XCTAssertNil(fetched)
+            XCTAssertNil(fetched4)
         }
     }
 }
