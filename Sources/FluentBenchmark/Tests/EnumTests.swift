@@ -161,7 +161,7 @@ extension FluentBenchmarker {
 
             let fetched = try Foo
                 .query(on: self.database)
-                .filter(\.$bar ~~ [.baz, .qux])
+                .filter(\.$bar !~ [.baz, .qux])
                 .first()
                 .wait()
             XCTAssertNil(fetched)
