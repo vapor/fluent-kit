@@ -59,7 +59,9 @@ extension EnumProperty: PropertyProtocol {
     }
 }
 
-extension EnumProperty: FieldProtocol { }
+extension EnumProperty: FieldProtocol {
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .enumCase(value.rawValue) }
+}
 
 extension EnumProperty: AnyField {
     public var path: [FieldKey] {

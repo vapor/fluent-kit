@@ -28,5 +28,15 @@ extension AnyProperty where Self: PropertyProtocol {
     }
 }
 
-public protocol FieldProtocol: AnyField, PropertyProtocol { }
+public protocol FieldProtocol: AnyField, PropertyProtocol {
+    /// Get the given Value in a form suitable for queries.
+    /// Most values can be bound to queries, but some need
+    /// to be inserted statically.
+    static func queryValue(_ value: Value) -> DatabaseQuery.Value
+}
+
+extension FieldProtocol {
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .bind(value) }
+}
+
 public protocol AnyField { }

@@ -19,56 +19,42 @@ extension QueryBuilder {
     }
 }
 
-// MARK: Enum
-
-public func == <Model, Value>(lhs: KeyPath<Model, Model.Enum<Value>>, rhs: Value) -> ModelValueFilter<Model>
-where Model: Fields, Value: Codable, Value: RawRepresentable, Value.RawValue == String
-{
-    lhs == .enumCase(rhs.rawValue)
-}
-
-public func != <Model, Value>(lhs: KeyPath<Model, Model.Enum<Value>>, rhs: Value) -> ModelValueFilter<Model>
-    where Model: Fields, Value: Codable, Value: RawRepresentable, Value.RawValue == String
-{
-    lhs != .enumCase(rhs.rawValue)
-}
-
 // MARK: Field.Value
 
 public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs == .bind(rhs)
+    lhs == Field.queryValue(rhs)
 }
 
 public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs != .bind(rhs)
+    lhs != Field.queryValue(rhs)
 }
 
 public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs >= .bind(rhs)
+    lhs >= Field.queryValue(rhs)
 }
 
 public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs > .bind(rhs)
+    lhs > Field.queryValue(rhs)
 }
 
 public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs < .bind(rhs)
+    lhs < Field.queryValue(rhs)
 }
 
 public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs <= .bind(rhs)
+    lhs <= Field.queryValue(rhs)
 }
 
 // MARK: DatabaseQuery.Value
