@@ -6,7 +6,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
         Values: Collection,
         Values.Element == Field.Value
 {
-    lhs ~~ .array(rhs.map { .bind($0) })
+    lhs ~~ .array(rhs.map { Field.queryValue($0) })
 }
 
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
@@ -26,7 +26,7 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
         Values: Collection,
         Values.Element == Field.Value
 {
-    lhs !~ .array(rhs.map { .bind($0) })
+    lhs !~ .array(rhs.map { Field.queryValue($0) })
 }
 
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>

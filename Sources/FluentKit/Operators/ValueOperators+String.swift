@@ -3,37 +3,37 @@
 public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldProtocol, Field.Value: CustomStringConvertible
 {
-    lhs ~= .bind(rhs)
+    lhs ~= Field.queryValue(rhs)
 }
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldProtocol, Field.Value: CustomStringConvertible
 {
-    lhs ~~ .bind(rhs)
+    lhs ~~ Field.queryValue(rhs)
 }
 
 public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldProtocol, Field.Value: CustomStringConvertible
 {
-    lhs =~ .bind(rhs)
+    lhs =~ Field.queryValue(rhs)
 }
 
 public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldProtocol, Field.Value: CustomStringConvertible
 {
-    lhs !~= .bind(rhs)
+    lhs !~= Field.queryValue(rhs)
 }
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldProtocol, Field.Value: CustomStringConvertible
 {
-    lhs !~ .bind(rhs)
+    lhs !~ Field.queryValue(rhs)
 }
 
 public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: FluentKit.Model, Field: FieldProtocol, Field.Value: CustomStringConvertible
 {
-    lhs !=~ .bind(rhs)
+    lhs !=~ Field.queryValue(rhs)
 }
 
 // MARK: DatabaseQuery.Value

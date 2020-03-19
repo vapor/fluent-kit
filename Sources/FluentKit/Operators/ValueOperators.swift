@@ -24,37 +24,37 @@ extension QueryBuilder {
 public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs == .bind(rhs)
+    lhs == Field.queryValue(rhs)
 }
 
 public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs != .bind(rhs)
+    lhs != Field.queryValue(rhs)
 }
 
 public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs >= .bind(rhs)
+    lhs >= Field.queryValue(rhs)
 }
 
 public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs > .bind(rhs)
+    lhs > Field.queryValue(rhs)
 }
 
 public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs < .bind(rhs)
+    lhs < Field.queryValue(rhs)
 }
 
 public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
-    lhs <= .bind(rhs)
+    lhs <= Field.queryValue(rhs)
 }
 
 // MARK: DatabaseQuery.Value

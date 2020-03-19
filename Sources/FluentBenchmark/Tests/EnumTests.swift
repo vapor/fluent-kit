@@ -3,6 +3,8 @@ extension FluentBenchmarker {
         try self.testEnum_basic()
         try self.testEnum_addCase()
         try self.testEnum_raw()
+        try self.testEnum_queryFound()
+        try self.testEnum_queryMissing()
     }
 
     private func testEnum_basic() throws {
@@ -39,6 +41,106 @@ extension FluentBenchmarker {
 
             let fetched = try Pet.find(pet.id, on: self.database).wait()
             XCTAssertEqual(fetched?.type, .cat)
+        }
+    }
+
+    public func testEnum_queryFound() throws {
+        // equal
+        try self.runTest(#function, [
+            FooMigration()
+        ]) {
+            let foo = Foo(bar: .baz)
+            try foo.save(on: self.database).wait()
+
+            let fetched = try Foo
+                .query(on: self.database)
+                .filter(\.$bar == .baz)
+                .first()
+                .wait()
+            XCTAssertEqual(fetched?.bar, .baz)
+
+            // not equal
+            let foo2 = Foo(bar: .baz)
+            try foo2.save(on: self.database).wait()
+
+            let fetched2 = try Foo
+                .query(on: self.database)
+                .filter(\.$bar != .qux)
+                .first()
+                .wait()
+            XCTAssertEqual(fetched2?.bar, .baz)
+
+            // in
+            let foo3 = Foo(bar: .baz)
+            try foo3.save(on: self.database).wait()
+
+            let fetched3 = try Foo
+                .query(on: self.database)
+                .filter(\.$bar ~~ [.baz, .qux])
+                .first()
+                .wait()
+            XCTAssertEqual(fetched3?.bar, .baz)
+
+            // not in
+            let foo4 = Foo(bar: .baz)
+            try foo4.save(on: self.database).wait()
+
+            let fetched4 = try Foo
+                .query(on: self.database)
+                .filter(\.$bar !~ [.qux])
+                .first()
+                .wait()
+            XCTAssertEqual(fetched4?.bar, .baz)
+        }
+    }
+
+    public func testEnum_queryMissing() throws {
+        // equal
+        try self.runTest(#function, [
+            FooMigration()
+        ]) {
+            let foo = Foo(bar: .baz)
+            try foo.save(on: self.database).wait()
+
+            let fetched = try Foo
+                .query(on: self.database)
+                .filter(\.$bar == .qux)
+                .first()
+                .wait()
+            XCTAssertNil(fetched)
+
+            // not equal
+            let foo2 = Foo(bar: .baz)
+            try foo2.save(on: self.database).wait()
+
+            let fetched2 = try Foo
+                .query(on: self.database)
+                .filter(\.$bar != .baz)
+                .first()
+                .wait()
+            XCTAssertNil(fetched2)
+
+            // in
+            let foo3 = Foo(bar: .baz)
+            try foo3.save(on: self.database).wait()
+
+            let fetched3 = try Foo
+                .query(on: self.database)
+                .filter(\.$bar ~~ [.qux])
+                .first()
+                .wait()
+            XCTAssertNil(fetched3)
+
+            // not in
+            let foo4 = Foo(bar: .baz)
+            try foo4.save(on: self.database).wait()
+
+            let fetched4 = try Foo
+                .query(on: self.database)
+                .filter(\.$bar !~ [.baz, .qux])
+                .first()
+                .wait()
+            XCTAssertNil(fetched4)
         }
     }
 }
