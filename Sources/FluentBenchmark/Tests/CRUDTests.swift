@@ -4,8 +4,6 @@ extension FluentBenchmarker {
         try self.testCRUD_read()
         try self.testCRUD_update()
         try self.testCRUD_delete()
-        try self.testCRUD_batchCreate()
-        try self.testCRUD_batchDelete()
     }
 
     private func testCRUD_create() throws {
@@ -105,45 +103,6 @@ extension FluentBenchmarker {
             let galaxies = try Galaxy.query(on: self.database).all().wait()
             guard galaxies.count == 2 else {
                 XCTFail("both galaxies did not save")
-                return
-            }
-        }
-    }
-    
-    private func testCRUD_batchCreate() throws {
-        try self.runTest(#function, [
-            GalaxyMigration()
-        ]) {
-            let galaxy1 = Galaxy(name: "Messier")
-            let galaxy2 = Galaxy(name: "2")
-            
-            try! [galaxy1, galaxy2].create(on: self.database).wait()
-            XCTAssertNotNil(galaxy1.id)
-            XCTAssertNotNil(galaxy2.id)
-
-            let galaxies = try! Galaxy.query(on: self.database).all().wait()
-            guard galaxies.count == 2 else {
-                XCTFail("unexpected galaxies count")
-                return
-            }
-        }
-    }
-    
-    private func testCRUD_batchDelete() throws {
-        try self.runTest(#function, [
-            GalaxyMigration()
-        ]) {
-            let galaxy1 = Galaxy(name: "Messier")
-            let galaxy2 = Galaxy(name: "2")
-            
-            try! galaxy1.create(on: self.database).wait()
-            try! galaxy2.create(on: self.database).wait()
-            
-            try! [galaxy1, galaxy2].delete(on: self.database).wait()
-            
-            let galaxies = try! Galaxy.query(on: self.database).all().wait()
-            guard galaxies.count == 0 else {
-                XCTFail("unexpected galaxies count")
                 return
             }
         }
