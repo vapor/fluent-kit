@@ -150,7 +150,22 @@ extension Array where Element: FluentKit.Model {
             let next = it.next()!
             next._$id.exists = true
         }
-
+    }
+    
+    public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
+        let query = Element.query(on: database)
+        
+        if force {
+            _ = query.withDeleted()
+        }
+        
+        return query
+            .filter(\._$id ~~ self.map { $0.id! })
+            .action(.delete)
+            .run()
+            .map {
+                self.forEach { $0._$id.exists = false }
+        }
     }
 }
 
