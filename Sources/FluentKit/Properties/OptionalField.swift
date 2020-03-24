@@ -36,10 +36,12 @@ extension OptionalFieldProperty: PropertyProtocol {
                 switch value {
                 case .bind(let bind):
                     return bind as? Value
+                case .enumCase(let string):
+                    return string as? Value
                 case .default:
-                    fatalError("Cannot access default field before it is initialized or fetched")
+                    fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 default:
-                    fatalError("Unexpected input value type: \(value)")
+                    fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
                 return value
