@@ -127,7 +127,7 @@ extension Model {
 }
 
 extension Array where Element: FluentKit.Model {
-    public func create(on database: Database) -> EventLoopFuture<Void> {
+    public func create(on database: Database, onMiddlewareFailure failureHandler: MiddlewareFailureHandler = .insertSucceeded) -> EventLoopFuture<Void> {
         guard self.count > 0 else {
             // Is it valid to try to create zero models? For now we call it
             // successful without doing anything.
@@ -138,20 +138,45 @@ extension Array where Element: FluentKit.Model {
         self.forEach { model in
             precondition(!model._$id.exists)
         }
-
-        self.forEach {
-            $0._$id.generate()
-            $0.touchTimestamps(.create, .update)
+        
+        var objects = [[FieldKey : DatabaseQuery.Value]]()
+        
+        let middlewares = self.map { model in
+            database.configuration.middleware.chainingTo(Element.self) { event, model, db -> EventLoopFuture<Void> in
+                model._$id.generate()
+                model.touchTimestamps(.create, .update)
+                objects.append(model.input.values)
+                return db.eventLoop.makeSucceededFuture(())
+            }.create(model, on: database)
         }
-        builder.set(self.map { $0.input.values })
-        builder.query.action = .create
-        var it = self.makeIterator()
-        return builder.run { _ in
-            let next = it.next()!
-            next._$id.exists = true
+    
+        let middlewareFuture: EventLoopFuture<Void> = failureHandler == .failOnFirst ?
+            .andAllSucceed(middlewares, on: database.eventLoop) :
+            .andAllComplete(middlewares, on: database.eventLoop)
+        
+        return middlewareFuture.flatMap {
+            builder.set(objects)
+            
+            guard objects.count > 0 else {
+                return database.eventLoop.makeSucceededFuture(())
+            }
+            
+            builder.query.action = .create
+            var it = self.makeIterator()
+            return builder.run { _ in
+                let next = it.next()!
+                next._$id.exists = true
+            }
         }
-
+        
     }
+}
+
+public enum MiddlewareFailureHandler {
+    /// Insert objects which middleware did not fail
+    case insertSucceeded
+    /// If a failure has occurs in a middleware, none of the models are saved and the first failure is returned.
+    case failOnFirst
 }
 
 // MARK: Private

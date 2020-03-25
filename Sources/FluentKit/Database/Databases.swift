@@ -38,6 +38,15 @@ public final class Databases {
             configuration.middleware.append(middleware)
             self.databases.configurations[id] = configuration
         }
+        
+        public func clear(on id: DatabaseID? = nil) {
+            self.databases.lock.lock()
+            defer { self.databases.lock.unlock() }
+            let id = id ?? self.databases._requireDefaultID()
+            var configuration = self.databases._requireConfiguration(for: id)
+            configuration.middleware.removeAll()
+            self.databases.configurations[id] = configuration
+        }
     }
 
     public var middleware: Middleware {
