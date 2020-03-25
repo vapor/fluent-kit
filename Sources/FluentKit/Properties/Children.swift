@@ -1,11 +1,11 @@
 extension Model {
-    public typealias Children<To> = ChildrenProperty<Self, To>
-        where To: FluentKit.Model
+    public typealias Children<To, Value> = ChildrenProperty<Self, To, Value>
+        where To: FluentKit.Model, Value: SequenceInitializeable & Codable, Value.Element == To
 }
 
 @propertyWrapper
-public final class ChildrenProperty<From, To>
-    where From: Model, To: Model
+public final class ChildrenProperty<From, To, Value>
+    where From: Model, To: Model, Value: SequenceInitializeable & Codable, Value.Element == To
 {
     public enum Key {
         case required(KeyPath<To, To.Parent<From>>)
@@ -15,7 +15,7 @@ public final class ChildrenProperty<From, To>
     public let parentKey: Key
     var idValue: From.IDValue?
 
-    public var value: [To]?
+    public var value: Value?
 
     public var description: String {
         self.idValue.debugDescription
@@ -29,7 +29,7 @@ public final class ChildrenProperty<From, To>
         self.parentKey = .optional(optionalParent)
     }
 
-    public var wrappedValue: [To] {
+    public var wrappedValue: Value {
         get {
             guard let value = self.value else {
                 fatalError("Children relation not eager loaded, use $ prefix to access: \(name)")
@@ -41,7 +41,7 @@ public final class ChildrenProperty<From, To>
         }
     }
 
-    public var projectedValue: ChildrenProperty<From, To> {
+    public var projectedValue: ChildrenProperty<From, To, Value> {
         return self
     }
     
@@ -94,7 +94,6 @@ public final class ChildrenProperty<From, To>
 
 extension ChildrenProperty: PropertyProtocol {
     public typealias Model = From
-    public typealias Value = [To]
 }
 
 extension ChildrenProperty: AnyProperty {
@@ -147,14 +146,14 @@ extension ChildrenProperty: Relation {
 
     public func load(on database: Database) -> EventLoopFuture<Void> {
         self.query(on: database).all().map {
-            self.value = $0
+            self.value = Value($0)
         }
     }
 }
 
 extension ChildrenProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, From.Children<To>>,
+        _ relationKey: KeyPath<From, From.Children<To, Value>>,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
@@ -166,7 +165,7 @@ extension ChildrenProperty: EagerLoadable {
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
-        through: KeyPath<From, From.Children<To>>,
+        through: KeyPath<From, From.Children<To, Value>>,
         to builder: Builder
     ) where
         Loader: EagerLoader,
@@ -179,10 +178,10 @@ extension ChildrenProperty: EagerLoadable {
     }
 }
 
-private struct ChildrenEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model
+private struct ChildrenEagerLoader<From, To, Value>: EagerLoader
+    where From: Model, To: Model, Value: SequenceInitializeable & Codable, Value.Element == To
 {
-    let relationKey: KeyPath<From, From.Children<To>>
+    let relationKey: KeyPath<From, From.Children<To, Value>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
@@ -198,7 +197,7 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         return builder.all().map {
             for model in models {
                 let id = model[keyPath: self.relationKey].idValue!
-                model[keyPath: self.relationKey].value = $0.filter { child in
+                let relationChildren = $0.filter { child in
                     switch parentKey {
                     case .optional(let optional):
                         return child[keyPath: optional].id == id
@@ -206,15 +205,17 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
                         return child[keyPath: required].id == id
                     }
                 }
+
+                model[keyPath: self.relationKey].value = Value(relationChildren)
             }
         }
     }
 }
 
-private struct ThroughChildrenEagerLoader<From, Through, Loader>: EagerLoader
-    where From: Model, Loader: EagerLoader, Loader.Model == Through
+private struct ThroughChildrenEagerLoader<From, Through, Value, Loader>: EagerLoader
+    where From: Model, Value: SequenceInitializeable & Codable, Loader: EagerLoader, Loader.Model == Through, Value.Element == Through
 {
-    let relationKey: KeyPath<From, From.Children<Through>>
+    let relationKey: KeyPath<From, From.Children<Through, Value>>
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
