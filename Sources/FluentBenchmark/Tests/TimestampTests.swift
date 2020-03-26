@@ -41,8 +41,9 @@ extension FluentBenchmarker {
 
             try Event.query(on: self.database).run({ output in
                 do {
-                    let createdAtField = try output.decode("events_created_at", as: String.self)
-                    let updatedAtField = try output.decode("events_updated_at", as: String.self)
+                    let schema = output.schema("events")
+                    let createdAtField = try schema.decode(event.$createdAt.field.key, as: String.self)
+                    let updatedAtField = try schema.decode(event.$updatedAt.field.key, as: String.self)
                     XCTAssertEqual(createdAtField, createdAt)
                     XCTAssertEqual(updatedAtField, updatedAt)
                 } catch let error {
