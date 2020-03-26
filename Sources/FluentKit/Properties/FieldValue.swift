@@ -54,7 +54,7 @@ public struct AnyFieldValueConverter<Value>: FieldValueConverter where Value: Co
     }
 
     public func decode(from container: SingleValueDecodingContainer) throws -> Value {
-        return try self.decode(from: container)
+        return try self.decodeContainer(container)
     }
 }
 
