@@ -51,7 +51,7 @@ public final class TimestampProperty<Model>
     }
 
     public func touch(date: Date?) {
-        self.field.inputValue = .bind(date)
+        self.field.inputValue = self.field.converter.databaseValue(from: date)
     }
 }
 
