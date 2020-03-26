@@ -8,7 +8,6 @@ public final class FieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: Codable
 {
     public let key: FieldKey
-
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
     
