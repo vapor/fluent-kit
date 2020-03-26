@@ -20,22 +20,15 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testISO8601Timestamp() throws {
+    public func testTimestamp_ISO8601() throws {
         try runTest(#function, [
             EventMigration(),
         ]) {
             let event = Event(name: "ServerSide.swift")
-            XCTAssertEqual(event.createdAt, nil)
-            XCTAssertEqual(event.updatedAt, nil)
             try event.create(on: self.database).wait()
-            XCTAssertNotNil(event.createdAt)
-            XCTAssertNotNil(event.updatedAt)
-            XCTAssertEqual(event.updatedAt, event.createdAt)
+
             event.name = "Vapor Bay"
             try event.save(on: self.database).wait()
-            XCTAssertNotNil(event.createdAt)
-            XCTAssertNotNil(event.updatedAt)
-            XCTAssertNotEqual(event.updatedAt, event.createdAt)
 
             let formatter = ISO8601DateFormatter()
             let createdAt = try formatter.string(from: XCTUnwrap(event.createdAt))
@@ -43,8 +36,10 @@ extension FluentBenchmarker {
 
             try Event.query(on: self.database).run({ output in
                 do {
-                    try XCTAssertEqual(output.decode(event.$createdAt.field.key, as: String.self), createdAt)
-                    try XCTAssertEqual(output.decode(event.$updatedAt.field.key, as: String.self), updatedAt)
+                    let createdAtField = try output.decode(event.$createdAt.field.key, as: String.self)
+                    let updatedAtField = try output.decode(event.$updatedAt.field.key, as: String.self)
+                    XCTAssertEqual(createdAtField, createdAt)
+                    XCTAssertEqual(updatedAtField, updatedAt)
                 } catch let error {
                     XCTFail("Timestamp decoding from database output failed with error: \(error)")
                 }
