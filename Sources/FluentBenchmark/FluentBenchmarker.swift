@@ -43,7 +43,6 @@ public final class FluentBenchmarker {
         try self.testSoftDelete()
         try self.testSort()
         try self.testTimestamp()
-        try self.testISO8601Timestamp()
         try self.testTransaction()
         try self.testUnique()
     }

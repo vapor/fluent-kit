@@ -2,6 +2,11 @@
 
 extension FluentBenchmarker {
     public func testTimestamp() throws {
+        try self.testTimestamp_touch()
+        try self.testTimestamp_ISO8601()
+    }
+
+    public func testTimestamp_touch() throws {
         try runTest(#function, [
             UserMigration(),
         ]) {
