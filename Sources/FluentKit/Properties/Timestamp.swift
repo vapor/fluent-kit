@@ -17,6 +17,7 @@ public final class TimestampProperty<Model>
 {
     public let field: Model.OptionalField<Date>
     public let trigger: TimestampTrigger
+    let formatter: TimestampFormat.Instance
 
     public var projectedValue: TimestampProperty<Model> {
         return self
@@ -34,23 +35,17 @@ public final class TimestampProperty<Model>
     public init(key: FieldKey, on trigger: TimestampTrigger) {
         self.field = .init(key: key)
         self.trigger = trigger
+        self.formatter = .default
     }
 
     public init(key: FieldKey, on trigger: TimestampTrigger, format: TimestampFormat) {
-        let converter: AnyFieldValueConverter<Date?>
-        switch format {
-        case .default:
-            converter = AnyFieldValueConverter(DefaultFieldValueConverter(Model.self, key: key))
-        case let .custom(_, formatter):
-            converter = AnyFieldValueConverter(TimestampValueConverter<Model>(key: key, formatter: formatter()))
-        }
-
-        self.field = .init(key: key, converter: converter)
+        self.field = .init(key: key)
         self.trigger = trigger
+        self.formatter = format.initialize()
     }
 
     public func touch(date: Date?) {
-        self.field.inputValue = self.field.converter.databaseValue(from: date)
+        self.field.inputValue = self.formatter.input(for: date)
     }
 }
 
@@ -77,19 +72,48 @@ extension TimestampProperty: AnyProperty {
     }
     
     public func input(to input: inout DatabaseInput) {
-        self.field.input(to: &input)
+        switch self.formatter {
+        case .default: self.field.input(to: &input)
+        case let .custom(formatter): input.values[self.field.key] = .bind(self.wrappedValue.map(formatter.string(from:)))
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
-        try self.field.output(from: output)
+        switch self.formatter {
+        case .default: try self.field.output(from: output)
+        case let .custom(formatter):
+            guard output.contains(self.field.key) else { return }
+
+            do {
+                let string = try output.decode(self.field.key, as: String?.self)
+                self.field.outputValue = string.flatMap(formatter.date(from:))
+            } catch {
+                throw FluentError.invalidField(name: self.field.key.description, valueType: Value.self, error: error)
+            }
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
-        try self.field.encode(to: encoder)
+        switch self.formatter {
+        case .default: try self.field.encode(to: encoder)
+        case let .custom(formatter):
+            var container = encoder.singleValueContainer()
+            try container.encode(self.wrappedValue.flatMap(formatter.string(from:)))
+        }
     }
 
     public func decode(from decoder: Decoder) throws {
-        try self.field.decode(from: decoder)
+        switch self.formatter {
+        case .default: try self.field.decode(from: decoder)
+        case let .custom(formatter):
+            let container = try decoder.singleValueContainer()
+            if container.decodeNil() {
+                self.field.value = nil
+            } else {
+                let string = try container.decode(String.self)
+                self.field.inputValue = .bind(formatter.date(from: string))
+            }
+        }
     }
 }
 
@@ -161,51 +185,23 @@ public enum TimestampFormat {
 
     case `default`
     case custom(String, formatter: () -> TimestampFormatter)
-}
 
-public struct TimestampValueConverter<Model>: FieldValueConverter where Model: Fields {
-    public typealias Value = Date?
-
-    public let formatter: TimestampFormatter
-    public let key: FieldKey
-
-    public init(key: FieldKey, formatter: TimestampFormatter) {
-        self.formatter = formatter
-        self.key = key
-    }
-
-    public func value(from databaseValue: DatabaseQuery.Value) -> Value? {
-        let string: String?
-        switch databaseValue {
-        case let .bind(bind): string = bind as? String
-        case .default: return Date()
-        case .null: return nil
-        case .array, .dictionary, .enumCase, .custom:
-            fatalError("Unexpected input value type for '\(Model.self).\(self.key)': \(databaseValue)")
+    func initialize() -> Instance {
+        switch self {
+        case .default: return .default
+        case let .custom(_, formatter): return .custom(formatter())
         }
-
-        return string.flatMap(self.formatter.date(from:))
     }
 
-    public func databaseValue(from value: Value) -> DatabaseQuery.Value {
-        return .bind(value.map(self.formatter.string(from:)))
-    }
+    enum Instance {
+        case `default`
+        case custom(TimestampFormatter)
 
-    public func decode(from output: DatabaseOutput) throws -> Value {
-        guard output.contains(self.key) else { return nil }
-        guard let string = try output.decode(self.key, as: Optional<String>.self) else { return nil }
-
-        return self.formatter.date(from: string)
-    }
-
-    public func encode(_ value: Value, to container: inout SingleValueEncodingContainer) throws {
-        try container.encode(value.map(self.formatter.string(from:)))
-    }
-
-    public func decode(from container: SingleValueDecodingContainer) throws -> Value {
-        if container.decodeNil() { return nil }
-
-        let string = try container.decode(String.self)
-        return self.formatter.date(from: string)
+        func input(for date: Date?) -> DatabaseQuery.Value {
+            switch self {
+            case .default: return .bind(date)
+            case let .custom(formatter): return .bind(date.map(formatter.string(from:)))
+            }
+        }
     }
 }
