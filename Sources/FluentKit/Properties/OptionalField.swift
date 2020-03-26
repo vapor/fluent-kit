@@ -10,6 +10,7 @@ public final class OptionalFieldProperty<Model, Value>
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
+    var converter: AnyFieldValueConverter<Optional<Value>>
 
     public var projectedValue: OptionalFieldProperty<Model, Value> {
         self
@@ -26,23 +27,20 @@ public final class OptionalFieldProperty<Model, Value>
 
     public init(key: FieldKey) {
         self.key = key
+        self.converter = AnyFieldValueConverter(DefaultFieldValueConverter(Model.self, key: key))
+    }
+
+    public init<Converter>(key: FieldKey, converter: Converter) where Converter: FieldValueConverter, Converter.Value == Optional<Value> {
+        self.key = key
+        self.converter = AnyFieldValueConverter(converter)
     }
 }
 
 extension OptionalFieldProperty: PropertyProtocol {
     public var value: Value? {
         get {
-            if let value = self.inputValue {
-                switch value {
-                case .bind(let bind):
-                    return bind as? Value
-                case .enumCase(let string):
-                    return string as? Value
-                case .default:
-                    fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
-                default:
-                    fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
-                }
+            if let value = self.inputValue.flatMap(self.converter.value(from:)) {
+                return value
             } else if let value = self.outputValue {
                 return value
             } else {
@@ -50,7 +48,7 @@ extension OptionalFieldProperty: PropertyProtocol {
             }
         }
         set {
-            self.inputValue = newValue.map { .bind($0) }
+            self.inputValue = self.converter.databaseValue(from: newValue)
         }
     }
 }
@@ -78,7 +76,7 @@ extension OptionalFieldProperty: AnyProperty {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(self.key, as: Value?.self)
+                self.outputValue = try self.converter.decode(from: output)
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
@@ -91,7 +89,7 @@ extension OptionalFieldProperty: AnyProperty {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(self.wrappedValue)
+        try self.converter.encode(self.wrappedValue, to: &container)
     }
 
     public func decode(from decoder: Decoder) throws {
@@ -99,7 +97,7 @@ extension OptionalFieldProperty: AnyProperty {
         if container.decodeNil() {
             self.value = nil
         } else {
-            self.value = try container.decode(Value.self)
+            self.value = try self.converter.decode(from: container)
         }
     }
 }

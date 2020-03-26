@@ -8,6 +8,8 @@ public final class FieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: Codable
 {
     public let key: FieldKey
+
+    var converter: AnyFieldValueConverter<Value>
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
     
@@ -29,23 +31,20 @@ public final class FieldProperty<Model, Value>
 
     public init(key: FieldKey) {
         self.key = key
+        self.converter = AnyFieldValueConverter(DefaultFieldValueConverter(Model.self, key: key))
+    }
+
+    public init<Converter>(key: FieldKey, converter: Converter) where Converter: FieldValueConverter, Converter.Value == Value {
+        self.key = key
+        self.converter = AnyFieldValueConverter(converter)
     }
 }
 
 extension FieldProperty: PropertyProtocol {
     public var value: Value? {
         get {
-            if let value = self.inputValue {
-                switch value {
-                case .bind(let bind):
-                    return bind as? Value
-                case .enumCase(let string):
-                    return string as? Value
-                case .default:
-                    fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
-                default:
-                    fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
-                }
+            if let value = self.inputValue.map(self.converter.value(from:)) {
+                return value
             } else if let value = self.outputValue {
                 return value
             } else {
@@ -53,7 +52,7 @@ extension FieldProperty: PropertyProtocol {
             }
         }
         set {
-            self.inputValue = newValue.map { .bind($0) }
+            self.inputValue = newValue.map(self.converter.databaseValue(from:))
         }
     }
 }
@@ -78,7 +77,7 @@ extension FieldProperty: AnyProperty {
         if output.contains([self.key]) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(self.key, as: Value.self)
+                self.outputValue = try self.converter.decode(from: output)
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
@@ -91,7 +90,7 @@ extension FieldProperty: AnyProperty {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(self.wrappedValue)
+        try self.converter.encode(self.wrappedValue, to: &container)
     }
 
     public func decode(from decoder: Decoder) throws {
@@ -103,10 +102,10 @@ extension FieldProperty: AnyProperty {
             if container.decodeNil() {
                 self.wrappedValue = (valueType.nil as! Value)
             } else {
-                self.wrappedValue = try container.decode(Value.self)
+                self.wrappedValue = try self.converter.decode(from: container)
             }
         } else {
-            self.wrappedValue = try container.decode(Value.self)
+            self.wrappedValue = try self.converter.decode(from: container)
         }
     }
 }

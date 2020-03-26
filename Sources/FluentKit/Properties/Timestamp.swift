@@ -1,3 +1,7 @@
+import class Foundation.ISO8601DateFormatter
+import class Foundation.DateFormatter
+import class NIO.ThreadSpecificVariable
+
 extension Fields {
     public typealias Timestamp = TimestampProperty<Self>
 }
@@ -30,6 +34,19 @@ public final class TimestampProperty<Model>
 
     public init(key: FieldKey, on trigger: TimestampTrigger) {
         self.field = .init(key: key)
+        self.trigger = trigger
+    }
+
+    public init(key: FieldKey, on trigger: TimestampTrigger, format: TimestampFormat) {
+        let converter: AnyFieldValueConverter<Date?>
+        switch format {
+        case .default:
+            converter = AnyFieldValueConverter(DefaultFieldValueConverter(Model.self, key: key))
+        case let .custom(_, formatter):
+            converter = AnyFieldValueConverter(TimestampValueConverter<Model>(key: key, formatter: formatter()))
+        }
+
+        self.field = .init(key: key, converter: converter)
         self.trigger = trigger
     }
 
@@ -128,5 +145,68 @@ extension Schema {
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
         let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(Date()))
         query.filters.append(.group([isNull, isFuture], .or))
+    }
+}
+
+
+public protocol TimestampFormatter {
+    func string(from date: Date) -> String
+    func date(from string: String) -> Date?
+}
+
+extension DateFormatter: TimestampFormatter { }
+extension ISO8601DateFormatter: TimestampFormatter { }
+
+public enum TimestampFormat {
+    public static let iso8601 = TimestampFormat.custom("iso8601", formatter: ISO8601DateFormatter.init)
+
+    case `default`
+    case custom(String, formatter: () -> TimestampFormatter)
+}
+
+public struct TimestampValueConverter<Model>: FieldValueConverter where Model: Fields {
+    public typealias Value = Date?
+
+    public let formatter: TimestampFormatter
+    public let key: FieldKey
+
+    public init(key: FieldKey, formatter: TimestampFormatter) {
+        self.formatter = formatter
+        self.key = key
+    }
+
+    public func value(from databaseValue: DatabaseQuery.Value) -> Value? {
+        let string: String?
+        switch databaseValue {
+        case let .bind(bind): string = bind as? String
+        case .default: return Date()
+        case .null: return nil
+        case .array, .dictionary, .enumCase, .custom:
+            fatalError("Unexpected input value type for '\(Model.self).\(self.key)': \(databaseValue)")
+        }
+
+        return string.flatMap(self.formatter.date(from:))
+    }
+
+    public func databaseValue(from value: Value) -> DatabaseQuery.Value {
+        return .bind(value.map(self.formatter.string(from:)))
+    }
+
+    public func decode(from output: DatabaseOutput) throws -> Value {
+        guard output.contains(self.key) else { return nil }
+        guard let string = try output.decode(self.key, as: Optional<String>.self) else { return nil }
+
+        return self.formatter.date(from: string)
+    }
+
+    public func encode(_ value: Value, to container: inout SingleValueEncodingContainer) throws {
+        try container.encode(value.map(self.formatter.string(from:)))
+    }
+
+    public func decode(from container: SingleValueDecodingContainer) throws -> Value {
+        if container.decodeNil() { return nil }
+
+        let string = try container.decode(String.self)
+        return self.formatter.date(from: string)
     }
 }
