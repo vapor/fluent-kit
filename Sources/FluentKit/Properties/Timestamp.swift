@@ -74,7 +74,7 @@ extension TimestampProperty: AnyProperty {
     public func input(to input: inout DatabaseInput) {
         switch self.formatter {
         case .default: self.field.input(to: &input)
-        case let .custom(formatter): input.values[self.field.key] = .bind(self.wrappedValue.map(formatter.string(from:)))
+        case let .custom(formatter): input.values[self.field.key] = .bind(self.value.map(formatter.string(from:)))
         }
     }
 
@@ -82,6 +82,7 @@ extension TimestampProperty: AnyProperty {
         switch self.formatter {
         case .default: try self.field.output(from: output)
         case let .custom(formatter):
+            self.field.inputValue = nil
             guard output.contains(self.field.key) else { return }
 
             do {
