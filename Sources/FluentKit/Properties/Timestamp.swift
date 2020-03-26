@@ -45,7 +45,7 @@ public final class TimestampProperty<Model>
     }
 
     public func touch(date: Date?) {
-        self.field.inputValue = self.formatter.input(for: date)
+        self.field.inputValue = .bind(date)
     }
 }
 
@@ -197,12 +197,5 @@ public enum TimestampFormat {
     enum Instance {
         case `default`
         case custom(TimestampFormatter)
-
-        func input(for date: Date?) -> DatabaseQuery.Value {
-            switch self {
-            case .default: return .bind(date)
-            case let .custom(formatter): return .bind(date.map(formatter.string(from:)))
-            }
-        }
     }
 }
