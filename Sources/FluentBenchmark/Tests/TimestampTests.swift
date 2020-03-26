@@ -1,3 +1,5 @@
+@testable import class FluentKit.QueryBuilder
+
 extension FluentBenchmarker {
     public func testTimestamp() throws {
         try runTest(#function, [
@@ -15,6 +17,38 @@ extension FluentBenchmarker {
             XCTAssertNotNil(user.createdAt)
             XCTAssertNotNil(user.updatedAt)
             XCTAssertNotEqual(user.updatedAt, user.createdAt)
+        }
+    }
+
+    public func testISO8601Timestamp() throws {
+        try runTest(#function, [
+            EventMigration(),
+        ]) {
+            let event = Event(name: "ServerSide.swift")
+            XCTAssertEqual(event.createdAt, nil)
+            XCTAssertEqual(event.updatedAt, nil)
+            try event.create(on: self.database).wait()
+            XCTAssertNotNil(event.createdAt)
+            XCTAssertNotNil(event.updatedAt)
+            XCTAssertEqual(event.updatedAt, event.createdAt)
+            event.name = "Vapor Bay"
+            try event.save(on: self.database).wait()
+            XCTAssertNotNil(event.createdAt)
+            XCTAssertNotNil(event.updatedAt)
+            XCTAssertNotEqual(event.updatedAt, event.createdAt)
+
+            let formatter = ISO8601DateFormatter()
+            let createdAt = try formatter.string(from: XCTUnwrap(event.createdAt))
+            let updatedAt = try formatter.string(from: XCTUnwrap(event.updatedAt))
+
+            try Event.query(on: self.database).run({ output in
+                do {
+                    try XCTAssertEqual(output.decode(event.$createdAt.field.key, as: String.self), createdAt)
+                    try XCTAssertEqual(output.decode(event.$updatedAt.field.key, as: String.self), updatedAt)
+                } catch let error {
+                    XCTFail("Timestamp decoding from database output failed with error: \(error)")
+                }
+            }).wait()
         }
     }
 }
@@ -59,3 +93,43 @@ private struct UserMigration: Migration {
     }
 }
 
+
+private final class Event: Model {
+    static let schema = "events"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @Timestamp(key: "created_at", on: .create, format: .iso8601)
+    var createdAt: Date?
+
+    @Timestamp(key: "updated_at", on: .update, format: .iso8601)
+    var updatedAt: Date?
+
+    init() { }
+
+    init(id: IDValue? = nil, name: String) {
+        self.id = id
+        self.name = name
+        self.createdAt = nil
+        self.updatedAt = nil
+    }
+}
+
+private struct EventMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("events")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("name", .string, .required)
+            .field("created_at", .string)
+            .field("updated_at", .string)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("events").delete()
+    }
+}
