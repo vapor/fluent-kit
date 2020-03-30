@@ -7,9 +7,9 @@ extension Fields {
         where Formatter: TimestampFormatter
 }
 
-extension TimestampProperty where Formatter == UnixTimestampFormatter {
+extension TimestampProperty where Formatter == DefaultTimestampFormatter {
     public convenience init(key: FieldKey, on trigger: TimestampTrigger) {
-        self.init(key: key, on: trigger, format: .unix)
+        self.init(key: key, on: trigger, format: .default)
     }
 }
 
@@ -185,6 +185,11 @@ public struct UnixTimestampFormatter: TimestampFormatter {
     public func date(from timestamp: Double) -> Date? { Date(timeIntervalSince1970: timestamp) }
 }
 
+public struct DefaultTimestampFormatter: TimestampFormatter {
+    public func timestamp(from date: Date) -> Date { date }
+    public func date(from timestamp: Date) -> Date? { timestamp }
+}
+
 
 private final class TimestampFormatterCache {
     static func formatter<Formatter>(for id: String, factory: () -> Formatter) -> Formatter where Formatter: TimestampFormatter {
@@ -225,4 +230,8 @@ extension TimestampFormat where Formatter == ISO8601DateFormatter {
 
 extension TimestampFormat where Formatter == UnixTimestampFormatter {
     public static let unix = TimestampFormat("unix", formatter: UnixTimestampFormatter.init)
+}
+
+extension TimestampFormat where Formatter == DefaultTimestampFormatter {
+    public static let `default` = TimestampFormat("default", formatter: DefaultTimestampFormatter.init)
 }
