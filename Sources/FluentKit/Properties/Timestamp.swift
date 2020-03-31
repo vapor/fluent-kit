@@ -88,8 +88,8 @@ extension TimestampProperty: AnyProperty {
     }
 
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try self.formatter.encode(date: self.value, to: &container)
+        let timestamp = self.value.map(self.formatter.timestamp(from:)) ?? Optional<Date>.none
+        try timestamp.encode(to: encoder)
     }
 
     public func decode(from decoder: Decoder) throws {
@@ -97,8 +97,8 @@ extension TimestampProperty: AnyProperty {
         if container.decodeNil() {
             self.field.value = nil
         } else {
-            let date = try self.formatter.decode(from: container)
-            self.field.inputValue = .bind(date)
+            let timestamp = try self.formatter.timestampType.init(from: decoder)
+            self.field.inputValue = .bind(self.formatter.date(from: timestamp))
         }
     }
 }
@@ -161,13 +161,12 @@ extension Schema {
 // MARK: - Timestamp Formatter
 
 public protocol AnyTimestampFormatter {
+    var timestampType: Codable.Type { get }
+
     func timestamp(from date: Date) -> Codable
     func date(from timestamp: Codable) -> Date?
 
     func decode(at key: FieldKey, from output: DatabaseOutput) throws -> Date?
-
-    func encode(date: Date?, to container: inout SingleValueEncodingContainer) throws
-    func decode(from container: SingleValueDecodingContainer) throws -> Date?
 }
 
 public protocol TimestampFormatter: AnyTimestampFormatter {
@@ -178,6 +177,9 @@ public protocol TimestampFormatter: AnyTimestampFormatter {
 }
 
 extension TimestampFormatter {
+    public var timestampType: Codable.Type { Timestamp.self }
+
+
     public func timestamp(from date: Date) -> Codable {
         return self.timestamp(from: date) as Timestamp
     }
@@ -189,17 +191,6 @@ extension TimestampFormatter {
 
     public func decode(at key: FieldKey, from output: DatabaseOutput) throws -> Date? {
         let timestamp = try output.decode(key, as: Timestamp?.self)
-        return timestamp.flatMap(self.date(from:))
-    }
-
-
-    public func encode(date: Date?, to container: inout SingleValueEncodingContainer) throws {
-        let timestamp = date.map(self.timestamp(from:)) as Timestamp?
-        try container.encode(timestamp)
-    }
-
-    public func decode(from container: SingleValueDecodingContainer) throws -> Date? {
-        let timestamp = container.decodeNil() ? nil : try container.decode(Timestamp.self)
         return timestamp.flatMap(self.date(from:))
     }
 }
