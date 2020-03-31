@@ -71,7 +71,7 @@ extension TimestampProperty: AnyProperty {
     }
     
     public func input(to input: inout DatabaseInput) {
-        let timestamp = self.value.map { date in self.formatter.timestamp(from: date) } ?? Optional<Date>.none
+        let timestamp = self.value.map { date in self.formatter.anyTimestamp(from: date) } ?? Optional<Date>.none
         input.values[self.field.key] = .bind(timestamp)
     }
 
@@ -88,7 +88,7 @@ extension TimestampProperty: AnyProperty {
     }
 
     public func encode(to encoder: Encoder) throws {
-        let timestamp = self.value.map(self.formatter.timestamp(from:)) ?? Optional<Date>.none
+        let timestamp = self.value.map(self.formatter.anyTimestamp(from:)) ?? Optional<Date>.none
         try timestamp.encode(to: encoder)
     }
 
@@ -97,7 +97,7 @@ extension TimestampProperty: AnyProperty {
         if container.decodeNil() {
             self.field.value = nil
         } else {
-            let timestamp = try self.formatter.timestampType.init(from: decoder)
+            let timestamp = try self.formatter.anyTimestamp.init(from: decoder)
             self.field.inputValue = .bind(self.formatter.date(from: timestamp))
         }
     }
@@ -161,10 +161,10 @@ extension Schema {
 // MARK: - Timestamp Formatter
 
 public protocol AnyTimestampFormatter {
-    var timestampType: Codable.Type { get }
+    var anyTimestamp: Codable.Type { get }
 
-    func timestamp(from date: Date) -> Codable
-    func date(from timestamp: Codable) -> Date?
+    func anyTimestamp(from date: Date) -> Codable
+    func date(from anyTimestamp: Codable) -> Date?
 
     func decode(at key: FieldKey, from output: DatabaseOutput) throws -> Date?
 }
@@ -177,15 +177,15 @@ public protocol TimestampFormatter: AnyTimestampFormatter {
 }
 
 extension TimestampFormatter {
-    public var timestampType: Codable.Type { Timestamp.self }
+    public var anyTimestamp: Codable.Type { Timestamp.self }
 
 
-    public func timestamp(from date: Date) -> Codable {
+    public func anyTimestamp(from date: Date) -> Codable {
         return self.timestamp(from: date) as Timestamp?
     }
 
-    public func date(from timestamp: Codable) -> Date? {
-        return (timestamp as? Timestamp).flatMap(self.date(from:))
+    public func date(from anyTimestamp: Codable) -> Date? {
+        return (anyTimestamp as? Timestamp).flatMap(self.date(from:))
     }
 
 
