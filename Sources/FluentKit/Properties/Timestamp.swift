@@ -3,14 +3,7 @@ import class Foundation.DateFormatter
 import class NIO.ThreadSpecificVariable
 
 extension Fields {
-    public typealias Timestamp<Formatter> = TimestampProperty<Self, Formatter>
-        where Formatter: TimestampFormatter
-}
-
-extension TimestampProperty where Formatter == DefaultTimestampFormatter {
-    public convenience init(key: FieldKey, on trigger: TimestampTrigger) {
-        self.init(key: key, on: trigger, format: .default)
-    }
+    public typealias Timestamp = TimestampProperty<Self>
 }
 
 public enum TimestampTrigger {
@@ -20,14 +13,14 @@ public enum TimestampTrigger {
 }
 
 @propertyWrapper
-public final class TimestampProperty<Model, Formatter>
-    where Model: FluentKit.Fields, Formatter: TimestampFormatter
+public final class TimestampProperty<Model>
+    where Model: FluentKit.Fields
 {
     public let field: Model.OptionalField<Date>
     public let trigger: TimestampTrigger
-    let formatter: TimestampFormat<Formatter>
+    let formatter: AnyTimestampFormatter
 
-    public var projectedValue: TimestampProperty<Model, Formatter> {
+    public var projectedValue: TimestampProperty<Model> {
         return self
     }
 
@@ -40,10 +33,14 @@ public final class TimestampProperty<Model, Formatter>
         }
     }
 
-    public init(key: FieldKey, on trigger: TimestampTrigger, format: TimestampFormat<Formatter>) {
+    public convenience init(key: FieldKey, on trigger: TimestampTrigger) {
+        self.init(key: key, on: trigger, format: .default)
+    }
+
+    public init<Formatter>(key: FieldKey, on trigger: TimestampTrigger, format: TimestampFormat<Formatter>) {
         self.field = .init(key: key)
         self.trigger = trigger
-        self.formatter = format
+        self.formatter = format.formatter
     }
 
     public func touch(date: Date?) {
@@ -74,7 +71,8 @@ extension TimestampProperty: AnyProperty {
     }
     
     public func input(to input: inout DatabaseInput) {
-        input.values[self.field.key] = .bind(self.value.map(self.formatter.timestamp(from:)))
+        let timestamp = self.value.map { date in self.formatter.timestamp(from: date) } ?? Optional<Date>.none
+        input.values[self.field.key] = .bind(timestamp)
     }
 
     public func output(from output: DatabaseOutput) throws {
@@ -82,8 +80,8 @@ extension TimestampProperty: AnyProperty {
         guard output.contains(self.field.key) else { return }
 
         do {
-            let string = try output.decode(self.field.key, as: Formatter.Timestamp?.self)
-            self.field.outputValue = string.flatMap(self.formatter.date(from:))
+            let date = try self.formatter.decode(at: self.field.key, from: output)
+            self.field.outputValue = date
         } catch {
             throw FluentError.invalidField(name: self.field.key.description, valueType: Value.self, error: error)
         }
@@ -91,7 +89,7 @@ extension TimestampProperty: AnyProperty {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(self.wrappedValue.flatMap(self.formatter.timestamp(from:)))
+        try self.formatter.encode(date: self.value, to: &container)
     }
 
     public func decode(from decoder: Decoder) throws {
@@ -99,8 +97,8 @@ extension TimestampProperty: AnyProperty {
         if container.decodeNil() {
             self.field.value = nil
         } else {
-            let string = try container.decode(Formatter.Timestamp.self)
-            self.field.inputValue = .bind(self.formatter.date(from: string))
+            let date = try self.formatter.decode(from: container)
+            self.field.inputValue = .bind(date)
         }
     }
 }
@@ -162,13 +160,48 @@ extension Schema {
 
 // MARK: - Timestamp Formatter
 
-public protocol AnyTimestampFormatter { }
+public protocol AnyTimestampFormatter {
+    func timestamp(from date: Date) -> Codable
+    func date(from timestamp: Codable) -> Date?
+
+    func decode(at key: FieldKey, from output: DatabaseOutput) throws -> Date?
+
+    func encode(date: Date?, to container: inout SingleValueEncodingContainer) throws
+    func decode(from container: SingleValueDecodingContainer) throws -> Date?
+}
 
 public protocol TimestampFormatter: AnyTimestampFormatter {
     associatedtype Timestamp: Codable
 
     func timestamp(from date: Date) -> Timestamp
     func date(from timestamp: Timestamp) -> Date?
+}
+
+extension TimestampFormatter {
+    public func timestamp(from date: Date) -> Codable {
+        return self.timestamp(from: date) as Timestamp
+    }
+
+    public func date(from timestamp: Codable) -> Date? {
+        return (timestamp as? Timestamp).flatMap(self.date(from:))
+    }
+
+
+    public func decode(at key: FieldKey, from output: DatabaseOutput) throws -> Date? {
+        let timestamp = try output.decode(key, as: Timestamp?.self)
+        return timestamp.flatMap(self.date(from:))
+    }
+
+
+    public func encode(date: Date?, to container: inout SingleValueEncodingContainer) throws {
+        let timestamp = date.map(self.timestamp(from:)) as Timestamp?
+        try container.encode(timestamp)
+    }
+
+    public func decode(from container: SingleValueDecodingContainer) throws -> Date? {
+        let timestamp = container.decodeNil() ? nil : try container.decode(Timestamp.self)
+        return timestamp.flatMap(self.date(from:))
+    }
 }
 
 
@@ -208,6 +241,7 @@ private final class TimestampFormatterCache {
     var cache: [String: AnyTimestampFormatter] = [:]
 }
 
+
 public struct TimestampFormat<Formatter> where Formatter: TimestampFormatter {
     public let id: String
     private let factory: () -> Formatter
@@ -218,11 +252,7 @@ public struct TimestampFormat<Formatter> where Formatter: TimestampFormatter {
         self.id = id
         self.factory = formatter
     }
-
-    public func timestamp(from date: Date) -> Formatter.Timestamp { self.formatter.timestamp(from: date) }
-    public func date(from timestamp: Formatter.Timestamp) -> Date? { self.formatter.date(from: timestamp) }
 }
-
 
 extension TimestampFormat where Formatter == ISO8601DateFormatter {
     public static let iso8601 = TimestampFormat("iso8601", formatter: ISO8601DateFormatter.init)
