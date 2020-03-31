@@ -205,14 +205,14 @@ extension ISO8601DateFormatter: TimestampFormatter {
     public func timestamp(from date: Date) -> String? { self.string(from: date) }
 }
 
-public struct UnixTimestampFormatter: TimestampFormatter {
-    public func timestamp(from date: Date) -> Double? { date.timeIntervalSince1970 }
-    public func date(from timestamp: Double) -> Date? { Date(timeIntervalSince1970: timestamp) }
+private struct UnixTimestampFormatter: TimestampFormatter {
+    func timestamp(from date: Date) -> Double? { date.timeIntervalSince1970 }
+    func date(from timestamp: Double) -> Date? { Date(timeIntervalSince1970: timestamp) }
 }
 
-public struct DefaultTimestampFormatter: TimestampFormatter {
-    public func timestamp(from date: Date) -> Date? { date }
-    public func date(from timestamp: Date) -> Date? { timestamp }
+private struct DefaultTimestampFormatter: TimestampFormatter {
+    func timestamp(from date: Date) -> Date? { date }
+    func date(from timestamp: Date) -> Date? { timestamp }
 }
 
 
