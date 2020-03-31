@@ -172,7 +172,7 @@ public protocol AnyTimestampFormatter {
 public protocol TimestampFormatter: AnyTimestampFormatter {
     associatedtype Timestamp: Codable
 
-    func timestamp(from date: Date) -> Timestamp
+    func timestamp(from date: Date) -> Timestamp?
     func date(from timestamp: Timestamp) -> Date?
 }
 
@@ -181,7 +181,7 @@ extension TimestampFormatter {
 
 
     public func timestamp(from date: Date) -> Codable {
-        return self.timestamp(from: date) as Timestamp
+        return self.timestamp(from: date) as Timestamp?
     }
 
     public func date(from timestamp: Codable) -> Date? {
@@ -197,20 +197,20 @@ extension TimestampFormatter {
 
 
 extension DateFormatter: TimestampFormatter {
-    public func timestamp(from date: Date) -> String { self.string(from: date) }
+    public func timestamp(from date: Date) -> String? { self.string(from: date) }
 }
 
 extension ISO8601DateFormatter: TimestampFormatter {
-    public func timestamp(from date: Date) -> String { self.string(from: date) }
+    public func timestamp(from date: Date) -> String? { self.string(from: date) }
 }
 
 public struct UnixTimestampFormatter: TimestampFormatter {
-    public func timestamp(from date: Date) -> Double { date.timeIntervalSince1970 }
+    public func timestamp(from date: Date) -> Double? { date.timeIntervalSince1970 }
     public func date(from timestamp: Double) -> Date? { Date(timeIntervalSince1970: timestamp) }
 }
 
 public struct DefaultTimestampFormatter: TimestampFormatter {
-    public func timestamp(from date: Date) -> Date { date }
+    public func timestamp(from date: Date) -> Date? { date }
     public func date(from timestamp: Date) -> Date? { timestamp }
 }
 
