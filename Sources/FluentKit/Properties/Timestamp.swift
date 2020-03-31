@@ -72,7 +72,7 @@ extension TimestampProperty: AnyProperty {
     
     public func input(to input: inout DatabaseInput) {
         let timestamp = self.value.flatMap { date in self.formatter.anyTimestamp(from: date) }
-        input.values[self.field.key] = timestamp.map(DatabaseQuery.Value.bind) ?? .null
+        input.values[self.field.key] = .bind(timestamp ?? Optional<Date>.none)
     }
 
     public func output(from output: DatabaseOutput) throws {
@@ -98,8 +98,7 @@ extension TimestampProperty: AnyProperty {
             self.field.value = nil
         } else {
             let timestamp = try self.formatter.anyTimestamp.init(from: decoder)
-            let date = self.formatter.date(fromAny: timestamp)
-            self.field.inputValue = date.map(DatabaseQuery.Value.bind) ?? .null
+            self.field.inputValue = .bind(self.formatter.date(fromAny: timestamp))
         }
     }
 }
