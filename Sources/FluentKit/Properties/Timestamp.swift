@@ -37,7 +37,7 @@ public final class TimestampProperty<Model>
         self.init(key: key, on: trigger, format: .default)
     }
 
-    public init<Formatter>(key: FieldKey, on trigger: TimestampTrigger, format: TimestampFormat<Formatter>) {
+    public init(key: FieldKey, on trigger: TimestampTrigger, format: TimestampFormat) {
         self.field = .init(key: key)
         self.trigger = trigger
         self.formatter = format.formatter
@@ -216,8 +216,8 @@ public struct DefaultTimestampFormatter: TimestampFormatter {
 
 
 private final class TimestampFormatterCache {
-    static func formatter<Formatter>(for id: String, factory: () -> Formatter) -> Formatter where Formatter: TimestampFormatter {
-        if let formatter = self.current.currentValue?.cache[id] as? Formatter { return formatter }
+    static func formatter(for id: String, factory: () -> AnyTimestampFormatter) -> AnyTimestampFormatter {
+        if let formatter = self.current.currentValue?.cache[id] { return formatter }
 
         let new = factory()
 
@@ -233,26 +233,26 @@ private final class TimestampFormatterCache {
 }
 
 
-public struct TimestampFormat<Formatter> where Formatter: TimestampFormatter {
+public struct TimestampFormat {
     public let id: String
-    private let factory: () -> Formatter
+    private let factory: () -> AnyTimestampFormatter
 
-    public var formatter: Formatter { TimestampFormatterCache.formatter(for: self.id, factory: self.factory) }
+    public var formatter: AnyTimestampFormatter { TimestampFormatterCache.formatter(for: self.id, factory: self.factory) }
 
-    public init(_ id: String, formatter: @escaping () -> Formatter) {
+    public init(_ id: String, formatter: @escaping () -> AnyTimestampFormatter) {
         self.id = id
         self.factory = formatter
     }
 }
 
-extension TimestampFormat where Formatter == ISO8601DateFormatter {
+extension TimestampFormat {
     public static let iso8601 = TimestampFormat("iso8601", formatter: ISO8601DateFormatter.init)
 }
 
-extension TimestampFormat where Formatter == UnixTimestampFormatter {
+extension TimestampFormat {
     public static let unix = TimestampFormat("unix", formatter: UnixTimestampFormatter.init)
 }
 
-extension TimestampFormat where Formatter == DefaultTimestampFormatter {
+extension TimestampFormat {
     public static let `default` = TimestampFormat("default", formatter: DefaultTimestampFormatter.init)
 }
