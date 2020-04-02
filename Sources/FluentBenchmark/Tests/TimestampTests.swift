@@ -50,6 +50,9 @@ extension FluentBenchmarker {
                     XCTFail("Timestamp decoding from database output failed with error: \(error)")
                 }
             }).wait()
+
+            try event.delete(on: self.database).wait()
+            try XCTAssertEqual(Event.query(on: self.database).all().wait().count, 0)
         }
     }
 }
