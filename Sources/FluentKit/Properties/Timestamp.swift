@@ -99,6 +99,7 @@ extension TimestampProperty: AnyProperty {
 extension TimestampProperty: AnyTimestamp { }
 
 protocol AnyTimestamp: AnyProperty {
+    var formatter: AnyTimestampFormatter { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
 }
@@ -140,12 +141,13 @@ extension Schema {
             return
         }
 
+        let date = timestamp.formatter.anyTimestamp(from: Date()) ?? Optional<Date>.none
         let deletedAtField = DatabaseQuery.Field.path(
             timestamp.path,
             schema: self.schemaOrAlias
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
-        let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(Date()))
+        let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(date))
         query.filters.append(.group([isNull, isFuture], .or))
     }
 }

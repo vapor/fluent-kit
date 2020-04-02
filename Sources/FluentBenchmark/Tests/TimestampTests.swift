@@ -50,6 +50,9 @@ extension FluentBenchmarker {
                     XCTFail("Timestamp decoding from database output failed with error: \(error)")
                 }
             }).wait()
+
+            try event.delete(on: self.database).wait()
+            try XCTAssertEqual(Event.query(on: self.database).all().wait().count, 0)
         }
     }
 }
@@ -110,6 +113,9 @@ private final class Event: Model {
     @Timestamp(key: "updated_at", on: .update, format: .iso8601)
     var updatedAt: Date?
 
+    @Timestamp(key: "deleted_at", on: .delete, format: .iso8601)
+    var deletedAt: Date?
+
     init() { }
 
     init(id: IDValue? = nil, name: String) {
@@ -117,6 +123,7 @@ private final class Event: Model {
         self.name = name
         self.createdAt = nil
         self.updatedAt = nil
+        self.deletedAt = nil
     }
 }
 
@@ -127,6 +134,7 @@ private struct EventMigration: Migration {
             .field("name", .string, .required)
             .field("created_at", .string)
             .field("updated_at", .string)
+            .field("deleted_at", .string)
             .create()
     }
 
