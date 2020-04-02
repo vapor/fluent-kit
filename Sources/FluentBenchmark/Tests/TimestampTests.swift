@@ -113,7 +113,7 @@ private final class Event: Model {
     @Timestamp(key: "updated_at", on: .update, format: .iso8601)
     var updatedAt: Date?
 
-    @Timestamp(key: "deleted_at", on: .update, format: .iso8601)
+    @Timestamp(key: "deleted_at", on: .delete, format: .iso8601)
     var deletedAt: Date?
 
     init() { }
