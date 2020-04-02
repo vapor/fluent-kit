@@ -88,18 +88,11 @@ extension TimestampProperty: AnyProperty {
     }
 
     public func encode(to encoder: Encoder) throws {
-        let timestamp = self.value.flatMap(self.formatter.anyTimestamp(from:)) ?? Optional<Date>.none
-        try timestamp.encode(to: encoder)
+        try self.field.encode(to: encoder)
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if container.decodeNil() {
-            self.field.value = nil
-        } else {
-            let timestamp = try self.formatter.anyTimestamp.init(from: decoder)
-            self.field.inputValue = .bind(self.formatter.date(fromAny: timestamp))
-        }
+        try self.field.decode(from: decoder)
     }
 }
 
