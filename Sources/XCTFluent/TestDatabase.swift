@@ -32,63 +32,116 @@ import NIO
 ///         TestOutput(["id": 1, ...]),
 ///         TestOutput(["id": 2, ...])
 ///     ])
-public class TestDatabase: Database {
-
+public class TestDatabase {
     typealias MockResult = [DatabaseOutput]
 
-    var mockResults: [MockResult] = []
+    var results: [(DatabaseQuery) -> MockResult] = []
+    var handler: ((DatabaseQuery) -> [DatabaseOutput])?
 
-    public var context: DatabaseContext
+    public init() {
+        self.results = []
+    }
 
-    public init(
-        context: DatabaseContext = .init(
-            configuration: TestDatabaseConfiguration(),
-            logger: .init(label: "test"),
-            eventLoop: EmbeddedEventLoop()
-        )
+    public func use(_ handler: @escaping (DatabaseQuery) -> [DatabaseOutput]) {
+        self.handler = handler
+    }
+
+    public func append(_ output: [DatabaseOutput]) {
+        self.append { _ in output }
+    }
+
+    public func append(
+        _ result: @escaping (DatabaseQuery) -> [DatabaseOutput]
     ) {
-        self.context = context
+        self.results.append(result)
+    }
+}
+
+extension TestDatabase {
+    public var db: Database {
+        self.database(context: .init(
+            configuration: self.configuration,
+            logger: Logger(label: "codes.vapor.fluent.test"),
+            eventLoop: EmbeddedEventLoop()
+        ))
     }
 
-    /// Add a new mock result to the database. One mock result will
-    /// be returned per query to the database. Running out of results
-    /// will result in a failed `EventLoopFuture` with the
-    /// `TestDatabaseError.ranOutOfResults` error.
-    public func append(queryResult: [DatabaseOutput]) {
-        mockResults.append(queryResult)
+    func database(context: DatabaseContext) -> Database {
+        _Database(test: self, context: context)
     }
 
-    public func execute(
-        query: DatabaseQuery,
-        onOutput: @escaping (DatabaseOutput) -> ()
-    ) -> EventLoopFuture<Void> {
+    struct _Database: Database {
+        let test: TestDatabase
+        var context: DatabaseContext
 
-        guard !mockResults.isEmpty else {
-            return self.eventLoop.makeFailedFuture(TestDatabaseError.ranOutOfResults)
+        func execute(
+            query: DatabaseQuery,
+            onOutput: @escaping (DatabaseOutput) -> ()
+        ) -> EventLoopFuture<Void> {
+            guard context.eventLoop.inEventLoop else {
+                return self.eventLoop.flatSubmit {
+                    self.execute(query: query, onOutput: onOutput)
+                }
+            }
+
+            if let handler = self.test.handler {
+                for row in handler(query) {
+                    onOutput(row)
+                }
+            } else {
+                guard !self.test.results.isEmpty else {
+                    return self.eventLoop.makeFailedFuture(TestDatabaseError.ranOutOfResults)
+                }
+                let result = self.test.results.removeFirst()
+                for row in result(query) {
+                    onOutput(row)
+                }
+            }
+            return self.eventLoop.makeSucceededFuture(())
         }
 
-        let result = mockResults.removeFirst()
-
-        for row in result {
-            onOutput(row)
+        func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+            closure(self)
         }
-        return self.eventLoop.makeSucceededFuture(())
+
+        func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+            closure(self)
+        }
+
+        func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+            self.eventLoop.makeSucceededFuture(())
+        }
+
+        func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
+            self.eventLoop.makeSucceededFuture(())
+        }
+    }
+}
+
+extension TestDatabase {
+    public var configuration: DatabaseConfiguration {
+        _Configuration(test: self)
     }
 
-    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-        closure(self)
+    struct _Configuration: DatabaseConfiguration {
+        let test: TestDatabase
+        var middleware: [AnyModelMiddleware] = []
+
+        func makeDriver(for databases: Databases) -> DatabaseDriver {
+            _Driver(test: self.test)
+        }
     }
 
-    public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-        closure(self)
-    }
+    struct _Driver: DatabaseDriver {
+        let test: TestDatabase
 
-    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
-        self.eventLoop.makeSucceededFuture(())
-    }
+        func makeDatabase(with context: DatabaseContext) -> Database {
+            self.test.database(context: context)
+        }
 
-    public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
-        self.eventLoop.makeSucceededFuture(())
+        func shutdown() {
+            // Do nothing
+        }
     }
 }
 
@@ -120,6 +173,10 @@ public struct TestOutput: DatabaseOutput {
 
     var dummyDecodedFields: [[FieldKey]: Any]
 
+    public init() {
+        self.dummyDecodedFields = [:]
+    }
+
     public init(_ mockFields: [[FieldKey]: Any]) {
         self.dummyDecodedFields = mockFields
     }
@@ -142,16 +199,4 @@ public struct TestOutput: DatabaseOutput {
 
 public enum TestRowDecodeError: Error {
     case wrongType
-}
-
-public struct TestDatabaseConfiguration: DatabaseConfiguration {
-    public var middleware: [AnyModelMiddleware]
-
-    public func makeDriver(for databases: Databases) -> DatabaseDriver {
-        DummyDatabaseDriver(on: databases.eventLoopGroup)
-    }
-
-    public init(middleware: [AnyModelMiddleware] = []) {
-        self.middleware = middleware
-    }
 }
