@@ -245,6 +245,14 @@ extension TimestampFormat {
 }
 
 extension TimestampFormat {
+    public static let iso8601WithMilliseconds = TimestampFormat("iso8601WithMilliseconds", formatter: {
+        let formatter = ISO8601DateFormatter.init()
+        formatter.formatOptions.insert(.withFractionalSeconds)
+        return formatter
+    })
+}
+
+extension TimestampFormat {
     public static let unix = TimestampFormat("unix", formatter: UnixTimestampFormatter.init)
 }
 
