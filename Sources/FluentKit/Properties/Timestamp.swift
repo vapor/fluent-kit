@@ -251,7 +251,7 @@ extension TimestampFormat {
 
 extension TimestampFormat {
     public static let iso8601WithMilliseconds = TimestampFormat("iso8601WithMilliseconds", formatter: {
-        let formatter = ISO8601DateFormatter.init()
+        let formatter = ISO8601DateFormatter()
         formatter.formatOptions.insert(.withFractionalSeconds)
         return formatter
     })
