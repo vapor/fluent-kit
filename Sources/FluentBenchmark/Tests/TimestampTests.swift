@@ -4,6 +4,7 @@ extension FluentBenchmarker {
     public func testTimestamp() throws {
         try self.testTimestamp_touch()
         try self.testTimestamp_ISO8601()
+        try self.testTimestamp_createOnUpdate()
     }
 
     public func testTimestamp_touch() throws {
@@ -36,6 +37,7 @@ extension FluentBenchmarker {
             try event.save(on: self.database).wait()
 
             let formatter = ISO8601DateFormatter()
+            formatter.formatOptions.insert(.withFractionalSeconds)
             let createdAt = try formatter.string(from: XCTUnwrap(event.createdAt))
             let updatedAt = try formatter.string(from: XCTUnwrap(event.updatedAt))
 
@@ -53,6 +55,35 @@ extension FluentBenchmarker {
 
             try event.delete(on: self.database).wait()
             try XCTAssertEqual(Event.query(on: self.database).all().wait().count, 0)
+        }
+    }
+    
+    public func testTimestamp_createOnUpdate() throws {
+        try runTest(#function, [
+            EventMigration()
+        ]) {
+            let event = Event(name: "C")
+            try event.create(on: self.database).wait()
+            XCTAssertNotNil(event.createdAt)
+            XCTAssertNotNil(event.updatedAt)
+            XCTAssertEqual(event.createdAt, event.updatedAt)
+            
+            Thread.sleep(forTimeInterval: 0.001) // ensure update timestamp with millisecond precision increments
+            
+            let eventWithSameId = Event(id: event.id, name: "D")
+            eventWithSameId.$id.exists = true
+            try eventWithSameId.update(on: self.database).wait()
+            XCTAssertNil(eventWithSameId.createdAt)
+            XCTAssertNotNil(eventWithSameId.updatedAt)
+            XCTAssertNotEqual(event.updatedAt, eventWithSameId.updatedAt)
+            
+            let storedEvent = try Event.find(event.id, on: self.database).wait()
+            XCTAssertNotNil(storedEvent)
+            XCTAssertEqual(storedEvent?.name, eventWithSameId.name)
+            XCTAssertNotNil(storedEvent?.createdAt)
+            XCTAssertNotNil(storedEvent?.updatedAt)
+            XCTAssertEqual(storedEvent?.createdAt, event.createdAt)
+            XCTAssertEqual(storedEvent?.updatedAt, eventWithSameId.updatedAt)
         }
     }
 }
@@ -107,13 +138,13 @@ private final class Event: Model {
     @Field(key: "name")
     var name: String
 
-    @Timestamp(key: "created_at", on: .create, format: .iso8601)
+    @Timestamp(key: "created_at", on: .create, format: .iso8601WithMilliseconds)
     var createdAt: Date?
 
-    @Timestamp(key: "updated_at", on: .update, format: .iso8601)
+    @Timestamp(key: "updated_at", on: .update, format: .iso8601WithMilliseconds)
     var updatedAt: Date?
 
-    @Timestamp(key: "deleted_at", on: .delete, format: .iso8601)
+    @Timestamp(key: "deleted_at", on: .delete, format: .iso8601WithMilliseconds)
     var deletedAt: Date?
 
     init() { }
