@@ -73,8 +73,6 @@ extension OptionalParentProperty: AnyProperty {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
             try container.encode(parent)
-        } else if self.id == nil {
-            try container.encodeNil()	
         } else {
             try container.encode([
                 "id": self.id
