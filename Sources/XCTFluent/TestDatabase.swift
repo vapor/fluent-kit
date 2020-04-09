@@ -12,49 +12,66 @@ import NIO
 ///
 /// Return an empty result for the next query:
 ///
-///     let db = TestDatabase()
-///     db.append(queryResult: [])
+///     let db = TestResultsDatabase()
+///     db.append([])
 ///
 /// Return an empty result for first query, and a single result
 /// for the second query (perhaps a query to find a record with
 /// no results followed by a successful query to create the record):
 ///
-///     let db = TestDatabase()
-///     db.append(queryResult: [])
-///     db.append(queryResult: [
+///     let db = TestResultsDatabase()
+///     db.append([])
+///     db.append([
 ///         TestOutput(["id": 1, "name": "Boise"])
 ///     ])
 ///
 /// Return multiple rows for one query:
 ///
-///     let db = TestDatabase()
+///     let db = TestResultsDatabase()
 ///     db.append([
 ///         TestOutput(["id": 1, ...]),
 ///         TestOutput(["id": 2, ...])
 ///     ])
-public class TestDatabase {
-    typealias MockResult = [DatabaseOutput]
-
-    var results: [(DatabaseQuery) -> MockResult] = []
-    var handler: ((DatabaseQuery) -> [DatabaseOutput])?
+public final class ArrayTestDatabase: TestDatabase {
+    var results: [[DatabaseOutput]]
 
     public init() {
         self.results = []
     }
 
-    public func use(_ handler: @escaping (DatabaseQuery) -> [DatabaseOutput]) {
-        self.handler = handler
-    }
-
-    public func append(_ output: [DatabaseOutput]) {
-        self.append { _ in output }
-    }
-
-    public func append(
-        _ result: @escaping (DatabaseQuery) -> [DatabaseOutput]
-    ) {
+    public func append(_ result: [DatabaseOutput]) {
         self.results.append(result)
     }
+
+    public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
+        guard !self.results.isEmpty else {
+            throw TestDatabaseError.ranOutOfResults
+        }
+        for output in self.results.removeFirst() {
+            onOutput(output)
+        }
+    }
+}
+
+public final class CallbackTestDatabase: TestDatabase {
+    var callback: (DatabaseQuery) -> [DatabaseOutput]
+
+    public init(callback: @escaping (DatabaseQuery) -> [DatabaseOutput]) {
+        self.callback = callback
+    }
+
+    public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
+        for output in self.callback(query) {
+            onOutput(output)
+        }
+    }
+}
+
+public protocol TestDatabase {
+    func execute(
+        query: DatabaseQuery,
+        onOutput: (DatabaseOutput) -> ()
+    ) throws
 }
 
 extension TestDatabase {
@@ -67,81 +84,73 @@ extension TestDatabase {
     }
 
     func database(context: DatabaseContext) -> Database {
-        _Database(test: self, context: context)
+        _TestDatabase(test: self, context: context)
+    }
+}
+
+private struct _TestDatabase: Database {
+    let test: TestDatabase
+    var context: DatabaseContext
+
+    func execute(
+        query: DatabaseQuery,
+        onOutput: @escaping (DatabaseOutput) -> ()
+    ) -> EventLoopFuture<Void> {
+        guard context.eventLoop.inEventLoop else {
+            return self.eventLoop.flatSubmit {
+                self.execute(query: query, onOutput: onOutput)
+            }
+        }
+        do {
+            try self.test.execute(query: query, onOutput: onOutput)
+        } catch {
+            return self.eventLoop.makeFailedFuture(error)
+        }
+        return self.eventLoop.makeSucceededFuture(())
     }
 
-    struct _Database: Database {
-        let test: TestDatabase
-        var context: DatabaseContext
+    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
 
-        func execute(
-            query: DatabaseQuery,
-            onOutput: @escaping (DatabaseOutput) -> ()
-        ) -> EventLoopFuture<Void> {
-            guard context.eventLoop.inEventLoop else {
-                return self.eventLoop.flatSubmit {
-                    self.execute(query: query, onOutput: onOutput)
-                }
-            }
+    func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
 
-            if let handler = self.test.handler {
-                for row in handler(query) {
-                    onOutput(row)
-                }
-            } else {
-                guard !self.test.results.isEmpty else {
-                    return self.eventLoop.makeFailedFuture(TestDatabaseError.ranOutOfResults)
-                }
-                let result = self.test.results.removeFirst()
-                for row in result(query) {
-                    onOutput(row)
-                }
-            }
-            return self.eventLoop.makeSucceededFuture(())
-        }
+    func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        self.eventLoop.makeSucceededFuture(())
+    }
 
-        func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-            closure(self)
-        }
-
-        func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-            closure(self)
-        }
-
-        func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
-            self.eventLoop.makeSucceededFuture(())
-        }
-
-        func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
-            self.eventLoop.makeSucceededFuture(())
-        }
+    func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
+        self.eventLoop.makeSucceededFuture(())
     }
 }
 
 extension TestDatabase {
     public var configuration: DatabaseConfiguration {
-        _Configuration(test: self)
+        _TestConfiguration(test: self)
+    }
+}
+
+
+private struct _TestConfiguration: DatabaseConfiguration {
+    let test: TestDatabase
+    var middleware: [AnyModelMiddleware] = []
+
+    func makeDriver(for databases: Databases) -> DatabaseDriver {
+        _TestDriver(test: self.test)
+    }
+}
+
+private struct _TestDriver: DatabaseDriver {
+    let test: TestDatabase
+
+    func makeDatabase(with context: DatabaseContext) -> Database {
+        self.test.database(context: context)
     }
 
-    struct _Configuration: DatabaseConfiguration {
-        let test: TestDatabase
-        var middleware: [AnyModelMiddleware] = []
-
-        func makeDriver(for databases: Databases) -> DatabaseDriver {
-            _Driver(test: self.test)
-        }
-    }
-
-    struct _Driver: DatabaseDriver {
-        let test: TestDatabase
-
-        func makeDatabase(with context: DatabaseContext) -> Database {
-            self.test.database(context: context)
-        }
-
-        func shutdown() {
-            // Do nothing
-        }
+    func shutdown() {
+        // Do nothing
     }
 }
 
