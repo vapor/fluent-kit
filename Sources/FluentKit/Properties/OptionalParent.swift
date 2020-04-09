@@ -74,7 +74,7 @@ extension OptionalParentProperty: AnyProperty {
         if let parent = self.value {
             try container.encode(parent)
         } else if self.id == nil {
-            try container.encodeNil()	
+            try container.encodeNil()
         } else {
             try container.encode([
                 "id": self.id
@@ -83,9 +83,13 @@ extension OptionalParentProperty: AnyProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
-        // TODO: allow for nested decoding
+        if try decoder.singleValueContainer().decodeNil() {
+            self.id = nil
+        } else {
+            let container = try decoder.container(keyedBy: ModelCodingKey.self)
+            try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
+            // TODO: allow for nested decoding
+        }
     }
 }
 
