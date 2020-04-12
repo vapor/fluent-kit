@@ -1,3 +1,6 @@
+import Crypto
+import Foundation
+
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
 }
@@ -67,7 +70,7 @@ public struct SQLSchemaConverter {
             let name = identifier(fields)
             return SQLConstraint(
                 algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                name: SQLIdentifier("uq:\(name)")
+                name: SQLIdentifier("uq:\(normalizeSQLConstraintIdentifier(name))")
             )
         case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
             let name = identifier(local + foreign)
@@ -83,11 +86,15 @@ public struct SQLSchemaConverter {
                     columns: local.map(self.fieldName),
                     references: reference
                 ),
-                name: SQLIdentifier("fk:\(name)")
+                name: SQLIdentifier("fk:\(normalizeSQLConstraintIdentifier(name))")
             )
         case .custom(let any):
             return custom(any)
         }
+    }
+    
+    private func normalizeSQLConstraintIdentifier(_ identifier: String) -> String {
+        Data(Insecure.SHA1.hash(data: Data(identifier.utf8))).base64EncodedString()
     }
 
     private func foreignKeyAction(_ action: DatabaseSchema.ForeignKeyAction) -> SQLForeignKeyAction {
