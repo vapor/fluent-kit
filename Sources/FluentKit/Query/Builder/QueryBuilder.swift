@@ -7,6 +7,7 @@ public final class QueryBuilder<Model>
 
     public let database: Database
     internal var includeDeleted: Bool
+    internal var forceDelete: Bool
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
     
@@ -23,13 +24,15 @@ public final class QueryBuilder<Model>
         database: Database,
         models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
-        includeDeleted: Bool = false
+        includeDeleted: Bool = false,
+        forceDelete: Bool = false
     ) {
         self.query = query
         self.database = database
         self.models = models
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
+        self.forceDelete = forceDelete
         // Pass through custom ID key for database if used.
         let idKey = Model()._$id.key
         switch idKey {
@@ -45,7 +48,8 @@ public final class QueryBuilder<Model>
             database: self.database,
             models: self.models,
             eagerLoaders: self.eagerLoaders,
-            includeDeleted: self.includeDeleted
+            includeDeleted: self.includeDeleted,
+            forceDelete: self.forceDelete
         )
     }
 
@@ -83,8 +87,9 @@ public final class QueryBuilder<Model>
         return self.run()
     }
     
-    public func delete() -> EventLoopFuture<Void> {
-        self.query.action = .delete
+    public func delete(force: Bool = false) -> EventLoopFuture<Void> {
+        self.forceDelete = Model.init().deletedTimestamp == nil ? true : force
+        self.query.action = self.forceDelete ? .delete : .update
         return self.run()
     }
 
@@ -229,12 +234,27 @@ public final class QueryBuilder<Model>
                 }
             }
         }
-        
-        // If deleted models aren't included, add filters
-        // to exclude them for each model being queried.
-        if !self.includeDeleted {
-            for model in self.models {
-                model.excludeDeleted(from: &query)
+
+        for model in self.models {
+            let initializedModel = model.init()
+            
+            // If deleted models aren't included, add filters
+            // to exclude them for each model being queried.
+            if !self.includeDeleted {
+                model.excludeDeleted(initialized: initializedModel, from: &query)
+            }
+            
+            // If we don't want to force delete, just touch
+            // the timestamp model. We also change it to an
+            // update query. If it is a force delete, still
+            // touch the timestamps
+            if !self.forceDelete, let _ = initializedModel.deletedTimestamp {
+                initializedModel.touchTimestamps(.create, .update, .delete)
+            } else {
+                switch query.action {
+                    case .create: initializedModel.touchTimestamps(.create, .update)
+                    default: initializedModel.touchTimestamps(.update)
+                }
             }
         }
         
