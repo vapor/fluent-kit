@@ -249,7 +249,8 @@ public final class QueryBuilder<Model>
             // update query. If it is a force delete, still
             // touch the timestamps
             if !self.forceDelete, let _ = initializedModel.deletedTimestamp {
-                initializedModel.touchTimestamps(.create, .update, .delete)
+                initializedModel.touchTimestamps(.update, .delete)
+                query.input = [.dictionary(initializedModel.input.values)]
             } else {
                 switch query.action {
                     case .create: initializedModel.touchTimestamps(.create, .update)
