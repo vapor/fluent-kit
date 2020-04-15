@@ -89,6 +89,7 @@ public final class QueryBuilder<Model>
     
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
         self.forceDelete = Model.init().deletedTimestamp == nil ? true : force
+        self.query.action = .delete
         return self.run()
     }
 
