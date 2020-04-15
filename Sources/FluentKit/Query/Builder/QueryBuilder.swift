@@ -235,29 +235,27 @@ public final class QueryBuilder<Model>
             }
         }
 
-        for model in self.models {
-            let initializedModel = model.init()
-            
-            // If deleted models aren't included, add filters
-            // to exclude them for each model being queried.
-            if !self.includeDeleted {
-                model.excludeDeleted(initialized: initializedModel, from: &query)
+        // If deleted models aren't included, add filters
+        // to exclude them for each model being queried.
+        if !self.includeDeleted {
+            for model in self.models {
+                model.excludeDeleted(from: &query)
             }
-            
-            // If we don't want to force delete, just touch
-            // the timestamp model. We also change it to an
-            // update query. If it is a force delete, still
-            // touch the timestamps
-            if !self.forceDelete, let _ = initializedModel.deletedTimestamp {
-                initializedModel.touchTimestamps(.update, .delete)
-                query.action = .update
-                query.input = [.dictionary(initializedModel.input.values)]
-            } else {
-                switch query.action {
-                    case .create: initializedModel.touchTimestamps(.create, .update)
-                    default: initializedModel.touchTimestamps(.update)
+        }
+       
+        switch query.action {
+            case .delete:
+                if !self.forceDelete {
+                    query.action = .update
+                    query.input = [.dictionary(Model.init().input.values)]
+                    Model.init().touchTimestamps(.delete, .update)
                 }
-            }
+            case .create:
+                Model.init().touchTimestamps(.create, .update)
+//                query.input = [.dictionary(Model.init().input.values)]
+            default:
+                Model.init().touchTimestamps(.update)
+//                query.input = [.dictionary(Model.init().input.values)]
         }
         
         self.database.logger.info("\(self.query)")

@@ -83,7 +83,13 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             TrashMigration()
         ]) {
-            XCTFail()
+            // save two users
+            try Trash(contents: "A").save(on: self.database).wait()
+            try Trash(contents: "B").save(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            try Trash.query(on: self.database).delete(force: true).wait()
+            try testCounts(allCount: 0, realCount: 0)
         }
     }
 }
