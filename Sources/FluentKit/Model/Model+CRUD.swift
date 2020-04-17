@@ -14,7 +14,6 @@ extension Model {
     }
 
     private func _create(on database: Database) -> EventLoopFuture<Void> {
-        self.touchTimestamps(.create, .update)
         precondition(!self._$id.exists)
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
@@ -40,7 +39,6 @@ extension Model {
     }
 
     private func _update(on database: Database) -> EventLoopFuture<Void> {
-        self.touchTimestamps(.update)
         precondition(self._$id.exists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())

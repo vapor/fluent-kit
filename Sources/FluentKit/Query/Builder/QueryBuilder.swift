@@ -4,7 +4,7 @@ public final class QueryBuilder<Model>
     where Model: FluentKit.Model
 {
     public var query: DatabaseQuery
-
+    
     public let database: Database
     internal var includeDeleted: Bool
     internal var forceDelete: Bool
@@ -18,7 +18,7 @@ public final class QueryBuilder<Model>
             models: [Model.self]
         )
     }
-
+    
     private init(
         query: DatabaseQuery,
         database: Database,
@@ -41,7 +41,7 @@ public final class QueryBuilder<Model>
             self.query.customIDKey = idKey
         }
     }
-
+    
     public func copy() -> QueryBuilder<Model> {
         .init(
             query: self.query,
@@ -52,24 +52,24 @@ public final class QueryBuilder<Model>
             forceDelete: self.forceDelete
         )
     }
-
+    
     // MARK: Fields
-
+    
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
         where Field: FieldProtocol, Field.Model == Model
     {
         self.field(Model.self, field)
     }
-
+    
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
     {
         self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
         return self
     }
-
+    
     // MARK: Soft Delete
-
+    
     public func withDeleted() -> Self {
         self.includeDeleted = true
         return self
@@ -92,23 +92,23 @@ public final class QueryBuilder<Model>
         self.query.action = .delete
         return self.run()
     }
-
+    
     // MARK: Limit
-
+    
     public func limit(_ count: Int) -> Self {
         self.query.limits.append(.count(count))
         return self
     }
-
+    
     // MARK: Offset
-
+    
     public func offset(_ count: Int) -> Self {
         self.query.offsets.append(.count(count))
         return self
     }
-
+    
     // MARK: Unqiue
-
+    
     public func unique() -> Self {
         self.query.isUnique = true
         return self
@@ -139,11 +139,11 @@ public final class QueryBuilder<Model>
             .all()
             .map { $0.first }
     }
-
+    
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
         where
-            Field: FieldProtocol,
-            Field.Model == Model
+        Field: FieldProtocol,
+        Field.Model == Model
     {
         let copy = self.copy()
         copy.query.fields = [.path(Model.path(for: key), schema: Model.schema)]
@@ -153,15 +153,15 @@ public final class QueryBuilder<Model>
             }
         }
     }
-
+    
     public func all<Joined, Field>(
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
         where
-            Joined: Schema,
-            Field: FieldProtocol,
-            Field.Model == Joined
+        Joined: Schema,
+        Field: FieldProtocol,
+        Field.Model == Joined
     {
         let copy = self.copy()
         copy.query.fields = [.path(Joined.path(for: field), schema: Joined.schemaOrAlias)]
@@ -171,7 +171,7 @@ public final class QueryBuilder<Model>
             }
         }
     }
-
+    
     public func all() -> EventLoopFuture<[Model]> {
         var models: [Result<Model, Error>] = []
         return self.all { model in
@@ -181,14 +181,14 @@ public final class QueryBuilder<Model>
                 .map { try $0.get() }
         }
     }
-
+    
     public func run() -> EventLoopFuture<Void> {
         return self.run { _ in }
     }
-
+    
     public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
-
+        
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
@@ -197,7 +197,7 @@ public final class QueryBuilder<Model>
                 return model
             }))
         }
-
+        
         // if eager loads exist, run them, and update models
         if !self.eagerLoaders.isEmpty {
             return done.flatMap {
@@ -214,17 +214,17 @@ public final class QueryBuilder<Model>
             return done
         }
     }
-
+    
     internal func action(_ action: DatabaseQuery.Action) -> Self {
         self.query.action = action
         return self
     }
-
+    
     internal func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
-
+        
         // If fields are not being manually selected,
         // add fields from all models being queried.
         if query.fields.isEmpty {
@@ -234,7 +234,7 @@ public final class QueryBuilder<Model>
                 }
             }
         }
-
+        
         // If deleted models aren't included, add filters
         // to exclude them for each model being queried.
         if !self.includeDeleted {
@@ -242,28 +242,47 @@ public final class QueryBuilder<Model>
                 model.excludeDeleted(from: &query)
             }
         }
-       
+        
         let model = Model.init()
         switch query.action {
-            case .delete:
-                if !self.forceDelete {
-                    model.touchTimestamps(.delete, .update)
-                    query.action = .update
-                    query.input = [.dictionary(model.input.values)]
+        case .delete:
+            if !self.forceDelete {
+                model.touchTimestamps(.delete, .update)
+                query.action = .update
+                query.input = [.dictionary(model.input.values)]
+            }
+        case .create:
+            var data: [DatabaseQuery.Value] = []
+            
+            for case .dictionary(var nested) in query.input {
+                if let createTimestamp = Model().timestamps.filter({ $0.trigger == .create }).first {
+                    nested[createTimestamp.path.first!] = .bind(Date())
                 }
-            case .create:
-                Model.init().touchTimestamps(.create, .update)
-
-//                model.touchTimestamps(.create, .update)
-//                query.input.append(.dictionary(model.input.values))
-            default:
-                Model.init().touchTimestamps(.update)
-//                model.touchTimestamps(.update)
-//                query.input.append(.dictionary(model.input.values))
+                if let updateTimestamp = Model().timestamps.filter({ $0.trigger == .update }).first {
+                    nested[updateTimestamp.path.first!] = .bind(Date())
+                }
+                data.append(.dictionary(nested))
+            }
+            
+            query.input = data
+        case .update:
+            var data: [DatabaseQuery.Value] = []
+            
+            for case .dictionary(var nested) in query.input {
+                if let updateTimestamp = Model().timestamps.filter({ $0.trigger == .update }).first {
+                    nested[updateTimestamp.path.first!] = .bind(Date())
+                }
+                
+                data.append(.dictionary(nested))
+            }
+            
+            query.input = data
+        default:
+            break
         }
         
         self.database.logger.info("\(self.query)")
-
+        
         let done = self.database.execute(query: query) { output in
             assert(
                 self.database.eventLoop.inEventLoop,
