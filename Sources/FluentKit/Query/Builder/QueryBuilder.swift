@@ -252,11 +252,14 @@ public final class QueryBuilder<Model>
                     query.input = [.dictionary(model.input.values)]
                 }
             case .create:
-                model.touchTimestamps(.create, .update)
-                query.input.append(.dictionary(model.input.values))
+                Model.init().touchTimestamps(.create, .update)
+
+//                model.touchTimestamps(.create, .update)
+//                query.input.append(.dictionary(model.input.values))
             default:
-                model.touchTimestamps(.update)
-                query.input.append(.dictionary(model.input.values))
+                Model.init().touchTimestamps(.update)
+//                model.touchTimestamps(.update)
+//                query.input.append(.dictionary(model.input.values))
         }
         
         self.database.logger.info("\(self.query)")

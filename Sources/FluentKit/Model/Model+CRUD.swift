@@ -58,8 +58,7 @@ extension Model {
     }
 
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        if !force, let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first {
-            timestamp.touch()
+        if !force, self.deletedTimestamp != nil {
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
@@ -75,13 +74,18 @@ extension Model {
         if force {
             _ = query.withDeleted()
         }
+        
+        query.forceDelete = force
+        
         return query
             .filter(\._$id == self.id!)
             .action(.delete)
             .run()
             .map
         {
-            self._$id.exists = false
+            if force, self.deletedTimestamp == nil {
+                self._$id.exists = false
+            }
         }
     }
 
@@ -119,7 +123,7 @@ extension Model {
         case .restore:
             return _restore(on: db)
         case .softDelete:
-            return _update(on: db)
+            return _delete(force: false, on: db)
         case .update:
             return _update(on: db)
         }
