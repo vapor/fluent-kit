@@ -243,19 +243,20 @@ public final class QueryBuilder<Model>
             }
         }
        
+        let model = Model.init()
         switch query.action {
             case .delete:
                 if !self.forceDelete {
+                    model.touchTimestamps(.delete, .update)
                     query.action = .update
-                    query.input = [.dictionary(Model.init().input.values)]
-                    Model.init().touchTimestamps(.delete, .update)
+                    query.input = [.dictionary(model.input.values)]
                 }
             case .create:
-                Model.init().touchTimestamps(.create, .update)
-//                query.input = [.dictionary(Model.init().input.values)]
+                model.touchTimestamps(.create, .update)
+                query.input.append(.dictionary(model.input.values))
             default:
-                Model.init().touchTimestamps(.update)
-//                query.input = [.dictionary(Model.init().input.values)]
+                model.touchTimestamps(.update)
+                query.input.append(.dictionary(model.input.values))
         }
         
         self.database.logger.info("\(self.query)")
