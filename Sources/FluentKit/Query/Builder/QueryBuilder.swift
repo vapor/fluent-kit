@@ -4,13 +4,13 @@ public final class QueryBuilder<Model>
     where Model: FluentKit.Model
 {
     public var query: DatabaseQuery
-    
+
     public let database: Database
     internal var includeDeleted: Bool
     internal var shouldForceDelete: Bool
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
-    
+
     public convenience init(database: Database) {
         self.init(
             query: .init(schema: Model.schema),
@@ -18,7 +18,7 @@ public final class QueryBuilder<Model>
             models: [Model.self]
         )
     }
-    
+
     private init(
         query: DatabaseQuery,
         database: Database,
@@ -41,7 +41,7 @@ public final class QueryBuilder<Model>
             self.query.customIDKey = idKey
         }
     }
-    
+
     public func copy() -> QueryBuilder<Model> {
         .init(
             query: self.query,
@@ -52,7 +52,7 @@ public final class QueryBuilder<Model>
             shouldForceDelete: self.shouldForceDelete
         )
     }
-    
+
     // MARK: Fields
 
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
@@ -60,62 +60,62 @@ public final class QueryBuilder<Model>
     {
         self.field(Model.self, field)
     }
-    
+
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
     {
         self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
         return self
     }
-    
+
     // MARK: Soft Delete
-    
+
     public func withDeleted() -> Self {
         self.includeDeleted = true
         return self
     }
-    
+
     // MARK: Actions
-    
+
     public func create() -> EventLoopFuture<Void> {
         self.query.action = .create
         return self.run()
     }
-    
+
     public func update() -> EventLoopFuture<Void> {
         self.query.action = .update
         return self.run()
     }
-    
+
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
         self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
     }
-    
+
     // MARK: Limit
-    
+
     public func limit(_ count: Int) -> Self {
         self.query.limits.append(.count(count))
         return self
     }
-    
+
     // MARK: Offset
-    
+
     public func offset(_ count: Int) -> Self {
         self.query.offsets.append(.count(count))
         return self
     }
-    
+
     // MARK: Unqiue
-    
+
     public func unique() -> Self {
         self.query.isUnique = true
         return self
     }
-    
+
     // MARK: Fetch
-    
+
     public func chunk(max: Int, closure: @escaping ([Result<Model, Error>]) -> ()) -> EventLoopFuture<Void> {
         var partial: [Result<Model, Error>] = []
         partial.reserveCapacity(max)
@@ -133,13 +133,13 @@ public final class QueryBuilder<Model>
             }
         }
     }
-    
+
     public func first() -> EventLoopFuture<Model?> {
         return self.limit(1)
             .all()
             .map { $0.first }
     }
-    
+
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
         where
             Field: FieldProtocol,
@@ -153,7 +153,7 @@ public final class QueryBuilder<Model>
             }
         }
     }
-    
+
     public func all<Joined, Field>(
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
@@ -171,7 +171,7 @@ public final class QueryBuilder<Model>
             }
         }
     }
-    
+
     public func all() -> EventLoopFuture<[Model]> {
         var models: [Result<Model, Error>] = []
         return self.all { model in
@@ -181,11 +181,11 @@ public final class QueryBuilder<Model>
                 .map { try $0.get() }
         }
     }
-    
+
     public func run() -> EventLoopFuture<Void> {
         return self.run { _ in }
     }
-    
+
     public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
         
@@ -214,12 +214,12 @@ public final class QueryBuilder<Model>
             return done
         }
     }
-    
+
     internal func action(_ action: DatabaseQuery.Action) -> Self {
         self.query.action = action
         return self
     }
-    
+
     internal func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
