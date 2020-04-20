@@ -1,3 +1,5 @@
+import EchoProperties
+
 public protocol Fields: class, Codable {
     var properties: [AnyProperty] { get }
     init()
@@ -31,8 +33,8 @@ extension Fields {
     }
 
     public var properties: [AnyProperty] {
-        Mirror(reflecting: self).children.compactMap {
-            $0.value as? AnyProperty
+        Reflection.allKeyPaths(for: self).compactMap {
+            self[keyPath: $0] as? AnyProperty
         }
     }
 
@@ -40,15 +42,12 @@ extension Fields {
 
     var labeledProperties: [String: AnyProperty] {
         .init(uniqueKeysWithValues:
-            Mirror(reflecting: self).children.compactMap { child in
-                guard let label = child.label else {
+            Reflection.allNamedKeyPaths(for: self).compactMap {
+                guard let value = self[keyPath: $0.keyPath] as? AnyProperty else {
                     return nil
                 }
-                guard let field = child.value as? AnyProperty else {
-                    return nil
-                }
-                // remove underscore
-                return (String(label.dropFirst()), field)
+            
+                return (String($0.name.dropFirst()), value)
             }
         )
     }
