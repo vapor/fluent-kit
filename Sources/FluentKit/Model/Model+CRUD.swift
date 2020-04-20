@@ -73,7 +73,7 @@ extension Model {
             _ = query.withDeleted()
         }
         
-        query.forceDelete = force
+        query.shouldForceDelete = force
         
         return query
             .filter(\._$id == self.id!)

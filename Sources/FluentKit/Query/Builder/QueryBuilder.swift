@@ -7,7 +7,7 @@ public final class QueryBuilder<Model>
     
     public let database: Database
     internal var includeDeleted: Bool
-    internal var forceDelete: Bool
+    internal var shouldForceDelete: Bool
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
     
@@ -25,14 +25,14 @@ public final class QueryBuilder<Model>
         models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
         includeDeleted: Bool = false,
-        forceDelete: Bool = false
+        shouldForceDelete: Bool = false
     ) {
         self.query = query
         self.database = database
         self.models = models
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
-        self.forceDelete = forceDelete
+        self.shouldForceDelete = shouldForceDelete
         // Pass through custom ID key for database if used.
         let idKey = Model()._$id.key
         switch idKey {
@@ -49,12 +49,12 @@ public final class QueryBuilder<Model>
             models: self.models,
             eagerLoaders: self.eagerLoaders,
             includeDeleted: self.includeDeleted,
-            forceDelete: self.forceDelete
+            shouldForceDelete: self.shouldForceDelete
         )
     }
     
     // MARK: Fields
-    
+
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
         where Field: FieldProtocol, Field.Model == Model
     {
@@ -88,7 +88,7 @@ public final class QueryBuilder<Model>
     }
     
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
-        self.forceDelete = Model.init().deletedTimestamp == nil ? true : force
+        self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
     }
@@ -142,8 +142,8 @@ public final class QueryBuilder<Model>
     
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
         where
-        Field: FieldProtocol,
-        Field.Model == Model
+            Field: FieldProtocol,
+            Field.Model == Model
     {
         let copy = self.copy()
         copy.query.fields = [.path(Model.path(for: key), schema: Model.schema)]
@@ -159,9 +159,9 @@ public final class QueryBuilder<Model>
         _ field: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
         where
-        Joined: Schema,
-        Field: FieldProtocol,
-        Field.Model == Joined
+            Joined: Schema,
+            Field: FieldProtocol,
+            Field.Model == Joined
     {
         let copy = self.copy()
         copy.query.fields = [.path(Joined.path(for: field), schema: Joined.schemaOrAlias)]
@@ -242,11 +242,13 @@ public final class QueryBuilder<Model>
                 model.excludeDeleted(from: &query)
             }
         }
-        
+
         let model = Model.init()
+        let forceDelete = model.deletedTimestamp == nil ? true : self.shouldForceDelete
+
         switch query.action {
         case .delete:
-            if !self.forceDelete {
+            if !forceDelete {
                 model.touchTimestamps(.delete, .update)
                 query.action = .update
                 query.input = [.dictionary(model.input.values)]
@@ -255,12 +257,7 @@ public final class QueryBuilder<Model>
             var data: [DatabaseQuery.Value] = []
             
             for case .dictionary(var nested) in query.input {
-                if let createTimestamp = Model().timestamps.filter({ $0.trigger == .create }).first {
-                    nested[createTimestamp.path.first!] = .bind(Date())
-                }
-                if let updateTimestamp = Model().timestamps.filter({ $0.trigger == .update }).first {
-                    nested[updateTimestamp.path.first!] = .bind(Date())
-                }
+                addTimestamps(triggers: [.create, .update], nested: &nested)
                 data.append(.dictionary(nested))
             }
             
@@ -269,10 +266,7 @@ public final class QueryBuilder<Model>
             var data: [DatabaseQuery.Value] = []
             
             for case .dictionary(var nested) in query.input {
-                if let updateTimestamp = Model().timestamps.filter({ $0.trigger == .update }).first {
-                    nested[updateTimestamp.path.first!] = .bind(Date())
-                }
-                
+                addTimestamps(triggers: [.update], nested: &nested)
                 data.append(.dictionary(nested))
             }
             
@@ -298,5 +292,13 @@ public final class QueryBuilder<Model>
             )
         }
         return done
+    }
+
+    private func addTimestamps(triggers: [TimestampTrigger], nested: inout [FieldKey: DatabaseQuery.Value]) {
+        let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
+
+        for timestamp in timestamps {
+            nested[timestamp.path.first!] = .bind(Date())
+        }
     }
 }
