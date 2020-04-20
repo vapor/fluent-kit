@@ -258,6 +258,7 @@ public final class QueryBuilder<Model>
             
             for case .dictionary(var nested) in query.input {
                 addTimestamps(triggers: [.create, .update], nested: &nested)
+                model.touchTimestamps(.create, .update)
                 data.append(.dictionary(nested))
             }
             
@@ -267,6 +268,7 @@ public final class QueryBuilder<Model>
             
             for case .dictionary(var nested) in query.input {
                 addTimestamps(triggers: [.update], nested: &nested)
+                model.touchTimestamps(.update)
                 data.append(.dictionary(nested))
             }
             
