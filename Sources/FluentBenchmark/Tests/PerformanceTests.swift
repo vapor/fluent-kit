@@ -2,6 +2,7 @@ extension FluentBenchmarker {
     public func testPerformance() throws {
         try self.testPerformance_largeModel()
         try self.testPerformance_siblings()
+        try self.testPerformance_largeSave()
     }
 
     private func testPerformance_largeModel() throws {
@@ -30,6 +31,23 @@ extension FluentBenchmarker {
                 XCTAssertNotNil(foo.id)
             }
             XCTAssertEqual(foos.count, 100)
+        }
+    }
+
+    private func testPerformance_largeSave() throws {
+        try runTest(#function, [
+            GalaxyMigration()
+        ]) {
+            let start = Date()
+            for _ in 0..<1_000 {
+                var galaxies: [Galaxy] = []
+                for _ in 0..<1_000 {
+                    galaxies.append(Galaxy(name: "Test"))
+                }
+                try galaxies.create(on: self.database).wait()
+            }
+            try XCTAssertEqual(Galaxy.query(on: self.database).count().wait(), 1_000_000)
+            print(Date().timeIntervalSince(start))
         }
     }
 }
