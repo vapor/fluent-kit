@@ -1,3 +1,5 @@
+import EchoProperties
+
 public protocol AnyModel: Schema, CustomStringConvertible { }
 
 extension AnyModel {
@@ -33,9 +35,12 @@ extension AnyModel {
     }
 
     var anyID: AnyID {
-        guard let id = Mirror(reflecting: self).descendant("_id") as? AnyID else {
+        let kps = Reflection.allNamedKeyPaths(for: self)
+        guard let idKp = kps.first(where: { $0.name == "_id" }),
+              let id = self[keyPath: idKp.keyPath] as? AnyID else {
             fatalError("id property must be declared using @ID")
         }
+        
         return id
     }
 }

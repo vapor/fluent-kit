@@ -33,6 +33,11 @@ public struct DatabaseSchema {
         public struct Enum {
             public var name: String
             public var cases: [String]
+
+            public init(name: String, cases: [String]) {
+                self.name = name
+                self.cases = cases
+            }
         }
         case `enum`(Enum)
         case string
