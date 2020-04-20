@@ -1,4 +1,4 @@
-@testable import class FluentKit.QueryBuilder
+//@testable import class FluentKit.QueryBuilder
 
 extension FluentBenchmarker {
     public func testTimestamp() throws {
@@ -41,17 +41,17 @@ extension FluentBenchmarker {
             let createdAt = try formatter.string(from: XCTUnwrap(event.createdAt))
             let updatedAt = try formatter.string(from: XCTUnwrap(event.updatedAt))
 
-            try Event.query(on: self.database).run({ output in
-                do {
-                    let schema = output.schema("events")
-                    let createdAtField = try schema.decode(event.$createdAt.field.key, as: String.self)
-                    let updatedAtField = try schema.decode(event.$updatedAt.field.key, as: String.self)
-                    XCTAssertEqual(createdAtField, createdAt)
-                    XCTAssertEqual(updatedAtField, updatedAt)
-                } catch let error {
-                    XCTFail("Timestamp decoding from database output failed with error: \(error)")
-                }
-            }).wait()
+//            try Event.query(on: self.database).run({ output in
+//                do {
+//                    let schema = output.schema("events")
+//                    let createdAtField = try schema.decode(event.$createdAt.field.key, as: String.self)
+//                    let updatedAtField = try schema.decode(event.$updatedAt.field.key, as: String.self)
+//                    XCTAssertEqual(createdAtField, createdAt)
+//                    XCTAssertEqual(updatedAtField, updatedAt)
+//                } catch let error {
+//                    XCTFail("Timestamp decoding from database output failed with error: \(error)")
+//                }
+//            }).wait()
 
             try event.delete(on: self.database).wait()
             try XCTAssertEqual(Event.query(on: self.database).all().wait().count, 0)

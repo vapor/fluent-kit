@@ -1,7 +1,7 @@
 extension FluentBenchmarker {
     public func testPerformance() throws {
-        try self.testPerformance_largeModel()
-        try self.testPerformance_siblings()
+//        try self.testPerformance_largeModel()
+//        try self.testPerformance_siblings()
         try self.testPerformance_largeSave()
     }
 

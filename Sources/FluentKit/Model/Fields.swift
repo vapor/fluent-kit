@@ -33,22 +33,34 @@ extension Fields {
     }
 
     public var properties: [AnyProperty] {
-        Reflection.allKeyPaths(for: self).compactMap {
-            self[keyPath: $0] as? AnyProperty
+        Mirror(reflecting: self).children.compactMap {
+            $0.value as? AnyProperty
         }
+//        Reflection.allKeyPaths(for: self).compactMap {
+//            self[keyPath: $0] as? AnyProperty
+//        }
     }
 
     // Internal
 
     var labeledProperties: [String: AnyProperty] {
         .init(uniqueKeysWithValues:
-            Reflection.allNamedKeyPaths(for: self).compactMap {
-                guard let value = self[keyPath: $0.keyPath] as? AnyProperty else {
+            Mirror(reflecting: self).children.compactMap { child in
+                guard let label = child.label else {
                     return nil
                 }
-            
-                return (String($0.name.dropFirst()), value)
+                guard let field = child.value as? AnyProperty else {
+                    return nil
+                }
+                return (String(label.dropFirst()), field)
             }
+//            Reflection.allNamedKeyPaths(for: self).compactMap {
+//                guard let value = self[keyPath: $0.keyPath] as? AnyProperty else {
+//                    return nil
+//                }
+//            
+//                return (String($0.name.dropFirst()), value)
+//            }
         )
     }
 
