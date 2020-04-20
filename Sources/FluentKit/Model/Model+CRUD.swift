@@ -14,6 +14,7 @@ extension Model {
     }
 
     private func _create(on database: Database) -> EventLoopFuture<Void> {
+        self.touchTimestamps(.create, .update)
         precondition(!self._$id.exists)
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
@@ -39,6 +40,7 @@ extension Model {
     }
 
     private func _update(on database: Database) -> EventLoopFuture<Void> {
+        self.touchTimestamps(.update)
         precondition(self._$id.exists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
@@ -56,7 +58,8 @@ extension Model {
     }
 
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        if !force, self.deletedTimestamp != nil {
+        if !force, let timestamp = self.deletedTimestamp {
+            timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
