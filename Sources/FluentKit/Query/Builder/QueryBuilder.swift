@@ -188,7 +188,7 @@ public final class QueryBuilder<Model>
 
     public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
-        
+
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
@@ -197,7 +197,7 @@ public final class QueryBuilder<Model>
                 return model
             }))
         }
-        
+
         // if eager loads exist, run them, and update models
         if !self.eagerLoaders.isEmpty {
             return done.flatMap {
@@ -224,7 +224,7 @@ public final class QueryBuilder<Model>
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
-        
+
         // If fields are not being manually selected,
         // add fields from all models being queried.
         if query.fields.isEmpty {
@@ -234,7 +234,7 @@ public final class QueryBuilder<Model>
                 }
             }
         }
-        
+
         // If deleted models aren't included, add filters
         // to exclude them for each model being queried.
         if !self.includeDeleted {
@@ -255,28 +255,28 @@ public final class QueryBuilder<Model>
             }
         case .create:
             var data: [DatabaseQuery.Value] = []
-            
+
             for case .dictionary(var nested) in query.input {
                 addTimestamps(triggers: [.create, .update], nested: &nested)
                 data.append(.dictionary(nested))
             }
-            
+
             query.input = data
         case .update:
             var data: [DatabaseQuery.Value] = []
-            
+
             for case .dictionary(var nested) in query.input {
                 addTimestamps(triggers: [.update], nested: &nested)
                 data.append(.dictionary(nested))
             }
-            
+
             query.input = data
         default:
             break
         }
-        
+
         self.database.logger.info("\(self.query)")
-        
+
         let done = self.database.execute(query: query) { output in
             assert(
                 self.database.eventLoop.inEventLoop,
@@ -284,7 +284,7 @@ public final class QueryBuilder<Model>
             )
             onOutput(output)
         }
-        
+
         done.whenComplete { _ in
             assert(
                 self.database.eventLoop.inEventLoop,
@@ -298,6 +298,7 @@ public final class QueryBuilder<Model>
         let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
 
         for timestamp in timestamps {
+            precondition(timestamp.path.count == 1, "Timestamp updates do not support @Group currently")
             let path = timestamp.path.first!
             if nested[path] == nil {
                 nested[timestamp.path.first!] = .bind(Date())
