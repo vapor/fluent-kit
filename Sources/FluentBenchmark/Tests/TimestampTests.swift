@@ -5,6 +5,8 @@ extension FluentBenchmarker {
         try self.testTimestamp_touch()
         try self.testTimestamp_ISO8601()
         try self.testTimestamp_createOnUpdate()
+        try self.testTimestamp_createOnBulkCreate()
+        try self.testTimestamp_createOnBulkUpdate()
     }
 
     public func testTimestamp_touch() throws {
@@ -84,6 +86,50 @@ extension FluentBenchmarker {
             XCTAssertNotNil(storedEvent?.updatedAt)
             XCTAssertEqual(storedEvent?.createdAt, event.createdAt)
             XCTAssertEqual(storedEvent?.updatedAt, eventWithSameId.updatedAt)
+        }
+    }
+    
+    public func testTimestamp_createOnBulkCreate() throws {
+        try runTest(#function, [
+            UserMigration(),
+        ]) {
+            let userOne = User(name: "A")
+            let userTwo = User(name: "B")
+            XCTAssertEqual(userOne.createdAt, nil)
+            XCTAssertEqual(userOne.updatedAt, nil)
+            XCTAssertEqual(userTwo.createdAt, nil)
+            XCTAssertEqual(userTwo.updatedAt, nil)
+            try [userOne, userTwo].create(on: self.database).wait()
+            XCTAssertNotNil(userOne.createdAt)
+            XCTAssertNotNil(userOne.updatedAt)
+            XCTAssertEqual(userOne.updatedAt, userOne.createdAt)
+            XCTAssertNotNil(userTwo.createdAt)
+            XCTAssertNotNil(userTwo.updatedAt)
+            XCTAssertEqual(userTwo.updatedAt, userTwo.createdAt)
+        }
+    }
+    
+    public func testTimestamp_createOnBulkUpdate() throws {
+        try runTest(#function, [
+            UserMigration(),
+        ]) {
+            let userOne = User(name: "A")
+            let userTwo = User(name: "B")
+            XCTAssertEqual(userOne.createdAt, nil)
+            XCTAssertEqual(userOne.updatedAt, nil)
+            XCTAssertEqual(userTwo.createdAt, nil)
+            XCTAssertEqual(userTwo.updatedAt, nil)
+            try [userOne, userTwo].create(on: self.database).wait()
+            
+            let originalOne = userOne.updatedAt
+            let originalTwo = userTwo.updatedAt
+            
+            Thread.sleep(forTimeInterval: 1)
+            
+            try User.query(on: self.database).set(\.$name, to: "C").update().wait()
+            
+            XCTAssertNotEqual(try User.find(userOne.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalOne!.timeIntervalSinceNow)
+            XCTAssertNotEqual(try User.find(userTwo.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalTwo!.timeIntervalSinceNow)
         }
     }
 }

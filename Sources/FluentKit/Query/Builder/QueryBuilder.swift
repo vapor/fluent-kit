@@ -7,9 +7,10 @@ public final class QueryBuilder<Model>
 
     public let database: Database
     internal var includeDeleted: Bool
+    internal var shouldForceDelete: Bool
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
-    
+
     public convenience init(database: Database) {
         self.init(
             query: .init(schema: Model.schema),
@@ -23,13 +24,15 @@ public final class QueryBuilder<Model>
         database: Database,
         models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
-        includeDeleted: Bool = false
+        includeDeleted: Bool = false,
+        shouldForceDelete: Bool = false
     ) {
         self.query = query
         self.database = database
         self.models = models
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
+        self.shouldForceDelete = shouldForceDelete
         // Pass through custom ID key for database if used.
         let idKey = Model()._$id.key
         switch idKey {
@@ -45,7 +48,8 @@ public final class QueryBuilder<Model>
             database: self.database,
             models: self.models,
             eagerLoaders: self.eagerLoaders,
-            includeDeleted: self.includeDeleted
+            includeDeleted: self.includeDeleted,
+            shouldForceDelete: self.shouldForceDelete
         )
     }
 
@@ -70,20 +74,21 @@ public final class QueryBuilder<Model>
         self.includeDeleted = true
         return self
     }
-    
+
     // MARK: Actions
-    
+
     public func create() -> EventLoopFuture<Void> {
         self.query.action = .create
         return self.run()
     }
-    
+
     public func update() -> EventLoopFuture<Void> {
         self.query.action = .update
         return self.run()
     }
-    
-    public func delete() -> EventLoopFuture<Void> {
+
+    public func delete(force: Bool = false) -> EventLoopFuture<Void> {
+        self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
     }
@@ -108,9 +113,9 @@ public final class QueryBuilder<Model>
         self.query.isUnique = true
         return self
     }
-    
+
     // MARK: Fetch
-    
+
     public func chunk(max: Int, closure: @escaping ([Result<Model, Error>]) -> ()) -> EventLoopFuture<Void> {
         var partial: [Result<Model, Error>] = []
         partial.reserveCapacity(max)
@@ -128,7 +133,7 @@ public final class QueryBuilder<Model>
             }
         }
     }
-    
+
     public func first() -> EventLoopFuture<Model?> {
         return self.limit(1)
             .all()
@@ -229,7 +234,7 @@ public final class QueryBuilder<Model>
                 }
             }
         }
-        
+
         // If deleted models aren't included, add filters
         // to exclude them for each model being queried.
         if !self.includeDeleted {
@@ -237,7 +242,39 @@ public final class QueryBuilder<Model>
                 model.excludeDeleted(from: &query)
             }
         }
-        
+
+        let model = Model.init()
+        let forceDelete = model.deletedTimestamp == nil ? true : self.shouldForceDelete
+
+        switch query.action {
+        case .delete:
+            if !forceDelete {
+                model.touchTimestamps(.delete, .update)
+                query.action = .update
+                query.input = [.dictionary(model.input.values)]
+            }
+        case .create:
+            var data: [DatabaseQuery.Value] = []
+
+            for case .dictionary(var nested) in query.input {
+                addTimestamps(triggers: [.create, .update], nested: &nested)
+                data.append(.dictionary(nested))
+            }
+
+            query.input = data
+        case .update:
+            var data: [DatabaseQuery.Value] = []
+
+            for case .dictionary(var nested) in query.input {
+                addTimestamps(triggers: [.update], nested: &nested)
+                data.append(.dictionary(nested))
+            }
+
+            query.input = data
+        default:
+            break
+        }
+
         self.database.logger.info("\(self.query)")
 
         let done = self.database.execute(query: query) { output in
@@ -247,7 +284,7 @@ public final class QueryBuilder<Model>
             )
             onOutput(output)
         }
-        
+
         done.whenComplete { _ in
             assert(
                 self.database.eventLoop.inEventLoop,
@@ -255,5 +292,17 @@ public final class QueryBuilder<Model>
             )
         }
         return done
+    }
+
+    private func addTimestamps(triggers: [TimestampTrigger], nested: inout [FieldKey: DatabaseQuery.Value]) {
+        let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
+
+        for timestamp in timestamps {
+            precondition(timestamp.path.count == 1, "Timestamp updates do not support @Group currently")
+            let path = timestamp.path.first!
+            if nested[path] == nil {
+                nested[timestamp.path.first!] = .bind(Date())
+            }
+        }
     }
 }

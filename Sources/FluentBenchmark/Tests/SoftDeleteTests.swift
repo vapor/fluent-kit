@@ -2,20 +2,22 @@ extension FluentBenchmarker {
     public func testSoftDelete() throws {
         try self.testSoftDelete_model()
         try self.testSoftDelete_query()
+        try self.testSoftDelete_onBulkDelete()
+        try self.testSoftDelete_forceOnQuery()
+    }
+    
+    private func testCounts(
+        allCount: Int,
+        realCount: Int,
+        line: UInt = #line
+    ) throws {
+        let all = try Trash.query(on: self.database).all().wait()
+        XCTAssertEqual(all.count, allCount, "excluding deleted", line: line)
+        let real = try Trash.query(on: self.database).withDeleted().all().wait()
+        XCTAssertEqual(real.count, realCount, "including deleted", line: line)
     }
 
     private func testSoftDelete_model() throws {
-        func testCounts(
-            allCount: Int,
-            realCount: Int,
-            line: UInt = #line
-        ) throws {
-            let all = try Trash.query(on: self.database).all().wait()
-            XCTAssertEqual(all.count, allCount, "excluding deleted", line: line)
-            let real = try Trash.query(on: self.database).withDeleted().all().wait()
-            XCTAssertEqual(real.count, realCount, "including deleted", line: line)
-        }
-
         try self.runTest(#function, [
             TrashMigration(),
         ]) {
@@ -60,6 +62,34 @@ extension FluentBenchmarker {
                 .filter(\.$contents == "c")
                 .all().wait()
             XCTAssertEqual(trash.count, 0)
+        }
+    }
+    
+    private func testSoftDelete_onBulkDelete() throws {
+        try self.runTest(#function, [
+            TrashMigration(),
+        ]) {
+            // save two users
+            try Trash(contents: "A").save(on: self.database).wait()
+            try Trash(contents: "B").save(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            try Trash.query(on: self.database).delete().wait()
+            try testCounts(allCount: 0, realCount: 2)
+        }
+    }
+    
+    private func testSoftDelete_forceOnQuery() throws {
+        try self.runTest(#function, [
+            TrashMigration()
+        ]) {
+            // save two users
+            try Trash(contents: "A").save(on: self.database).wait()
+            try Trash(contents: "B").save(on: self.database).wait()
+            try testCounts(allCount: 2, realCount: 2)
+
+            try Trash.query(on: self.database).delete(force: true).wait()
+            try testCounts(allCount: 0, realCount: 0)
         }
     }
 }
