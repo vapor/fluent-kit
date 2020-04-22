@@ -1,4 +1,5 @@
 extension QueryBuilder {
+    @discardableResult
     public func group(
         _ relation: DatabaseQuery.Filter.Relation = .and,
         _ closure: (QueryBuilder<Model>) throws -> ()
