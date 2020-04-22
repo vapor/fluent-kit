@@ -10,7 +10,7 @@ public final class FieldProperty<Model, Value>
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-    
+
     public var projectedValue: FieldProperty<Model, Value> {
         self
     }
@@ -77,8 +77,12 @@ extension FieldProperty: AnyProperty {
     public func output(from output: DatabaseOutput) throws {
         if output.contains([self.key]) {
             self.inputValue = nil
+
+            // decode Value as Optional in case we are nested inside @OptionalGroup
+            // throw FluentError.unexceptedNil if the value is nil
+            let outputValue: Value?
             do {
-                self.outputValue = try output.decode(self.key, as: Value.self)
+                outputValue = try output.decode(self.key, as: Value?.self)
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
@@ -86,6 +90,10 @@ extension FieldProperty: AnyProperty {
                     error: error
                 )
             }
+            if outputValue == nil {
+                throw FluentError.unexceptedNil(name: self.key.description)
+            }
+            self.value = outputValue
         }
     }
 

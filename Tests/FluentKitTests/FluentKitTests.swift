@@ -290,7 +290,7 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
 
-    func testCompoundModel() throws {
+    func testGroup() throws {
         let tanner = User(
             name: "Tanner",
             pet: .init(
@@ -318,6 +318,7 @@ final class FluentKitTests: XCTestCase {
 
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
+        XCTAssertEqual(tanner.$pet.$toy.$name.value, "Foo")
         XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
 
         do {
@@ -326,6 +327,47 @@ final class FluentKitTests: XCTestCase {
             let encoded = try encoder.encode(tanner)
             let result = String(data:encoded, encoding: .utf8)!
             let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"name":"Foo","type":"mouse"},"type":"cat"}}"#
+            XCTAssertEqual(result, expected)
+        }
+    }
+
+    func testOptionalGroup() throws {
+        let tanner = User(
+            name: "Tanner",
+            pet: .init(
+                name: "Ziz",
+                type: .cat,
+                toy: nil
+            )
+        )
+
+        for path in User.keys {
+            print(path)
+        }
+
+        func output(_ properties: [AnyProperty], depth: Int = 0) {
+            for property in properties {
+                print(
+                    String(repeating: "  ", count: depth),
+                    property.path,
+                    property
+                )
+                output(property.nested, depth: depth + 1)
+            }
+        }
+        output(User().properties)
+
+        XCTAssertEqual(tanner.pet.name, "Ziz")
+        XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
+        XCTAssertNil(tanner.$pet.$toy.value)
+        XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            let encoded = try encoder.encode(tanner)
+            let result = String(data:encoded, encoding: .utf8)!
+            let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":null,"type":"cat"}}"#
             XCTAssertEqual(result, expected)
         }
     }
@@ -365,12 +407,12 @@ final class Pet: Fields {
     @Field(key: "type")
     var type: Animal
 
-    @Group(key: "toy")
-    var toy: Toy
+    @OptionalGroup(key: "toy")
+    var toy: Toy?
 
     init() { }
 
-    init(name: String, type: Animal, toy: Toy) {
+    init(name: String, type: Animal, toy: Toy?) {
         self.name = name
         self.type = type
         self.toy = toy
