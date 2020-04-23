@@ -77,12 +77,8 @@ extension FieldProperty: AnyProperty {
     public func output(from output: DatabaseOutput) throws {
         if output.contains([self.key]) {
             self.inputValue = nil
-
-            // decode Value as Optional in case we are nested inside @OptionalGroup
-            // throw FluentError.unexceptedNil if the value is nil
-            let outputValue: Value?
             do {
-                outputValue = try output.decode(self.key, as: Value?.self)
+                self.value = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
@@ -90,10 +86,6 @@ extension FieldProperty: AnyProperty {
                     error: error
                 )
             }
-            if outputValue == nil {
-                throw FluentError.unexceptedNil(name: self.key.description)
-            }
-            self.value = outputValue
         }
     }
 

@@ -43,8 +43,10 @@ extension FluentBenchmarker {
 
             // Test without star
             guard let moonWithoutStar = try OptionalGroupMoon.query(on: self.database)
-                .filter(\.$planet.$star.$name == .null)
+                .filter(\.$planet.$exists == true)
+                .filter(\.$planet.$star.$exists == false)
                 .filter(\.$planet.$name != .null)
+                .filter(\.$planet.$star.$name == .null)
                 .first()
                 .wait() else {
                 XCTFail("Failed to get optional_moon without star")
@@ -59,6 +61,7 @@ extension FluentBenchmarker {
 
             // Test without planet
             guard let moonsWithouPlanet = try OptionalGroupMoon.query(on: self.database)
+                .filter(\.$planet.$exists == false)
                 .filter(\.$planet.$name == .null)
                 .first()
                 .wait() else {
@@ -149,8 +152,10 @@ private struct OptionalGroupMoonMigration: Migration {
         database.schema("optional_moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
+            .field("planet_exists", .bool)
             .field("planet_name", .string)
             .field("planet_type", .string)
+            .field("planet_star_exists", .bool)
             .field("planet_star_name", .string)
             .field("planet_star_galaxy_name", .string)
             .create()
