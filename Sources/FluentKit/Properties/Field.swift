@@ -10,7 +10,7 @@ public final class FieldProperty<Model, Value>
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-
+    
     public var projectedValue: FieldProperty<Model, Value> {
         self
     }
@@ -78,7 +78,7 @@ extension FieldProperty: AnyProperty {
         if output.contains([self.key]) {
             self.inputValue = nil
             do {
-                self.value = try output.decode(self.key, as: Value.self)
+                self.outputValue = try output.decode(self.key, as: Value.self)
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
