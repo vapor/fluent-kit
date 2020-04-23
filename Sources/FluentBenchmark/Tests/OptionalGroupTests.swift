@@ -45,8 +45,6 @@ extension FluentBenchmarker {
             guard let moonWithoutStar = try OptionalGroupMoon.query(on: self.database)
                 .filter(\.$planet.$exists == true)
                 .filter(\.$planet.$star.$exists == false)
-                .filter(\.$planet.$name != .null)
-                .filter(\.$planet.$star.$name == .null)
                 .first()
                 .wait() else {
                 XCTFail("Failed to get optional_moon without star")
@@ -62,7 +60,6 @@ extension FluentBenchmarker {
             // Test without planet
             guard let moonsWithouPlanet = try OptionalGroupMoon.query(on: self.database)
                 .filter(\.$planet.$exists == false)
-                .filter(\.$planet.$name == .null)
                 .first()
                 .wait() else {
                 XCTFail("Failed to get optional_moon without planet")
