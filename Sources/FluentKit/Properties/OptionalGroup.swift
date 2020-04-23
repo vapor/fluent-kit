@@ -28,7 +28,7 @@ public final class OptionalGroupProperty<Model, Value>
 
     public init(key: FieldKey, existsKey: FieldKey = .string("exists")) {
         self.key = key
-        self._exists = .init(key: key)
+        self._exists = .init(key: existsKey)
         self.value = .init()
     }
 
