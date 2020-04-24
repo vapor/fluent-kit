@@ -286,10 +286,10 @@ public struct SQLQueryConverter {
                     op: inverse ? SQLBinaryOperator.notLike : SQLBinaryOperator.like,
                     right: right
                 )
-            case (.subset, .array(let array)) where array.isEmpty:
+            case (.subset(let inverse), .array(let array)) where array.isEmpty:
                 return SQLBinaryExpression(
                     left: SQLLiteral.numeric("1"),
-                    op: SQLBinaryOperator.equal,
+                    op: inverse ? SQLBinaryOperator.notEqual : SQLBinaryOperator.equal,
                     right: SQLLiteral.numeric("0")
                 )
             default:
