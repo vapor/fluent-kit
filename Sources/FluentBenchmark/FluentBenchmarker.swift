@@ -33,6 +33,7 @@ public final class FluentBenchmarker {
         try self.testMiddleware()
         try self.testMigrator()
         try self.testModel()
+        try self.testOptionalField()
         try self.testOptionalParent()
         try self.testPagination()
         try self.testParent()
