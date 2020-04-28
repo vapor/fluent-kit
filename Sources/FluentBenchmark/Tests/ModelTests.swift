@@ -110,21 +110,6 @@ extension FluentBenchmarker {
             }
         }
     }
-
-    private func testModel_optionalField() throws {
-        try runTest(#function, [
-            BazMigration(),
-        ]) {
-            let baz = Baz(baz: nil)
-            try baz.save(on: self.database).wait()
-
-            let fetched = try Baz.query(on: self.database)
-                .filter(\.$baz == nil)
-                .first()
-                .wait()
-            XCTAssertNil(fetched?.baz)
-        }
-    }
 }
 
 private final class Foo: Model {
@@ -246,35 +231,5 @@ private struct BarMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("bars").delete()
-    }
-}
-
-private final class Baz: Model {
-    static let schema = "bazs"
-
-    @ID(key: .id)
-    var id: UUID?
-
-    @OptionalField(key: "baz")
-    var baz: String?
-
-    init() { }
-
-    init(id: IDValue? = nil, baz: String?) {
-        self.id = id
-        self.baz = baz
-    }
-}
-
-private struct BazMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("bazs")
-            .field("id", .uuid, .identifier(auto: false))
-            .field("baz", .string)
-            .create()
-    }
-
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("bazs").delete()
     }
 }
