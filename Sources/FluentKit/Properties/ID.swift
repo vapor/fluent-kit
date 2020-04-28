@@ -122,7 +122,9 @@ extension IDProperty: PropertyProtocol {
     }
 }
 
-extension IDProperty: FieldProtocol { }
+extension IDProperty: FieldProtocol {
+    public typealias FilterValue = Value?
+}
 
 extension IDProperty: AnyField { }
 

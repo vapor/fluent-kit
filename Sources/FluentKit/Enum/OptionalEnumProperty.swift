@@ -63,7 +63,15 @@ extension OptionalEnumProperty: PropertyProtocol {
 }
 
 extension OptionalEnumProperty: FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .enumCase(value.rawValue) }
+    public typealias FilterValue = Value?
+
+    public static func queryValue(_ value: Value?) -> DatabaseQuery.Value {
+        if let string = value?.rawValue {
+            return .enumCase(string)
+        } else {
+            return .null
+        }
+    }
 }
 
 extension OptionalEnumProperty: AnyField {

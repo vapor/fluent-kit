@@ -66,7 +66,11 @@ extension EnumProperty: PropertyProtocol {
 }
 
 extension EnumProperty: FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .enumCase(value.rawValue) }
+    public typealias FilterValue = Value
+
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
+        .enumCase(value.rawValue)
+    }
 }
 
 extension EnumProperty: AnyField {

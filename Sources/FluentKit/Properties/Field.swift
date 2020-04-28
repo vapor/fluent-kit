@@ -58,7 +58,10 @@ extension FieldProperty: PropertyProtocol {
     }
 }
 
-extension FieldProperty: FieldProtocol { }
+extension FieldProperty: FieldProtocol {
+    public typealias FilterValue = Value
+}
+
 extension FieldProperty: AnyField { }
 
 extension FieldProperty: AnyProperty {

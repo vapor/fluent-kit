@@ -21,37 +21,37 @@ extension QueryBuilder {
 
 // MARK: Field.Value
 
-public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func == <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.FilterValue) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
     lhs == Field.queryValue(rhs)
 }
 
-public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func != <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.FilterValue) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
     lhs != Field.queryValue(rhs)
 }
 
-public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func >= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.FilterValue) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
     lhs >= Field.queryValue(rhs)
 }
 
-public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func > <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.FilterValue) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
     lhs > Field.queryValue(rhs)
 }
 
-public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func < <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.FilterValue) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
     lhs < Field.queryValue(rhs)
 }
 
-public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.FilterValue) -> ModelValueFilter<Model>
     where Model: Fields, Field: FieldProtocol
 {
     lhs <= Field.queryValue(rhs)

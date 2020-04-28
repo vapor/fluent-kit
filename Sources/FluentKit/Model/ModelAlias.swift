@@ -97,4 +97,6 @@ extension AliasedField: AnyProperty {
     }
 }
 
-extension AliasedField: FieldProtocol { }
+extension AliasedField: FieldProtocol {
+    public typealias FilterValue = Value
+}

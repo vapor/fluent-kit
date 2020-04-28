@@ -18,7 +18,11 @@ public final class NestedProperty<Model, Property>
 }
 
 extension NestedProperty: AnyField where Property: AnyField { }
-extension NestedProperty: FieldProtocol where Property: FieldProtocol { }
+extension NestedProperty: FieldProtocol
+    where Property: FieldProtocol
+{
+    public typealias FilterValue = Property.FilterValue
+}
 
 extension NestedProperty: PropertyProtocol {
     public var path: [FieldKey] {

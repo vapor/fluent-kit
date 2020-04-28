@@ -59,7 +59,9 @@ extension TimestampProperty: PropertyProtocol {
     }
 }
 
-extension TimestampProperty: FieldProtocol { }
+extension TimestampProperty: FieldProtocol {
+    public typealias FilterValue = Date?
+}
 
 extension TimestampProperty: AnyProperty {
     public var nested: [AnyProperty] {

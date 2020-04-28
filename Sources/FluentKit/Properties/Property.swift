@@ -4,7 +4,6 @@ public protocol PropertyProtocol: AnyProperty {
     var value: Value? { get set }
 }
 
-
 public protocol AnyProperty: class {
     static var anyValueType: Any.Type { get }
     var anyValue: Any? { get }
@@ -29,14 +28,22 @@ extension AnyProperty where Self: PropertyProtocol {
 }
 
 public protocol FieldProtocol: AnyField, PropertyProtocol {
+    /// Value to use when filtering this field.
+    /// Defaults to `Value`.
+    associatedtype FilterValue: Codable
+
     /// Get the given Value in a form suitable for queries.
     /// Most values can be bound to queries, but some need
     /// to be inserted statically.
-    static func queryValue(_ value: Value) -> DatabaseQuery.Value
+    static func queryValue(_ value: FilterValue) -> DatabaseQuery.Value
 }
 
 extension FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .bind(value) }
+    public static func queryValue(
+        _ value: FilterValue
+    ) -> DatabaseQuery.Value {
+        .bind(value)
+    }
 }
 
 public protocol AnyField { }

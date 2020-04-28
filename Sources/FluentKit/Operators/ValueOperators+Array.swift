@@ -4,7 +4,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
     where Model: FluentKit.Model,
         Field: FieldProtocol,
         Values: Collection,
-        Values.Element == Field.Value
+        Values.Element == Field.FilterValue
 {
     lhs ~~ .array(rhs.map { Field.queryValue($0) })
 }
@@ -12,10 +12,10 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Model,
         Field: FieldProtocol,
-        Field.Value: OptionalType,
-        Field.Value.Wrapped: Codable,
+        Field.FilterValue: OptionalType,
+        Field.FilterValue.Wrapped: Codable,
         Values: Collection,
-        Values.Element == Field.Value.Wrapped
+        Values.Element == Field.FilterValue.Wrapped
 {
     lhs ~~ .array(rhs.map { .bind($0) })
 }
@@ -24,7 +24,7 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
     where Model: FluentKit.Model,
         Field: FieldProtocol,
         Values: Collection,
-        Values.Element == Field.Value
+        Values.Element == Field.FilterValue
 {
     lhs !~ .array(rhs.map { Field.queryValue($0) })
 }
@@ -32,10 +32,10 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Model,
         Field: FieldProtocol,
-        Field.Value: OptionalType,
-        Field.Value.Wrapped: Codable,
+        Field.FilterValue: OptionalType,
+        Field.FilterValue.Wrapped: Codable,
         Values: Collection,
-        Values.Element == Field.Value.Wrapped
+        Values.Element == Field.FilterValue.Wrapped
 {
     lhs !~ .array(rhs.map { .bind($0) })
 }

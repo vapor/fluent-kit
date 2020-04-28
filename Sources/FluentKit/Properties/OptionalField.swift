@@ -55,11 +55,11 @@ extension OptionalFieldProperty: PropertyProtocol {
     }
 }
 
-extension OptionalFieldProperty: FieldProtocol { }
-
-extension OptionalFieldProperty: AnyField {
-
+extension OptionalFieldProperty: FieldProtocol {
+    public typealias FilterValue = Value?
 }
+
+extension OptionalFieldProperty: AnyField { }
 
 extension OptionalFieldProperty: AnyProperty {
     public var nested: [AnyProperty] {
