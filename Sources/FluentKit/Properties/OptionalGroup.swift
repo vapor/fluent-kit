@@ -7,8 +7,8 @@ extension Fields {
 public final class OptionalGroupProperty<Model, Value>
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
-    @FieldProperty<Model, Bool>
-    public var exists: Bool
+    @FieldProperty<Model, Bool?>
+    public var exists: Bool?
 
     public let key: FieldKey
     public var value: Value?
@@ -47,7 +47,10 @@ extension OptionalGroupProperty: PropertyProtocol { }
 extension OptionalGroupProperty: AnyProperty {
 
     public var nested: [AnyProperty] {
-        self.value!.properties + [self.$exists]
+        if let value = self.value {
+            return value.properties + [self.$exists]
+        }
+        return []
     }
 
     public var path: [FieldKey] {
@@ -58,23 +61,17 @@ extension OptionalGroupProperty: AnyProperty {
         if var values = self.value?.input.values, !values.isEmpty {
             values[$exists.key] = .bind(true)
             input.values[self.key] = .dictionary(values)
-        } else {
-            input.values[self.key] = .dictionary([$exists.key: .bind(false)])
         }
     }
 
     public func output(from output: DatabaseOutput) throws {
         let existsPath = path + [$exists.key]
-        if output.contains(existsPath) {
-            if try output.decode(existsPath, as: Bool.self) == true {
-                let value = Value()
-                try value.output(from: output.nested(self.key))
-                self.value = value
-            } else {
-                self.value = nil
-            }
+        if try output.contains(existsPath) && output.decode(existsPath, as: Bool?.self) == true {
+            let value = Value()
+            try value.output(from: output.nested(self.key))
+            self.value = value
         } else {
-            fatalError("Missing value for path: \(existsPath)")
+            self.value = nil
         }
     }
 
