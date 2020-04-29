@@ -1,5 +1,5 @@
 extension DatabaseOutput {
-    func cascading(to output: DatabaseOutput) -> DatabaseOutput {
+    public func cascading(to output: DatabaseOutput) -> DatabaseOutput {
         return CombinedOutput(first: self, second: output)
     }
 }
