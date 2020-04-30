@@ -7,6 +7,7 @@ extension FluentBenchmarker {
         try self.testModel_nullField()
         try self.testModel_idGeneration()
         try self.testModel_jsonColumn()
+        try self.testModel_hasChangesTests()
     }
 
     private func testModel_uuid() throws {
@@ -108,6 +109,32 @@ extension FluentBenchmarker {
                     .wait()
                 XCTAssertEqual(bars.count, 1)
             }
+        }
+    }
+
+    private func testModel_hasChangesTests() throws {
+        try runTest(#function, [
+            FooMigration(),
+        ]) {
+            // Test create
+            let foo = Foo(bar: "test")
+            XCTAssertTrue(foo.hasChanges)
+            try foo.save(on: self.database).wait()
+            XCTAssertFalse(foo.hasChanges)
+
+            // Test update
+            guard let fetched = try Foo.query(on: self.database)
+                .filter(\.$id == foo.id!)
+                .first().wait()
+            else {
+                XCTFail("no model returned")
+                return
+            }
+            XCTAssertFalse(fetched.hasChanges)
+            fetched.bar = nil
+            XCTAssertTrue(fetched.hasChanges)
+            try fetched.save(on: self.database).wait()
+            XCTAssertFalse(fetched.hasChanges)
         }
     }
 }

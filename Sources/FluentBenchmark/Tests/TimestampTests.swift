@@ -7,6 +7,7 @@ extension FluentBenchmarker {
         try self.testTimestamp_createOnUpdate()
         try self.testTimestamp_createOnBulkCreate()
         try self.testTimestamp_createOnBulkUpdate()
+        try self.testTimestamp_updateNoChanges()
     }
 
     public func testTimestamp_touch() throws {
@@ -130,6 +131,23 @@ extension FluentBenchmarker {
             
             XCTAssertNotEqual(try User.find(userOne.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalOne!.timeIntervalSinceNow)
             XCTAssertNotEqual(try User.find(userTwo.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalTwo!.timeIntervalSinceNow)
+        }
+    }
+
+    public func testTimestamp_updateNoChanges() throws {
+        try runTest(#function, [
+            EventMigration()
+        ]) {
+            let event = Event(name: "C")
+            try event.create(on: self.database).wait()
+            let updatedAtPreSave = event.updatedAt
+
+            XCTAssertFalse(event.hasChanges)
+            Thread.sleep(forTimeInterval: 0.001) // ensure update timestamp with millisecond precision increments
+            try event.save(on: self.database).wait()
+
+            let storedEvent = try Event.find(event.id, on: self.database).wait()
+            XCTAssertEqual(storedEvent?.updatedAt, updatedAtPreSave)
         }
     }
 }
