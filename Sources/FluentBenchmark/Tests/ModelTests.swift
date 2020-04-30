@@ -7,7 +7,7 @@ extension FluentBenchmarker {
         try self.testModel_nullField()
         try self.testModel_idGeneration()
         try self.testModel_jsonColumn()
-        try self.testModel_hasChangesTests()
+        try self.testModel_hasChanges()
     }
 
     private func testModel_uuid() throws {
@@ -112,7 +112,7 @@ extension FluentBenchmarker {
         }
     }
 
-    private func testModel_hasChangesTests() throws {
+    private func testModel_hasChanges() throws {
         try runTest(#function, [
             FooMigration(),
         ]) {
