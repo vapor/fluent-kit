@@ -1,5 +1,5 @@
 extension DatabaseOutput {
-    func nested(_ key: FieldKey) -> DatabaseOutput {
+    public func nested(_ key: FieldKey) -> DatabaseOutput {
         return NestedOutput(wrapped: self, prefix: key)
     }
 }

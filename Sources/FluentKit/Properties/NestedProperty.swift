@@ -5,7 +5,7 @@ public final class NestedProperty<Model, Property>
     public let prefix: [FieldKey]
     public let property: Property
 
-    init(prefix: [FieldKey], property: Property) {
+    public init(prefix: [FieldKey], property: Property) {
         self.prefix = prefix
         self.property = property
     }
