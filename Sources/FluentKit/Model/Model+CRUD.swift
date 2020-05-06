@@ -177,7 +177,13 @@ private struct SavedInput: DatabaseOutput {
     }
 
     func nested(_ key: FieldKey) throws -> DatabaseOutput {
-        fatalError("SavedInput does not support nesting.")
+        guard let data = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        guard case .dictionary(let nested) = data else {
+            fatalError("Unexpected input: \(data).")
+        }
+        return SavedInput(nested)
     }
 
     func decodeNil(_ key: FieldKey) throws -> Bool {

@@ -331,7 +331,7 @@ final class User: Model {
     @Timestamp(key: "deleted_at", on: .delete)
     var deletedAt: Date?
 
-    @Group(key: "pet")
+    @Group(key: "pet", structure: .flat)
     var pet: Pet
 
     init() { }
@@ -354,7 +354,7 @@ final class Pet: Fields {
     @Field(key: "type")
     var type: Animal
 
-    @Group(key: "toy")
+    @Group(key: "toy", structure: .flat)
     var toy: Toy
 
     init() { }

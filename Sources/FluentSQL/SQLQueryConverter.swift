@@ -314,8 +314,8 @@ public struct SQLQueryConverter {
             return SQLLiteral.null
         case .array(let values):
             return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(",")))
-        case .dictionary:
-            fatalError()
+        case .dictionary(let dictionary):
+            return SQLBind(EncodableDatabaseInput(input: dictionary))
         case .default:
             return SQLLiteral.default
         case .enumCase(let string):
@@ -368,6 +368,53 @@ public struct SQLQueryConverter {
         case .prefix(let prefix, let key):
             return self.key(prefix) + self.key(key)
         }
+    }
+}
+
+private struct EncodableDatabaseInput: Encodable {
+    let input: [FieldKey: DatabaseQuery.Value]
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: DatabaseKey.self)
+        for (key, value) in self.input {
+            try container.encode(EncodableDatabaseValue(value: value), forKey: DatabaseKey(key.description))
+        }
+    }
+}
+
+private struct EncodableDatabaseValue: Encodable {
+    let value: DatabaseQuery.Value
+    func encode(to encoder: Encoder) throws {
+        switch self.value {
+        case .bind(let encodable):
+            try encodable.encode(to: encoder)
+        case .null:
+            var container = encoder.singleValueContainer()
+            try container.encodeNil()
+        case .dictionary(let dictionary):
+            try EncodableDatabaseInput(input: dictionary).encode(to: encoder)
+        default:
+            fatalError("Unsupported codable database value: \(self.value)")
+        }
+    }
+}
+
+private struct DatabaseKey: CodingKey {
+    var stringValue: String
+    var intValue: Int? {
+        nil
+    }
+
+    init(_ string: String) {
+        self.stringValue = string
+    }
+
+    init?(stringValue: String) {
+        self.init(stringValue)
+    }
+
+    init?(intValue: Int) {
+        return nil
     }
 }
 

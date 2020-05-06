@@ -2,7 +2,7 @@ import class Foundation.ISO8601DateFormatter
 import class Foundation.DateFormatter
 import class NIO.ThreadSpecificVariable
 
-extension Fields {
+extension Model {
     public typealias Timestamp = TimestampProperty<Self>
 }
 
@@ -14,7 +14,7 @@ public enum TimestampTrigger {
 
 @propertyWrapper
 public final class TimestampProperty<Model>
-    where Model: FluentKit.Fields
+    where Model: FluentKit.Model
 {
     public let field: Model.OptionalField<Date>
     public let trigger: TimestampTrigger

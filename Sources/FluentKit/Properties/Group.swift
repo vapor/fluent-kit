@@ -3,8 +3,8 @@ extension Fields {
         where Value: Fields
 }
 
-public enum GroupMode {
-    case compound
+enum GroupStructure {
+    case flat
     case nested
 }
 
@@ -14,7 +14,7 @@ public final class GroupProperty<Model, Value>
 {
     public let key: FieldKey
     public var value: Value?
-    public let mode: GroupMode
+    let structure: GroupStructure
 
     public var projectedValue: GroupProperty<Model, Value> {
         return self
@@ -32,10 +32,10 @@ public final class GroupProperty<Model, Value>
         }
     }
 
-    public init(key: FieldKey, mode: GroupMode = .compound) {
+    public init(key: FieldKey/*, structure: GroupStructure = .flat*/) {
         self.key = key
         self.value = .init()
-        self.mode = mode
+        self.structure = .flat
     }
 
     public subscript<Property>(
@@ -43,7 +43,11 @@ public final class GroupProperty<Model, Value>
     ) -> GroupedProperty<Model, Property>
         where Property: PropertyProtocol
     {
-        .init(prefix: self.key, property: self.value![keyPath: keyPath])
+        .init(
+            structure: self.structure,
+            prefix: self.key,
+            property: self.value![keyPath: keyPath]
+        )
     }
 }
 
@@ -51,10 +55,12 @@ public final class GroupProperty<Model, Value>
 public final class GroupedProperty<Model, Property>
     where Model: Fields
 {
+    let structure: GroupStructure
     let prefix: FieldKey
     let property: Property
 
-    init(prefix: FieldKey, property: Property) {
+    init(structure: GroupStructure, prefix: FieldKey, property: Property) {
+        self.structure = structure
         self.prefix = prefix
         self.property = property
     }
@@ -62,7 +68,11 @@ public final class GroupedProperty<Model, Property>
     public subscript<Value>(
          dynamicMember keyPath: KeyPath<Property, Value>
     ) -> GroupedProperty<Model, Value> {
-        .init(prefix: self.prefix, property: self.property[keyPath: keyPath])
+        .init(
+            structure: self.structure,
+            prefix: self.prefix,
+            property: self.property[keyPath: keyPath]
+        )
     }
 }
 
@@ -92,11 +102,18 @@ extension GroupedProperty: ValueProtocol where Property: ValueProtocol {
 
 extension GroupedProperty: AnyField where Property: AnyField {
     public var key: FieldKey {
-        .prefix(.prefix(self.prefix, .string("_")), self.property.key)
+        self.property.key
     }
 
     public var path: [FieldKey] {
-        [self.key]
+        switch self.structure {
+        case .flat:
+            return [
+                .prefix(.prefix(self.prefix, .string("_")), self.property.path[0])
+            ] + self.property.path[1...]
+        case .nested:
+            return [self.prefix] + self.property.path
+        }
     }
 }
 
@@ -110,20 +127,36 @@ extension GroupProperty: PropertyProtocol { }
 
 extension GroupProperty: AnyProperty {
     public var keys: [FieldKey] {
-        Value.keys.map {
-            .prefix(.prefix(self.key, .string("_")), $0)
+        switch self.structure {
+        case .flat:
+            return Value.keys.map {
+                .prefix(.prefix(self.key, .string("_")), $0)
+            }
+        case .nested:
+            return [self.key]
         }
     }
 
     public func input(to input: inout DatabaseInput) {
         let values = self.value!.input.values
-        for value in values {
-            input.values[.string("\(self.key)_\(value.key)")] = value.value
+        switch self.structure {
+        case .flat:
+            for value in values {
+                input.values[.prefix(.prefix(self.key, .string("_")), value.key)] = value.value
+            }
+        case .nested:
+            input.values[self.key] = .dictionary(values)
         }
     }
 
     public func output(from output: DatabaseOutput) throws {
-        try self.value!.output(from: PrefixedOutput(prefix: self.key, base: output))
+        switch self.structure {
+        case .flat:
+            try self.value!.output(from: output.prefixed(by: self.key))
+        case .nested:
+            try self.value!.output(from: output.nested(self.key))
+        }
+
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -132,40 +165,5 @@ extension GroupProperty: AnyProperty {
 
     public func decode(from decoder: Decoder) throws {
         self.value = try .init(from: decoder)
-    }
-}
-
-private struct PrefixedOutput: DatabaseOutput {
-    let prefix: FieldKey
-    let base: DatabaseOutput
-
-    func schema(_ schema: String) -> DatabaseOutput {
-        PrefixedOutput(prefix: self.prefix, base: self.base.schema(schema))
-    }
-
-    func nested(_ key: FieldKey) throws -> DatabaseOutput {
-        try self.base.nested(self.key(key))
-    }
-
-    func contains(_ key: FieldKey) -> Bool {
-        return self.base.contains(self.key(key))
-    }
-
-    func decodeNil(_ key: FieldKey) throws -> Bool {
-        try self.base.decodeNil(self.key(key))
-    }
-
-    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
-        where T: Decodable
-    {
-        try self.base.decode(self.key(key))
-    }
-
-    func key(_ key: FieldKey) -> FieldKey {
-        .prefix(.prefix(self.prefix, .string("_")), key)
-    }
-
-    var description: String {
-        self.base.description
     }
 }
