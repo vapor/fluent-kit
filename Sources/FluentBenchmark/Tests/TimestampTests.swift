@@ -72,21 +72,12 @@ extension FluentBenchmarker {
             XCTAssertEqual(event.createdAt, event.updatedAt)
             
             Thread.sleep(forTimeInterval: 0.001) // ensure update timestamp with millisecond precision increments
-            
-            let eventWithSameId = Event(id: event.id, name: "D")
-            eventWithSameId.$id.exists = true
-            try eventWithSameId.update(on: self.database).wait()
-            XCTAssertNil(eventWithSameId.createdAt)
-            XCTAssertNotNil(eventWithSameId.updatedAt)
-            XCTAssertNotEqual(event.updatedAt, eventWithSameId.updatedAt)
-            
+
             let storedEvent = try Event.find(event.id, on: self.database).wait()
             XCTAssertNotNil(storedEvent)
-            XCTAssertEqual(storedEvent?.name, eventWithSameId.name)
             XCTAssertNotNil(storedEvent?.createdAt)
             XCTAssertNotNil(storedEvent?.updatedAt)
             XCTAssertEqual(storedEvent?.createdAt, event.createdAt)
-            XCTAssertEqual(storedEvent?.updatedAt, eventWithSameId.updatedAt)
         }
     }
     
