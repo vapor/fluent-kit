@@ -186,6 +186,12 @@ private struct SavedInput: DatabaseOutput {
                 return encodable as! T
             case .enumCase(let string):
                 return string as! T
+            case .null:
+                if let optionalType = T.self as? AnyOptionalType.Type {
+                    return optionalType.nil as! T
+                } else {
+                    fatalError("Null value for non-optional type: \(T.self)")
+                }
             default:
                 fatalError("Invalid input type: \(value)")
             }
