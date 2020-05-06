@@ -172,31 +172,39 @@ private struct SavedInput: DatabaseOutput {
         return self
     }
     
-    func contains(_ path: [FieldKey]) -> Bool {
-        get(path: path, from: .dictionary(self.input)) != nil
+    func contains(_ key: FieldKey) -> Bool {
+        self.input[key] != nil
+    }
+
+    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        fatalError("SavedInput does not support nesting.")
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        guard let value = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        switch value {
+        case .null:
+            return true
+        default:
+            return false
+        }
     }
     
-    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T : Decodable
     {
-        if let value = get(path: path, from: .dictionary(self.input)) {
-            // not in output, get from saved input
-            switch value {
-            case .bind(let encodable):
-                return encodable as! T
-            case .enumCase(let string):
-                return string as! T
-            case .null:
-                if let optionalType = T.self as? AnyOptionalType.Type {
-                    return optionalType.nil as! T
-                } else {
-                    fatalError("Null value for non-optional type: \(T.self)")
-                }
-            default:
-                fatalError("Invalid input type: \(value)")
-            }
-        } else {
-            throw FluentError.missingField(name: path.description)
+        guard let value = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        switch value {
+        case .bind(let encodable):
+            return encodable as! T
+        case .enumCase(let string):
+            return string as! T
+        default:
+            fatalError("Invalid input type: \(value)")
         }
     }
 

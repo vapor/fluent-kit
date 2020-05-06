@@ -53,22 +53,9 @@ extension Fields {
         )
     }
 
-    static var keys: [[FieldKey]] {
-        func collect(
-            _ properties: [AnyProperty],
-            prefix: [FieldKey] = [],
-            into keys: inout [[FieldKey]]
-        ) {
-            properties.forEach {
-                if $0 is AnyField {
-                    keys.append(prefix + $0.path)
-                }
-                collect($0.nested, prefix: prefix + $0.path, into: &keys)
-            }
+    static var keys: [FieldKey] {
+        self.init().properties.flatMap {
+            $0.keys
         }
-        var keys: [[FieldKey]] = []
-        collect(self.init().properties, into: &keys)
-        return keys
     }
-
 }

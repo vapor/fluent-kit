@@ -54,12 +54,8 @@ extension ParentProperty: PropertyProtocol {
 }
 
 extension ParentProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        [self.$id]
-    }
-
-    public var path: [FieldKey] {
-        []
+    public var keys: [FieldKey] {
+        self.$id.keys
     }
     
     public func input(to input: inout DatabaseInput) {

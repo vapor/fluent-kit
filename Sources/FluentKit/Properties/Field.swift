@@ -59,14 +59,15 @@ extension FieldProperty: PropertyProtocol {
 }
 
 extension FieldProperty: FieldProtocol { }
-extension FieldProperty: AnyField { }
+
+extension FieldProperty: AnyField {
+    public var path: [FieldKey] {
+        [self.key]
+    }
+}
 
 extension FieldProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
-
-    public var path: [FieldKey] {
+    public var keys: [FieldKey] {
         [self.key]
     }
 
@@ -75,7 +76,7 @@ extension FieldProperty: AnyProperty {
     }
 
     public func output(from output: DatabaseOutput) throws {
-        if output.contains([self.key]) {
+        if output.contains(self.key) {
             self.inputValue = nil
             do {
                 self.outputValue = try output.decode(self.key, as: Value.self)

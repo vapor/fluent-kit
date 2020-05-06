@@ -59,31 +59,47 @@ extension TimestampProperty: PropertyProtocol {
     }
 }
 
-extension TimestampProperty: FieldProtocol { }
-
-extension TimestampProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
+extension TimestampProperty: AnyField {
+    public var key: FieldKey {
+        self.field.key
     }
 
     public var path: [FieldKey] {
         self.field.path
     }
+}
+
+extension TimestampProperty: FieldProtocol { }
+
+extension TimestampProperty: AnyProperty {
+    public var keys: [FieldKey] {
+        self.field.keys
+    }
     
     public func input(to input: inout DatabaseInput) {
-        switch self.field.inputValue {
-        case .bind(_):
-            let timestamp = self.value.flatMap { date in self.formatter.anyTimestamp(from: date) }
-            input.values[self.field.key] = .bind(timestamp ?? Optional<Date>.none)
+        guard let inputValue = self.field.inputValue else {
+            return
+        }
+        switch inputValue {
+        case .bind(let bind):
+            #warning("TODO: cleanup logic")
+            if let date = bind as? Date {
+                input.values[self.field.key] = .bind(self.formatter.anyTimestamp(from: date)!)
+            } else {
+                input.values[self.field.key] = .null
+            }
+        case .null:
+            input.values[self.field.key] = .null
         default:
-            input.values[self.field.key] = self.field.inputValue
+            fatalError("Unsupported timestamp input: \(inputValue)")
         }
     }
 
     public func output(from output: DatabaseOutput) throws {
         self.field.inputValue = nil
-        guard output.contains(self.field.key) else { return }
-
+        guard output.contains(self.field.key) else {
+            return
+        }
         do {
             let date = try self.formatter.decode(at: self.field.key, from: output)
             self.field.outputValue = date
@@ -103,7 +119,7 @@ extension TimestampProperty: AnyProperty {
 
 extension TimestampProperty: AnyTimestamp { }
 
-protocol AnyTimestamp: AnyProperty {
+protocol AnyTimestamp: AnyField {
     var formatter: AnyTimestampFormatter { get }
     var trigger: TimestampTrigger { get }
     func touch(date: Date?)
@@ -148,7 +164,7 @@ extension Schema {
 
         let date = timestamp.formatter.anyTimestamp(from: Date()) ?? Optional<Date>.none
         let deletedAtField = DatabaseQuery.Field.path(
-            timestamp.path,
+            [timestamp.key],
             schema: self.schemaOrAlias
         )
         let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
@@ -190,8 +206,12 @@ extension TimestampFormatter {
 
 
     public func decode(at key: FieldKey, from output: DatabaseOutput) throws -> Date? {
-        let timestamp = try output.decode(key, as: Timestamp?.self)
-        return timestamp.flatMap(self.date(from:))
+        if try output.decodeNil(key) {
+            return nil
+        } else {
+            let timestamp = try output.decode(key, as: Timestamp.self)
+            return self.date(from: timestamp)
+        }
     }
 }
 

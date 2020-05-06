@@ -76,8 +76,16 @@ public struct DummyRow: DatabaseOutput {
     public func schema(_ schema: String) -> DatabaseOutput {
         self
     }
+
+    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        self
+    }
+
+    public func decodeNil(_ key: FieldKey) throws -> Bool {
+        false
+    }
     
-    public func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    public func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
     {
         if T.self is UUID.Type {
@@ -87,7 +95,7 @@ public struct DummyRow: DatabaseOutput {
         }
     }
 
-    public func contains(_ path: [FieldKey]) -> Bool {
+    public func contains(_ key: FieldKey) -> Bool {
         return true
     }
     

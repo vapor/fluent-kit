@@ -27,17 +27,12 @@ public struct SQLQueryConverter {
     
     private func update(_ query: DatabaseQuery) -> SQLExpression {
         var update = SQLUpdate(table: SQLIdentifier(query.schema))
-        guard case .dictionary(let nested) = query.input.first! else {
+        guard case .dictionary(let values) = query.input.first! else {
             fatalError()
         }
-        var keysAndValues: [[FieldKey]: DatabaseQuery.Value] = [:]
-        nested.forEach { (key, value) in
-            self.accumlateKeysAndValues(value, path: [key], keysAndValues: &keysAndValues)
-        }
-
-        keysAndValues.forEach { (path, value) in
+        values.forEach { (key, value) in
             update.values.append(SQLBinaryExpression(
-                left: SQLColumn(self.path(path)),
+                left: SQLColumn(self.key(key)),
                 op: SQLBinaryOperator.equal,
                 right: self.value(value)
             ))
@@ -57,9 +52,26 @@ public struct SQLQueryConverter {
                 case .custom(let any):
                     return custom(any)
                 case .path(let path, let schema):
+                    let field: SQLExpression
+                    let key: FieldKey
+
+                    // determine field type based on count
+                    switch path.count {
+                    case 1:
+                        key = path[0]
+                        field = SQLColumn(self.key(key), table: schema)
+                    case 2...:
+                        key = path[0]
+                        field = self.delegate.nestedFieldExpression(
+                            self.key(key),
+                            path[1...].map(self.key)
+                        )
+                    default:
+                        fatalError("Field path must not be empty.")
+                    }
                     return SQLAlias(
-                        SQLColumn(self.path(path), table: schema),
-                        as: SQLIdentifier(schema + "_" + self.path(path))
+                        field,
+                        as: SQLIdentifier(schema + "_" + self.key(key))
                     )
                 }
             }
@@ -88,64 +100,26 @@ public struct SQLQueryConverter {
         }
         return select
     }
-
-    private func accumlateKeysAndValues(
-        _ value: DatabaseQuery.Value,
-        path: [FieldKey],
-        keysAndValues: inout [[FieldKey]: DatabaseQuery.Value]
-    ) {
-        switch value {
-        case .dictionary(let nested):
-            nested.forEach { (key, value) in
-                self.accumlateKeysAndValues(value, path: path + [key], keysAndValues: &keysAndValues)
-            }
-        default:
-            keysAndValues[path] = value
-        }
-    }
-
-    private func accumlateKeys(
-        _ value: DatabaseQuery.Value,
-        path: [FieldKey],
-        fields: inout [[FieldKey]]
-    ) {
-        switch value {
-        case .dictionary(let nested):
-            nested.forEach { (key, value) in
-                self.accumlateKeys(value, path: path + [key], fields: &fields)
-            }
-        default:
-            fields.append(path)
-        }
-    }
-
-    private func fetch(path: [FieldKey], from value: DatabaseQuery.Value) -> DatabaseQuery.Value {
-        switch value {
-        case .dictionary(let dictionary):
-            return self.fetch(path: Array(path[1...]), from: dictionary[path[0]]!)
-        default:
-            assert(path.count == 0)
-            return value
-        }
-    }
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
         var insert = SQLInsert(table: SQLIdentifier(query.schema))
-
-        guard case .dictionary(let nested) = query.input.first! else {
-            fatalError()
+        guard case .dictionary(let first) = query.input.first! else {
+            fatalError("Unexpected query input: \(query.input)")
         }
-        var fields: [[FieldKey]] = []
-        nested.forEach { (key, value) in
-            self.accumlateKeys(value, path: [key], fields: &fields)
-        }
-        insert.columns = fields.map { path in
-            SQLColumn(self.path(path))
+        let keys: [FieldKey] = Array(first.keys)
+        insert.columns = keys.map { key in
+            SQLColumn(self.key(key))
         }
         insert.values = query.input.map { value in
-            fields.map { path in
-                self.fetch(path: path, from: value)
-            }.map(self.value)
+            guard case .dictionary(let nested) = value else {
+                fatalError("Unexpected query input: \(value)")
+            }
+            return keys.map { key in
+                guard let value = nested[key] else {
+                    fatalError("Non-uniform query input: \(query.input)")
+                }
+                return self.value(value)
+            }
         }
         return insert
     }
@@ -214,18 +188,20 @@ public struct SQLQueryConverter {
     }
 
     private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
-        self.field(field, ignoreSchema: false)
-    }
-
-    private func field(_ field: DatabaseQuery.Field, ignoreSchema: Bool) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
         case .path(let path, let schema):
-            if ignoreSchema {
-                return SQLIdentifier(self.path(path))
-            } else {
-                return SQLColumn(self.path(path), table: schema)
+            switch path.count {
+            case 1:
+                return SQLColumn(self.key(path[0]), table: schema)
+            case 2...:
+                return self.delegate.nestedFieldExpression(
+                    self.key(path[0]),
+                    path[1...].map(self.key)
+                )
+            default:
+                fatalError("Field path must not be empty.")
             }
         }
     }
@@ -381,10 +357,6 @@ public struct SQLQueryConverter {
         }
     }
 
-    private func path(_ path: [FieldKey]) -> String {
-        path.map(self.key).joined(separator: "_")
-    }
-
     private func key(_ key: FieldKey) -> String {
         switch key {
         case .id:
@@ -393,6 +365,8 @@ public struct SQLQueryConverter {
             return name
         case .aggregate:
             return key.description
+        case .prefix(let prefix, let key):
+            return self.key(prefix) + self.key(key)
         }
     }
 }

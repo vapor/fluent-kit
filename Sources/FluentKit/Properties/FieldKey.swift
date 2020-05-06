@@ -2,6 +2,7 @@ public indirect enum FieldKey {
     case id
     case string(String)
     case aggregate
+    case prefix(FieldKey, FieldKey)
 }
 
 extension FieldKey: ExpressibleByStringLiteral {
@@ -24,6 +25,8 @@ extension FieldKey: CustomStringConvertible {
             return name
         case .aggregate:
             return "aggregate"
+        case .prefix(let prefix, let key):
+            return prefix.description + key.description
         }
     }
 }

@@ -181,11 +181,7 @@ extension SiblingsProperty: PropertyProtocol {
 }
 
 extension SiblingsProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
-
-    public var path: [FieldKey] {
+    public var keys: [FieldKey] {
         []
     }
     

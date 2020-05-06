@@ -67,14 +67,18 @@ extension OptionalEnumProperty: FieldProtocol {
 }
 
 extension OptionalEnumProperty: AnyField {
+    public var key: FieldKey {
+        self.field.key
+    }
+
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
 extension OptionalEnumProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
+    public var keys: [FieldKey] {
+        self.field.keys
     }
 
     public func input(to input: inout DatabaseInput) {

@@ -57,7 +57,7 @@ public final class AliasedField<Alias, Field>
     }
 }
 
-extension AliasedField: PropertyProtocol {
+extension AliasedField: ValueProtocol {
     public typealias Model = Alias
     public typealias Value = Field.Value
 
@@ -71,29 +71,13 @@ extension AliasedField: PropertyProtocol {
     }
 }
 
-extension AliasedField: AnyProperty {
+extension AliasedField: AnyField {
+    public var key: FieldKey {
+        self.field.key
+    }
+
     public var path: [FieldKey] {
         self.field.path
-    }
-
-    public var nested: [AnyProperty] {
-        self.field.nested
-    }
-
-    public func input(to input: inout DatabaseInput) {
-        self.field.input(to: &input)
-    }
-
-    public func output(from output: DatabaseOutput) throws {
-        try self.field.output(from: output)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        try self.field.encode(to: encoder)
-    }
-
-    public func decode(from decoder: Decoder) throws {
-        try self.field.decode(from: decoder)
     }
 }
 

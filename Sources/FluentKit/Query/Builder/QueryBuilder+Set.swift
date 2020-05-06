@@ -31,7 +31,7 @@ extension QueryBuilder {
 
         switch self.query.input[0] {
         case .dictionary(var existing):
-            existing[Model.path(for: field)[0]] = .bind(value)
+            existing[Model()[keyPath: field].key] = .bind(value)
             self.query.input[0] = .dictionary(existing)
         default:
             fatalError()

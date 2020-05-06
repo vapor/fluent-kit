@@ -304,21 +304,10 @@ final class FluentKitTests: XCTestCase {
             print(path)
         }
 
-        func output(_ properties: [AnyProperty], depth: Int = 0) {
-            for property in properties {
-                print(
-                    String(repeating: "  ", count: depth),
-                    property.path,
-                    property
-                )
-                output(property.nested, depth: depth + 1)
-            }
-        }
-        output(User().properties)
-
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
-        XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
+        print(User.path(for: \.$pet.$toy.$type))
+        XCTAssertEqual(User.path(for: \.$pet.$toy.$type).map { $0.description }, ["pet_toy_type"])
 
         do {
             let encoder = JSONEncoder()

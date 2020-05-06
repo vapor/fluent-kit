@@ -98,11 +98,7 @@ extension ChildrenProperty: PropertyProtocol {
 }
 
 extension ChildrenProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
-
-    public var path: [FieldKey] {
+    public var keys: [FieldKey] {
         []
     }
 
@@ -112,7 +108,7 @@ extension ChildrenProperty: AnyProperty {
 
     public func output(from output: DatabaseOutput) throws {
         let key = From()._$id.field.key
-        if output.contains([key]) {
+        if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }

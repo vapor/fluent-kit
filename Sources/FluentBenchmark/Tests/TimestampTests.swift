@@ -1,4 +1,4 @@
-@testable import class FluentKit.QueryBuilder
+import class FluentKit.QueryBuilder
 
 extension FluentBenchmarker {
     public func testTimestamp() throws {

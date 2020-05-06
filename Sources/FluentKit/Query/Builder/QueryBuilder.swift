@@ -220,7 +220,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    internal func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -230,7 +230,7 @@ public final class QueryBuilder<Model>
         if query.fields.isEmpty {
             for model in self.models {
                 query.fields += model.keys.map { path in
-                    .path(path, schema: model.schemaOrAlias)
+                    .path([path], schema: model.schemaOrAlias)
                 }
             }
         }
@@ -296,12 +296,9 @@ public final class QueryBuilder<Model>
 
     private func addTimestamps(triggers: [TimestampTrigger], nested: inout [FieldKey: DatabaseQuery.Value]) {
         let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
-
         for timestamp in timestamps {
-            precondition(timestamp.path.count == 1, "Timestamp updates do not support @Group currently")
-            let path = timestamp.path.first!
-            if nested[path] == nil {
-                nested[timestamp.path.first!] = .bind(Date())
+            if nested[timestamp.key] == nil {
+                nested[timestamp.key] = .bind(Date())
             }
         }
     }

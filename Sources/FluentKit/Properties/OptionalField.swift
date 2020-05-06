@@ -60,15 +60,13 @@ extension OptionalFieldProperty: PropertyProtocol {
 extension OptionalFieldProperty: FieldProtocol { }
 
 extension OptionalFieldProperty: AnyField {
-
+    public var path: [FieldKey] {
+        [self.key]
+    }
 }
 
 extension OptionalFieldProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
-
-    public var path: [FieldKey] {
+    public var keys: [FieldKey] {
         [self.key]
     }
 
@@ -80,7 +78,11 @@ extension OptionalFieldProperty: AnyProperty {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(self.key, as: Value?.self)
+                if try output.decodeNil(self.key) {
+                    self.outputValue = nil
+                } else {
+                    self.outputValue = try output.decode(self.key, as: Value.self)
+                }
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
