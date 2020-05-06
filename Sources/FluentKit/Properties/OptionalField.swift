@@ -40,6 +40,8 @@ extension OptionalFieldProperty: PropertyProtocol {
                     return string as? Value
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
+                case .null:
+                    return nil
                 default:
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
@@ -50,7 +52,7 @@ extension OptionalFieldProperty: PropertyProtocol {
             }
         }
         set {
-            self.inputValue = newValue.map { .bind($0) }
+            self.inputValue = newValue.map { .bind($0) } ?? .null
         }
     }
 }
