@@ -3,6 +3,8 @@ extension Model {
         where To: Model
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class OptionalParentProperty<From, To>
     where From: Model, To: Model
@@ -35,6 +37,8 @@ public final class OptionalParentProperty<From, To>
     }
 }
 
+// MARK: Relation
+
 extension OptionalParentProperty: Relation {
     public var name: String {
         "OptionalParent<\(From.self), \(To.self)>(key: \(self.$id.key))"
@@ -47,24 +51,34 @@ extension OptionalParentProperty: Relation {
     }
 }
 
-extension OptionalParentProperty: PropertyProtocol {
+// MARK: Property
+
+extension OptionalParentProperty: AnyProperty { }
+
+extension OptionalParentProperty: Property {
     public typealias Model = From
     public typealias Value = To
 }
 
-extension OptionalParentProperty: AnyProperty {
+// MARK: Database
+
+extension OptionalParentProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         self.$id.keys
     }
     
-    public func input(to input: inout DatabaseInput) {
-        self.$id.input(to: &input)
+    public func input(to input: DatabaseInput) {
+        self.$id.input(to: input)
     }
 
     public func output(from output: DatabaseOutput) throws {
         try self.$id.output(from: output)
     }
+}
 
+// MARK: Codable
+
+extension OptionalParentProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -77,11 +91,14 @@ extension OptionalParentProperty: AnyProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
+        #warning("TODO: ensure decoding errors are readable")
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
-        // TODO: allow for nested decoding
+        #warning("TODO: allow for nested decoding")
     }
 }
+
+// MARK: Eager Loadable
 
 extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(

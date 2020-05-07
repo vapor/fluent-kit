@@ -3,6 +3,8 @@ extension Fields {
         where Value: Codable
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class OptionalFieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: Codable
@@ -29,7 +31,11 @@ public final class OptionalFieldProperty<Model, Value>
     }
 }
 
-extension OptionalFieldProperty: PropertyProtocol {
+// MARK: Property
+
+extension OptionalFieldProperty: AnyProperty { }
+
+extension OptionalFieldProperty: Property {
     public var value: Value? {
         get {
             if let value = self.inputValue {
@@ -57,21 +63,27 @@ extension OptionalFieldProperty: PropertyProtocol {
     }
 }
 
-extension OptionalFieldProperty: FieldProtocol { }
+// MARK: Queryable
 
-extension OptionalFieldProperty: AnyField {
+extension OptionalFieldProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         [self.key]
     }
 }
 
-extension OptionalFieldProperty: AnyProperty {
+extension OptionalFieldProperty: QueryableProperty { }
+
+// MARK: Database
+
+extension OptionalFieldProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         [self.key]
     }
 
-    public func input(to input: inout DatabaseInput) {
-        input.values[self.key] = self.inputValue
+    public func input(to input: DatabaseInput) {
+        if let inputValue = self.inputValue {
+            input.set(inputValue, at: self.key)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
@@ -92,7 +104,11 @@ extension OptionalFieldProperty: AnyProperty {
             }
         }
     }
+}
 
+// MARK: Codable
+
+extension OptionalFieldProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)

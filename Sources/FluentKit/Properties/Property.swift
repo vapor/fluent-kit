@@ -1,15 +1,15 @@
-public protocol AnyValue: class {
+public protocol AnyProperty: class {
     static var anyValueType: Any.Type { get }
     var anyValue: Any? { get }
 }
 
-public protocol ValueProtocol: AnyValue {
+public protocol Property: AnyProperty {
     associatedtype Model: Fields
     associatedtype Value: Codable
     var value: Value? { get set }
 }
 
-extension AnyValue where Self: ValueProtocol {
+extension AnyProperty where Self: Property {
     public var anyValue: Any? {
         self.value
     }
@@ -19,36 +19,32 @@ extension AnyValue where Self: ValueProtocol {
     }
 }
 
-public protocol AnyProperty: AnyValue {
+public protocol AnyDatabaseProperty: AnyProperty {
     var keys: [FieldKey] { get }
-    func input(to input: inout DatabaseInput)
+    func input(to input: DatabaseInput)
     func output(from output: DatabaseOutput) throws
+}
+
+public protocol AnyCodableProperty: AnyProperty {
     func encode(to encoder: Encoder) throws
     func decode(from decoder: Decoder) throws
 }
 
-public protocol PropertyProtocol: AnyProperty, ValueProtocol { }
-
-public protocol AnyField {
-    var key: FieldKey { get }
+public protocol AnyQueryableProperty: AnyProperty {
     var path: [FieldKey] { get }
 }
 
-extension AnyField {
-    public var path: [FieldKey] {
-        []
-    }
-}
-
-public protocol FieldProtocol: AnyField, ValueProtocol {
-    /// Get the given Value in a form suitable for queries.
-    /// Most values can be bound to queries, but some need
-    /// to be inserted statically.
+public protocol QueryableProperty: AnyQueryableProperty, Property {
     static func queryValue(_ value: Value) -> DatabaseQuery.Value
 }
 
-extension FieldProtocol {
+extension QueryableProperty {
     public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
         .bind(value)
     }
 }
+
+//#warning("TODO: better name? this is a 'top-level' / settable property")
+//public protocol AnyFieldProperty: AnyProperty {
+//    var key: FieldKey { get }
+//}

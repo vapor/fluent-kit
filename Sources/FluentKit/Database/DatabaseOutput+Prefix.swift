@@ -31,7 +31,7 @@ private struct PrefixedOutput: DatabaseOutput {
     }
 
     func key(_ key: FieldKey) -> FieldKey {
-        .prefix(.prefix(self.prefix, .string("_")), key)
+        .prefix(self.prefix, key)
     }
 
     var description: String {

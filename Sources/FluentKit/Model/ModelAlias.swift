@@ -49,7 +49,7 @@ extension ModelAlias {
 }
 
 public final class AliasedField<Alias, Field>
-    where Alias: ModelAlias, Field: FieldProtocol
+    where Alias: ModelAlias, Field: QueryableProperty
 {
     public let field: Field
     init(field: Field) {
@@ -57,7 +57,7 @@ public final class AliasedField<Alias, Field>
     }
 }
 
-extension AliasedField: ValueProtocol {
+extension AliasedField: Property {
     public typealias Model = Alias
     public typealias Value = Field.Value
 
@@ -71,14 +71,8 @@ extension AliasedField: ValueProtocol {
     }
 }
 
-extension AliasedField: AnyField {
-    public var key: FieldKey {
-        self.field.key
-    }
-
+extension AliasedField: QueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
 }
-
-extension AliasedField: FieldProtocol { }

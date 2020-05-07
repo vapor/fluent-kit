@@ -19,17 +19,17 @@ extension Model {
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
         Self.query(on: database)
-            .set(self.input.values)
+            .set(self.collectInput())
             .action(.create)
             .run { promise.succeed($0) }
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
-            var input = self.input
+            var input = self.collectInput()
             if self._$id.generator == .database {
                 let idKey = Self()._$id.key
-                input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input.values))
+            try self.output(from: SavedInput(input))
         }
     }
 
@@ -45,15 +45,15 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(())
         }
         self.touchTimestamps(.update)
-        let input = self.input
+        let input = self.collectInput()
         return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .set(input.values)
+            .set(input)
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(input.values))
+            try self.output(from: SavedInput(input))
         }
     }
 
@@ -105,12 +105,12 @@ extension Model {
         return Self.query(on: database)
             .withDeleted()
             .filter(\._$id == self.id!)
-            .set(self.input.values)
+            .set(self.collectInput())
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(self.input.values))
+            try self.output(from: SavedInput(self.collectInput()))
             self._$id.exists = true
         }
     }
@@ -148,7 +148,7 @@ extension Array where Element: FluentKit.Model {
             $0._$id.generate()
             $0.touchTimestamps(.create, .update)
         }
-        builder.set(self.map { $0.input.values })
+        builder.set(self.map { $0.collectInput() })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { _ in

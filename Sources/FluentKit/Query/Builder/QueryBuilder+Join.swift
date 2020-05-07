@@ -51,9 +51,9 @@ public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
 ) -> JoinFilter<Foreign, Local, ForeignField.Value>
     where
-        ForeignField: FieldProtocol,
+        ForeignField: QueryableProperty,
         ForeignField.Model == Foreign,
-        LocalField: FieldProtocol,
+        LocalField: QueryableProperty,
         LocalField.Model == Local,
         ForeignField.Value == LocalField.Value
 {
@@ -64,9 +64,9 @@ public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
 ) -> JoinFilter<Foreign, Local, ForeignField.Value>
     where
-        ForeignField: FieldProtocol,
+        ForeignField: QueryableProperty,
         ForeignField.Model == Foreign,
-        LocalField: FieldProtocol,
+        LocalField: QueryableProperty,
         LocalField.Model == Local,
         ForeignField.Value == Optional<LocalField.Value>
 {
@@ -78,9 +78,9 @@ public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
 ) -> JoinFilter<Foreign, Local, LocalField.Value>
     where
-        ForeignField: FieldProtocol,
+        ForeignField: QueryableProperty,
         ForeignField.Model == Foreign,
-        LocalField: FieldProtocol,
+        LocalField: QueryableProperty,
         LocalField.Model == Local,
         Optional<ForeignField.Value> == LocalField.Value
 {

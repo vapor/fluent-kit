@@ -296,25 +296,40 @@ final class FluentKitTests: XCTestCase {
             pet: .init(
                 name: "Ziz",
                 type: .cat,
-                toy: .init(name: "Foo", type: .mouse)
+                toy: .init(
+                    name: "Foo",
+                    type: .mouse,
+                    foo: .init(bar: 42, baz: "hello")
+                )
             )
         )
 
-        for path in User.keys {
-            print(path)
-        }
+        // GroupProperty<User, Pet>
+        let a = tanner.$pet
+        print(a)
+
+        // GroupedProperty<User, GroupProperty<Pet, Toy>>
+        let b = tanner.$pet.$toy
+        print(b)
+
+        // GroupedProperty<User, GroupedProperty<Pet, GroupProperty<Toy, Foo>>>
+        let c = tanner.$pet.$toy.$foo
+        print(c)
+
+        // GroupedProperty<User, GroupedProperty<Pet, GroupedProperty<Toy, FieldProperty<Foo, Int>>>>
+        let d = tanner.$pet.$toy.$foo.$bar
+        print(d)
 
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
-        print(User.path(for: \.$pet.$toy.$type))
-        XCTAssertEqual(User.path(for: \.$pet.$toy.$type).map { $0.description }, ["pet_toy_type"])
+        XCTAssertEqual(User.path(for: \.$pet.$toy.$foo.$bar).map { $0.description }, ["pet_toy_foo_bar"])
 
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
             let encoded = try encoder.encode(tanner)
             let result = String(data:encoded, encoding: .utf8)!
-            let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"name":"Foo","type":"mouse"},"type":"cat"}}"#
+            let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"foo":{"bar":42,"baz":"hello"},"name":"Foo","type":"mouse"},"type":"cat"}}"#
             XCTAssertEqual(result, expected)
         }
     }
@@ -331,7 +346,7 @@ final class User: Model {
     @Timestamp(key: "deleted_at", on: .delete)
     var deletedAt: Date?
 
-    @Group(key: "pet", structure: .flat)
+    @Group(key: "pet")
     var pet: Pet
 
     init() { }
@@ -354,7 +369,7 @@ final class Pet: Fields {
     @Field(key: "type")
     var type: Animal
 
-    @Group(key: "toy", structure: .flat)
+    @Group(key: "toy")
     var toy: Toy
 
     init() { }
@@ -377,11 +392,30 @@ final class Toy: Fields {
     @Enum(key: "type")
     var type: ToyType
 
+    @Group(key: "foo")
+    var foo: Foo
+
     init() { }
 
-    init(name: String, type: ToyType) {
+    init(name: String, type: ToyType, foo: Foo) {
         self.name = name
         self.type = type
+        self.foo = foo
+    }
+}
+
+final class Foo: Fields {
+    @Field(key: "bar")
+    var bar: Int
+
+    @Field(key: "baz")
+    var baz: String
+
+    init() { }
+
+    init(bar: Int, baz: String) {
+        self.bar = bar
+        self.baz = baz
     }
 }
 
