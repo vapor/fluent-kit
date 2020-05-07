@@ -289,6 +289,7 @@ public final class QueryBuilder<Model>
             let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
             for timestamp in timestamps {
                 // Only add timestamps if they weren't already set
+                #warning("TODO: merge this with model date touches")
                 if nested[timestamp.key] == nil {
                     nested[timestamp.key] = .bind(Date())
                 }
