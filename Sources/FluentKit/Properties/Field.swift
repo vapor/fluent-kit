@@ -3,6 +3,8 @@ extension Fields {
         where Value: Codable
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class FieldProperty<Model, Value>
     where Model: FluentKit.Fields, Value: Codable
@@ -32,7 +34,17 @@ public final class FieldProperty<Model, Value>
     }
 }
 
-extension FieldProperty: PropertyProtocol {
+extension FieldProperty: CustomStringConvertible {
+    public var description: String {
+        "@\(Model.self).Field<\(Value.self)>(key: \(self.key))"
+    }
+}
+
+// MARK: Property
+
+extension FieldProperty: AnyProperty { }
+
+extension FieldProperty: Property {
     public var value: Value? {
         get {
             if let value = self.inputValue {
@@ -58,24 +70,31 @@ extension FieldProperty: PropertyProtocol {
     }
 }
 
-extension FieldProperty: FieldProtocol { }
-extension FieldProperty: AnyField { }
+// MARK: Queryable
 
-extension FieldProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
-
+extension FieldProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         [self.key]
     }
+}
 
-    public func input(to input: inout DatabaseInput) {
-        input.values[self.key] = self.inputValue
+extension FieldProperty: QueryableProperty { }
+
+// MARK: Database
+
+extension FieldProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        [self.key]
+    }
+
+    public func input(to input: DatabaseInput) {
+        if let inputValue = self.inputValue {
+            input.set(inputValue, at: self.key)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
-        if output.contains([self.key]) {
+        if output.contains(self.key) {
             self.inputValue = nil
             do {
                 self.outputValue = try output.decode(self.key, as: Value.self)
@@ -88,7 +107,11 @@ extension FieldProperty: AnyProperty {
             }
         }
     }
+}
 
+// MARK: Codable
+
+extension FieldProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)

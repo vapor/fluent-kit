@@ -1,5 +1,6 @@
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
+    func nestedFieldExpression(_ column: String, _ path: [String]) -> SQLExpression
 }
 
 public struct SQLSchemaConverter {
@@ -216,6 +217,8 @@ public struct SQLSchemaConverter {
             return name
         case .aggregate:
             return key.description
+        case .prefix(let prefix, let key):
+            return self.key(prefix) + self.key(key)
         }
     }
 }

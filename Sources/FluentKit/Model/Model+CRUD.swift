@@ -19,17 +19,17 @@ extension Model {
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
         Self.query(on: database)
-            .set(self.input.values)
+            .set(self.collectInput())
             .action(.create)
             .run { promise.succeed($0) }
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
-            var input = self.input
+            var input = self.collectInput()
             if self._$id.generator == .database {
                 let idKey = Self()._$id.key
-                input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input.values))
+            try self.output(from: SavedInput(input))
         }
     }
 
@@ -45,15 +45,15 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(())
         }
         self.touchTimestamps(.update)
-        let input = self.input
+        let input = self.collectInput()
         return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .set(input.values)
+            .set(input)
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(input.values))
+            try self.output(from: SavedInput(input))
         }
     }
 
@@ -105,12 +105,12 @@ extension Model {
         return Self.query(on: database)
             .withDeleted()
             .filter(\._$id == self.id!)
-            .set(self.input.values)
+            .set(self.collectInput())
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(self.input.values))
+            try self.output(from: SavedInput(self.collectInput()))
             self._$id.exists = true
         }
     }
@@ -148,7 +148,7 @@ extension Array where Element: FluentKit.Model {
             $0._$id.generate()
             $0.touchTimestamps(.create, .update)
         }
-        builder.set(self.map { $0.input.values })
+        builder.set(self.map { $0.collectInput() })
         builder.query.action = .create
         var it = self.makeIterator()
         return builder.run { _ in
@@ -172,31 +172,45 @@ private struct SavedInput: DatabaseOutput {
         return self
     }
     
-    func contains(_ path: [FieldKey]) -> Bool {
-        get(path: path, from: .dictionary(self.input)) != nil
+    func contains(_ key: FieldKey) -> Bool {
+        self.input[key] != nil
+    }
+
+    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        guard let data = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        guard case .dictionary(let nested) = data else {
+            fatalError("Unexpected input: \(data).")
+        }
+        return SavedInput(nested)
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        guard let value = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        switch value {
+        case .null:
+            return true
+        default:
+            return false
+        }
     }
     
-    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T : Decodable
     {
-        if let value = get(path: path, from: .dictionary(self.input)) {
-            // not in output, get from saved input
-            switch value {
-            case .bind(let encodable):
-                return encodable as! T
-            case .enumCase(let string):
-                return string as! T
-            case .null:
-                if let optionalType = T.self as? AnyOptionalType.Type {
-                    return optionalType.nil as! T
-                } else {
-                    fatalError("Null value for non-optional type: \(T.self)")
-                }
-            default:
-                fatalError("Invalid input type: \(value)")
-            }
-        } else {
-            throw FluentError.missingField(name: path.description)
+        guard let value = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        switch value {
+        case .bind(let encodable):
+            return encodable as! T
+        case .enumCase(let string):
+            return string as! T
+        default:
+            fatalError("Invalid input type: \(value)")
         }
     }
 
