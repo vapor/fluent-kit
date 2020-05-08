@@ -38,6 +38,12 @@ public final class ParentProperty<From, To>
     }
 }
 
+extension ParentProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
+    }
+}
+
 // MARK: Relation
 
 extension ParentProperty: Relation {

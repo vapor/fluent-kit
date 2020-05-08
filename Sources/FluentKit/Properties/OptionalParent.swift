@@ -14,7 +14,7 @@ public final class OptionalParentProperty<From, To>
 
     public var wrappedValue: To? {
         get {
-            self.value
+            self.value ?? nil
         }
         set {
             fatalError("OptionalParent relation is get-only.")
@@ -25,7 +25,7 @@ public final class OptionalParentProperty<From, To>
         return self
     }
 
-    public var value: To?
+    public var value: To??
 
     public init(key: FieldKey) {
         self._id = .init(key: key)
@@ -34,6 +34,12 @@ public final class OptionalParentProperty<From, To>
     public func query(on database: Database) -> QueryBuilder<To> {
         To.query(on: database)
             .filter(\._$id == self.id!)
+    }
+}
+
+extension OptionalParentProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
     }
 }
 
@@ -57,7 +63,7 @@ extension OptionalParentProperty: AnyProperty { }
 
 extension OptionalParentProperty: Property {
     public typealias Model = From
-    public typealias Value = To
+    public typealias Value = To?
 }
 
 // MARK: Database
@@ -146,9 +152,9 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
             .map
         {
             for model in models {
-                model[keyPath: self.relationKey].value = $0.filter {
+                model[keyPath: self.relationKey].value = .some($0.filter {
                     $0.id == model[keyPath: self.relationKey].id
-                }.first
+                }.first)
             }
         }
     }
@@ -161,7 +167,7 @@ private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoa
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs = models.map {
+        let throughs = models.compactMap {
             $0[keyPath: self.relationKey].value!
         }
         return self.loader.run(models: throughs, on: database)

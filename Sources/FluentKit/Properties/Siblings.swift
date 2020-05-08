@@ -177,6 +177,12 @@ public final class SiblingsProperty<From, To, Through>
     }
 }
 
+extension SiblingsProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
+    }
+}
+
 // MARK: Property
 
 extension SiblingsProperty: AnyProperty { }

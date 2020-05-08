@@ -19,10 +19,6 @@ public final class ChildrenProperty<From, To>
 
     public var value: [To]?
 
-    public var description: String {
-        self.idValue.debugDescription
-    }
-
     public init(for parent: KeyPath<To, To.Parent<From>>) {
         self.parentKey = .required(parent)
     }
@@ -91,6 +87,12 @@ public final class ChildrenProperty<From, To>
             to[keyPath: keyPath].id = id
         }
         return to.create(on: database)
+    }
+}
+
+extension ChildrenProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
     }
 }
 
