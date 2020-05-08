@@ -1,5 +1,10 @@
 extension FluentBenchmarker {
     public func testTransaction() throws {
+        try self.testTransaction_basic()
+        try self.testTransaction_in()
+    }
+
+    private func testTransaction_basic() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
@@ -37,6 +42,20 @@ extension FluentBenchmarker {
                 .first()
                 .wait()
             XCTAssertNil(pluto)
+        }
+    }
+
+    private func testTransaction_in() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try self.database.transaction { transaction in
+                XCTAssertEqual(transaction.inTransaction, true)
+                return transaction.transaction { nested in
+                    XCTAssertEqual(nested.inTransaction, true)
+                    return nested.eventLoop.makeSucceededFuture(())
+                }
+            }.wait()
         }
     }
 }
