@@ -55,6 +55,13 @@ extension FluentBenchmarker {
                 return
             }
 
+            // test find + update with nil value works
+            guard let found = try Foo.find(foo.id, on: self.database).wait() else {
+                XCTFail("unexpected nil value")
+                return
+            }
+            try found.update(on: self.database).wait()
+
             let all = try Foo.query(on: self.database)
                 .filter(\.$bar == nil)
                 .all().wait()
@@ -90,6 +97,13 @@ extension FluentBenchmarker {
                 XCTFail("unexpected non-nil value")
                 return
             }
+
+            // test find + update with nil value works
+            guard let found = try Foo_2.find(foo.id, on: self.database).wait() else {
+                XCTFail("unexpected nil value")
+                return
+            }
+            try found.update(on: self.database).wait()
 
             let all = try Foo_2.query(on: self.database)
                 .filter(\.$bar == nil)
