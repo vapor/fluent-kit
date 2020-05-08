@@ -94,7 +94,6 @@ extension OptionalParentProperty: AnyCodableProperty {
         #warning("TODO: ensure decoding errors are readable")
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
-        #warning("TODO: allow for nested decoding")
     }
 }
 

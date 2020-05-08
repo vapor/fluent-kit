@@ -131,7 +131,36 @@ extension Model {
     }
 }
 
-extension Array where Element: FluentKit.Model {
+extension Collection where Element: FluentKit.Model {
+    public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
+        guard self.count > 0 else {
+            // Is it valid to try to create zero models? For now we call it
+            // successful without doing anything.
+            return database.eventLoop.makeSucceededFuture(())
+        }
+
+        let query = Element.query(on: database)
+        if force {
+            _ = query.withDeleted()
+        }
+        query.shouldForceDelete = force
+
+        return query
+            .filter(\._$id ~~ self.map { $0.id! })
+            .action(.delete)
+            .run()
+            .map
+        {
+            if force {
+                self.forEach {
+                    if $0.deletedTimestamp == nil {
+                        $0._$id.exists = false
+                    }
+                }
+            }
+        }
+    }
+
     public func create(on database: Database) -> EventLoopFuture<Void> {
         guard self.count > 0 else {
             // Is it valid to try to create zero models? For now we call it
@@ -216,25 +245,5 @@ private struct SavedInput: DatabaseOutput {
 
     var description: String {
         return self.input.description
-    }
-}
-
-private func get(path: [FieldKey], from input: DatabaseQuery.Value) -> DatabaseQuery.Value? {
-    switch path.count {
-    case 0:
-        return input
-    default:
-        switch input {
-        case .dictionary(let nested):
-            if let next = nested[path[0]] {
-                return get(path: .init(path[1...]), from: next)
-            } else {
-                // key not found.
-                return nil
-            }
-        default:
-            // not at end of key path
-            return nil
-        }
     }
 }
