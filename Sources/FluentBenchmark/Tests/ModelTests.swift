@@ -55,6 +55,11 @@ extension FluentBenchmarker {
                 return
             }
 
+            let all = try Foo.query(on: self.database)
+                .filter(\.$bar == nil)
+                .all().wait()
+            XCTAssertEqual(all.count, 1)
+
             guard let fetched = try Foo.query(on: self.database)
                 .filter(\.$id == foo.id!)
                 .first().wait()
@@ -85,6 +90,11 @@ extension FluentBenchmarker {
                 XCTFail("unexpected non-nil value")
                 return
             }
+
+            let all = try Foo_2.query(on: self.database)
+                .filter(\.$bar == nil)
+                .all().wait()
+            XCTAssertEqual(all.count, 1)
 
             guard let fetched = try Foo_2.query(on: self.database)
                 .filter(\.$id == foo.id!)

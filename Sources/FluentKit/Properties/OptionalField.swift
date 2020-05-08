@@ -6,20 +6,23 @@ extension Fields {
 // MARK: Type
 
 @propertyWrapper
-public final class OptionalFieldProperty<Model, Value>
-    where Model: FluentKit.Fields, Value: Codable
+public final class OptionalFieldProperty<Model, WrappedValue>
+    where Model: FluentKit.Fields, WrappedValue: Codable
 {
     public let key: FieldKey
-    var outputValue: Value?
+    var outputValue: WrappedValue??
     var inputValue: DatabaseQuery.Value?
 
-    public var projectedValue: OptionalFieldProperty<Model, Value> {
+    public var projectedValue: OptionalFieldProperty<Model, WrappedValue> {
         self
     }
 
-    public var wrappedValue: Value? {
+    public var wrappedValue: WrappedValue? {
         get {
-            self.value
+            guard let value = self.value else {
+                fatalError("Cannot access @OptionalField before it is initialized or fetched: \(self.key)")
+            }
+            return value
         }
         set {
             self.value = newValue
@@ -36,14 +39,14 @@ public final class OptionalFieldProperty<Model, Value>
 extension OptionalFieldProperty: AnyProperty { }
 
 extension OptionalFieldProperty: Property {
-    public var value: Value? {
+    public var value: WrappedValue?? {
         get {
             if let value = self.inputValue {
                 switch value {
                 case .bind(let bind):
-                    return bind as? Value
+                    return .some(bind as? WrappedValue)
                 case .enumCase(let string):
-                    return string as? Value
+                    return .some(string as? WrappedValue)
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 case .null:
@@ -52,9 +55,9 @@ extension OptionalFieldProperty: Property {
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
-                return value
+                return .some(value)
             } else {
-                return nil
+                return .none
             }
         }
         set {
@@ -91,9 +94,9 @@ extension OptionalFieldProperty: AnyDatabaseProperty {
             self.inputValue = nil
             do {
                 if try output.decodeNil(self.key) {
-                    self.outputValue = nil
+                    self.outputValue = .some(nil)
                 } else {
-                    self.outputValue = try output.decode(self.key, as: Value.self)
+                    self.outputValue = try .some(output.decode(self.key, as: Value.self))
                 }
             } catch {
                 throw FluentError.invalidField(

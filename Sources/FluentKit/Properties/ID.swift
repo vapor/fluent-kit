@@ -49,10 +49,10 @@ public final class IDProperty<Model, Value>
     
     public var wrappedValue: Value? {
         get {
-            return self.field.value
+            return self.value
         }
         set {
-            self.field.value = newValue
+            self.value = newValue
         }
     }
 
@@ -126,7 +126,7 @@ extension IDProperty: AnyProperty { }
 extension IDProperty: Property {
     public var value: Value? {
         get {
-            return self.field.value
+            return self.field.value ?? nil
         }
         set {
             self.field.value = newValue
