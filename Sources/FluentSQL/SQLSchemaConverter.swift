@@ -64,28 +64,33 @@ public struct SQLSchemaConverter {
         }
 
         switch constraint {
-        case .unique(let fields):
-            let name = identifier(fields)
-            return SQLConstraint(
-                algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                name: SQLIdentifier("uq:\(name)")
-            )
-        case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
-            let name = identifier(local + foreign)
-            let reference = SQLForeignKey(
-                table: self.name(schema),
-                columns: foreign.map(self.fieldName),
-                onDelete: self.foreignKeyAction(onDelete),
-                onUpdate: self.foreignKeyAction(onUpdate)
-            )
+        case .constraint(let constraint, let customName):
+            switch constraint {
+            case .unique(let fields):
+                let name = customName ?? identifier(fields)
+                return SQLConstraint(
+                    algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
+                    name: SQLIdentifier("uq:\(name)")
+                )
+            case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
+                let name = customName ?? identifier(local + foreign)
+                let reference = SQLForeignKey(
+                    table: self.name(schema),
+                    columns: foreign.map(self.fieldName),
+                    onDelete: self.foreignKeyAction(onDelete),
+                    onUpdate: self.foreignKeyAction(onUpdate)
+                )
 
-            return SQLConstraint(
-                algorithm: SQLTableConstraintAlgorithm.foreignKey(
-                    columns: local.map(self.fieldName),
-                    references: reference
-                ),
-                name: SQLIdentifier("fk:\(name)")
-            )
+                return SQLConstraint(
+                    algorithm: SQLTableConstraintAlgorithm.foreignKey(
+                        columns: local.map(self.fieldName),
+                        references: reference
+                    ),
+                    name: SQLIdentifier("fk:\(name)")
+                )
+            case .custom(let any):
+                return custom(any)
+            }
         case .custom(let any):
             return custom(any)
         }

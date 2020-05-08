@@ -54,7 +54,7 @@ public struct DatabaseSchema {
         case array(of: DataType)
         case custom(Any)
     }
-    
+
     public enum FieldConstraint {
         public static func references(
             _ schema: String,
@@ -80,8 +80,13 @@ public struct DatabaseSchema {
         )
         case custom(Any)
     }
-    
+
     public enum Constraint {
+        case constraint(ConstraintAlgorithm, name: String?)
+        case custom(Any)
+    }
+    
+    public enum ConstraintAlgorithm {
         case unique(fields: [FieldName])
         case foreignKey(
             _ fields: [FieldName],
