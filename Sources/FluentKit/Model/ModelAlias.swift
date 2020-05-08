@@ -48,12 +48,19 @@ extension ModelAlias {
     }
 }
 
+@dynamicMemberLookup
 public final class AliasedField<Alias, Field>
-    where Alias: ModelAlias, Field: QueryableProperty
+    where Alias: ModelAlias, Field: Property
 {
     public let field: Field
     init(field: Field) {
         self.field = field
+    }
+
+    public subscript<Nested>(
+        dynamicMember keyPath: KeyPath<Field, Nested>
+    ) -> AliasedField<Alias, Nested> {
+        .init(field: self.field[keyPath: keyPath])
     }
 }
 
@@ -71,8 +78,10 @@ extension AliasedField: Property {
     }
 }
 
-extension AliasedField: QueryableProperty {
+extension AliasedField: AnyQueryableProperty where Field: AnyQueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
 }
+
+extension AliasedField: QueryableProperty where Field: QueryableProperty { }
