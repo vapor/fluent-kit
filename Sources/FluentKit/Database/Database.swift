@@ -22,10 +22,6 @@ public protocol Database {
 }
 
 extension Database {
-    public var inTransaction: Bool {
-        false
-    }
-
     public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
         where Model: FluentKit.Model
     {

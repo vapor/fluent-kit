@@ -19,13 +19,10 @@ public final class OptionalFieldProperty<Model, WrappedValue>
 
     public var wrappedValue: WrappedValue? {
         get {
-            guard let value = self.value else {
-                fatalError("Cannot access @OptionalField before it is initialized or fetched: \(self.key)")
-            }
-            return value
+            self.value ?? nil
         }
         set {
-            self.value = newValue
+            self.value = .some(newValue)
         }
     }
 
@@ -61,7 +58,12 @@ extension OptionalFieldProperty: Property {
             }
         }
         set {
-            self.inputValue = newValue.map { .bind($0) } ?? .null
+
+            if let value = newValue {
+                self.inputValue = value.flatMap { .bind($0) } ?? .null
+            } else {
+                self.inputValue = nil
+            }
         }
     }
 }

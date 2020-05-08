@@ -22,13 +22,10 @@ public final class OptionalEnumProperty<Model, WrappedValue>
 
     public var wrappedValue: WrappedValue? {
         get {
-            guard let value = self.value else {
-                fatalError("Cannot access @OptionalEnum before it is initialized or fetched: \(self.field.key)")
-            }
-            return value
+            self.value ?? nil
         }
         set {
-            self.value = newValue
+            self.value = .some(newValue)
         }
     }
 

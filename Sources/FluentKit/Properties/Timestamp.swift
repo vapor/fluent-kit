@@ -29,10 +29,10 @@ public final class TimestampProperty<Model, Format>
 
     public var wrappedValue: Date? {
         get {
-            self.value
+            self.value ?? nil
         }
         set {
-            self.value = newValue
+            self.value = .some(newValue)
         }
     }
 
@@ -72,15 +72,15 @@ extension TimestampProperty: CustomStringConvertible {
 extension TimestampProperty: AnyProperty { }
 
 extension TimestampProperty: Property {
-    public var value: Date? {
+    public var value: Date?? {
         get {
-            self.timestamp.flatMap {
-                self.format.parse($0)
+            self.$timestamp.value.flatMap {
+                .some($0.flatMap { self.format.parse($0) })
             }
         }
         set {
-            self.timestamp = newValue.flatMap {
-                self.format.serialize($0)
+            self.$timestamp.value = newValue.flatMap {
+                .some($0.flatMap { self.format.serialize($0) })
             }
         }
     }

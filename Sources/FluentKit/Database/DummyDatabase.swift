@@ -10,6 +10,10 @@ public struct DummyDatabase: Database {
             eventLoop: EmbeddedEventLoop()
         )
     }
+
+    public var inTransaction: Bool {
+        false
+    }
     
     public func execute(query: DatabaseQuery, onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         for _ in 0..<Int.random(in: 1..<42) {
