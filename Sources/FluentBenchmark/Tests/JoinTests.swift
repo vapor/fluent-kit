@@ -137,6 +137,14 @@ extension FluentBenchmarker {
             XCTAssertEqual(averageSchools.count, 1)
         }
     }
+
+
+    private func testJoin_fieldOrdering() throws {
+        _ = School.query(on: self.database)
+            .join(City.self, on: \School.$city.$id == \City.$id)
+        _ = School.query(on: self.database)
+            .join(City.self, on: \City.$id == \School.$city.$id)
+    }
 }
 
 private final class Team: Model {
