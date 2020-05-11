@@ -221,10 +221,7 @@ public struct Migrator {
     }
 
     private func run(on database: DatabaseID? = nil, _ query: @escaping (DatabaseID?) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
-        if let id = database {
-            return query(id)
-        }
-
+        if let id = database { return query(id) }
 
         let queries = self.migrations.databases.map(query)
         return EventLoopFuture<Void>.whenAllSucceed([query(nil)] + queries, on: self.eventLoop).map { _ in () }
