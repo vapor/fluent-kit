@@ -95,9 +95,7 @@ public struct Migrator {
 
             return self.unpreparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
-            }.flatMapErrorThrowing { error in
-                failed = error
-            }
+            }.recover { failed = $0 }
         }.flatMapThrowing {
             if let error = failed { throw error }
             return batch
@@ -115,9 +113,7 @@ public struct Migrator {
                 self.preparedMigrations(batch: lastBatch, on: database)
             }.map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
-            }.flatMapErrorThrowing { error in
-                failed = error
-            }
+            }.recover { failed = $0 }
         }.flatMapThrowing {
             if let error = failed { throw error }
             return batch
@@ -133,9 +129,7 @@ public struct Migrator {
 
             return self.preparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
-            }.flatMapErrorThrowing { error in
-                failed = error
-            }
+            }.recover { failed = $0 }
         }.flatMapThrowing {
             if let error = failed { throw error }
             return batch
@@ -151,9 +145,7 @@ public struct Migrator {
 
             return self.preparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
-            }.flatMapErrorThrowing { error in
-                failed = error
-            }
+            }.recover { failed = $0 }
         }.flatMapThrowing {
             if let error = failed { throw error }
             return batch
