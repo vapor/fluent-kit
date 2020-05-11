@@ -5,7 +5,7 @@ public final class Migrations {
     }
     
     var storage: [Item]
-    var databases: [DatabaseID]
+    var databases: Set<DatabaseID>
     
     public init() {
         self.storage = []
@@ -14,6 +14,6 @@ public final class Migrations {
     
     public func add(_ migration: Migration, to id: DatabaseID? = nil) {
         self.storage.append(.init(id: id, migration: migration))
-        if let id = id { self.databases.append(id) }
+        if let id = id { self.databases.insert(id) }
     }
 }
