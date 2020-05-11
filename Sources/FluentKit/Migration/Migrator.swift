@@ -91,7 +91,9 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            self.unpreparedMigrations(on: database).map { items in
+            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+
+            return self.unpreparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
             }.flatMapErrorThrowing { error in
                 failed = error
@@ -107,7 +109,9 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            self.lastBatchNumber(on: database).flatMap { lastBatch in
+            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+
+            return self.lastBatchNumber(on: database).flatMap { lastBatch in
                 self.preparedMigrations(batch: lastBatch, on: database)
             }.map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
@@ -125,7 +129,9 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            self.preparedMigrations(on: database).map { items in
+            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+
+            return self.preparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
             }.flatMapErrorThrowing { error in
                 failed = error
@@ -141,7 +147,9 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            self.preparedMigrations(on: database).map { items in
+            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+
+            return self.preparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
             }.flatMapErrorThrowing { error in
                 failed = error
@@ -239,7 +247,7 @@ extension EventLoopFuture {
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
         let promise = eventLoop.makePromise(of: Void.self)
-        
+
         var iterator = futures.makeIterator()
         func handle(_ future: () -> EventLoopFuture<Void>) {
             future().whenComplete { res in
