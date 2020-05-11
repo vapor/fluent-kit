@@ -205,7 +205,7 @@ public struct Migrator {
             .map
         { logs -> [Migrations.Item] in
             return self.migrations.storage.compactMap { item in
-                if item.id == databaseID && logs.filter({ $0.name == item.migration.name }).count == 0 {
+                if item.id == databaseID && !logs.contains(where: { $0.name == item.migration.name }) {
                     return item
                 } else {
                     // log found, this has been prepared
