@@ -233,11 +233,9 @@ public struct Migrator {
             return query(id)
         }
 
-        let queries = self.migrations.databases.map { id -> () -> EventLoopFuture<Void> in
-            return { query(id) }
-        }
 
-        return EventLoopFuture<Void>.andAllSync([{ query(nil) }] + queries, on: self.eventLoop)
+        let queries = self.migrations.databases.map(query)
+        return EventLoopFuture<Void>.whenAllSucceed([query(nil)] + queries, on: self.eventLoop).map { _ in () }
     }
 }
 
