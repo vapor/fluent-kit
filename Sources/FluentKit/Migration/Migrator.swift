@@ -228,7 +228,7 @@ public struct Migrator {
         self.databaseFactory(id)
     }
 
-    private func run(on database: DatabaseID? = nil, _ query: @escaping (DatabaseID) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+    private func run(on database: DatabaseID? = nil, _ query: @escaping (DatabaseID?) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
         if let id = database {
             return query(id)
         }
@@ -237,7 +237,7 @@ public struct Migrator {
             return { query(id) }
         }
 
-        return EventLoopFuture<Void>.andAllSync(queries, on: self.eventLoop)
+        return EventLoopFuture<Void>.andAllSync([{ query(nil) }] + queries, on: self.eventLoop)
     }
 }
 
