@@ -109,7 +109,7 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+            guard failed == nil else { return self.eventLoop.makeSucceededFuture(()) }
 
             return self.lastBatchNumber(on: database).flatMap { lastBatch in
                 self.preparedMigrations(batch: lastBatch, on: database)
@@ -129,7 +129,7 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+            guard failed == nil else { return self.eventLoop.makeSucceededFuture(()) }
 
             return self.preparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
@@ -147,7 +147,7 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+            guard failed == nil else { return self.eventLoop.makeSucceededFuture(()) }
 
             return self.preparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
