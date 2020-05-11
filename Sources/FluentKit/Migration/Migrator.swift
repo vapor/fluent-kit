@@ -33,82 +33,122 @@ public struct Migrator {
     
     // MARK: Setup
     
-    public func setupIfNeeded(on databaseID: DatabaseID? = nil) -> EventLoopFuture<Void> {
-        MigrationLog.migration.prepare(on: self.database(databaseID))
+    public func setupIfNeeded(on database: DatabaseID? = nil) -> EventLoopFuture<Void> {
+        self.run(on: database, MigrationLog.migration.prepare(on:))
     }
     
     // MARK: Prepare
     
     public func prepareBatch(on databaseID: DatabaseID? = nil) -> EventLoopFuture<Void> {
-        self.unpreparedMigrations(on: databaseID).flatMap { migrations in
-            self.lastBatchNumber(on: databaseID)
-                .and(value: migrations)
-        }.flatMap { (lastBatch, migrations) in
-            .andAllSync(migrations.map { item in
-                { self.prepare(item, batch: lastBatch + 1) }
-            }, on: self.eventLoop)
+        self.run(on: databaseID) { database in
+            self.unpreparedMigrations(on: database).flatMap { migrations in
+                self.lastBatchNumber(on: database)
+                    .and(value: migrations)
+            }.flatMap { (lastBatch, migrations) in
+                .andAllSync(migrations.map { item in
+                    { self.prepare(item, batch: lastBatch + 1) }
+                }, on: self.eventLoop)
+            }
         }
     }
     
     // MARK: Revert
     
     public func revertLastBatch(on databaseID: DatabaseID? = nil) -> EventLoopFuture<Void> {
-        self.lastBatchNumber(on: databaseID).flatMap {
-            self.revertBatch(number: $0, on: databaseID)
+        self.run(on: databaseID) { database in
+            self.lastBatchNumber(on: database).flatMap {
+                self.revertBatch(number: $0, on: database)
+            }
         }
     }
     
     public func revertBatch(number: Int, on databaseID: DatabaseID? = nil) -> EventLoopFuture<Void> {
-        self.preparedMigrations(batch: number, on: databaseID).flatMap { migrations in
-            EventLoopFuture<Void>.andAllSync(migrations.map { item in
-                { self.revert(item) }
-            }, on: self.eventLoop)
+        self.run(on: databaseID) { database in
+            self.preparedMigrations(batch: number, on: database).flatMap { migrations in
+                EventLoopFuture<Void>.andAllSync(migrations.map { item in
+                    { self.revert(item) }
+                }, on: self.eventLoop)
+            }
         }
     }
     
     public func revertAllBatches(on databaseID: DatabaseID? = nil) -> EventLoopFuture<Void> {
-        self.preparedMigrations(on: databaseID).flatMap { migrations in
-            .andAllSync(migrations.map { item in
-                { self.revert(item) }
-            }, on: self.eventLoop)
-        }.flatMap { _ in
-            self.revertMigrationLog(on: databaseID)
+        self.run(on: databaseID) { database in
+            self.preparedMigrations(on: database).flatMap { migrations in
+                .andAllSync(migrations.map { item in
+                    { self.revert(item) }
+                }, on: self.eventLoop)
+            }.flatMap { _ in
+                self.revertMigrationLog(on: database)
+            }
         }
     }
     
     // MARK: Preview
     
     public func previewPrepareBatch(on databaseID: DatabaseID? = nil) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.unpreparedMigrations(on: databaseID).map { items in
-            items.map { item  in
-                (item.migration, item.id)
+        var batch: [(Migration, DatabaseID?)] = []
+        var failed: Error? = nil
+
+        return self.run(on: databaseID) { database in
+            self.unpreparedMigrations(on: database).map { items in
+                batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
+            }.flatMapErrorThrowing { error in
+                failed = error
             }
+        }.flatMapThrowing {
+            if let error = failed { throw error }
+            return batch
         }
     }
     
     public func previewRevertLastBatch(on databaseID: DatabaseID? = nil) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.lastBatchNumber(on: databaseID).flatMap { lastBatch in
-            self.preparedMigrations(batch: lastBatch, on: databaseID)
-        }.map { items in
-            items.map { item in
-                (item.migration, item.id)
+        var batch: [(Migration, DatabaseID?)] = []
+        var failed: Error? = nil
+
+        return self.run(on: databaseID) { database in
+            self.lastBatchNumber(on: database).flatMap { lastBatch in
+                self.preparedMigrations(batch: lastBatch, on: database)
+            }.map { items in
+                batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
+            }.flatMapErrorThrowing { error in
+                failed = error
             }
+        }.flatMapThrowing {
+            if let error = failed { throw error }
+            return batch
         }
     }
     
     public func previewRevertBatch(number: Int, on databaseID: DatabaseID? = nil) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.preparedMigrations(batch: number, on: databaseID).map { items -> [(Migration, DatabaseID?)] in
-            items.map { item -> (Migration, DatabaseID?) in
-                return (item.migration, item.id)
+        var batch: [(Migration, DatabaseID?)] = []
+        var failed: Error? = nil
+
+        return self.run(on: databaseID) { database in
+            self.preparedMigrations(on: database).map { items in
+                batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
+            }.flatMapErrorThrowing { error in
+                failed = error
             }
+        }.flatMapThrowing {
+            if let error = failed { throw error }
+            return batch
         }
     }
     
     public func previewRevertAllBatches(on databaseID: DatabaseID? = nil) -> EventLoopFuture<[(Migration, DatabaseID?)]> {
-        self.preparedMigrations(on: databaseID).map { items -> [(Migration, DatabaseID?)] in
-            items.map { item -> (Migration, DatabaseID?) in
-                return (item.migration, item.id)
+        var batch: [(Migration, DatabaseID?)] = []
+        var failed: Error? = nil
+
+        return self.run(on: databaseID) { database in
+            self.preparedMigrations(on: database).map { items in
+                batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
+            }.flatMapErrorThrowing { error in
+                failed = error
             }
+        }.flatMapThrowing {
+            if let error = failed { throw error }
+            return batch
         }
     }
     
@@ -174,10 +214,39 @@ public struct Migrator {
             }
         }
     }
-    
+
+
     private func database(_ id: DatabaseID?) -> Database {
         self.databaseFactory(id)
     }
+
+    private func run(on database: DatabaseID? = nil, _ query: @escaping (Database) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+        if let id = database {
+            return query(self.database(id))
+        }
+
+        let queries = self.migrations.databases.map { id -> () -> EventLoopFuture<Void> in
+            return { query(self.database(id)) }
+        }
+
+        return EventLoopFuture<Void>.andAllSync(queries, on: self.eventLoop)
+    }
+
+    private func run(on database: DatabaseID? = nil, _ query: @escaping (DatabaseID) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+        if let id = database {
+            return query(id)
+        }
+
+        let queries = self.migrations.databases.map { id -> () -> EventLoopFuture<Void> in
+            return { query(id) }
+        }
+
+        return EventLoopFuture<Void>.andAllSync(queries, on: self.eventLoop)
+    }
+}
+
+enum MigrationError: Error {
+    case databaseNoFound(DatabaseID)
 }
 
 extension EventLoopFuture {
@@ -186,7 +255,7 @@ extension EventLoopFuture {
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
         let promise = eventLoop.makePromise(of: Void.self)
-        
+
         var iterator = futures.makeIterator()
         func handle(_ future: () -> EventLoopFuture<Void>) {
             future().whenComplete { res in
