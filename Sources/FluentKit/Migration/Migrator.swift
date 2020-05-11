@@ -233,17 +233,13 @@ public struct Migrator {
     }
 }
 
-enum MigrationError: Error {
-    case databaseNoFound(DatabaseID)
-}
-
 extension EventLoopFuture {
     public static func andAllSync(
         _ futures: [() -> EventLoopFuture<Void>],
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
         let promise = eventLoop.makePromise(of: Void.self)
-
+        
         var iterator = futures.makeIterator()
         func handle(_ future: () -> EventLoopFuture<Void>) {
             future().whenComplete { res in
