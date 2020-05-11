@@ -33,8 +33,8 @@ public struct Migrator {
     
     // MARK: Setup
     
-    public func setupIfNeeded(on database: DatabaseID? = nil) -> EventLoopFuture<Void> {
-        self.run(on: database, MigrationLog.migration.prepare(on:))
+    public func setupIfNeeded(on databaseID: DatabaseID? = nil) -> EventLoopFuture<Void> {
+        self.run(on: databaseID) { MigrationLog.migration.prepare(on: self.database($0)) }
     }
     
     // MARK: Prepare
@@ -218,18 +218,6 @@ public struct Migrator {
 
     private func database(_ id: DatabaseID?) -> Database {
         self.databaseFactory(id)
-    }
-
-    private func run(on database: DatabaseID? = nil, _ query: @escaping (Database) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
-        if let id = database {
-            return query(self.database(id))
-        }
-
-        let queries = self.migrations.databases.map { id -> () -> EventLoopFuture<Void> in
-            return { query(self.database(id)) }
-        }
-
-        return EventLoopFuture<Void>.andAllSync(queries, on: self.eventLoop)
     }
 
     private func run(on database: DatabaseID? = nil, _ query: @escaping (DatabaseID) -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
