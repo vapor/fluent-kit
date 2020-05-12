@@ -3,6 +3,8 @@ extension Model {
         where To: FluentKit.Model
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class ChildrenProperty<From, To>
     where From: Model, To: Model
@@ -16,10 +18,6 @@ public final class ChildrenProperty<From, To>
     var idValue: From.IDValue?
 
     public var value: [To]?
-
-    public var description: String {
-        self.idValue.debugDescription
-    }
 
     public init(for parent: KeyPath<To, To.Parent<From>>) {
         self.parentKey = .required(parent)
@@ -92,31 +90,43 @@ public final class ChildrenProperty<From, To>
     }
 }
 
-extension ChildrenProperty: PropertyProtocol {
+extension ChildrenProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
+    }
+}
+
+// MARK: Property
+
+extension ChildrenProperty: AnyProperty { }
+
+extension ChildrenProperty: Property {
     public typealias Model = From
     public typealias Value = [To]
 }
 
-extension ChildrenProperty: AnyProperty {
-    public var nested: [AnyProperty] {
+// MARK: Database
+
+extension ChildrenProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
         []
     }
 
-    public var path: [FieldKey] {
-        []
-    }
-
-    public func input(to input: inout DatabaseInput) {
+    public func input(to input: DatabaseInput) {
         // children never has input
     }
 
     public func output(from output: DatabaseOutput) throws {
         let key = From()._$id.field.key
-        if output.contains([key]) {
+        if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
+}
 
+// MARK: Codable
+
+extension ChildrenProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
@@ -126,6 +136,20 @@ extension ChildrenProperty: AnyProperty {
 
     public func decode(from decoder: Decoder) throws {
         // don't decode
+    }
+}
+
+// MARK: Relation
+
+extension ChildrenProperty: Relation {
+    public var name: String {
+        "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
+    }
+
+    public func load(on database: Database) -> EventLoopFuture<Void> {
+        self.query(on: database).all().map {
+            self.value = $0
+        }
     }
 }
 
@@ -140,17 +164,7 @@ extension ChildrenProperty.Key: CustomStringConvertible {
     }
 }
 
-extension ChildrenProperty: Relation {
-    public var name: String {
-        "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
-    }
-
-    public func load(on database: Database) -> EventLoopFuture<Void> {
-        self.query(on: database).all().map {
-            self.value = $0
-        }
-    }
-}
+// MARK: Eager Loadable
 
 extension ChildrenProperty: EagerLoadable {
     public static func eagerLoad<Builder>(

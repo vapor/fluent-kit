@@ -1,4 +1,4 @@
-@testable import class FluentKit.QueryBuilder
+import class FluentKit.QueryBuilder
 
 extension FluentBenchmarker {
     public func testTimestamp() throws {
@@ -47,8 +47,8 @@ extension FluentBenchmarker {
             try Event.query(on: self.database).run({ output in
                 do {
                     let schema = output.schema("events")
-                    let createdAtField = try schema.decode(event.$createdAt.field.key, as: String.self)
-                    let updatedAtField = try schema.decode(event.$updatedAt.field.key, as: String.self)
+                    let createdAtField = try schema.decode(event.$createdAt.$timestamp.key, as: String.self)
+                    let updatedAtField = try schema.decode(event.$updatedAt.$timestamp.key, as: String.self)
                     XCTAssertEqual(createdAtField, createdAt)
                     XCTAssertEqual(updatedAtField, updatedAt)
                 } catch let error {
@@ -72,21 +72,12 @@ extension FluentBenchmarker {
             XCTAssertEqual(event.createdAt, event.updatedAt)
             
             Thread.sleep(forTimeInterval: 0.001) // ensure update timestamp with millisecond precision increments
-            
-            let eventWithSameId = Event(id: event.id, name: "D")
-            eventWithSameId.$id.exists = true
-            try eventWithSameId.update(on: self.database).wait()
-            XCTAssertNil(eventWithSameId.createdAt)
-            XCTAssertNotNil(eventWithSameId.updatedAt)
-            XCTAssertNotEqual(event.updatedAt, eventWithSameId.updatedAt)
-            
+
             let storedEvent = try Event.find(event.id, on: self.database).wait()
             XCTAssertNotNil(storedEvent)
-            XCTAssertEqual(storedEvent?.name, eventWithSameId.name)
             XCTAssertNotNil(storedEvent?.createdAt)
             XCTAssertNotNil(storedEvent?.updatedAt)
             XCTAssertEqual(storedEvent?.createdAt, event.createdAt)
-            XCTAssertEqual(storedEvent?.updatedAt, eventWithSameId.updatedAt)
         }
     }
     
@@ -202,13 +193,13 @@ private final class Event: Model {
     @Field(key: "name")
     var name: String
 
-    @Timestamp(key: "created_at", on: .create, format: .iso8601WithMilliseconds)
+    @Timestamp(key: "created_at", on: .create, format: .iso8601(withMilliseconds: true))
     var createdAt: Date?
 
-    @Timestamp(key: "updated_at", on: .update, format: .iso8601WithMilliseconds)
+    @Timestamp(key: "updated_at", on: .update, format: .iso8601(withMilliseconds: true))
     var updatedAt: Date?
 
-    @Timestamp(key: "deleted_at", on: .delete, format: .iso8601WithMilliseconds)
+    @Timestamp(key: "deleted_at", on: .delete, format: .iso8601(withMilliseconds: true))
     var deletedAt: Date?
 
     init() { }

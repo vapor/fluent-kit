@@ -22,7 +22,7 @@ extension QueryBuilder {
         to value: Field.Value
     ) -> Self
         where
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Model
     {
         if self.query.input.isEmpty {
@@ -31,7 +31,9 @@ extension QueryBuilder {
 
         switch self.query.input[0] {
         case .dictionary(var existing):
-            existing[Model.path(for: field)[0]] = .bind(value)
+            let path = Model.path(for: field)
+            assert(path.count == 1, "Set on nested properties is not yet supported.")
+            existing[path[0]] = .bind(value)
             self.query.input[0] = .dictionary(existing)
         default:
             fatalError()

@@ -3,6 +3,8 @@ extension Model {
         where To: FluentKit.Model
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class ParentProperty<From, To>
     where From: Model, To: Model
@@ -36,6 +38,14 @@ public final class ParentProperty<From, To>
     }
 }
 
+extension ParentProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
+    }
+}
+
+// MARK: Relation
+
 extension ParentProperty: Relation {
     public var name: String {
         "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
@@ -48,28 +58,32 @@ extension ParentProperty: Relation {
     }
 }
 
-extension ParentProperty: PropertyProtocol {
+// MARK: Property
+
+extension ParentProperty: AnyProperty { }
+
+extension ParentProperty: Property {
     public typealias Model = From
     public typealias Value = To
 }
 
-extension ParentProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        [self.$id]
-    }
+// MARK: Database
 
-    public var path: [FieldKey] {
-        []
+extension ParentProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        self.$id.keys
     }
     
-    public func input(to input: inout DatabaseInput) {
-        self.$id.input(to: &input)
+    public func input(to input: DatabaseInput) {
+        self.$id.input(to: input)
     }
 
     public func output(from output: DatabaseOutput) throws {
         try self.$id.output(from: output)
     }
+}
 
+extension ParentProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -84,9 +98,10 @@ extension ParentProperty: AnyProperty {
     public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
-        // TODO: allow for nested decoding
     }
 }
+
+// MARK: Eager Loadable
 
 extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(

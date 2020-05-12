@@ -5,25 +5,27 @@ extension Fields {
             Value.RawValue == String
 }
 
+// MARK: Type
+
 @propertyWrapper
-public final class OptionalEnumProperty<Model, Value>
+public final class OptionalEnumProperty<Model, WrappedValue>
     where Model: FluentKit.Fields,
-        Value: Codable,
-        Value: RawRepresentable,
-        Value.RawValue == String
+        WrappedValue: Codable,
+        WrappedValue: RawRepresentable,
+        WrappedValue.RawValue == String
 {
     public let field: OptionalFieldProperty<Model, String>
 
-    public var projectedValue: OptionalEnumProperty<Model, Value> {
+    public var projectedValue: OptionalEnumProperty<Model, WrappedValue> {
         return self
     }
 
-    public var wrappedValue: Value? {
+    public var wrappedValue: WrappedValue? {
         get {
-            self.value
+            self.value ?? nil
         }
         set {
-            self.value = newValue
+            self.value = .some(newValue)
         }
     }
 
@@ -32,59 +34,73 @@ public final class OptionalEnumProperty<Model, Value>
     }
 }
 
-extension OptionalEnumProperty: PropertyProtocol {
-    public var value: Value? {
+// MARK: Property
+
+extension OptionalEnumProperty: AnyProperty { }
+
+extension OptionalEnumProperty: Property {
+    public var value: WrappedValue?? {
         get {
             if let value = self.field.inputValue {
                 switch value {
-                case .enumCase(let string):
-                    return Value(rawValue: string)!
-                case .bind(let string as String):
-                    guard let value = Value(rawValue: string) else {
+                case .bind(let string as String),
+                     .enumCase(let string):
+                    guard let value = WrappedValue(rawValue: string) else {
                         fatalError("Invalid enum case name '\(string)' for enum \(Value.self)")
                     }
-
-                    return value
+                    return .some(value)
                 default:
                     fatalError("Unexpected enum input value type: \(value)")
                 }
             } else if let value = self.field.outputValue {
-                return Value(rawValue: value)!
+                return .some(value.flatMap { WrappedValue(rawValue: $0) })
             } else {
-                return nil
+                return .none
             }
         }
         set {
-            self.field.inputValue = newValue.flatMap {
-                .enumCase($0.rawValue)
+            if let value = newValue {
+                self.field.inputValue = value.flatMap { .enumCase($0.rawValue) } ?? .null
+            } else {
+                self.field.inputValue = nil
             }
         }
     }
 }
 
-extension OptionalEnumProperty: FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .enumCase(value.rawValue) }
-}
+// MARK: Queryable
 
-extension OptionalEnumProperty: AnyField {
+extension OptionalEnumProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-extension OptionalEnumProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
+extension OptionalEnumProperty: QueryableProperty {
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
+        value.flatMap { .enumCase($0.rawValue) } ?? .null
+    }
+}
+
+// MARK: Database
+
+extension OptionalEnumProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        self.field.keys
     }
 
-    public func input(to input: inout DatabaseInput) {
-        self.field.input(to: &input)
+    public func input(to input: DatabaseInput) {
+        self.field.input(to: input)
     }
 
     public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
+}
 
+// MARK: Codable
+
+extension OptionalEnumProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }

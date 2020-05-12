@@ -171,42 +171,44 @@ public struct TestOutput: DatabaseOutput {
         self
     }
 
-    public func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    public func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
     {
-        if let res = dummyDecodedFields[path] as? T {
+        if let res = dummyDecodedFields[key] as? T {
             return res
         }
         throw TestRowDecodeError.wrongType
     }
 
-    public func contains(_ path: [FieldKey]) -> Bool {
-        return true
+    public func contains(_ path: FieldKey) -> Bool {
+        true
     }
+
+
+    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        self
+    }
+
+    public func decodeNil(_ key: FieldKey) throws -> Bool {
+        false
+    }
+
 
     public var description: String {
         return "<dummy>"
     }
 
-    var dummyDecodedFields: [[FieldKey]: Any]
+    var dummyDecodedFields: [FieldKey: Any]
 
     public init() {
         self.dummyDecodedFields = [:]
     }
 
-    public init(_ mockFields: [[FieldKey]: Any]) {
+    public init(_ mockFields: [FieldKey: Any]) {
         self.dummyDecodedFields = mockFields
     }
 
-    public init(_ mockFields: [FieldKey: Any]) {
-        self.dummyDecodedFields = Dictionary(
-            mockFields.map { (k, v) in ([k], v) },
-            uniquingKeysWith: { $1 }
-        )
-    }
-
     public init<TestModel: Model>(_ model: TestModel) {
-
         func unpack(_ dbValue: DatabaseQuery.Value) -> Any? {
             switch dbValue {
             case .null:
@@ -231,12 +233,8 @@ public struct TestOutput: DatabaseOutput {
         )
     }
 
-    public mutating func append(key: [FieldKey], value: Any) {
-        dummyDecodedFields[key] = value
-    }
-
     public mutating func append(key: FieldKey, value: Any) {
-        dummyDecodedFields[[key]] = value
+        dummyDecodedFields[key] = value
     }
 }
 

@@ -6,7 +6,7 @@ extension QueryBuilder {
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self
         where
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Model
     {
         self.sort(Model.path(for: field), direction)
@@ -33,7 +33,7 @@ extension QueryBuilder {
         alias: String? = nil
     ) -> Self
         where
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Joined,
             Joined: Schema
     {

@@ -1,24 +1,15 @@
-public protocol PropertyProtocol: AnyProperty {
+public protocol AnyProperty: class {
+    static var anyValueType: Any.Type { get }
+    var anyValue: Any? { get }
+}
+
+public protocol Property: AnyProperty {
     associatedtype Model: Fields
     associatedtype Value: Codable
     var value: Value? { get set }
 }
 
-
-public protocol AnyProperty: class {
-    static var anyValueType: Any.Type { get }
-    var anyValue: Any? { get }
-
-    var path: [FieldKey] { get }
-    var nested: [AnyProperty] { get }
-
-    func input(to input: inout DatabaseInput)
-    func output(from output: DatabaseOutput) throws
-    func encode(to encoder: Encoder) throws
-    func decode(from decoder: Decoder) throws
-}
-
-extension AnyProperty where Self: PropertyProtocol {
+extension AnyProperty where Self: Property {
     public var anyValue: Any? {
         self.value
     }
@@ -28,15 +19,32 @@ extension AnyProperty where Self: PropertyProtocol {
     }
 }
 
-public protocol FieldProtocol: AnyField, PropertyProtocol {
-    /// Get the given Value in a form suitable for queries.
-    /// Most values can be bound to queries, but some need
-    /// to be inserted statically.
+public protocol AnyDatabaseProperty: AnyProperty {
+    var keys: [FieldKey] { get }
+    func input(to input: DatabaseInput)
+    func output(from output: DatabaseOutput) throws
+}
+
+public protocol AnyCodableProperty: AnyProperty {
+    func encode(to encoder: Encoder) throws
+    func decode(from decoder: Decoder) throws
+}
+
+public protocol AnyQueryableProperty: AnyProperty {
+    var path: [FieldKey] { get }
+}
+
+public protocol QueryableProperty: AnyQueryableProperty, Property {
     static func queryValue(_ value: Value) -> DatabaseQuery.Value
 }
 
-extension FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .bind(value) }
+extension QueryableProperty {
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
+        .bind(value)
+    }
 }
 
-public protocol AnyField { }
+//#warning("TODO: better name? this is a 'top-level' / settable property")
+//public protocol AnyFieldProperty: AnyProperty {
+//    var key: FieldKey { get }
+//}

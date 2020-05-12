@@ -7,6 +7,7 @@ extension FluentBenchmarker {
         try self.testEagerLoad_parentJSON()
         try self.testEagerLoad_childrenJSON()
         try self.testEagerLoad_emptyChildren()
+        try self.testEagerLoad_throughNilOptionalParent()
     }
 
     private func testEagerLoad_nesting() throws {
@@ -133,8 +134,95 @@ extension FluentBenchmarker {
             XCTAssertEqual(galaxies.count, 0)
         }
     }
+
+    private func testEagerLoad_throughNilOptionalParent() throws {
+        try self.runTest(#function, [
+            ABCMigration()
+        ]) {
+            do {
+                let c = C()
+                try c.create(on: self.database).wait()
+
+                let b = B()
+                b.$c.id = c.id!
+                try b.create(on: self.database).wait()
+
+                let a = A()
+                a.$b.id = b.id
+                try a.create(on: self.database).wait()
+            }
+
+            do {
+                let c = C()
+                try c.create(on: self.database).wait()
+
+                let b = B()
+                b.$c.id = c.id!
+                try b.create(on: self.database).wait()
+
+                let a = A()
+                a.$b.id = nil
+                try a.create(on: self.database).wait()
+            }
+
+            let a = try A.query(on: self.database).with(\.$b) {
+                $0.with(\.$c)
+            }.all().wait()
+            XCTAssertEqual(a.count, 2)
+        }
+    }
 }
 
+private final class A: Model {
+    static let schema = "a"
+
+    @ID
+    var id: UUID?
+
+    @OptionalParent(key: "b_id")
+    var b: B?
+
+    init() { }
+}
+
+private final class B: Model {
+    static let schema = "b"
+
+    @ID
+    var id: UUID?
+
+    @Parent(key: "c_id")
+    var c: C
+
+    init() { }
+}
+
+private final class C: Model {
+    static let schema = "c"
+
+    @ID
+    var id: UUID?
+
+    init() { }
+}
+
+private struct ABCMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        .andAllSucceed([
+            database.schema("a").id().field("b_id", .uuid).create(),
+            database.schema("b").id().field("c_id", .uuid, .required).create(),
+            database.schema("c").id().create(),
+        ], on: database.eventLoop)
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        .andAllSucceed([
+            database.schema("a").delete(),
+            database.schema("b").delete(),
+            database.schema("c").delete(),
+        ], on: database.eventLoop)
+    }
+}
 
 func prettyJSON<T>(_ value: T) throws -> String
     where T: Encodable

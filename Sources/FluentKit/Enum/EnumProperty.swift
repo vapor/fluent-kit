@@ -5,6 +5,8 @@ extension Fields {
             Value.RawValue == String
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class EnumProperty<Model, Value>
     where Model: FluentKit.Fields,
@@ -35,7 +37,11 @@ public final class EnumProperty<Model, Value>
     }
 }
 
-extension EnumProperty: PropertyProtocol {
+// MARK: Property
+
+extension EnumProperty: AnyProperty { }
+
+extension EnumProperty: Property {
     public var value: Value? {
         get {
             if let value = self.field.inputValue {
@@ -65,29 +71,39 @@ extension EnumProperty: PropertyProtocol {
     }
 }
 
-extension EnumProperty: FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .enumCase(value.rawValue) }
-}
+// MARK: Queryable
 
-extension EnumProperty: AnyField {
+extension EnumProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-extension EnumProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
+extension EnumProperty: QueryableProperty {
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
+        .enumCase(value.rawValue)
+    }
+}
+
+// MARK: Database
+
+extension EnumProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        self.field.keys
     }
 
-    public func input(to input: inout DatabaseInput) {
-        self.field.input(to: &input)
+    public func input(to input: DatabaseInput) {
+        self.field.input(to: input)
     }
 
     public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
+}
 
+// MARK: Codable
+
+extension EnumProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
