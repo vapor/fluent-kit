@@ -129,6 +129,7 @@ extension Collection where Element: FluentKit.Model {
         }
 
         #warning("TODO: make model vs. query builder timestamp updates more consistent")
+        #warning("TODO: middleware")
 
         return Element.query(on: database)
             .filter(\._$id ~~ self.map { $0.id! })
