@@ -154,36 +154,25 @@ extension Collection where Element: FluentKit.Model {
             precondition(!model._$id.exists)
         }
         
-        var objects = [[FieldKey : DatabaseQuery.Value]]()
-        
-        let middlewares = self.map { model in
-            database.configuration.middleware.chainingTo(Element.self) { event, model, db -> EventLoopFuture<Void> in
+        var input: [[FieldKey: DatabaseQuery.Value]] = []
+        return EventLoopFuture<Void>.andAllSucceed(self.map { model in
+            database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 model._$id.generate()
                 model.touchTimestamps(.create, .update)
-                objects.append(model.input.values)
+                input.append(model.collectInput())
                 return db.eventLoop.makeSucceededFuture(())
             }.create(model, on: database)
-        }
-    
-        let middlewareFuture: EventLoopFuture<Void> = failureHandler == .failOnFirst ?
-            .andAllSucceed(middlewares, on: database.eventLoop) :
-            .andAllComplete(middlewares, on: database.eventLoop)
-        
-        self.forEach {
-            $0._$id.generate()
-            $0.touchTimestamps(.create, .update)
-        }
-
-        return Element.query(on: database)
-            .set(self.map { $0.collectInput() })
-            .create()
-            .map
-        {
-            self.forEach {
-                $0._$id.exists = true
+        }, on: database.eventLoop).flatMap {
+            Element.query(on: database)
+                .set(self.map { $0.collectInput() })
+                .create()
+                .map
+            {
+                self.forEach {
+                    $0._$id.exists = true
+                }
             }
         }
-        
     }
 }
 

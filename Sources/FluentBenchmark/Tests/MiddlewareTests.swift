@@ -1,8 +1,7 @@
 extension FluentBenchmarker {
     public func testMiddleware() throws {
         try self.testMiddleware_methods()
-        try self.testMiddleware_batchCreationOnlySucceded()
-        try self.testMiddleware_batchCreationFailOnFirst()
+        try self.testMiddleware_batchCreationFail()
     }
     
     public func testMiddleware_methods() throws {
@@ -54,33 +53,8 @@ extension FluentBenchmarker {
             XCTAssertEqual(user.name, "G")
         }
     }
-
-    public func testMiddleware_batchCreationOnlySucceded() throws {
-        try self.runTest(#function, [
-            UserMigration(),
-        ]) {
-            self.databases.middleware.clear()
-            self.databases.middleware.use(UserBatchMiddleware())
-
-            let user = User(name: "A")
-            let user2 = User(name: "B")
-            let user3 = User(name: "C")
-          
-            try [user, user2, user3].create(on: self.database, onMiddlewareFailure: .insertSucceeded).wait()
-            
-            let userCount = try User.query(on: self.database).count().wait()
-            XCTAssertEqual(userCount, 2)
-            
-            let userAACount = try User.query(on: self.database).filter(\.$name == "AA").count().wait()
-            XCTAssertEqual(userAACount, 1)
-            let userBCount = try User.query(on: self.database).filter(\.$name == "B").count().wait()
-            XCTAssertEqual(userBCount, 0)
-            let userCCCount = try User.query(on: self.database).filter(\.$name == "CC").count().wait()
-            XCTAssertEqual(userCCCount, 1)
-        }
-    }
     
-    public func testMiddleware_batchCreationFailOnFirst() throws {
+    public func testMiddleware_batchCreationFail() throws {
         try self.runTest(#function, [
             UserMigration(),
         ]) {
@@ -91,7 +65,7 @@ extension FluentBenchmarker {
             let user2 = User(name: "B")
             let user3 = User(name: "C")
           
-            XCTAssertThrowsError(try [user, user2, user3].create(on: self.database, onMiddlewareFailure: .failOnFirst).wait()) { error in
+            XCTAssertThrowsError(try [user, user2, user3].create(on: self.database).wait()) { error in
                 let testError = try! XCTUnwrap(error as? TestError)
                 XCTAssertEqual(testError.string, "cancelCreation")
             }
