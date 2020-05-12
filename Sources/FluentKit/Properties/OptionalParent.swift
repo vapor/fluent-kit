@@ -9,7 +9,7 @@ extension Model {
 public final class OptionalParentProperty<From, To>
     where From: Model, To: Model
 {
-    @FieldProperty<From, To.IDValue?>
+    @OptionalFieldProperty<From, To.IDValue>
     public var id: To.IDValue?
 
     public var wrappedValue: To? {
