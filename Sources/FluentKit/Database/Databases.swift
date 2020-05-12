@@ -3,10 +3,22 @@ import class NIOConcurrencyHelpers.Lock
 @_exported import class NIO.NIOThreadPool
 
 public struct DatabaseConfigurationFactory {
-    public let make: () -> DatabaseConfiguration
+    private let build: (DatabaseID?) -> DatabaseConfiguration
+
+    public var make: () -> DatabaseConfiguration {
+        return { self.build(nil) }
+    }
 
     public init(make: @escaping () -> DatabaseConfiguration) {
-        self.make = make
+        self.build = { _ in make() }
+    }
+
+    public init(make: @escaping (DatabaseID?) -> DatabaseConfiguration) {
+        self.build = make
+    }
+
+    public func make(_ id: DatabaseID?) -> DatabaseConfiguration {
+        return self.build(id)
     }
 }
 
@@ -57,7 +69,7 @@ public final class Databases {
         as id: DatabaseID,
         isDefault: Bool? = nil
     ) {
-        self.use(configuration.make(), as: id, isDefault: isDefault)
+        self.use(configuration.make(id), as: id, isDefault: isDefault)
     }
     
     public func use(
