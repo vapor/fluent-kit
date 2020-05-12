@@ -14,22 +14,22 @@ extension Model {
     }
 
     private func _create(on database: Database) -> EventLoopFuture<Void> {
-        self.touchTimestamps(.create, .update)
         precondition(!self._$id.exists)
+        self.touchTimestamps(.create, .update)
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
         Self.query(on: database)
-            .set(self.input.values)
+            .set(self.collectInput())
             .action(.create)
             .run { promise.succeed($0) }
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
-            var input = self.input
+            var input = self.collectInput()
             if self._$id.generator == .database {
                 let idKey = Self()._$id.key
-                input.values[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
-            try self.output(from: SavedInput(input.values))
+            try self.output(from: SavedInput(input))
         }
     }
 
@@ -40,25 +40,24 @@ extension Model {
     }
 
     private func _update(on database: Database) -> EventLoopFuture<Void> {
-        self.touchTimestamps(.update)
         precondition(self._$id.exists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
         }
-        let input = self.input
+        self.touchTimestamps(.update)
+        let input = self.collectInput()
         return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .set(input.values)
-            .action(.update)
-            .run()
+            .set(input)
+            .update()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(input.values))
+            try self.output(from: SavedInput(input))
         }
     }
 
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        if !force, let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first {
+        if !force, let timestamp = self.deletedTimestamp {
             timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
                 model.handle(event, on: db)
@@ -71,17 +70,14 @@ extension Model {
     }
 
     private func _delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        let query = Self.query(on: database)
-        if force {
-            _ = query.withDeleted()
-        }
-        return query
+        return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .action(.delete)
-            .run()
+            .delete(force: force)
             .map
         {
-            self._$id.exists = false
+            if force || self.deletedTimestamp == nil {
+                self._$id.exists = false
+            }
         }
     }
 
@@ -100,12 +96,12 @@ extension Model {
         return Self.query(on: database)
             .withDeleted()
             .filter(\._$id == self.id!)
-            .set(self.input.values)
+            .set(self.collectInput())
             .action(.update)
             .run()
             .flatMapThrowing
         {
-            try self.output(from: SavedInput(self.input.values))
+            try self.output(from: SavedInput(self.collectInput()))
             self._$id.exists = true
         }
     }
@@ -119,22 +115,41 @@ extension Model {
         case .restore:
             return _restore(on: db)
         case .softDelete:
-            return _update(on: db)
+            return _delete(force: false, on: db)
         case .update:
             return _update(on: db)
         }
     }
 }
 
-extension Array where Element: FluentKit.Model {
-    public func create(on database: Database, onMiddlewareFailure failureHandler: MiddlewareFailureHandler = .insertSucceeded) -> EventLoopFuture<Void> {
+extension Collection where Element: FluentKit.Model {
+    public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         guard self.count > 0 else {
-            // Is it valid to try to create zero models? For now we call it
-            // successful without doing anything.
             return database.eventLoop.makeSucceededFuture(())
         }
 
-        let builder = Element.query(on: database)
+        #warning("TODO: make model vs. query builder timestamp updates more consistent")
+
+        return Element.query(on: database)
+            .filter(\._$id ~~ self.map { $0.id! })
+            .delete(force: force)
+            .map
+        {
+            if force {
+                self.forEach {
+                    if force || $0.deletedTimestamp == nil {
+                        $0._$id.exists = false
+                    }
+                }
+            }
+        }
+    }
+
+    public func create(on database: Database) -> EventLoopFuture<Void> {
+        guard self.count > 0 else {
+            return database.eventLoop.makeSucceededFuture(())
+        }
+
         self.forEach { model in
             precondition(!model._$id.exists)
         }
@@ -154,18 +169,18 @@ extension Array where Element: FluentKit.Model {
             .andAllSucceed(middlewares, on: database.eventLoop) :
             .andAllComplete(middlewares, on: database.eventLoop)
         
-        return middlewareFuture.flatMap {
-            builder.set(objects)
-            
-            guard objects.count > 0 else {
-                return database.eventLoop.makeSucceededFuture(())
-            }
-            
-            builder.query.action = .create
-            var it = self.makeIterator()
-            return builder.run { _ in
-                let next = it.next()!
-                next._$id.exists = true
+        self.forEach {
+            $0._$id.generate()
+            $0.touchTimestamps(.create, .update)
+        }
+
+        return Element.query(on: database)
+            .set(self.map { $0.collectInput() })
+            .create()
+            .map
+        {
+            self.forEach {
+                $0._$id.exists = true
             }
         }
         
@@ -192,49 +207,49 @@ private struct SavedInput: DatabaseOutput {
         return self
     }
     
-    func contains(_ path: [FieldKey]) -> Bool {
-        get(path: path, from: .dictionary(self.input)) != nil
+    func contains(_ key: FieldKey) -> Bool {
+        self.input[key] != nil
+    }
+
+    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        guard let data = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        guard case .dictionary(let nested) = data else {
+            fatalError("Unexpected input: \(data).")
+        }
+        return SavedInput(nested)
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        guard let value = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        switch value {
+        case .null:
+            return true
+        default:
+            return false
+        }
     }
     
-    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T : Decodable
     {
-        if let value = get(path: path, from: .dictionary(self.input)) {
-            // not in output, get from saved input
-            switch value {
-            case .bind(let encodable):
-                return encodable as! T
-            case .enumCase(let string):
-                return string as! T
-            default:
-                fatalError("Invalid input type: \(value)")
-            }
-        } else {
-            throw FluentError.missingField(name: path.description)
+        guard let value = self.input[key] else {
+            throw FluentError.missingField(name: key.description)
+        }
+        switch value {
+        case .bind(let encodable):
+            return encodable as! T
+        case .enumCase(let string):
+            return string as! T
+        default:
+            fatalError("Invalid input type: \(value)")
         }
     }
 
     var description: String {
         return self.input.description
-    }
-}
-
-private func get(path: [FieldKey], from input: DatabaseQuery.Value) -> DatabaseQuery.Value? {
-    switch path.count {
-    case 0:
-        return input
-    default:
-        switch input {
-        case .dictionary(let nested):
-            if let next = nested[path[0]] {
-                return get(path: .init(path[1...]), from: next)
-            } else {
-                // key not found.
-                return nil
-            }
-        default:
-            // not at end of key path
-            return nil
-        }
     }
 }

@@ -1,5 +1,5 @@
 extension DatabaseOutput {
-    func cascading(to output: DatabaseOutput) -> DatabaseOutput {
+    public func cascading(to output: DatabaseOutput) -> DatabaseOutput {
         return CombinedOutput(first: self, second: output)
     }
 }
@@ -8,10 +8,6 @@ private struct CombinedOutput: DatabaseOutput {
     var first: DatabaseOutput
     var second: DatabaseOutput
 
-    func contains(_ path: [FieldKey]) -> Bool {
-        self.first.contains(path) || self.second.contains(path)
-    }
-
     func schema(_ schema: String) -> DatabaseOutput {
         CombinedOutput(
             first: self.first.schema(schema),
@@ -19,15 +15,39 @@ private struct CombinedOutput: DatabaseOutput {
         )
     }
 
-    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        if self.first.contains(key) {
+            return try self.first.nested(key)
+        } else if self.second.contains(key) {
+            return try self.second.nested(key)
+        } else {
+            throw FluentError.missingField(name: key.description)
+        }
+    }
+
+    func contains(_ key: FieldKey) -> Bool {
+        self.first.contains(key) || self.second.contains(key)
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        if self.first.contains(key) {
+            return try self.first.decodeNil(key)
+        } else if self.second.contains(key) {
+            return try self.second.decodeNil(key)
+        } else {
+            throw FluentError.missingField(name: key.description)
+        }
+    }
+
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
     {
-        if self.first.contains(path) {
-            return try self.first.decode(path)
-        } else if self.second.contains(path) {
-            return try self.second.decode(path)
+        if self.first.contains(key) {
+            return try self.first.decode(key)
+        } else if self.second.contains(key) {
+            return try self.second.decode(key)
         } else {
-            throw FluentError.missingField(name: path.description)
+            throw FluentError.missingField(name: key.description)
         }
     }
 

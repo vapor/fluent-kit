@@ -3,6 +3,8 @@ extension Model {
         where To: Model, Through: Model
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class SiblingsProperty<From, To, Through>
     where From: Model, To: Model, Through: Model
@@ -175,21 +177,29 @@ public final class SiblingsProperty<From, To, Through>
     }
 }
 
-extension SiblingsProperty: PropertyProtocol {
+extension SiblingsProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
+    }
+}
+
+// MARK: Property
+
+extension SiblingsProperty: AnyProperty { }
+
+extension SiblingsProperty: Property {
     public typealias Model = From
     public typealias Value = [To]
 }
 
-extension SiblingsProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
+// MARK: Database
 
-    public var path: [FieldKey] {
+extension SiblingsProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
         []
     }
     
-    public func input(to input: inout DatabaseInput) {
+    public func input(to input: DatabaseInput) {
         // siblings never has input
     }
 
@@ -199,7 +209,11 @@ extension SiblingsProperty: AnyProperty {
             self.idValue = try output.decode(key, as: From.IDValue.self)
         }
     }
+}
 
+// MARK: Codable
+
+extension SiblingsProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
@@ -211,6 +225,8 @@ extension SiblingsProperty: AnyProperty {
         // don't decode
     }
 }
+
+// MARK: Relation
 
 extension SiblingsProperty: Relation {
     public var name: String {
@@ -225,6 +241,8 @@ extension SiblingsProperty: Relation {
         }
     }
 }
+
+// MARK: Eager Loadable
 
 extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(

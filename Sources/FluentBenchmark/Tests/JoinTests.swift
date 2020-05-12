@@ -3,6 +3,8 @@ extension FluentBenchmarker {
         try self.testJoin_basic()
         try self.testJoin_sameTable()
         try self.testJoin_fieldFilter()
+        try self.testJoin_fieldOrdering()
+        try self.testJoin_aliasNesting()
     }
 
     private func testJoin_basic() throws {
@@ -136,6 +138,45 @@ extension FluentBenchmarker {
                 .wait()
             XCTAssertEqual(averageSchools.count, 1)
         }
+    }
+
+
+    private func testJoin_fieldOrdering() throws {
+        _ = School.query(on: self.database)
+            .join(City.self, on: \School.$city.$id == \City.$id)
+        _ = School.query(on: self.database)
+            .join(City.self, on: \City.$id == \School.$city.$id)
+    }
+
+    private func testJoin_aliasNesting() throws {
+        final class ChatParticipant: Model {
+            static let schema = "chat_participants"
+
+            @ID(key: "id")
+            var id: UUID?
+
+            @Parent(key: "user_id")
+            var user: User
+        }
+
+        final class User: Model {
+            static let schema = "users"
+
+            @ID(key: "id")
+            var id: UUID?
+        }
+
+        final class MeAsAParticipant: ModelAlias {
+            static let name: String = "me_as_a_participant"
+            let model = ChatParticipant()
+        }
+        final class OtherParticipant: ModelAlias {
+            static let name: String = "other_participant"
+            var model = ChatParticipant()
+        }
+
+        _ = User.query(on: self.database)
+            .join(OtherParticipant.self, on: \User.$id == \OtherParticipant.$user.$id)
     }
 }
 

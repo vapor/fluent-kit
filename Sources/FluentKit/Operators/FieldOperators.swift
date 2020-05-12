@@ -25,9 +25,9 @@ public func == <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         RightField.Model == Right,
-        RightField: FieldProtocol
+        RightField: QueryableProperty
 {
     .init(lhs, .equal, rhs)
 }
@@ -37,9 +37,9 @@ public func != <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         RightField.Model == Right,
-        RightField: FieldProtocol
+        RightField: QueryableProperty
 {
     .init(lhs, .notEqual, rhs)
 }
@@ -49,9 +49,9 @@ public func >= <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         RightField.Model == Right,
-        RightField: FieldProtocol
+        RightField: QueryableProperty
 {
     .init(lhs, .greaterThanOrEqual, rhs)
 }
@@ -61,9 +61,9 @@ public func > <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         RightField.Model == Right,
-        RightField: FieldProtocol
+        RightField: QueryableProperty
 {
     .init(lhs, .greaterThan, rhs)
 }
@@ -73,9 +73,9 @@ public func < <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         RightField.Model == Right,
-        RightField: FieldProtocol
+        RightField: QueryableProperty
 {
     .init(lhs, .lessThan, rhs)
 }
@@ -85,9 +85,9 @@ public func <= <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         RightField.Model == Right,
-        RightField: FieldProtocol
+        RightField: QueryableProperty
 {
     .init(lhs, .lessThanOrEqual, rhs)
 }
@@ -97,10 +97,10 @@ public func ~= <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         LeftField.Value: CustomStringConvertible,
         RightField.Model == Right,
-        RightField: FieldProtocol,
+        RightField: QueryableProperty,
         RightField.Value: CustomStringConvertible
 {
     .init(lhs, .contains(inverse: false, .suffix), rhs)
@@ -111,10 +111,10 @@ public func ~~ <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         LeftField.Value: CustomStringConvertible,
         RightField.Model == Right,
-        RightField: FieldProtocol,
+        RightField: QueryableProperty,
         RightField.Value: CustomStringConvertible
 {
     .init(lhs, .contains(inverse: false, .anywhere), rhs)
@@ -125,10 +125,10 @@ public func =~ <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         LeftField.Value: CustomStringConvertible,
         RightField.Model == Right,
-        RightField: FieldProtocol,
+        RightField: QueryableProperty,
         RightField.Value: CustomStringConvertible
 {
     .init(lhs, .contains(inverse: false, .prefix), rhs)
@@ -139,10 +139,10 @@ public func !~= <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         LeftField.Value: CustomStringConvertible,
         RightField.Model == Right,
-        RightField: FieldProtocol,
+        RightField: QueryableProperty,
         RightField.Value: CustomStringConvertible
 {
     .init(lhs, .contains(inverse: true, .suffix), rhs)
@@ -153,10 +153,10 @@ public func !~ <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         LeftField.Value: CustomStringConvertible,
         RightField.Model == Right,
-        RightField: FieldProtocol,
+        RightField: QueryableProperty,
         RightField.Value: CustomStringConvertible
 {
     .init(lhs, .contains(inverse: true, .anywhere), rhs)
@@ -167,10 +167,10 @@ public func !=~ <Left, Right, LeftField, RightField>(
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
     where LeftField.Model == Left,
-        LeftField: FieldProtocol,
+        LeftField: QueryableProperty,
         LeftField.Value: CustomStringConvertible,
         RightField.Model == Right,
-        RightField: FieldProtocol,
+        RightField: QueryableProperty,
         RightField.Value: CustomStringConvertible
 {
     .init(lhs, .contains(inverse: true, .prefix), rhs)
@@ -184,7 +184,7 @@ public struct ModelFieldFilter<Left, Right>
         _ method: DatabaseQuery.Filter.Method,
         _ rhs: KeyPath<Right, RightField>
     )
-        where LeftField: FieldProtocol, RightField: FieldProtocol
+        where LeftField: QueryableProperty, RightField: QueryableProperty
     {
         self.lhsPath = Left.init()[keyPath: lhs].path
         self.method = method
