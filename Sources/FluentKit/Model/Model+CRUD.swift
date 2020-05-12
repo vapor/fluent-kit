@@ -127,19 +127,21 @@ extension Collection where Element: FluentKit.Model {
         guard self.count > 0 else {
             return database.eventLoop.makeSucceededFuture(())
         }
-
-        #warning("TODO: make model vs. query builder timestamp updates more consistent")
-        #warning("TODO: middleware")
-
-        return Element.query(on: database)
-            .filter(\._$id ~~ self.map { $0.id! })
-            .delete(force: force)
-            .map
-        {
-            if force {
-                self.forEach {
-                    if force || $0.deletedTimestamp == nil {
-                        $0._$id.exists = false
+        return EventLoopFuture<Void>.andAllSucceed(self.map { model in
+            database.configuration.middleware.chainingTo(Element.self) { event, model, db in
+                return db.eventLoop.makeSucceededFuture(())
+            }.delete(model, force: force, on: database)
+        }, on: database.eventLoop).flatMap {
+            Element.query(on: database)
+                .filter(\._$id ~~ self.map { $0.id! })
+                .delete(force: force)
+                .map
+            {
+                if force {
+                    self.forEach {
+                        if force || $0.deletedTimestamp == nil {
+                            $0._$id.exists = false
+                        }
                     }
                 }
             }

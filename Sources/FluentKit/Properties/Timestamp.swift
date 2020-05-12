@@ -133,15 +133,15 @@ extension TimestampProperty: AnyTimestamp {
         self.$timestamp.key
     }
 
-    var anyTimestamp: Codable? {
-        self.$timestamp.value
+    var currentTimestampInput: DatabaseQuery.Value {
+        self.format.serialize(Date()).flatMap { .bind($0) } ?? .null
     }
 }
 
 protocol AnyTimestamp: AnyProperty {
     var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
-    var anyTimestamp: Codable? { get }
+    var currentTimestampInput: DatabaseQuery.Value { get }
     func touch(date: Date?)
 }
 
@@ -181,73 +181,13 @@ extension Schema {
         guard let timestamp = self.init().deletedTimestamp else {
             return
         }
-        timestamp.touch()
-        guard let date = timestamp.anyTimestamp else {
-            fatalError("No timestamp generated")
-        }
         let deletedAtField = DatabaseQuery.Field.path(
             [timestamp.key],
             schema: self.schemaOrAlias
         )
-        let isNull = DatabaseQuery.Filter.value(deletedAtField, .equal, .null)
-        let isFuture = DatabaseQuery.Filter.value(deletedAtField, .greaterThan, .bind(date))
-        query.filters.append(.group([isNull, isFuture], .or))
+        query.filters.append(.group([
+            .value(deletedAtField, .equal, .null),
+            .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
+        ], .or))
     }
 }
-
-
-// MARK: - Timestamp Formatter
-
-//extension DateFormatter: TimestampFormatter {
-//    public func timestamp(from date: Date) -> String? { self.string(from: date) }
-//}
-//
-//extension ISO8601DateFormatter: TimestampFormatter {
-//    public func timestamp(from date: Date) -> String? { self.string(from: date) }
-//}
-//
-//private struct UnixTimestampFormatter: TimestampFormatter {
-//    func timestamp(from date: Date) -> Double? { date.timeIntervalSince1970 }
-//    func date(from timestamp: Double) -> Date? { Date(timeIntervalSince1970: timestamp) }
-//}
-//
-//private struct DefaultTimestampFormatter: TimestampFormatter {
-//    func timestamp(from date: Date) -> Date? { date }
-//    func date(from timestamp: Date) -> Date? { timestamp }
-//}
-//
-//
-
-
-//
-//public struct TimestampFormat {
-//    public let id: String
-//    private let factory: () -> AnyTimestampFormatter
-//
-//    public var formatter: AnyTimestampFormatter { TimestampFormatterCache.formatter(for: self.id, factory: self.factory) }
-//
-//    public init(_ id: String, formatter: @escaping () -> AnyTimestampFormatter) {
-//        self.id = id
-//        self.factory = formatter
-//    }
-//}
-//
-//extension TimestampFormat {
-//    public static let iso8601 = TimestampFormat("iso8601", formatter: ISO8601DateFormatter.init)
-//}
-//
-//extension TimestampFormat {
-//    public static let iso8601WithMilliseconds = TimestampFormat("iso8601WithMilliseconds", formatter: {
-//        let formatter = ISO8601DateFormatter()
-//        formatter.formatOptions.insert(.withFractionalSeconds)
-//        return formatter
-//    })
-//}
-//
-//extension TimestampFormat {
-//    public static let unix = TimestampFormat("unix", formatter: UnixTimestampFormatter.init)
-//}
-//
-//extension TimestampFormat {
-//    public static let `default` = TimestampFormat("default", formatter: DefaultTimestampFormatter.init)
-//}

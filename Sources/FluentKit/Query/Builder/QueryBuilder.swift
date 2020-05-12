@@ -244,9 +244,9 @@ public final class QueryBuilder<Model>
             }
         }
 
+        // TODO: combine this logic with model+crud timestamps
         let forceDelete = Model.init().deletedTimestamp == nil
             ? true : self.shouldForceDelete
-
         switch query.action {
         case .delete:
             if !forceDelete {
@@ -290,10 +290,8 @@ public final class QueryBuilder<Model>
             let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
             for timestamp in timestamps {
                 // Only add timestamps if they weren't already set
-                #warning("TODO: merge this with model date touches")
-                #warning("TODO: this breaks for formatted timestamps")
                 if nested[timestamp.key] == nil {
-                    nested[timestamp.key] = .bind(Date())
+                    nested[timestamp.key] = timestamp.currentTimestampInput
                 }
             }
             data.append(.dictionary(nested))
