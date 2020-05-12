@@ -333,7 +333,67 @@ final class FluentKitTests: XCTestCase {
             XCTAssertEqual(result, expected)
         }
     }
-}
+
+    func testPlanel2FilterPlaceholder1() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != "first")
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+
+    func testPlanel2FilterPlaceholder2() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != nil)
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" IS NOT NULL"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+
+    func testPlanel2FilterPlaceholder3() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != "first")
+                .filter(\.$nickName == "second")
+                .filter(\.$nickName != "third")
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" = $2 AND "planets"."nickname" <> $3"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+
+    func testPlanel2FilterPlaceholder4() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != "first")
+                .filter(\.$nickName != nil)
+                .filter(\.$nickName == "second")
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" IS NOT NULL AND "planets"."nickname" = $2"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+    }
 
 final class User: Model {
     static let schema = "users"

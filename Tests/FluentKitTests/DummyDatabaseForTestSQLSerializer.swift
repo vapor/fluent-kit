@@ -102,7 +102,7 @@ struct DummyDatabaseDialect: SQLDialect {
     }
 
     func bindPlaceholder(at position: Int) -> SQLExpression {
-        return SQLRaw("$" + (position + 1).description)
+        return SQLRaw("$" + position.description)
     }
 
     func literalBoolean(_ value: Bool) -> SQLExpression {
