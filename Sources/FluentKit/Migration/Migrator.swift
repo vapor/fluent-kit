@@ -91,7 +91,7 @@ public struct Migrator {
         var failed: Error? = nil
 
         return self.run(on: databaseID) { database in
-            if case .some = failed { return self.eventLoop.makeSucceededFuture(()) }
+            guard failed == nil else { return self.eventLoop.makeSucceededFuture(()) }
 
             return self.unpreparedMigrations(on: database).map { items in
                 batch.append(contentsOf: items.map { ($0.migration, $0.id)  })
@@ -157,13 +157,13 @@ public struct Migrator {
     private func prepare(_ item: Migrations.Item, batch: Int) -> EventLoopFuture<Void> {
         item.migration.prepare(on: self.database(item.id)).flatMap {
             MigrationLog(name: item.migration.name, batch: batch)
-                .save(on: self.database(nil))
+                .save(on: self.database(item.id))
         }
     }
     
     private func revert(_ item: Migrations.Item) -> EventLoopFuture<Void> {
         item.migration.revert(on: self.database(item.id)).flatMap {
-            MigrationLog.query(on: self.database(nil))
+            MigrationLog.query(on: self.database(item.id))
                 .filter(\.$name == item.migration.name)
                 .delete()
         }
