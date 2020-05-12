@@ -153,6 +153,22 @@ extension Collection where Element: FluentKit.Model {
         self.forEach { model in
             precondition(!model._$id.exists)
         }
+        
+        var objects = [[FieldKey : DatabaseQuery.Value]]()
+        
+        let middlewares = self.map { model in
+            database.configuration.middleware.chainingTo(Element.self) { event, model, db -> EventLoopFuture<Void> in
+                model._$id.generate()
+                model.touchTimestamps(.create, .update)
+                objects.append(model.input.values)
+                return db.eventLoop.makeSucceededFuture(())
+            }.create(model, on: database)
+        }
+    
+        let middlewareFuture: EventLoopFuture<Void> = failureHandler == .failOnFirst ?
+            .andAllSucceed(middlewares, on: database.eventLoop) :
+            .andAllComplete(middlewares, on: database.eventLoop)
+        
         self.forEach {
             $0._$id.generate()
             $0.touchTimestamps(.create, .update)
@@ -167,8 +183,15 @@ extension Collection where Element: FluentKit.Model {
                 $0._$id.exists = true
             }
         }
-
+        
     }
+}
+
+public enum MiddlewareFailureHandler {
+    /// Insert objects which middleware did not fail
+    case insertSucceeded
+    /// If a failure has occurs in a middleware, none of the models are saved and the first failure is returned.
+    case failOnFirst
 }
 
 // MARK: Private
