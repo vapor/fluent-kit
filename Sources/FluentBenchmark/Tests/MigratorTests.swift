@@ -103,7 +103,7 @@ extension FluentBenchmarker {
                 // some databases such as MongoDB won't throw an error if the table doesn't exist.
                 XCTAssertEqual(count, 0)
             } catch let error {
-                // This is a valid state to enter. A SQL database with throw an error
+                // This is a valid state to enter. A SQL database will throw an error
                 // because the `_fluent_migrations` table on the `database2` database
                 // will have not been created yet.
             }
