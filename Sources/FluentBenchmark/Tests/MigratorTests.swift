@@ -96,7 +96,17 @@ extension FluentBenchmarker {
             XCTAssertEqual(log1.batch, 1)
             XCTAssertEqual(log1.name, "\(GalaxyMigration.self)")
 
-            try XCTAssertThrowsError(MigrationLog.query(on: database2).count().wait())
+            do {
+                let count = try MigrationLog.query(on: database2).count().wait()
+
+                // This is a valid state to enter. Unlike database in the SQL family,
+                // some databases such as MongoDB won't throw an error if the table doesn't exist.
+                XCTAssertEqual(count, 0)
+            } catch let error {
+                // This is a valid state to enter. A SQL database with throw an error
+                // because the `_fluent_migrations` table on the `database2` database
+                // will have not been created yet.
+            }
 
 
             // Migration #2
