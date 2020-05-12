@@ -49,8 +49,7 @@ extension Model {
         return Self.query(on: database)
             .filter(\._$id == self.id!)
             .set(input)
-            .action(.update)
-            .run()
+            .update()
             .flatMapThrowing
         {
             try self.output(from: SavedInput(input))
@@ -71,20 +70,12 @@ extension Model {
     }
 
     private func _delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        let query = Self.query(on: database)
-        if force {
-            _ = query.withDeleted()
-        }
-        
-        query.shouldForceDelete = force
-        
-        return query
+        return Self.query(on: database)
             .filter(\._$id == self.id!)
-            .action(.delete)
-            .run()
+            .delete(force: force)
             .map
         {
-            if force, self.deletedTimestamp == nil {
+            if force || self.deletedTimestamp == nil {
                 self._$id.exists = false
             }
         }
@@ -134,26 +125,19 @@ extension Model {
 extension Collection where Element: FluentKit.Model {
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
         guard self.count > 0 else {
-            // Is it valid to try to create zero models? For now we call it
-            // successful without doing anything.
             return database.eventLoop.makeSucceededFuture(())
         }
 
-        let query = Element.query(on: database)
-        if force {
-            _ = query.withDeleted()
-        }
-        query.shouldForceDelete = force
+        #warning("TODO: make model vs. query builder timestamp updates more consistent")
 
-        return query
+        return Element.query(on: database)
             .filter(\._$id ~~ self.map { $0.id! })
-            .action(.delete)
-            .run()
+            .delete(force: force)
             .map
         {
             if force {
                 self.forEach {
-                    if $0.deletedTimestamp == nil {
+                    if force || $0.deletedTimestamp == nil {
                         $0._$id.exists = false
                     }
                 }
@@ -163,26 +147,25 @@ extension Collection where Element: FluentKit.Model {
 
     public func create(on database: Database) -> EventLoopFuture<Void> {
         guard self.count > 0 else {
-            // Is it valid to try to create zero models? For now we call it
-            // successful without doing anything.
             return database.eventLoop.makeSucceededFuture(())
         }
 
-        let builder = Element.query(on: database)
         self.forEach { model in
             precondition(!model._$id.exists)
         }
-
         self.forEach {
             $0._$id.generate()
             $0.touchTimestamps(.create, .update)
         }
-        builder.set(self.map { $0.collectInput() })
-        builder.query.action = .create
-        var it = self.makeIterator()
-        return builder.run { _ in
-            let next = it.next()!
-            next._$id.exists = true
+
+        return Element.query(on: database)
+            .set(self.map { $0.collectInput() })
+            .create()
+            .map
+        {
+            self.forEach {
+                $0._$id.exists = true
+            }
         }
 
     }

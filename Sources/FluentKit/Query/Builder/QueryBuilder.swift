@@ -88,6 +88,7 @@ public final class QueryBuilder<Model>
     }
 
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
+        self.includeDeleted = true
         self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
@@ -290,6 +291,7 @@ public final class QueryBuilder<Model>
             for timestamp in timestamps {
                 // Only add timestamps if they weren't already set
                 #warning("TODO: merge this with model date touches")
+                #warning("TODO: this breaks for formatted timestamps")
                 if nested[timestamp.key] == nil {
                     nested[timestamp.key] = .bind(Date())
                 }
