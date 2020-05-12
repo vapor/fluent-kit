@@ -12,14 +12,14 @@ import NIO
 ///
 /// Return an empty result for the next query:
 ///
-///     let db = TestResultsDatabase()
+///     let db = ArrayTestDatabase()
 ///     db.append([])
 ///
 /// Return an empty result for first query, and a single result
 /// for the second query (perhaps a query to find a record with
 /// no results followed by a successful query to create the record):
 ///
-///     let db = TestResultsDatabase()
+///     let db = ArrayTestDatabase()
 ///     db.append([])
 ///     db.append([
 ///         TestOutput(["id": 1, "name": "Boise"])
@@ -27,11 +27,19 @@ import NIO
 ///
 /// Return multiple rows for one query:
 ///
-///     let db = TestResultsDatabase()
+///     let db = ArrayTestDatabase()
 ///     db.append([
 ///         TestOutput(["id": 1, ...]),
 ///         TestOutput(["id": 2, ...])
 ///     ])
+///
+/// Append a `Model`:
+///
+///     let db = ArrayTestDatabase()
+///     db.append([
+///         TestOutput(Planet(name: "Pluto"))
+///     ])
+///
 public final class ArrayTestDatabase: TestDatabase {
     var results: [[DatabaseOutput]]
 
@@ -198,6 +206,31 @@ public struct TestOutput: DatabaseOutput {
 
     public init(_ mockFields: [FieldKey: Any]) {
         self.dummyDecodedFields = mockFields
+    }
+
+    public init<TestModel: Model>(_ model: TestModel) {
+        func unpack(_ dbValue: DatabaseQuery.Value) -> Any? {
+            switch dbValue {
+            case .null:
+                return nil
+            case .enumCase(let value):
+                return value
+            case .custom(let value):
+                return value
+            case .bind(let value):
+                return value
+            case .array(let array):
+                return array.map(unpack)
+            case .dictionary(let dictionary):
+                return dictionary.mapValues(unpack)
+            case .default:
+                return ""
+            }
+        }
+
+        self.init(
+            model.input.values.mapValues(unpack)
+        )
     }
 
     public mutating func append(key: FieldKey, value: Any) {
