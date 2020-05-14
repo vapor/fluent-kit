@@ -1,3 +1,4 @@
+import AsyncKit
 import NIO
 
 public final class QueryBuilder<Model>
@@ -206,9 +207,9 @@ public final class QueryBuilder<Model>
                     return self.database.eventLoop.makeSucceededFuture(())
                 }
                 // run eager loads
-                return .andAllSync(self.eagerLoaders.map { eagerLoad in
-                    { eagerLoad.anyRun(models: all, on: self.database) }
-                }, on: self.database.eventLoop)
+                return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: self.eagerLoaders) { loader in
+                    return loader.anyRun(models: all, on: self.database)
+                }
             }
         } else {
             return done
