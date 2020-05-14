@@ -5,7 +5,6 @@ import XCTest
 
 public final class FluentBenchmarker {
     public let databases: Databases
-    public let ids: (DatabaseID, DatabaseID)
 
     public var database: Database {
         self.databases.database(
@@ -14,11 +13,9 @@ public final class FluentBenchmarker {
         )!
     }
     
-    public init(databases: Databases, _ ids: (DatabaseID, DatabaseID)) {
-        precondition(ids.0 != ids.1, "FluentBecnhmarker DatabaseIDs must be non-equivalent")
-
+    public init(databases: Databases) {
+        precondition(databases.ids().count >= 2, "FluentBenchmarker Databases instance must have 2 or more registered databases")
         self.databases = databases
-        self.ids = ids
     }
 
     public func testAll() throws {

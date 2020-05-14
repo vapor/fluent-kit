@@ -59,16 +59,19 @@ extension FluentBenchmarker {
         try self.runTest(#function, []) {
 
             // Setup
+            let ids = Array(self.databases.ids())
+            let databaseID = (ids[0], ids[1])
+
             let database1 = try XCTUnwrap(
                 self.databases.database(
-                    self.ids.0,
+                    databaseID.0,
                     logger: Logger(label: "codes.vapor.tests"),
                     on: self.databases.eventLoopGroup.next()
                 )
             )
             let database2 = try XCTUnwrap(
                 self.databases.database(
-                    self.ids.1,
+                    databaseID.1,
                     logger: Logger(label: "codes.vapor.tests"),
                     on: self.databases.eventLoopGroup.next()
                 )
@@ -78,7 +81,7 @@ extension FluentBenchmarker {
 
 
             // Migration #1
-            migrations.add(GalaxyMigration(), to: self.ids.0)
+            migrations.add(GalaxyMigration(), to: databaseID.0)
 
             let migrator = Migrator(
                 databases: self.databases,
@@ -102,7 +105,7 @@ extension FluentBenchmarker {
                 // This is a valid state to enter. Unlike database in the SQL family,
                 // some databases such as MongoDB won't throw an error if the table doesn't exist.
                 XCTAssertEqual(count, 0)
-            } catch let error {
+            } catch {
                 // This is a valid state to enter. A SQL database will throw an error
                 // because the `_fluent_migrations` table on the `database2` database
                 // will have not been created yet.
@@ -110,7 +113,7 @@ extension FluentBenchmarker {
 
 
             // Migration #2
-            migrations.add(GalaxyMigration(), to: self.ids.1)
+            migrations.add(GalaxyMigration(), to: databaseID.1)
 
             try migrator.setupIfNeeded().wait()
             try migrator.prepareBatch().wait()
