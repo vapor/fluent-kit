@@ -9,6 +9,7 @@ extension FluentBenchmarker {
         try self.testModel_idGeneration()
         try self.testModel_jsonColumn()
         try self.testModel_hasChanges()
+        try self.testModel_outputError()
     }
 
     private func testModel_uuid() throws {
@@ -192,6 +193,48 @@ extension FluentBenchmarker {
             try fetched.save(on: self.database).wait()
             XCTAssertFalse(fetched.hasChanges)
         }
+    }
+
+    private func testModel_outputError() throws {
+        let foo = Foo()
+        do {
+            try foo.output(from: BadFooOutput())
+        } catch {
+            print("\(error)")
+            XCTAssert("\(error)".contains("id"))
+        }
+    }
+}
+
+struct BadFooOutput: DatabaseOutput {
+    func schema(_ schema: String) -> DatabaseOutput {
+        self
+    }
+
+    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        self
+    }
+
+    func contains(_ key: FieldKey) -> Bool {
+        true
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        false
+    }
+
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
+        where T : Decodable
+    {
+        throw DecodingError.typeMismatch(T.self, .init(
+            codingPath: [],
+            debugDescription: "Failed to decode",
+            underlyingError: nil
+        ))
+    }
+
+    var description: String {
+        "bad foo output"
     }
 }
 
