@@ -30,15 +30,10 @@ public final class ChildrenProperty<From, To>
     }
 
     public var wrappedValue: [To] {
-        get {
-            guard let value = self.value else {
-                fatalError("Children relation not eager loaded, use $ prefix to access: \(name)")
-            }
-            return value
+        guard let value = self.value else {
+            fatalError("Children relation not eager loaded, use $ prefix to access: \(name)")
         }
-        set {
-            fatalError("Children relation is get-only.")
-        }
+        return value
     }
 
     public var projectedValue: ChildrenProperty<From, To> {

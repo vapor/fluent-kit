@@ -31,15 +31,10 @@ public final class SiblingsProperty<From, To, Through>
     }
 
     public var wrappedValue: [To] {
-        get {
-            guard let value = self.value else {
-                fatalError("Siblings relation not eager loaded, use $ prefix to access: \(name)")
-            }
-            return value
+        guard let value = self.value else {
+            fatalError("Siblings relation not eager loaded, use $ prefix to access: \(name)")
         }
-        set {
-            fatalError("Siblings relation is get-only.")
-        }
+        return value
     }
 
     public var projectedValue: SiblingsProperty<From, To, Through> {
