@@ -22,6 +22,7 @@ public final class FluentBenchmarker {
         try self.testArray()
         try self.testBatch()
         try self.testChildren()
+        try self.testCodable()
         try self.testChunk()
         try self.testCRUD()
         try self.testEagerLoad()

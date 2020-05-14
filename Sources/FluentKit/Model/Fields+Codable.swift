@@ -5,8 +5,19 @@ extension Fields {
         try self.labeledProperties.compactMapValues {
             $0 as? AnyCodableProperty
         }.forEach { label, property in
-            let decoder = ContainerDecoder(container: container, key: .string(label))
-            try property.decode(from: decoder)
+            do {
+                let decoder = ContainerDecoder(container: container, key:   .string(label))
+                try property.decode(from: decoder)
+            } catch {
+                throw DecodingError.typeMismatch(
+                    type(of: property).anyValueType,
+                    .init(
+                        codingPath: [ModelCodingKey.string(label)],
+                        debugDescription: "Could not decode property",
+                        underlyingError: error
+                    )
+                )
+            }
         }
     }
 
@@ -15,8 +26,19 @@ extension Fields {
         try self.labeledProperties.compactMapValues {
             $0 as? AnyCodableProperty
         }.forEach { label, property in
-            let encoder = ContainerEncoder(container: container, key: .string(label))
-            try property.encode(to: encoder)
+            do {
+                let encoder = ContainerEncoder(container: container, key: .string(label))
+                try property.encode(to: encoder)
+            } catch {
+                throw EncodingError.invalidValue(
+                    property.anyValue ?? "null",
+                    .init(
+                        codingPath: [ModelCodingKey.string(label)],
+                        debugDescription: "Could not encode property",
+                        underlyingError: error
+                    )
+                )
+            }
         }
     }
 }
