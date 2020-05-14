@@ -15,14 +15,14 @@ public final class SiblingsProperty<From, To, Through>
         case ifNotExists
     }
 
-    let from: KeyPath<Through, Through.Parent<From>>
-    let to: KeyPath<Through, Through.Parent<To>>
+    public let from: KeyPath<Through, Through.Parent<From>>
+    public let to: KeyPath<Through, Through.Parent<To>>
     var idValue: From.IDValue?
     
     public var value: [To]?
 
     public init(
-        through: Through.Type,
+        through _: Through.Type,
         from: KeyPath<Through, Through.Parent<From>>,
         to: KeyPath<Through, Through.Parent<To>>
     ) {
