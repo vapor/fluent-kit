@@ -39,6 +39,7 @@ public final class FluentBenchmarker {
         try self.testParent()
         try self.testPerformance()
         try self.testRange()
+        try self.testSchema()
         try self.testSet()
         try self.testSiblings()
         try self.testSoftDelete()

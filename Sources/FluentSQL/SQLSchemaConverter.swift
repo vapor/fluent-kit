@@ -27,6 +27,12 @@ public struct SQLSchemaConverter {
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
         update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
+        update.addTableConstraints = schema.createConstraints.map {
+            self.constraint($0, table: schema.schema)
+        }
+        update.dropTableConstraints = schema.deleteConstraints.map {
+            self.deleteConstraint($0, table: schema.schema)
+        }
         return update
     }
     
@@ -38,7 +44,7 @@ public struct SQLSchemaConverter {
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.schema))
         create.columns = schema.createFields.map(self.fieldDefinition)
-        create.tableConstraints = schema.constraints.map {
+        create.tableConstraints = schema.createConstraints.map {
             self.constraint($0, table: schema.schema)
         }
         if !schema.exclusiveCreate {
@@ -52,41 +58,28 @@ public struct SQLSchemaConverter {
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> SQLExpression {
-        func identifier(_ fields: [DatabaseSchema.FieldName]) -> String {
-            return fields.map { field -> String in
-                switch field {
-                case .custom:
-                    return ""
-                case .key(let key):
-                    return "\(table).\(self.key(key))"
-                }
-            }.joined(separator: "+")
-        }
-
         switch constraint {
-        case .constraint(let constraint, let customName):
-            switch constraint {
+        case .constraint(let algorithm, let customName):
+            let name = customName ?? self.constraintIdentifier(algorithm, table: table)
+            switch algorithm {
             case .unique(let fields):
-                let name = customName ?? identifier(fields)
                 return SQLConstraint(
                     algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                    name: SQLIdentifier("uq:\(name)")
+                    name: SQLIdentifier(name)
                 )
             case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
-                let name = customName ?? identifier(local + foreign)
                 let reference = SQLForeignKey(
                     table: self.name(schema),
                     columns: foreign.map(self.fieldName),
                     onDelete: self.foreignKeyAction(onDelete),
                     onUpdate: self.foreignKeyAction(onUpdate)
                 )
-
                 return SQLConstraint(
                     algorithm: SQLTableConstraintAlgorithm.foreignKey(
                         columns: local.map(self.fieldName),
                         references: reference
                     ),
-                    name: SQLIdentifier("fk:\(name)")
+                    name: SQLIdentifier(name)
                 )
             case .custom(let any):
                 return custom(any)
@@ -95,6 +88,51 @@ public struct SQLSchemaConverter {
             return custom(any)
         }
     }
+
+    private func deleteConstraint(_ constraint: DatabaseSchema.ConstraintDelete, table: String) -> SQLExpression {
+        switch constraint {
+        case .constraint(let algorithm):
+            let name = self.constraintIdentifier(algorithm, table: table)
+            return SQLConstraint(
+                algorithm: SQLRaw(""),
+                name: SQLIdentifier(name)
+            )
+        case .name(let name):
+            return SQLConstraint(
+                algorithm: SQLRaw(""),
+                name: SQLIdentifier(name)
+            )
+        case .custom(let any):
+            return custom(any)
+        }
+    }
+
+    private func constraintIdentifier(_ algorithm: DatabaseSchema.ConstraintAlgorithm, table: String) -> String {
+        let fieldNames: [DatabaseSchema.FieldName]
+        let prefix: String
+
+        switch algorithm {
+        case .foreignKey(let fields, _, _, _, _):
+            prefix = "fk"
+            fieldNames = fields
+        case .unique(let fields):
+            prefix = "uq"
+            fieldNames = fields
+        default:
+            fatalError("Constraint identifier not supported with custom constraints.")
+        }
+
+        let fieldsString = fieldNames.map { field -> String in
+            switch field {
+            case .custom:
+                return ""
+            case .key(let key):
+                return "\(table).\(self.key(key))"
+            }
+        }.joined(separator: "+")
+        return "\(prefix):\(fieldsString)"
+    }
+
 
     private func foreignKeyAction(_ action: DatabaseSchema.ForeignKeyAction) -> SQLForeignKeyAction {
         switch action {

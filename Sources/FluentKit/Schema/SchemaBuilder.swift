@@ -35,10 +35,22 @@ public final class SchemaBuilder {
     }
 
     public func unique(on fields: FieldKey..., name: String? = nil) -> Self {
-        self.schema.constraints.append(.constraint(
+        self.schema.createConstraints.append(.constraint(
             .unique(fields: fields.map { .key($0) }),
             name: name
         ))
+        return self
+    }
+
+    public func deleteUnique(on fields: FieldKey...) -> Self {
+        self.schema.deleteConstraints.append(.constraint(
+            .unique(fields: fields.map { .key($0) })
+        ))
+        return self
+    }
+
+    public func deleteConstraint(name: String) -> Self {
+        self.schema.deleteConstraints.append(.name(name))
         return self
     }
 
@@ -50,7 +62,7 @@ public final class SchemaBuilder {
         onUpdate: DatabaseSchema.ForeignKeyAction = .noAction,
         name: String? = nil
     ) -> Self {
-        self.schema.constraints.append(.constraint(
+        self.schema.createConstraints.append(.constraint(
             .foreignKey(
                 [.key(field)],
                 foreignSchema,

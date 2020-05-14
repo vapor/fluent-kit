@@ -125,12 +125,19 @@ public struct DatabaseSchema {
         case custom(Any)
     }
 
+    public enum ConstraintDelete {
+        case constraint(ConstraintAlgorithm)
+        case name(String)
+        case custom(Any)
+    }
+
     public var action: Action
     public var schema: String
     public var createFields: [FieldDefinition]
     public var updateFields: [FieldUpdate]
     public var deleteFields: [FieldName]
-    public var constraints: [Constraint]
+    public var createConstraints: [Constraint]
+    public var deleteConstraints: [ConstraintDelete]
     public var exclusiveCreate: Bool
     
     public init(schema: String) {
@@ -139,7 +146,8 @@ public struct DatabaseSchema {
         self.createFields = []
         self.updateFields = []
         self.deleteFields = []
-        self.constraints = []
+        self.createConstraints = []
+        self.deleteConstraints = []
         self.exclusiveCreate = true
     }
 }

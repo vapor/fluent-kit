@@ -200,7 +200,6 @@ extension FluentBenchmarker {
         do {
             try foo.output(from: BadFooOutput())
         } catch {
-            print("\(error)")
             XCTAssert("\(error)".contains("id"))
         }
     }
