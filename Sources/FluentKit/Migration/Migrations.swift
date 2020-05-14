@@ -5,7 +5,7 @@ public final class Migrations {
     }
     
     var storage: [Item]
-    var databases: Set<DatabaseID> { Set(self.storage.compactMap(\.id)) }
+    var databases: Set<DatabaseID?> { Set(self.storage.map(\.id)) }
     
     public init() {
         self.storage = []
