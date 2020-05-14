@@ -5,15 +5,13 @@ public final class Migrations {
     }
     
     var storage: [Item]
-    var databases: Set<DatabaseID>
+    var databases: Set<DatabaseID> { Set(self.storage.compactMap(\.id)) }
     
     public init() {
         self.storage = []
-        self.databases = []
     }
     
     public func add(_ migration: Migration, to id: DatabaseID? = nil) {
         self.storage.append(.init(id: id, migration: migration))
-        if let id = id { self.databases.insert(id) }
     }
 }
