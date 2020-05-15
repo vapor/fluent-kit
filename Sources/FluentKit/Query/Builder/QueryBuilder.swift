@@ -13,7 +13,7 @@ public final class QueryBuilder<Model>
 
     public convenience init(database: Database) {
         self.init(
-            query: .init(schema: Model.schema),
+            query: .init(schema: Model.schema, alias: Model.alias),
             database: database,
             models: [Model.self]
         )
@@ -64,7 +64,7 @@ public final class QueryBuilder<Model>
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
     {
-        self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
+        self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schemaOrAlias))
         return self
     }
 
@@ -192,7 +192,7 @@ public final class QueryBuilder<Model>
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
-                try model.output(from: output.schema(Model.schema))
+                try model.output(from: output.schema(Model.schemaOrAlias))
                 all.append(model)
                 return model
             }))

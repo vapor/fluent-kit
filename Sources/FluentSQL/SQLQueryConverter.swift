@@ -48,7 +48,11 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        select.tables.append(SQLIdentifier(query.schema))
+        if let alias = query.alias {
+            select.tables.append(SQLAlias(SQLIdentifier(query.schema), as: SQLIdentifier(alias)))
+        } else {
+            select.tables.append(SQLIdentifier(query.schema))
+        }
         switch query.action {
         case .read:
             select.isDistinct = query.isUnique
