@@ -43,6 +43,6 @@ public struct SolarSystem: Migration {
             all = migrations
         }
 
-        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all) { $0.revert(on: database) }
+        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all.reversed()) { $0.revert(on: database) }
     }
 }

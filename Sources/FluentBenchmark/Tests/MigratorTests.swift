@@ -102,7 +102,7 @@ extension FluentBenchmarker {
             do {
                 let count = try MigrationLog.query(on: database2).count().wait()
 
-                // This is a valid state to enter. Unlike database in the SQL family,
+                // This is a valid state to enter. Unlike databases in the SQL family,
                 // some databases such as MongoDB won't throw an error if the table doesn't exist.
                 XCTAssertEqual(count, 0)
             } catch {

@@ -144,7 +144,7 @@ private final class DatabaseMigrator {
             return self.lastBatchNumber().and(value: migrations)
         }.flatMap { batch, migrations in
             return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: migrations) { migration in
-                self.prepare(migration, batch: batch)
+                self.prepare(migration, batch: batch + 1)
             }
         }
     }
