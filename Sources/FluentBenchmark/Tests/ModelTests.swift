@@ -6,6 +6,7 @@ extension FluentBenchmarker {
         try self.testModel_decode()
         try self.testModel_nullField()
         try self.testModel_nullField_2()
+        try self.testModel_nullField_batchCreate()
         try self.testModel_idGeneration()
         try self.testModel_jsonColumn()
         try self.testModel_hasChanges()
@@ -122,6 +123,16 @@ extension FluentBenchmarker {
                 XCTFail("unexpected non-nil value")
                 return
             }
+        }
+    }
+
+    private func testModel_nullField_batchCreate() throws {
+        try runTest(#function, [
+            FooMigration(),
+        ]) {
+            let a = Foo(bar: "test")
+            let b = Foo(bar: nil)
+            try [a, b].create(on: self.database).wait()
         }
     }
 
