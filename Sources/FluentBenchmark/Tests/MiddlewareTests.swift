@@ -66,8 +66,8 @@ extension FluentBenchmarker {
             let user3 = User(name: "C")
           
             XCTAssertThrowsError(try [user, user2, user3].create(on: self.database).wait()) { error in
-                let testError = try! XCTUnwrap(error as? TestError)
-                XCTAssertEqual(testError.string, "cancelCreation")
+                let testError = (error as? TestError)
+                XCTAssertEqual(testError?.string, "cancelCreation")
             }
             
             let userCount = try User.query(on: self.database).count().wait()
