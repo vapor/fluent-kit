@@ -1,3 +1,5 @@
+import FluentSQL
+
 extension FluentBenchmarker {
     public func testSchema() throws {
         try self.testSchema_addConstraint()
@@ -8,6 +10,10 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             CreateCategories()
         ]) {
+            guard let sql = self.database as? SQLDatabase, sql.dialect.alterTableSyntax.allowsBatch else {
+                self.database.logger.warning("Skipping \(#function)")
+                return
+            }
             // Add unique constraint
             try AddUniqueConstraintToCategories().prepare(on: self.database).wait()
 
@@ -30,6 +36,10 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             CreateCategories()
         ]) {
+            guard let sql = self.database as? SQLDatabase, sql.dialect.alterTableSyntax.allowsBatch else {
+                self.database.logger.warning("Skipping \(#function)")
+                return
+            }
             // Add unique constraint
             try AddNamedUniqueConstraintToCategories().prepare(on: self.database).wait()
 
