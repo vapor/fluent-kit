@@ -64,9 +64,14 @@ extension QueryBuilder {
 
     public func sort(
         _ field: DatabaseQuery.Field,
-        _ direction: DatabaseQuery.Sort.Direction = .ascending
+        _ direction: DatabaseQuery.Sort.Direction
     ) -> Self {
         self.query.sorts.append(.sort(field, direction))
+        return self
+    }
+
+    public func sort(_ sort: DatabaseQuery.Sort) -> Self {
+        self.query.sorts.append(sort)
         return self
     }
 }
