@@ -41,28 +41,15 @@ extension OptionalEnumProperty: AnyProperty { }
 extension OptionalEnumProperty: Property {
     public var value: WrappedValue?? {
         get {
-            if let value = self.field.inputValue {
-                switch value {
-                case .bind(let string as String),
-                     .enumCase(let string):
-                    guard let value = WrappedValue(rawValue: string) else {
-                        fatalError("Invalid enum case name '\(string)' for enum \(Value.self)")
-                    }
-                    return .some(value)
-                default:
-                    fatalError("Unexpected enum input value type: \(value)")
+            self.field.value.map {
+                $0.map {
+                    WrappedValue(rawValue: $0)!
                 }
-            } else if let value = self.field.outputValue {
-                return .some(value.flatMap { WrappedValue(rawValue: $0) })
-            } else {
-                return .none
             }
         }
         set {
-            if let value = newValue {
-                self.field.inputValue = value.flatMap { .enumCase($0.rawValue) } ?? .null
-            } else {
-                self.field.inputValue = nil
+            self.field.value = newValue?.map {
+                $0.rawValue
             }
         }
     }
@@ -90,7 +77,9 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        self.field.input(to: input)
+        if let value = self.value {
+            input.set(value.map { .enumCase($0.rawValue) } ?? .null, at: self.field.key)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {

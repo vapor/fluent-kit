@@ -44,29 +44,12 @@ extension EnumProperty: AnyProperty { }
 extension EnumProperty: Property {
     public var value: Value? {
         get {
-            if let value = self.field.inputValue {
-                switch value {
-                case .enumCase(let string):
-                    return Value(rawValue: string)!
-                case .bind(let string as String):
-                    guard let value = Value(rawValue: string) else {
-                        fatalError("Invalid enum case name '\(string)' for enum \(Value.self)")
-                    }
-
-                    return value
-                default:
-                    fatalError("Unexpected enum input value type: \(value)")
-                }
-            } else if let value = self.field.outputValue {
-                return Value(rawValue: value)!
-            } else {
-                return nil
+            self.field.value.map {
+                Value(rawValue: $0)!
             }
         }
         set {
-            self.field.inputValue = newValue.flatMap {
-                .enumCase($0.rawValue)
-            }
+            self.field.value = newValue?.rawValue
         }
     }
 }
@@ -93,7 +76,9 @@ extension EnumProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        self.field.input(to: input)
+        if let value = self.value {
+            input.set(.enumCase(value.rawValue), at: self.field.key)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
