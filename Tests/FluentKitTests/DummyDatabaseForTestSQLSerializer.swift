@@ -4,6 +4,10 @@ import NIO
 import SQLKit
 
 public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+    public var inTransaction: Bool {
+        false
+    }
+
     struct Configuration: DatabaseConfiguration {
         func makeDriver(for databases: Databases) -> DatabaseDriver {
             fatalError()

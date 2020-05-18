@@ -112,9 +112,9 @@ public struct SQLSchemaConverter {
         let prefix: String
 
         switch algorithm {
-        case .foreignKey(let fields, _, _, _, _):
+        case .foreignKey(let localFields, _, let foreignFields, _, _):
             prefix = "fk"
-            fieldNames = fields
+            fieldNames = localFields + foreignFields
         case .unique(let fields):
             prefix = "uq"
             fieldNames = fields

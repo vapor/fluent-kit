@@ -97,6 +97,9 @@ extension TestDatabase {
 }
 
 private struct _TestDatabase: Database {
+    var inTransaction: Bool {
+        false
+    }
     let test: TestDatabase
     var context: DatabaseContext
 
@@ -208,7 +211,9 @@ public struct TestOutput: DatabaseOutput {
         self.dummyDecodedFields = mockFields
     }
 
-    public init<TestModel: Model>(_ model: TestModel) {
+    public init<TestModel>(_ model: TestModel)
+        where TestModel: Model
+    {
         func unpack(_ dbValue: DatabaseQuery.Value) -> Any? {
             switch dbValue {
             case .null:
@@ -228,13 +233,25 @@ public struct TestOutput: DatabaseOutput {
             }
         }
 
+        let collect = CollectInput()
+        model.input(to: collect)
         self.init(
-            model.input.values.mapValues(unpack)
+            collect.storage.mapValues(unpack)
         )
     }
 
     public mutating func append(key: FieldKey, value: Any) {
         dummyDecodedFields[key] = value
+    }
+}
+
+private final class CollectInput: DatabaseInput {
+    var storage: [FieldKey: DatabaseQuery.Value]
+    init() {
+        self.storage = [:]
+    }
+    func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
+        self.storage[key] = value
     }
 }
 
