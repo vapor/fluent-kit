@@ -5,6 +5,7 @@ extension FluentBenchmarker {
         try self.testJoin_fieldFilter()
         try self.testJoin_fieldOrdering()
         try self.testJoin_aliasNesting()
+        try self.testJoin_partialSelect()
     }
 
     private func testJoin_basic() throws {
@@ -177,6 +178,32 @@ extension FluentBenchmarker {
 
         _ = User.query(on: self.database)
             .join(OtherParticipant.self, on: \User.$id == \OtherParticipant.$user.$id)
+    }
+
+    private func testJoin_partialSelect() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .field(\.$name)
+                .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+                .field(Star.self, \.$name)
+                .all().wait()
+
+            for planet in planets {
+                XCTAssertNil(planet.$id.value)
+                let star = try planet.joined(Star.self)
+                XCTAssertNil(star.$id.value)
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(star.name, "Sun")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(star.name, "Alpha Centauri")
+                default: break
+                }
+
+            }
+        }
     }
 }
 
