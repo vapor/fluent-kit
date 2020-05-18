@@ -122,6 +122,10 @@ public final class Databases {
         }
     }
 
+    public func ids() -> Set<DatabaseID> {
+        return self.lock.withLock { Set(self.configurations.keys) }
+    }
+
     public func shutdown() {
         self.lock.lock()
         defer { self.lock.unlock() }
