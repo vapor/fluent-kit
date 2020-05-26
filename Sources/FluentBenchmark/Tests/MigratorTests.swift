@@ -66,6 +66,7 @@ extension FluentBenchmarker {
                 self.databases.database(
                     databaseID.0,
                     logger: Logger(label: "codes.vapor.tests"),
+                    history: .init(),
                     on: self.databases.eventLoopGroup.next()
                 )
             )
@@ -73,6 +74,7 @@ extension FluentBenchmarker {
                 self.databases.database(
                     databaseID.1,
                     logger: Logger(label: "codes.vapor.tests"),
+                    history: .init(),
                     on: self.databases.eventLoopGroup.next()
                 )
             )

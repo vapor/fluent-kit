@@ -9,6 +9,7 @@ public final class FluentBenchmarker {
     public var database: Database {
         self.databases.database(
             logger: .init(label: "codes.fluent.benchmarker"),
+            history: .init(),
             on: self.databases.eventLoopGroup.next()
         )!
     }
