@@ -15,7 +15,7 @@ public struct Migrator {
     ) {
         self.init(
             databaseFactory: {
-                databases.database($0, logger: logger, on: eventLoop)!
+                databases.database($0, logger: logger, history: .init(), on: eventLoop)!
             },
             migrations: migrations,
             on: eventLoop

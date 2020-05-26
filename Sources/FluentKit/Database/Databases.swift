@@ -88,6 +88,7 @@ public final class Databases {
     public func database(
         _ id: DatabaseID? = nil,
         logger: Logger,
+        history: QueryHistory,
         on eventLoop: EventLoop
     ) -> Database? {
         self.lock.lock()
@@ -99,7 +100,8 @@ public final class Databases {
         let context = DatabaseContext(
             configuration: configuration,
             logger: logger,
-            eventLoop: eventLoop
+            eventLoop: eventLoop,
+            history: history
         )
         let driver: DatabaseDriver
         if let existing = self.drivers[id] {
