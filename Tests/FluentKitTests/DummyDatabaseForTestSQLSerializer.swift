@@ -26,7 +26,8 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.context = .init(
             configuration: Configuration(),
             logger: .init(label: "test"),
-            eventLoop: EmbeddedEventLoop()
+            eventLoop: EmbeddedEventLoop(),
+            history: .init()
         )
         self.sqlSerializers = []
     }
