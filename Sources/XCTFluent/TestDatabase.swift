@@ -87,7 +87,8 @@ extension TestDatabase {
         self.database(context: .init(
             configuration: self.configuration,
             logger: Logger(label: "codes.vapor.fluent.test"),
-            eventLoop: EmbeddedEventLoop()
+            eventLoop: EmbeddedEventLoop(),
+            history: .init()
         ))
     }
 
