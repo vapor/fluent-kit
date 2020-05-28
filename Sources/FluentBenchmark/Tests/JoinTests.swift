@@ -187,6 +187,7 @@ extension FluentBenchmarker {
             let planets = try Planet.query(on: self.database)
                 .field(\.$name)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+                .filter(Star.self, \.$name ~~ ["Sun", "Alpha Centauri"])
                 .field(Star.self, \.$name)
                 .all().wait()
 
