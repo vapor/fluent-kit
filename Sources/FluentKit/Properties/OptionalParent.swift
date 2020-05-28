@@ -32,8 +32,13 @@ public final class OptionalParentProperty<From, To>
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
-        To.query(on: database)
-            .filter(\._$id == self.id!)
+        let builder = To.query(on: database)
+        if let id = self.id {
+            builder.filter(\._$id == id)
+        } else {
+            builder.filter(\._$id == .null)
+        }
+        return builder
     }
 }
 
