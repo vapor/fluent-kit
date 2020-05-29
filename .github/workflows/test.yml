@@ -78,16 +78,16 @@ jobs:
         with: { path: 'fluent-kit' }
       - name: Checkout Postgres driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
+        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
+        with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
       - name: Checkout SQLite driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
+        with: { repository: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
       - name: Checkout Mongo driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
+        with: { repository: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
       - name: Link drivers to local fluent-kit
         run: |
           swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
@@ -145,16 +145,16 @@ jobs:
         with: { path: 'fluent-kit' }
       - name: Checkout Postgres driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
+        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
+        with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
       - name: Checkout SQLite driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
+        with: { repository: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
       - name: Checkout Mongo driver
         uses: actions/checkout@v2
-        with: { repo: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
+        with: { repository: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
       - name: Link drivers to local fluent-kit
         run: |
           swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
