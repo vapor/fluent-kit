@@ -41,8 +41,8 @@ extension FluentBenchmarker {
 
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions.insert(.withFractionalSeconds)
-            let createdAt = try formatter.string(from: XCTUnwrap(event.createdAt))
-            let updatedAt = try formatter.string(from: XCTUnwrap(event.updatedAt))
+            let createdAt = try formatter.string(from: event.createdAt!)
+            let updatedAt = try formatter.string(from: event.updatedAt!)
 
             try Event.query(on: self.database).run({ output in
                 do {
