@@ -62,20 +62,16 @@ extension FluentBenchmarker {
             let ids = Array(self.databases.ids())
             let databaseID = (ids[0], ids[1])
 
-            let database1 = try XCTUnwrap(
-                self.databases.database(
-                    databaseID.0,
-                    logger: Logger(label: "codes.vapor.tests"),
-                    on: self.databases.eventLoopGroup.next()
-                )
-            )
-            let database2 = try XCTUnwrap(
-                self.databases.database(
-                    databaseID.1,
-                    logger: Logger(label: "codes.vapor.tests"),
-                    on: self.databases.eventLoopGroup.next()
-                )
-            )
+            let database1 = self.databases.database(
+                databaseID.0,
+                logger: Logger(label: "codes.vapor.tests"),
+                on: self.databases.eventLoopGroup.next()
+            )!
+            let database2 = self.databases.database(
+                databaseID.1,
+                logger: Logger(label: "codes.vapor.tests"),
+                on: self.databases.eventLoopGroup.next()
+            )!
 
             let migrations = Migrations()
 
@@ -95,9 +91,8 @@ extension FluentBenchmarker {
 
             let logs1 = try MigrationLog.query(on: database1).all().wait()
             XCTAssertEqual(logs1.count, 1)
-            let log1 = try XCTUnwrap(logs1.first)
-            XCTAssertEqual(log1.batch, 1)
-            XCTAssertEqual(log1.name, "\(GalaxyMigration.self)")
+            XCTAssertEqual(logs1.first?.batch, 1)
+            XCTAssertEqual(logs1.first?.name, "\(GalaxyMigration.self)")
 
             do {
                 let count = try MigrationLog.query(on: database2).count().wait()
@@ -120,9 +115,8 @@ extension FluentBenchmarker {
 
             let logs2 = try MigrationLog.query(on: database2).all().wait()
             XCTAssertEqual(logs2.count, 1)
-            let log2 = try XCTUnwrap(logs2.first)
-            XCTAssertEqual(log2.batch, 1)
-            XCTAssertEqual(log2.name, "\(GalaxyMigration.self)")
+            XCTAssertEqual(logs2.first?.batch, 1)
+            XCTAssertEqual(logs2.first?.name, "\(GalaxyMigration.self)")
 
             try XCTAssertEqual(MigrationLog.query(on: database1).count().wait(), 1)
 
