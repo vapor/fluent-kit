@@ -12,10 +12,6 @@ private struct PrefixedOutput: DatabaseOutput {
         PrefixedOutput(prefix: self.prefix, base: self.base.schema(schema))
     }
 
-    func nested(_ key: FieldKey) throws -> DatabaseOutput {
-        try self.base.nested(self.key(key))
-    }
-
     func contains(_ key: FieldKey) -> Bool {
         return self.base.contains(self.key(key))
     }

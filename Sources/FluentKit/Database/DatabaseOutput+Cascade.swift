@@ -15,16 +15,6 @@ private struct CombinedOutput: DatabaseOutput {
         )
     }
 
-    func nested(_ key: FieldKey) throws -> DatabaseOutput {
-        if self.first.contains(key) {
-            return try self.first.nested(key)
-        } else if self.second.contains(key) {
-            return try self.second.nested(key)
-        } else {
-            throw FluentError.missingField(name: key.description)
-        }
-    }
-
     func contains(_ key: FieldKey) -> Bool {
         self.first.contains(key) || self.second.contains(key)
     }

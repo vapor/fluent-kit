@@ -102,7 +102,6 @@ extension OptionalParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        #warning("TODO: ensure decoding errors are readable")
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
     }
@@ -120,7 +119,6 @@ extension OptionalParentProperty: EagerLoadable {
         let loader = OptionalParentEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
-
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,

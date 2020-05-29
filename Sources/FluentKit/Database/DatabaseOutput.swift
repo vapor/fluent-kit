@@ -1,7 +1,5 @@
 public protocol DatabaseOutput: CustomStringConvertible {
     func schema(_ schema: String) -> DatabaseOutput
-    func nested(_ key: FieldKey) throws -> DatabaseOutput
-
     func contains(_ key: FieldKey) -> Bool
     func decodeNil(_ key: FieldKey) throws -> Bool
     func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
