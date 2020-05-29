@@ -94,16 +94,8 @@ public struct SQLSchemaConverter {
         case .constraint(let algorithm):
             let name = self.constraintIdentifier(algorithm, table: table)
             return SQLDropConstraint(name: SQLIdentifier(name))
-            return SQLConstraint(
-                algorithm: SQLRaw(""),
-                name: SQLIdentifier(name)
-            )
         case .name(let name):
             return SQLDropConstraint(name: SQLIdentifier(name))
-            return SQLConstraint(
-                algorithm: SQLRaw(""),
-                name: SQLIdentifier(name)
-            )
         case .custom(let any):
             return custom(any)
         }
