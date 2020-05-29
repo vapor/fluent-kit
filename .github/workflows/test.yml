@@ -63,8 +63,8 @@ jobs:
           ./configure --prefix=/usr --libdir=/usr/lib64 --with-tcl=/usr/lib64 --enable-all && make all install
       - name: Wait for all database servers to be ready
         # Note: I had `mongo --eval ';'` here too but non-Ubuntu runners don't have easy Mongo and we don't really need it
-        run: until pg_isready -q && mysqladmin -s ping; do sleep 1; done
-        timeout-minutes: 5
+        run: until pg_isready -hpostgres && mysqladmin -hmysql ping; do sleep 1; done
+        timeout-minutes: 2
       - name: Create extra test DB for Postgres and MySQL
         run: |
           createdb -Ovapor_username vapor_migration_extra
@@ -125,8 +125,8 @@ jobs:
           brew services start mysql
           brew services start mongodb-community
       - name: Wait for database servers to be ready
-        run: until pg_isready -q && mysqladmin -uroot -s ping && mongo --eval ';'; do sleep 1; done
-        timeout-minutes: 5
+        run: until pg_isready && mysqladmin -uroot ping && mongo --eval ';'; do sleep 1; done
+        timeout-minutes: 2
       - name: Setup users and databases for Postgres and MySQL
         run: |
           createuser --createdb --login vapor_username
