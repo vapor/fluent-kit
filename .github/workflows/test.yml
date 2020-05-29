@@ -33,17 +33,19 @@ jobs:
           - swiftlang/swift:nightly-master-focal
         include:
           - depscmd: 'apt-get -q update && apt-get -q install -y postgresql-client mysql-client libsqlite3-dev'
+            mysqlver: 8.0
           - image: swiftlang/swift:nightly-master-centos8
             depscmd: 'dnf install -y zlib-devel postgresql mysql sqlite-devel'
           - image: swiftlang/swift:nightly-master-amazonlinux2
             depscmd: 'yum install -y zlib-devel postgresql mysql sqlite-devel'
+            mysqlver: 5.7
     container: ${{ matrix.image }}
     services:
       postgres:
         image: postgres:latest
         env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
       mysql:
-        image: mysql:latest
+        image: mysql:${{ matrix.mysqlver }}
         env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
       mongo:
         image: mongo:latest
