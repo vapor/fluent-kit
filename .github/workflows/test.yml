@@ -36,6 +36,7 @@ jobs:
             mysqlver: 8.0
           - image: swiftlang/swift:nightly-master-centos8
             depscmd: 'dnf install -y zlib-devel postgresql mysql sqlite-devel'
+            mysqlver: 8.0
           - image: swiftlang/swift:nightly-master-amazonlinux2
             depscmd: 'yum install -y zlib-devel postgresql mysql sqlite-devel'
             mysqlver: 5.7
