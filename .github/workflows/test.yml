@@ -65,7 +65,7 @@ jobs:
           curl -L 'https://www.sqlite.org/src/tarball/sqlite.tar.gz?r=release' | tar xz && cd sqlite
           export CFLAGS="-DSQLITE_DISABLE_DIRSYNC=1 -DSQLITE_SECURE_DELETE=1"
           ./configure --prefix=/usr --libdir=/usr/lib64 --with-tcl=/usr/lib64 --enable-all && make all install
-          printf '#!/bin/bash\nexec psql "$@" </dev/null\n' > /usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
+          printf '#!/bin/bash\nexec psql -dvapor_database "$@" </dev/null\n' >/usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
       - name: Wait for all database servers to be ready
         # Note: I had `mongo --eval ';'` here too but non-Ubuntu runners don't have easy Mongo and we don't really need it
         run: until pg_isready -hpostgres && mysqladmin -hmysql ping; do sleep 1; done
