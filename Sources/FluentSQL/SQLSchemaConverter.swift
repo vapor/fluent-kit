@@ -93,11 +93,13 @@ public struct SQLSchemaConverter {
         switch constraint {
         case .constraint(let algorithm):
             let name = self.constraintIdentifier(algorithm, table: table)
+            return SQLDropConstraint(name: SQLIdentifier(name))
             return SQLConstraint(
                 algorithm: SQLRaw(""),
                 name: SQLIdentifier(name)
             )
         case .name(let name):
+            return SQLDropConstraint(name: SQLIdentifier(name))
             return SQLConstraint(
                 algorithm: SQLRaw(""),
                 name: SQLIdentifier(name)
@@ -271,5 +273,26 @@ struct SQLArrayDataType: SQLExpression {
     func serialize(to serializer: inout SQLSerializer) {
         self.type.serialize(to: &serializer)
         serializer.write("[]")
+    }
+}
+
+/// SQL drop constraint expression.
+///
+///     `CONSTRAINT/KEY <name>`
+struct SQLDropConstraint: SQLExpression {
+    public var name: SQLExpression
+
+    public init(name: SQLExpression) {
+        self.name = name
+    }
+
+    public func serialize(to serializer: inout SQLSerializer) {
+        if serializer.dialect.name == "mysql" {
+            serializer.write("KEY ")
+        } else {
+            serializer.write("CONSTRAINT ")
+        }
+        let normalizedName = serializer.dialect.normalizeSQLConstraint(identifier: name)
+        normalizedName.serialize(to: &serializer)
     }
 }
