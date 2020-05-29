@@ -43,7 +43,6 @@ extension FluentBenchmarker {
             formatter.formatOptions.insert(.withFractionalSeconds)
             let createdAt = formatter.string(from: event.createdAt!)
             let updatedAt = formatter.string(from: event.updatedAt!)
-
             try Event.query(on: self.database).run({ output in
                 do {
                     let schema = output.schema("events")
