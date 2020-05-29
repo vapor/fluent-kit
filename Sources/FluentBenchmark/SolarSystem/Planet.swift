@@ -24,6 +24,12 @@ public final class Planet: Model {
         self.id = id
         self.name = name
     }
+
+    public init(id: IDValue? = nil, name: String, starId: UUID) {
+        self.id = id
+        self.name = name
+        self.$star.id = starId
+    }
 }
 
 public struct PlanetMigration: Migration {

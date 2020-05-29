@@ -5,6 +5,7 @@ extension FluentBenchmarker {
         try self.testEnum_raw()
         try self.testEnum_queryFound()
         try self.testEnum_queryMissing()
+        try self.testEnum_decode()
     }
 
     private func testEnum_basic() throws {
@@ -194,6 +195,22 @@ extension FluentBenchmarker {
                 .first()
                 .wait()
             XCTAssertNil(fetched6)
+        }
+    }
+
+    public func testEnum_decode() throws {
+        try runTest(#function, [
+            FooMigration()
+        ]) {
+            let data = """
+            { "bar": "baz", "baz": "qux" }
+            """
+            let foo = try JSONDecoder().decode(Foo.self, from: .init(data.utf8))
+            try foo.create(on: self.database).wait()
+
+            let fetched = try Foo.find(foo.id, on: self.database).wait()
+            XCTAssertEqual(fetched?.bar, .baz)
+            XCTAssertEqual(fetched?.baz, .qux)
         }
     }
 }

@@ -30,6 +30,10 @@ public final class EnumBuilder {
         }
     }
 
+    public func read() -> EventLoopFuture<DatabaseSchema.DataType> {
+        self.generateDatatype()
+    }
+
     public func update() -> EventLoopFuture<DatabaseSchema.DataType> {
         self.enum.action = .update
         return self.database.execute(enum: self.enum).flatMap {

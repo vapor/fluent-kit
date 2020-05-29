@@ -12,14 +12,14 @@ import NIO
 ///
 /// Return an empty result for the next query:
 ///
-///     let db = TestResultsDatabase()
+///     let db = ArrayTestDatabase()
 ///     db.append([])
 ///
 /// Return an empty result for first query, and a single result
 /// for the second query (perhaps a query to find a record with
 /// no results followed by a successful query to create the record):
 ///
-///     let db = TestResultsDatabase()
+///     let db = ArrayTestDatabase()
 ///     db.append([])
 ///     db.append([
 ///         TestOutput(["id": 1, "name": "Boise"])
@@ -27,11 +27,19 @@ import NIO
 ///
 /// Return multiple rows for one query:
 ///
-///     let db = TestResultsDatabase()
+///     let db = ArrayTestDatabase()
 ///     db.append([
 ///         TestOutput(["id": 1, ...]),
 ///         TestOutput(["id": 2, ...])
 ///     ])
+///
+/// Append a `Model`:
+///
+///     let db = ArrayTestDatabase()
+///     db.append([
+///         TestOutput(Planet(name: "Pluto"))
+///     ])
+///
 public final class ArrayTestDatabase: TestDatabase {
     var results: [[DatabaseOutput]]
 
@@ -89,6 +97,9 @@ extension TestDatabase {
 }
 
 private struct _TestDatabase: Database {
+    var inTransaction: Bool {
+        false
+    }
     let test: TestDatabase
     var context: DatabaseContext
 
@@ -163,46 +174,84 @@ public struct TestOutput: DatabaseOutput {
         self
     }
 
-    public func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    public func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
     {
-        if let res = dummyDecodedFields[path] as? T {
+        if let res = dummyDecodedFields[key] as? T {
             return res
         }
         throw TestRowDecodeError.wrongType
     }
 
-    public func contains(_ path: [FieldKey]) -> Bool {
-        return true
+    public func contains(_ path: FieldKey) -> Bool {
+        true
     }
+
+
+    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        self
+    }
+
+    public func decodeNil(_ key: FieldKey) throws -> Bool {
+        false
+    }
+
 
     public var description: String {
         return "<dummy>"
     }
 
-    var dummyDecodedFields: [[FieldKey]: Any]
+    var dummyDecodedFields: [FieldKey: Any]
 
     public init() {
         self.dummyDecodedFields = [:]
     }
 
-    public init(_ mockFields: [[FieldKey]: Any]) {
+    public init(_ mockFields: [FieldKey: Any]) {
         self.dummyDecodedFields = mockFields
     }
 
-    public init(_ mockFields: [FieldKey: Any]) {
-        self.dummyDecodedFields = Dictionary(
-            mockFields.map { (k, v) in ([k], v) },
-            uniquingKeysWith: { $1 }
+    public init<TestModel>(_ model: TestModel)
+        where TestModel: Model
+    {
+        func unpack(_ dbValue: DatabaseQuery.Value) -> Any? {
+            switch dbValue {
+            case .null:
+                return nil
+            case .enumCase(let value):
+                return value
+            case .custom(let value):
+                return value
+            case .bind(let value):
+                return value
+            case .array(let array):
+                return array.map(unpack)
+            case .dictionary(let dictionary):
+                return dictionary.mapValues(unpack)
+            case .default:
+                return ""
+            }
+        }
+
+        let collect = CollectInput()
+        model.input(to: collect)
+        self.init(
+            collect.storage.mapValues(unpack)
         )
     }
 
-    public mutating func append(key: [FieldKey], value: Any) {
+    public mutating func append(key: FieldKey, value: Any) {
         dummyDecodedFields[key] = value
     }
+}
 
-    public mutating func append(key: FieldKey, value: Any) {
-        dummyDecodedFields[[key]] = value
+private final class CollectInput: DatabaseInput {
+    var storage: [FieldKey: DatabaseQuery.Value]
+    init() {
+        self.storage = [:]
+    }
+    func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
+        self.storage[key] = value
     }
 }
 

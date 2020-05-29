@@ -6,9 +6,11 @@ extension FluentBenchmarker {
         try self.testModel_decode()
         try self.testModel_nullField()
         try self.testModel_nullField_2()
+        try self.testModel_nullField_batchCreate()
         try self.testModel_idGeneration()
         try self.testModel_jsonColumn()
         try self.testModel_hasChanges()
+        try self.testModel_outputError()
     }
 
     private func testModel_uuid() throws {
@@ -55,6 +57,18 @@ extension FluentBenchmarker {
                 return
             }
 
+            // test find + update with nil value works
+            guard let found = try Foo.find(foo.id, on: self.database).wait() else {
+                XCTFail("unexpected nil value")
+                return
+            }
+            try found.update(on: self.database).wait()
+
+            let all = try Foo.query(on: self.database)
+                .filter(\.$bar == nil)
+                .all().wait()
+            XCTAssertEqual(all.count, 1)
+
             guard let fetched = try Foo.query(on: self.database)
                 .filter(\.$id == foo.id!)
                 .first().wait()
@@ -86,6 +100,18 @@ extension FluentBenchmarker {
                 return
             }
 
+            // test find + update with nil value works
+            guard let found = try Foo_2.find(foo.id, on: self.database).wait() else {
+                XCTFail("unexpected nil value")
+                return
+            }
+            try found.update(on: self.database).wait()
+
+            let all = try Foo_2.query(on: self.database)
+                .filter(\.$bar == nil)
+                .all().wait()
+            XCTAssertEqual(all.count, 1)
+
             guard let fetched = try Foo_2.query(on: self.database)
                 .filter(\.$id == foo.id!)
                 .first().wait()
@@ -97,6 +123,16 @@ extension FluentBenchmarker {
                 XCTFail("unexpected non-nil value")
                 return
             }
+        }
+    }
+
+    private func testModel_nullField_batchCreate() throws {
+        try runTest(#function, [
+            FooMigration(),
+        ]) {
+            let a = Foo(bar: "test")
+            let b = Foo(bar: nil)
+            try [a, b].create(on: self.database).wait()
         }
     }
 
@@ -168,6 +204,47 @@ extension FluentBenchmarker {
             try fetched.save(on: self.database).wait()
             XCTAssertFalse(fetched.hasChanges)
         }
+    }
+
+    private func testModel_outputError() throws {
+        let foo = Foo()
+        do {
+            try foo.output(from: BadFooOutput())
+        } catch {
+            XCTAssert("\(error)".contains("id"))
+        }
+    }
+}
+
+struct BadFooOutput: DatabaseOutput {
+    func schema(_ schema: String) -> DatabaseOutput {
+        self
+    }
+
+    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+        self
+    }
+
+    func contains(_ key: FieldKey) -> Bool {
+        true
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        false
+    }
+
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
+        where T : Decodable
+    {
+        throw DecodingError.typeMismatch(T.self, .init(
+            codingPath: [],
+            debugDescription: "Failed to decode",
+            underlyingError: nil
+        ))
+    }
+
+    var description: String {
+        "bad foo output"
     }
 }
 

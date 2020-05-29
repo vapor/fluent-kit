@@ -3,6 +3,8 @@ extension Model {
         where Value: Codable
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class IDProperty<Model, Value>
     where Model: FluentKit.Model, Value: Codable
@@ -47,10 +49,10 @@ public final class IDProperty<Model, Value>
     
     public var wrappedValue: Value? {
         get {
-            return self.field.value
+            return self.value
         }
         set {
-            self.field.value = newValue
+            self.value = newValue
         }
     }
 
@@ -111,10 +113,20 @@ public final class IDProperty<Model, Value>
     }
 }
 
-extension IDProperty: PropertyProtocol {
+extension IDProperty: CustomStringConvertible {
+    public var description: String {
+        "@\(Model.self).ID<\(Value.self)>(key: \(self.key))"
+    }
+}
+
+// MARK: Property
+
+extension IDProperty: AnyProperty { }
+
+extension IDProperty: Property {
     public var value: Value? {
         get {
-            return self.field.value
+            return self.field.value ?? nil
         }
         set {
             self.field.value = newValue
@@ -122,20 +134,25 @@ extension IDProperty: PropertyProtocol {
     }
 }
 
-extension IDProperty: FieldProtocol { }
+// MARK: Queryable
 
-extension IDProperty: AnyField { }
-
-extension IDProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
+extension IDProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
+}
 
-    public func input(to input: inout DatabaseInput) {
-        self.field.input(to: &input)
+extension IDProperty: QueryableProperty { }
+
+// MARK: Database
+
+extension IDProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        self.field.keys
+    }
+
+    public func input(to input: DatabaseInput) {
+        self.field.input(to: input)
     }
 
     public func output(from output: DatabaseOutput) throws {
@@ -143,7 +160,11 @@ extension IDProperty: AnyProperty {
         self.cachedOutput = output
         try self.field.output(from: output)
     }
+}
 
+// MARK: Codable
+
+extension IDProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }
@@ -152,6 +173,8 @@ extension IDProperty: AnyProperty {
         try self.field.decode(from: decoder)
     }
 }
+
+// MARK: ID
 
 extension IDProperty: AnyID { }
 
