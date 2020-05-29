@@ -35,10 +35,14 @@ public final class SchemaBuilder {
     }
 
     public func unique(on fields: FieldKey..., name: String? = nil) -> Self {
-        self.schema.createConstraints.append(.constraint(
+        self.constraint(.constraint(
             .unique(fields: fields.map { .key($0) }),
             name: name
         ))
+    }
+
+    public func constraint(_ constraint: DatabaseSchema.Constraint) -> Self {
+        self.schema.createConstraints.append(constraint)
         return self
     }
 
