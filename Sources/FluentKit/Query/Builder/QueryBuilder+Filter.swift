@@ -7,7 +7,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Field.Value
     ) -> Self
-        where Field: FieldProtocol, Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
     {
         self.filter(Model.path(for: field), method, value)
     }
@@ -18,9 +18,9 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ rhsField: KeyPath<Model, Right>
     ) -> Self
-        where Left: FieldProtocol,
+        where Left: QueryableProperty,
             Left.Model == Model,
-            Right: FieldProtocol,
+            Right: QueryableProperty,
             Right.Model == Model
     {
         self.filter(Model.path(for: lhsField), method, Model.path(for: rhsField))

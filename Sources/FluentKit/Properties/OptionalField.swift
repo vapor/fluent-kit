@@ -3,24 +3,26 @@ extension Fields {
         where Value: Codable
 }
 
+// MARK: Type
+
 @propertyWrapper
-public final class OptionalFieldProperty<Model, Value>
-    where Model: FluentKit.Fields, Value: Codable
+public final class OptionalFieldProperty<Model, WrappedValue>
+    where Model: FluentKit.Fields, WrappedValue: Codable
 {
     public let key: FieldKey
-    var outputValue: Value?
+    var outputValue: WrappedValue??
     var inputValue: DatabaseQuery.Value?
 
-    public var projectedValue: OptionalFieldProperty<Model, Value> {
+    public var projectedValue: OptionalFieldProperty<Model, WrappedValue> {
         self
     }
 
-    public var wrappedValue: Value? {
+    public var wrappedValue: WrappedValue? {
         get {
-            self.value
+            self.value ?? nil
         }
         set {
-            self.value = newValue
+            self.value = .some(newValue)
         }
     }
 
@@ -29,15 +31,19 @@ public final class OptionalFieldProperty<Model, Value>
     }
 }
 
-extension OptionalFieldProperty: PropertyProtocol {
-    public var value: Value? {
+// MARK: Property
+
+extension OptionalFieldProperty: AnyProperty { }
+
+extension OptionalFieldProperty: Property {
+    public var value: WrappedValue?? {
         get {
             if let value = self.inputValue {
                 switch value {
                 case .bind(let bind):
-                    return bind as? Value
+                    return .some(bind as? WrappedValue)
                 case .enumCase(let string):
-                    return string as? Value
+                    return .some(string as? WrappedValue)
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 case .null:
@@ -46,41 +52,54 @@ extension OptionalFieldProperty: PropertyProtocol {
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
-                return value
+                return .some(value)
             } else {
-                return nil
+                return .none
             }
         }
         set {
-            self.inputValue = newValue.map { .bind($0) } ?? .null
+
+            if let value = newValue {
+                self.inputValue = value.flatMap { .bind($0) } ?? .null
+            } else {
+                self.inputValue = nil
+            }
         }
     }
 }
 
-extension OptionalFieldProperty: FieldProtocol { }
+// MARK: Queryable
 
-extension OptionalFieldProperty: AnyField {
-
-}
-
-extension OptionalFieldProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
-    }
-
+extension OptionalFieldProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         [self.key]
     }
+}
 
-    public func input(to input: inout DatabaseInput) {
-        input.values[self.key] = self.inputValue
+extension OptionalFieldProperty: QueryableProperty { }
+
+// MARK: Database
+
+extension OptionalFieldProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        [self.key]
+    }
+
+    public func input(to input: DatabaseInput) {
+        if let inputValue = self.inputValue {
+            input.set(inputValue, at: self.key)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
-                self.outputValue = try output.decode(self.key, as: Value?.self)
+                if try output.decodeNil(self.key) {
+                    self.outputValue = .some(nil)
+                } else {
+                    self.outputValue = try .some(output.decode(self.key, as: Value.self))
+                }
             } catch {
                 throw FluentError.invalidField(
                     name: self.key.description,
@@ -90,7 +109,11 @@ extension OptionalFieldProperty: AnyProperty {
             }
         }
     }
+}
 
+// MARK: Codable
+
+extension OptionalFieldProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)

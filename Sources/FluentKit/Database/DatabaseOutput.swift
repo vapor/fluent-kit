@@ -1,24 +1,15 @@
 public protocol DatabaseOutput: CustomStringConvertible {
     func schema(_ schema: String) -> DatabaseOutput
-    func contains(_ path: [FieldKey]) -> Bool
-    func decode<T>(_ path: [FieldKey], as type: T.Type) throws -> T
+    func contains(_ key: FieldKey) -> Bool
+    func decodeNil(_ key: FieldKey) throws -> Bool
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
         where T: Decodable
 }
 
 extension DatabaseOutput {
-    public func contains(_ path: FieldKey...) -> Bool {
-        self.contains(path)
-    }
-    
-    public func decode<T>(_ path: [FieldKey]) throws -> T
+    public func decode<T>(_ key: FieldKey) throws -> T
         where T: Decodable
     {
-        try self.decode(path, as: T.self)
-    }
-
-    public func decode<T>(_ path: FieldKey..., as type: T.Type = T.self) throws -> T
-        where T: Decodable
-    {
-        try self.decode(path, as: T.self)
+        try self.decode(key, as: T.self)
     }
 }

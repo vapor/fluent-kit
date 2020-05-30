@@ -3,42 +3,78 @@ public protocol Fields: class, Codable {
     init()
 }
 
-extension Fields {
-    public static func path<Field>(for field: KeyPath<Self, Field>) -> [FieldKey]
-        where Field: FieldProtocol
-    {
-         Self.init()[keyPath: field].path
-    }
+// MARK: Has Changes
 
+extension Fields {
     /// Indicates whether the model has fields that have been set, but the model
     /// has not yet been saved to the database.
     public var hasChanges: Bool {
-        return !self.input.values.isEmpty
+        let input = HasChangesInput()
+        self.input(to: input)
+        return input.hasChanges
+    }
+}
+
+private final class HasChangesInput: DatabaseInput {
+    var hasChanges: Bool
+
+    init() {
+        self.hasChanges = false
     }
 
-    public var input: DatabaseInput {
-        var input = DatabaseInput()
-        self.properties.forEach { field in
-            field.input(to: &input)
+    func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
+        self.hasChanges = true
+    }
+}
+
+// MARK: Path
+
+extension Fields {
+    public static func path<Property>(for field: KeyPath<Self, Property>) -> [FieldKey]
+        where Property: QueryableProperty
+    {
+         Self.init()[keyPath: field].path
+    }
+}
+
+// MARK: Database
+
+extension Fields {
+    public static var keys: [FieldKey] {
+        self.init().properties.compactMap {
+            $0 as? AnyDatabaseProperty
+        }.flatMap {
+            $0.keys
         }
-        return input
+    }
+
+    public func input(to input: DatabaseInput) {
+        self.properties.compactMap {
+            $0 as? AnyDatabaseProperty
+        }.forEach { field in
+            field.input(to: input)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
-        try self.properties.forEach { field in
+        try self.properties.compactMap {
+            $0 as? AnyDatabaseProperty
+        }.forEach { field in
             try field.output(from: output)
         }
     }
+}
 
+// MARK: Properties
+
+extension Fields {
     public var properties: [AnyProperty] {
         Mirror(reflecting: self).children.compactMap {
             $0.value as? AnyProperty
         }
     }
 
-    // Internal
-
-    var labeledProperties: [String: AnyProperty] {
+    internal var labeledProperties: [String: AnyProperty] {
         .init(uniqueKeysWithValues:
             Mirror(reflecting: self).children.compactMap { child in
                 guard let label = child.label else {
@@ -52,23 +88,25 @@ extension Fields {
             }
         )
     }
+}
 
-    static var keys: [[FieldKey]] {
-        func collect(
-            _ properties: [AnyProperty],
-            prefix: [FieldKey] = [],
-            into keys: inout [[FieldKey]]
-        ) {
-            properties.forEach {
-                if $0 is AnyField {
-                    keys.append(prefix + $0.path)
-                }
-                collect($0.nested, prefix: prefix + $0.path, into: &keys)
-            }
-        }
-        var keys: [[FieldKey]] = []
-        collect(self.init().properties, into: &keys)
-        return keys
+// MARK: Collect Input
+
+extension Fields {
+    internal func collectInput() -> [FieldKey: DatabaseQuery.Value] {
+        let input = DictionaryInput()
+        self.input(to: input)
+        return input.storage
+    }
+}
+
+final class DictionaryInput: DatabaseInput {
+    var storage: [FieldKey: DatabaseQuery.Value]
+    init() {
+        self.storage = [:]
     }
 
+    func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
+        self.storage[key] = value
+    }
 }

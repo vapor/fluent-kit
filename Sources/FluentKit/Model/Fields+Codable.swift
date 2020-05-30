@@ -2,17 +2,43 @@ extension Fields {
     public init(from decoder: Decoder) throws {
         self.init()
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.labeledProperties.forEach { label, property in
-            let decoder = ContainerDecoder(container: container, key: .string(label))
-            try property.decode(from: decoder)
+        try self.labeledProperties.compactMapValues {
+            $0 as? AnyCodableProperty
+        }.forEach { label, property in
+            do {
+                let decoder = ContainerDecoder(container: container, key:   .string(label))
+                try property.decode(from: decoder)
+            } catch {
+                throw DecodingError.typeMismatch(
+                    type(of: property).anyValueType,
+                    .init(
+                        codingPath: [ModelCodingKey.string(label)],
+                        debugDescription: "Could not decode property",
+                        underlyingError: error
+                    )
+                )
+            }
         }
     }
 
     public func encode(to encoder: Encoder) throws {
         let container = encoder.container(keyedBy: ModelCodingKey.self)
-        try self.labeledProperties.forEach { label, property in
-            let encoder = ContainerEncoder(container: container, key: .string(label))
-            try property.encode(to: encoder)
+        try self.labeledProperties.compactMapValues {
+            $0 as? AnyCodableProperty
+        }.forEach { label, property in
+            do {
+                let encoder = ContainerEncoder(container: container, key: .string(label))
+                try property.encode(to: encoder)
+            } catch {
+                throw EncodingError.invalidValue(
+                    property.anyValue ?? "null",
+                    .init(
+                        codingPath: [ModelCodingKey.string(label)],
+                        debugDescription: "Could not encode property",
+                        underlyingError: error
+                    )
+                )
+            }
         }
     }
 }

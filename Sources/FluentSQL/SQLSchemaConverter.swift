@@ -1,5 +1,6 @@
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
+    func nestedFieldExpression(_ column: String, _ path: [String]) -> SQLExpression
 }
 
 public struct SQLSchemaConverter {
@@ -26,6 +27,12 @@ public struct SQLSchemaConverter {
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
         update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
+        update.addTableConstraints = schema.createConstraints.map {
+            self.constraint($0, table: schema.schema)
+        }
+        update.dropTableConstraints = schema.deleteConstraints.map {
+            self.deleteConstraint($0, table: schema.schema)
+        }
         return update
     }
     
@@ -37,7 +44,7 @@ public struct SQLSchemaConverter {
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.schema))
         create.columns = schema.createFields.map(self.fieldDefinition)
-        create.tableConstraints = schema.constraints.map {
+        create.tableConstraints = schema.createConstraints.map {
             self.constraint($0, table: schema.schema)
         }
         if !schema.exclusiveCreate {
@@ -51,44 +58,75 @@ public struct SQLSchemaConverter {
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> SQLExpression {
-        func identifier(_ fields: [DatabaseSchema.FieldName]) -> String {
-            return fields.map { field -> String in
-                switch field {
-                case .custom:
-                    return ""
-                case .key(let key):
-                    return "\(table).\(self.key(key))"
-                }
-            }.joined(separator: "+")
-        }
-
         switch constraint {
-        case .unique(let fields):
-            let name = identifier(fields)
-            return SQLConstraint(
-                algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                name: SQLIdentifier("uq:\(name)")
-            )
-        case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
-            let name = identifier(local + foreign)
-            let reference = SQLForeignKey(
-                table: self.name(schema),
-                columns: foreign.map(self.fieldName),
-                onDelete: self.foreignKeyAction(onDelete),
-                onUpdate: self.foreignKeyAction(onUpdate)
-            )
-
-            return SQLConstraint(
-                algorithm: SQLTableConstraintAlgorithm.foreignKey(
-                    columns: local.map(self.fieldName),
-                    references: reference
-                ),
-                name: SQLIdentifier("fk:\(name)")
-            )
+        case .constraint(let algorithm, let customName):
+            let name = customName ?? self.constraintIdentifier(algorithm, table: table)
+            switch algorithm {
+            case .unique(let fields):
+                return SQLConstraint(
+                    algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
+                    name: SQLIdentifier(name)
+                )
+            case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
+                let reference = SQLForeignKey(
+                    table: self.name(schema),
+                    columns: foreign.map(self.fieldName),
+                    onDelete: self.foreignKeyAction(onDelete),
+                    onUpdate: self.foreignKeyAction(onUpdate)
+                )
+                return SQLConstraint(
+                    algorithm: SQLTableConstraintAlgorithm.foreignKey(
+                        columns: local.map(self.fieldName),
+                        references: reference
+                    ),
+                    name: SQLIdentifier(name)
+                )
+            case .custom(let any):
+                return custom(any)
+            }
         case .custom(let any):
             return custom(any)
         }
     }
+
+    private func deleteConstraint(_ constraint: DatabaseSchema.ConstraintDelete, table: String) -> SQLExpression {
+        switch constraint {
+        case .constraint(let algorithm):
+            let name = self.constraintIdentifier(algorithm, table: table)
+            return SQLDropConstraint(name: SQLIdentifier(name))
+        case .name(let name):
+            return SQLDropConstraint(name: SQLIdentifier(name))
+        case .custom(let any):
+            return custom(any)
+        }
+    }
+
+    private func constraintIdentifier(_ algorithm: DatabaseSchema.ConstraintAlgorithm, table: String) -> String {
+        let fieldNames: [DatabaseSchema.FieldName]
+        let prefix: String
+
+        switch algorithm {
+        case .foreignKey(let localFields, _, let foreignFields, _, _):
+            prefix = "fk"
+            fieldNames = localFields + foreignFields
+        case .unique(let fields):
+            prefix = "uq"
+            fieldNames = fields
+        default:
+            fatalError("Constraint identifier not supported with custom constraints.")
+        }
+
+        let fieldsString = fieldNames.map { field -> String in
+            switch field {
+            case .custom:
+                return ""
+            case .key(let key):
+                return "\(table).\(self.key(key))"
+            }
+        }.joined(separator: "+")
+        return "\(prefix):\(fieldsString)"
+    }
+
 
     private func foreignKeyAction(_ action: DatabaseSchema.ForeignKeyAction) -> SQLForeignKeyAction {
         switch action {
@@ -216,6 +254,8 @@ public struct SQLSchemaConverter {
             return name
         case .aggregate:
             return key.description
+        case .prefix(let prefix, let key):
+            return self.key(prefix) + self.key(key)
         }
     }
 }
@@ -225,5 +265,26 @@ struct SQLArrayDataType: SQLExpression {
     func serialize(to serializer: inout SQLSerializer) {
         self.type.serialize(to: &serializer)
         serializer.write("[]")
+    }
+}
+
+/// SQL drop constraint expression.
+///
+///     `CONSTRAINT/KEY <name>`
+struct SQLDropConstraint: SQLExpression {
+    public var name: SQLExpression
+
+    public init(name: SQLExpression) {
+        self.name = name
+    }
+
+    public func serialize(to serializer: inout SQLSerializer) {
+        if serializer.dialect.name == "mysql" {
+            serializer.write("KEY ")
+        } else {
+            serializer.write("CONSTRAINT ")
+        }
+        let normalizedName = serializer.dialect.normalizeSQLConstraint(identifier: name)
+        normalizedName.serialize(to: &serializer)
     }
 }

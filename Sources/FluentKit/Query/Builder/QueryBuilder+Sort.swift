@@ -6,7 +6,7 @@ extension QueryBuilder {
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self
         where
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Model
     {
         self.sort(Model.path(for: field), direction)
@@ -33,7 +33,7 @@ extension QueryBuilder {
         alias: String? = nil
     ) -> Self
         where
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Joined,
             Joined: Schema
     {
@@ -64,9 +64,14 @@ extension QueryBuilder {
 
     public func sort(
         _ field: DatabaseQuery.Field,
-        _ direction: DatabaseQuery.Sort.Direction = .ascending
+        _ direction: DatabaseQuery.Sort.Direction
     ) -> Self {
         self.query.sorts.append(.sort(field, direction))
+        return self
+    }
+
+    public func sort(_ sort: DatabaseQuery.Sort) -> Self {
+        self.query.sorts.append(sort)
         return self
     }
 }
