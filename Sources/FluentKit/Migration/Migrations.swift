@@ -15,6 +15,10 @@ public final class Migrations {
         self.storage.append(.init(id: id, migration: migration))
     }
 
+    public func add(_ migrations: Migration..., to id: DatabaseID? = nil) {
+        self.add(migrations, to: id)
+    }
+
     public func add(_ migrations: [Migration], to id: DatabaseID? = nil) {
         self.storage.append(contentsOf: migrations.map { .init(id: id, migration: $0) })
     }

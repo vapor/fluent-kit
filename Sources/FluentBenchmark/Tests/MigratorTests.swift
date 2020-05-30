@@ -131,6 +131,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, []) {
             let migrations = Migrations()
             migrations.add([GalaxyMigration(), StarMigration(), GalaxySeed()])
+            migrations.add(PlanetMigration(), PlanetTagMigration(), to: self.databases.ids().first)
 
             let migrator = Migrator(
                 databaseFactory: { _ in self.database },
@@ -144,7 +145,7 @@ extension FluentBenchmarker {
                 .sort(\.$batch, .ascending)
                 .all().wait()
                 .map { $0.batch }
-            XCTAssertEqual(logs, [1, 1, 1], "batch did not apply all three")
+            XCTAssertEqual(logs, [1, 1, 1, 1, 1], "batch did not apply all five")
 
             try migrator.revertAllBatches().wait()
         }
