@@ -1,6 +1,7 @@
 extension FluentBenchmarker {
     public func testSet() throws {
         try self.testSet_multiple()
+        try self.testSet_optional()
     }
     
     private func testSet_multiple() throws {
@@ -20,6 +21,17 @@ extension FluentBenchmarker {
                 .update().wait()
         }
     }
+
+    private func testSet_optional() throws {
+        try runTest(#function, [
+            TestMigration(),
+        ]) {
+            try Test.query(on: self.database)
+                .set(\.$intValue, to: nil)
+                .set(\.$stringValue, to: nil)
+                .update().wait()
+        }
+    }
 }
 
 private final class Test: Model {
@@ -28,10 +40,10 @@ private final class Test: Model {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "int_value")
+    @OptionalField(key: "int_value")
     var intValue: Int?
 
-    @Field(key: "string_value")
+    @OptionalField(key: "string_value")
     var stringValue: String?
 }
 

@@ -8,8 +8,9 @@ extension AnyModel {
     public var description: String {
         var info: [InfoKey: CustomStringConvertible] = [:]
 
-        if !self.input.values.isEmpty {
-            info["input"] = self.input.values
+        let input = self.collectInput()
+        if !input.isEmpty {
+            info["input"] = input
         }
 
         if let output = self.anyID.cachedOutput {

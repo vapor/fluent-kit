@@ -19,6 +19,21 @@ extension FluentBenchmarker {
                 try vapor.save(on: self.database).wait()
             }
 
+            // test fetch user with nil parent
+            do {
+                let swift = try User.query(on: self.database)
+                    .filter(\.$name == "Swift")
+                    .first().wait()!
+                try XCTAssertNil(swift.$bestFriend.get(on: self.database).wait())
+            }
+            // test fetch user with non-nil parent
+            do {
+                let swift = try User.query(on: self.database)
+                    .filter(\.$name == "Vapor")
+                    .first().wait()!
+                try XCTAssertNotNil(swift.$bestFriend.get(on: self.database).wait())
+            }
+
             // test
             let users = try User.query(on: self.database)
                 .with(\.$bestFriend)

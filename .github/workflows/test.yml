@@ -1,106 +1,190 @@
-name: test
+# TODO: When we get the ability to reference workflows from other repos, this one should pull in the ones from
+# each driver instead of this incomplete reimplementation of each one.
+# See https://github.community/t/is-it-possible-to-use-the-same-workflow-in-different-repositories/17719/6
+
+name: Test Matrix
+
 on:
-- pull_request
+  pull_request:
+  push:
+    branches:
+    - master
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  fluent-kit_xenial:
-    container: 
-      image: vapor/swift:5.2-xenial
+
+  Linux:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: swift test --enable-test-discovery --sanitize=thread
-  fluent-kit_bionic:
-    container: 
-      image: vapor/swift:5.2-bionic
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: swift test --enable-test-discovery --sanitize=thread
-  fluent-sqlite-driver:
-    container: 
-      image: vapor/swift:5.2
-    runs-on: ubuntu-latest
-    steps:
-    - run: apt update -y; apt install -y libsqlite3-dev
-    - run: git clone -b master https://github.com/vapor/fluent-sqlite-driver.git
-      working-directory: ./
-    - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ./fluent-sqlite-driver
-    - run: swift test --enable-test-discovery --sanitize=thread
-      working-directory: ./fluent-sqlite-driver
-  fluent-postgres-driver:
-    container: 
-      image: vapor/swift:5.2
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - swift:5.2-xenial
+          - swift:5.2-bionic
+          - swiftlang/swift:nightly-5.2-xenial
+          - swiftlang/swift:nightly-5.2-bionic
+          - swiftlang/swift:nightly-5.3-xenial
+          - swiftlang/swift:nightly-5.3-bionic
+          - swiftlang/swift:nightly-master-xenial
+          - swiftlang/swift:nightly-master-bionic
+          - swiftlang/swift:nightly-master-focal
+        include:
+          - depscmd: 'apt-get -q update && apt-get -q install -y postgresql-client libsqlite3-dev'
+          - image: swiftlang/swift:nightly-master-centos8
+            depscmd: 'dnf install -y postgresql sqlite-devel'
+          - image: swiftlang/swift:nightly-master-amazonlinux2
+            depscmd: 'yum install -y postgresql sqlite-devel'
+    container: ${{ matrix.image }}
     services:
-      psql:
-        image: postgres
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: vapor_username
-          POSTGRES_DB: vapor_database
-          POSTGRES_PASSWORD: vapor_password
-    runs-on: ubuntu-latest
+      postgres-a:
+        image: postgres:latest
+        env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
+      postgres-b:
+        image: postgres:latest
+        env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
+      mysql-a:
+        image: mysql:latest
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
+      mysql-b:
+        image: mysql:latest
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
+      mongo-a:
+        image: mongo:latest
+      mongo-b:
+        image: mongo:latest
+    env:
+      POSTGRES_HOSTNAME_A: postgres-a
+      POSTGRES_HOSTNAME_B: postgres-b
+      MYSQL_HOSTNAME_A: mysql-a
+      MYSQL_HOSTNAME_B: mysql-b
+      MONGO_HOSTNAME_A: mongo-a
+      MONGO_HOSTNAME_B: mongo-b
+      PGUSER: 'vapor_username'
+      PGPASSWORD: 'vapor_password'
+      PGDATABASE: 'vapor_database'
     steps:
-    - run: git clone -b master https://github.com/vapor/fluent-postgres-driver.git
-      working-directory: ./
-    - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ./fluent-postgres-driver
-    - run: swift test --enable-test-discovery --sanitize=thread
-      working-directory: ./fluent-postgres-driver
-      env:
-        POSTGRES_HOSTNAME: psql
-  fluent-mysql-driver:
-    container: 
-      image: vapor/swift:5.2
-    services:
-      mysql:
-        image: mysql
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
-          MYSQL_DATABASE: vapor_database
-          MYSQL_USER: vapor_username
-          MYSQL_PASSWORD: vapor_password
-    runs-on: ubuntu-latest
+      - name: Install dependencies
+        run: ${{ matrix.depscmd }}
+      - name: Update AmazonLinux2's too-old SQLite and compensate for its Postgres
+        if: ${{ endsWith(matrix.image, 'amazonlinux2') }}
+        run: |
+          yum install -y file tcl-devel make
+          curl -L 'https://www.sqlite.org/src/tarball/sqlite.tar.gz?r=release' | tar xz && cd sqlite
+          export CFLAGS="-DSQLITE_DISABLE_DIRSYNC=1 -DSQLITE_SECURE_DELETE=1"
+          ./configure --prefix=/usr --libdir=/usr/lib64 --with-tcl=/usr/lib64 --enable-all && make all install
+          printf '#!/bin/bash\nexec psql "$@" </dev/null\n' >/usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
+      - name: Wait for all database servers to be ready
+        # Actually we just wait for Postgres, because it's the easiest to install on all the various runners
+        # and because it usually takes the longest to start.
+        run: until pg_isready -hpostgres-a && pg_isready -hpostgres-b; do sleep 1; done
+        timeout-minutes: 2
+      - name: Checkout fluent-kit
+        uses: actions/checkout@v2
+        with: { path: 'fluent-kit' }
+      - name: Checkout Postgres driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
+      - name: Checkout MySQL driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
+      - name: Checkout SQLite driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
+      - name: Checkout Mongo driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
+      - name: Link drivers to local fluent-kit
+        run: |
+          swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
+          swift package --package-path fluent-mysql-driver edit fluent-kit --path fluent-kit
+          swift package --package-path fluent-sqlite-driver edit fluent-kit --path fluent-kit
+          swift package --package-path fluent-mongo-driver edit fluent-kit --path fluent-kit
+      - name: Run base FluentKit tests with Thread Sanitizer
+        run: swift test --package-path fluent-kit --enable-test-discovery --sanitize=thread
+      - name: Run Postgres driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-postgres-driver --enable-test-discovery --sanitize=thread
+      - name: Run MySQL driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-mysql-driver --enable-test-discovery --sanitize=thread
+      - name: Run SQLite driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-sqlite-driver --enable-test-discovery --sanitize=thread
+      - name: Run Mongo driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-mongo-driver --enable-test-discovery --sanitize=thread
+
+  macOS:
+    env:
+      POSTGRES_HOSTNAME_A: '127.0.0.1'
+      POSTGRES_HOSTNAME_B: '127.0.0.1'
+      POSTGRES_DATABASE_A: vapor_database_a
+      POSTGRES_DATABASE_B: vapor_database_b
+      PGHOST: '127.0.0.1'
+      MYSQL_HOSTNAME_A: '127.0.0.1'
+      MYSQL_HOSTNAME_B: '127.0.0.1'
+      MYSQL_DATABASE_A: vapor_database_a
+      MYSQL_DATABASE_B: vapor_database_b
+      MYSQL_HOST: '127.0.0.1'
+      MONGO_HOSTNAME_A: '127.0.0.1'
+      MONGO_HOSTNAME_B: '127.0.0.1'
+      MONGO_DATABASE_A: vapor_database_a
+      MONGO_DATABASE_B: vapor_database_b
+    runs-on: macos-latest
     steps:
-    - run: git clone -b master https://github.com/vapor/fluent-mysql-driver.git
-      working-directory: ./
-    - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ./fluent-mysql-driver
-    - run: swift test --enable-test-discovery --sanitize=thread
-      working-directory: ./fluent-mysql-driver
-      env:
-        MYSQL_HOSTNAME: mysql
-        MYSQL_TLS: true
-  fluent-mongo-driver:
-    container: 
-      image: vapor/swift:5.2
-    services:
-      mongo:
-        image: mongo
-        ports:
-          - 27017:27017
-    runs-on: ubuntu-latest
-    steps:
-    - run: git clone -b master https://github.com/vapor/fluent-mongo-driver.git
-      working-directory: ./
-    - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ./fluent-mongo-driver
-    # Temporary to workaround apparent SPM bug (?)
-    - run: rm Package.resolved
-      working-directory: ./fluent-mongo-driver
-    - run: swift test --enable-test-discovery --sanitize=thread
-      working-directory: ./fluent-mongo-driver
-      env:
-        MONGO_HOSTNAME: mongo
-  fluent:
-    container: 
-      image: vapor/swift:5.2
-    runs-on: ubuntu-latest
-    steps:
-    - run: git clone -b master https://github.com/vapor/fluent.git
-      working-directory: ./
-    - run: swift package edit fluent-kit --revision ${{ github.sha }}
-      working-directory: ./fluent
-    - run: swift test --enable-test-discovery --sanitize=thread
-      working-directory: ./fluent
+      - name: Select latest available Xcode
+        uses: maxim-lobanov/setup-xcode@1.0
+        with: { 'xcode-version': 'latest' }
+      - name: Replace Postgres install, add MySQL and Mongo installs
+        run: |
+          brew uninstall --force postgresql php && rm -rf /usr/local/{etc,var}/{postgres,pg}*
+          brew tap mongodb/brew
+          brew install postgresql mysql mongodb-community
+          initdb --locale=C -E UTF-8 $(brew --prefix)/var/postgres
+      - name: Start servers
+        run: |
+          brew services start postgresql
+          brew services start mysql
+          brew services start mongodb-community
+      - name: Wait for database servers to be ready
+        run: until pg_isready && mysqladmin -uroot ping && mongo --eval ';'; do sleep 1; done
+        timeout-minutes: 2
+      - name: Setup users and databases for Postgres and MySQL
+        run: |
+          createuser --createdb --login vapor_username
+          mysql -uroot --batch <<<"CREATE USER vapor_username@localhost IDENTIFIED BY 'vapor_password';"
+          for db in vapor_database_{a,b}; do
+            createdb -Ovapor_username $db
+            psql $db <<<"ALTER SCHEMA public OWNER TO vapor_username;"
+            mysql -uroot --batch <<<"CREATE DATABASE $db; GRANT ALL PRIVILEGES ON $db.* TO vapor_username@localhost;"
+          done
+      - name: Checkout fluent-kit
+        uses: actions/checkout@v2
+        with: { path: 'fluent-kit' }
+      - name: Checkout Postgres driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
+      - name: Checkout MySQL driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
+      - name: Checkout SQLite driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
+      - name: Checkout Mongo driver
+        uses: actions/checkout@v2
+        with: { repository: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
+      - name: Link drivers to local fluent-kit
+        run: |
+          swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
+          swift package --package-path fluent-mysql-driver edit fluent-kit --path fluent-kit
+          swift package --package-path fluent-sqlite-driver edit fluent-kit --path fluent-kit
+          swift package --package-path fluent-mongo-driver edit fluent-kit --path fluent-kit
+      - name: Run base FluentKit tests with Thread Sanitizer
+        run: swift test --package-path fluent-kit --enable-test-discovery --sanitize=thread
+      - name: Run Postgres driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-postgres-driver --enable-test-discovery --sanitize=thread
+      - name: Run MySQL driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-mysql-driver --enable-test-discovery --sanitize=thread
+      - name: Run SQLite driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-sqlite-driver --enable-test-discovery --sanitize=thread
+      - name: Run Mongo driver tests with Thread Sanitizer
+        run: swift test --package-path fluent-mongo-driver --enable-test-discovery --sanitize=thread

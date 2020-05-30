@@ -1,3 +1,4 @@
+import AsyncKit
 import NIO
 
 public final class QueryBuilder<Model>
@@ -56,13 +57,13 @@ public final class QueryBuilder<Model>
     // MARK: Fields
 
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
-        where Field: FieldProtocol, Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
     {
         self.field(Model.self, field)
     }
 
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
-        where Joined: Schema, Field: FieldProtocol, Field.Model == Joined
+        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
         self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schemaOrAlias))
         return self
@@ -88,6 +89,7 @@ public final class QueryBuilder<Model>
     }
 
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
+        self.includeDeleted = true
         self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
@@ -142,7 +144,7 @@ public final class QueryBuilder<Model>
 
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
         where
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Model
     {
         let copy = self.copy()
@@ -160,7 +162,7 @@ public final class QueryBuilder<Model>
     ) -> EventLoopFuture<[Field.Value]>
         where
             Joined: Schema,
-            Field: FieldProtocol,
+            Field: QueryableProperty,
             Field.Model == Joined
     {
         let copy = self.copy()
@@ -206,9 +208,9 @@ public final class QueryBuilder<Model>
                     return self.database.eventLoop.makeSucceededFuture(())
                 }
                 // run eager loads
-                return .andAllSync(self.eagerLoaders.map { eagerLoad in
-                    { eagerLoad.anyRun(models: all, on: self.database) }
-                }, on: self.database.eventLoop)
+                return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: self.eagerLoaders) { loader in
+                    return loader.anyRun(models: all, on: self.database)
+                }
             }
         } else {
             return done
@@ -220,7 +222,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    internal func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -230,7 +232,7 @@ public final class QueryBuilder<Model>
         if query.fields.isEmpty {
             for model in self.models {
                 query.fields += model.keys.map { path in
-                    .path(path, schema: model.schemaOrAlias)
+                    .path([path], schema: model.schemaOrAlias)
                 }
             }
         }
@@ -243,34 +245,20 @@ public final class QueryBuilder<Model>
             }
         }
 
-        let model = Model.init()
-        let forceDelete = model.deletedTimestamp == nil ? true : self.shouldForceDelete
-
+        // TODO: combine this logic with model+crud timestamps
+        let forceDelete = Model.init().deletedTimestamp == nil
+            ? true : self.shouldForceDelete
         switch query.action {
         case .delete:
             if !forceDelete {
-                model.touchTimestamps(.delete, .update)
                 query.action = .update
-                query.input = [.dictionary(model.input.values)]
+                query.input = [.dictionary([:])]
+                self.addTimestamps(triggers: [.update, .delete], to: &query)
             }
         case .create:
-            var data: [DatabaseQuery.Value] = []
-
-            for case .dictionary(var nested) in query.input {
-                addTimestamps(triggers: [.create, .update], nested: &nested)
-                data.append(.dictionary(nested))
-            }
-
-            query.input = data
+            self.addTimestamps(triggers: [.create, .update], to: &query)
         case .update:
-            var data: [DatabaseQuery.Value] = []
-
-            for case .dictionary(var nested) in query.input {
-                addTimestamps(triggers: [.update], nested: &nested)
-                data.append(.dictionary(nested))
-            }
-
-            query.input = data
+            self.addTimestamps(triggers: [.update], to: &query)
         default:
             break
         }
@@ -294,15 +282,21 @@ public final class QueryBuilder<Model>
         return done
     }
 
-    private func addTimestamps(triggers: [TimestampTrigger], nested: inout [FieldKey: DatabaseQuery.Value]) {
-        let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
-
-        for timestamp in timestamps {
-            precondition(timestamp.path.count == 1, "Timestamp updates do not support @Group currently")
-            let path = timestamp.path.first!
-            if nested[path] == nil {
-                nested[timestamp.path.first!] = .bind(Date())
+    private func addTimestamps(
+        triggers: [TimestampTrigger],
+        to query: inout DatabaseQuery
+    ) {
+        var data: [DatabaseQuery.Value] = []
+        for case .dictionary(var nested) in query.input {
+            let timestamps = Model().timestamps.filter { triggers.contains($0.trigger) }
+            for timestamp in timestamps {
+                // Only add timestamps if they weren't already set
+                if nested[timestamp.key] == nil {
+                    nested[timestamp.key] = timestamp.currentTimestampInput
+                }
             }
+            data.append(.dictionary(nested))
         }
+        query.input = data
     }
 }

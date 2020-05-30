@@ -296,40 +296,104 @@ final class FluentKitTests: XCTestCase {
             pet: .init(
                 name: "Ziz",
                 type: .cat,
-                toy: .init(name: "Foo", type: .mouse)
+                toy: .init(
+                    name: "Foo",
+                    type: .mouse,
+                    foo: .init(bar: 42, baz: "hello")
+                )
             )
         )
 
-        for path in User.keys {
-            print(path)
-        }
+        // GroupProperty<User, Pet>
+        let a = tanner.$pet
+        print(a)
 
-        func output(_ properties: [AnyProperty], depth: Int = 0) {
-            for property in properties {
-                print(
-                    String(repeating: "  ", count: depth),
-                    property.path,
-                    property
-                )
-                output(property.nested, depth: depth + 1)
-            }
-        }
-        output(User().properties)
+        // GroupedProperty<User, GroupProperty<Pet, Toy>>
+        let b = tanner.$pet.$toy
+        print(b)
+
+        // GroupedProperty<User, GroupedProperty<Pet, GroupProperty<Toy, Foo>>>
+        let c = tanner.$pet.$toy.$foo
+        print(c)
+
+        // GroupedProperty<User, GroupedProperty<Pet, GroupedProperty<Toy, FieldProperty<Foo, Int>>>>
+        let d = tanner.$pet.$toy.$foo.$bar
+        print(d)
 
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
-        XCTAssertEqual(User.path(for: \.$pet.$toy.$type), ["pet", "toy", "type"])
+        XCTAssertEqual(User.path(for: \.$pet.$toy.$foo.$bar).map { $0.description }, ["pet_toy_foo_bar"])
 
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
             let encoded = try encoder.encode(tanner)
             let result = String(data:encoded, encoding: .utf8)!
-            let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"name":"Foo","type":"mouse"},"type":"cat"}}"#
+            let expected = #"{"deletedAt":null,"id":null,"name":"Tanner","pet":{"name":"Ziz","toy":{"foo":{"bar":42,"baz":"hello"},"name":"Foo","type":"mouse"},"type":"cat"}}"#
             XCTAssertEqual(result, expected)
         }
     }
-}
+
+    func testPlanel2FilterPlaceholder1() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != "first")
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+
+    func testPlanel2FilterPlaceholder2() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != nil)
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" IS NOT NULL"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+
+    func testPlanel2FilterPlaceholder3() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != "first")
+                .filter(\.$nickName == "second")
+                .filter(\.$nickName != "third")
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" = $2 AND "planets"."nickname" <> $3"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+
+    func testPlanel2FilterPlaceholder4() throws {
+            let db = DummyDatabaseForTestSQLSerializer()
+            _ = try Planet2
+                .query(on: db)
+                .filter(\.$nickName != "first")
+                .filter(\.$nickName != nil)
+                .filter(\.$nickName == "second")
+                .count()
+                .wait()
+            XCTAssertEqual(db.sqlSerializers.count, 1)
+            let result: String = (db.sqlSerializers.first?.sql)!
+            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" IS NOT NULL AND "planets"."nickname" = $2"#
+            XCTAssertEqual(result, expected)
+            db.reset()
+        }
+    }
 
 final class User: Model {
     static let schema = "users"
@@ -388,11 +452,30 @@ final class Toy: Fields {
     @Enum(key: "type")
     var type: ToyType
 
+    @Group(key: "foo")
+    var foo: Foo
+
     init() { }
 
-    init(name: String, type: ToyType) {
+    init(name: String, type: ToyType, foo: Foo) {
         self.name = name
         self.type = type
+        self.foo = foo
+    }
+}
+
+final class Foo: Fields {
+    @Field(key: "bar")
+    var bar: Int
+
+    @Field(key: "baz")
+    var baz: String
+
+    init() { }
+
+    init(bar: Int, baz: String) {
+        self.bar = bar
+        self.baz = baz
     }
 }
 

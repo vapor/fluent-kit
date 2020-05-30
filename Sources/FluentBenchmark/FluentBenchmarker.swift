@@ -14,6 +14,7 @@ public final class FluentBenchmarker {
     }
     
     public init(databases: Databases) {
+        precondition(databases.ids().count >= 2, "FluentBenchmarker Databases instance must have 2 or more registered databases")
         self.databases = databases
     }
 
@@ -22,6 +23,7 @@ public final class FluentBenchmarker {
         try self.testArray()
         try self.testBatch()
         try self.testChildren()
+        try self.testCodable()
         try self.testChunk()
         try self.testCRUD()
         try self.testEagerLoad()
@@ -38,6 +40,7 @@ public final class FluentBenchmarker {
         try self.testParent()
         try self.testPerformance()
         try self.testRange()
+        try self.testSchema()
         try self.testSet()
         try self.testSiblings()
         try self.testSoftDelete()

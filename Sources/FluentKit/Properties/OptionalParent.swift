@@ -3,16 +3,18 @@ extension Model {
         where To: Model
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class OptionalParentProperty<From, To>
     where From: Model, To: Model
 {
-    @FieldProperty<From, To.IDValue?>
+    @OptionalFieldProperty<From, To.IDValue>
     public var id: To.IDValue?
 
     public var wrappedValue: To? {
         get {
-            self.value
+            self.value ?? nil
         }
         set {
             fatalError("OptionalParent relation is get-only.")
@@ -23,17 +25,30 @@ public final class OptionalParentProperty<From, To>
         return self
     }
 
-    public var value: To?
+    public var value: To??
 
     public init(key: FieldKey) {
         self._id = .init(key: key)
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
-        To.query(on: database)
-            .filter(\._$id == self.id!)
+        let builder = To.query(on: database)
+        if let id = self.id {
+            builder.filter(\._$id == id)
+        } else {
+            builder.filter(\._$id == .null)
+        }
+        return builder
     }
 }
+
+extension OptionalParentProperty: CustomStringConvertible {
+    public var description: String {
+        self.name
+    }
+}
+
+// MARK: Relation
 
 extension OptionalParentProperty: Relation {
     public var name: String {
@@ -47,28 +62,34 @@ extension OptionalParentProperty: Relation {
     }
 }
 
-extension OptionalParentProperty: PropertyProtocol {
+// MARK: Property
+
+extension OptionalParentProperty: AnyProperty { }
+
+extension OptionalParentProperty: Property {
     public typealias Model = From
-    public typealias Value = To
+    public typealias Value = To?
 }
 
-extension OptionalParentProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        [self.$id]
-    }
+// MARK: Database
 
-    public var path: [FieldKey] {
-        []
+extension OptionalParentProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        self.$id.keys
     }
     
-    public func input(to input: inout DatabaseInput) {
-        self.$id.input(to: &input)
+    public func input(to input: DatabaseInput) {
+        self.$id.input(to: input)
     }
 
     public func output(from output: DatabaseOutput) throws {
         try self.$id.output(from: output)
     }
+}
 
+// MARK: Codable
+
+extension OptionalParentProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
@@ -83,9 +104,10 @@ extension OptionalParentProperty: AnyProperty {
     public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
-        // TODO: allow for nested decoding
     }
 }
+
+// MARK: Eager Loadable
 
 extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
@@ -97,7 +119,6 @@ extension OptionalParentProperty: EagerLoadable {
         let loader = OptionalParentEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
-
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
@@ -134,9 +155,9 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
             .map
         {
             for model in models {
-                model[keyPath: self.relationKey].value = $0.filter {
+                model[keyPath: self.relationKey].value = .some($0.filter {
                     $0.id == model[keyPath: self.relationKey].id
-                }.first
+                }.first)
             }
         }
     }
@@ -149,7 +170,7 @@ private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoa
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs = models.map {
+        let throughs = models.compactMap {
             $0[keyPath: self.relationKey].value!
         }
         return self.loader.run(models: throughs, on: database)

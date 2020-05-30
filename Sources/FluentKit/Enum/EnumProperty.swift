@@ -5,6 +5,8 @@ extension Fields {
             Value.RawValue == String
 }
 
+// MARK: Type
+
 @propertyWrapper
 public final class EnumProperty<Model, Value>
     where Model: FluentKit.Fields,
@@ -35,59 +37,58 @@ public final class EnumProperty<Model, Value>
     }
 }
 
-extension EnumProperty: PropertyProtocol {
+// MARK: Property
+
+extension EnumProperty: AnyProperty { }
+
+extension EnumProperty: Property {
     public var value: Value? {
         get {
-            if let value = self.field.inputValue {
-                switch value {
-                case .enumCase(let string):
-                    return Value(rawValue: string)!
-                case .bind(let string as String):
-                    guard let value = Value(rawValue: string) else {
-                        fatalError("Invalid enum case name '\(string)' for enum \(Value.self)")
-                    }
-
-                    return value
-                default:
-                    fatalError("Unexpected enum input value type: \(value)")
-                }
-            } else if let value = self.field.outputValue {
-                return Value(rawValue: value)!
-            } else {
-                return nil
+            self.field.value.map {
+                Value(rawValue: $0)!
             }
         }
         set {
-            self.field.inputValue = newValue.flatMap {
-                .enumCase($0.rawValue)
-            }
+            self.field.value = newValue?.rawValue
         }
     }
 }
 
-extension EnumProperty: FieldProtocol {
-    public static func queryValue(_ value: Value) -> DatabaseQuery.Value { .enumCase(value.rawValue) }
-}
+// MARK: Queryable
 
-extension EnumProperty: AnyField {
+extension EnumProperty: AnyQueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
 }
 
-extension EnumProperty: AnyProperty {
-    public var nested: [AnyProperty] {
-        []
+extension EnumProperty: QueryableProperty {
+    public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
+        .enumCase(value.rawValue)
+    }
+}
+
+// MARK: Database
+
+extension EnumProperty: AnyDatabaseProperty {
+    public var keys: [FieldKey] {
+        self.field.keys
     }
 
-    public func input(to input: inout DatabaseInput) {
-        self.field.input(to: &input)
+    public func input(to input: DatabaseInput) {
+        if let value = self.value {
+            input.set(.enumCase(value.rawValue), at: self.field.key)
+        }
     }
 
     public func output(from output: DatabaseOutput) throws {
         try self.field.output(from: output)
     }
+}
 
+// MARK: Codable
+
+extension EnumProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         try self.field.encode(to: encoder)
     }

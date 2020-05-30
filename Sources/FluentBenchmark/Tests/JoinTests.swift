@@ -3,6 +3,9 @@ extension FluentBenchmarker {
         try self.testJoin_basic()
         try self.testJoin_sameTable()
         try self.testJoin_fieldFilter()
+        try self.testJoin_fieldOrdering()
+        try self.testJoin_aliasNesting()
+        try self.testJoin_partialSelect()
     }
 
     private func testJoin_basic() throws {
@@ -135,6 +138,72 @@ extension FluentBenchmarker {
                 .all()
                 .wait()
             XCTAssertEqual(averageSchools.count, 1)
+        }
+    }
+
+
+    private func testJoin_fieldOrdering() throws {
+        _ = School.query(on: self.database)
+            .join(City.self, on: \School.$city.$id == \City.$id)
+        _ = School.query(on: self.database)
+            .join(City.self, on: \City.$id == \School.$city.$id)
+    }
+
+    private func testJoin_aliasNesting() throws {
+        final class ChatParticipant: Model {
+            static let schema = "chat_participants"
+
+            @ID(key: "id")
+            var id: UUID?
+
+            @Parent(key: "user_id")
+            var user: User
+        }
+
+        final class User: Model {
+            static let schema = "users"
+
+            @ID(key: "id")
+            var id: UUID?
+        }
+
+        final class MeAsAParticipant: ModelAlias {
+            static let name: String = "me_as_a_participant"
+            let model = ChatParticipant()
+        }
+        final class OtherParticipant: ModelAlias {
+            static let name: String = "other_participant"
+            var model = ChatParticipant()
+        }
+
+        _ = User.query(on: self.database)
+            .join(OtherParticipant.self, on: \User.$id == \OtherParticipant.$user.$id)
+    }
+
+    private func testJoin_partialSelect() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .field(\.$name)
+                .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+                .filter(Star.self, \.$name ~~ ["Sun", "Alpha Centauri"])
+                .field(Star.self, \.$name)
+                .all().wait()
+
+            for planet in planets {
+                XCTAssertNil(planet.$id.value)
+                let star = try planet.joined(Star.self)
+                XCTAssertNil(star.$id.value)
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(star.name, "Sun")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(star.name, "Alpha Centauri")
+                default: break
+                }
+
+            }
         }
     }
 }
