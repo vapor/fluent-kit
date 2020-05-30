@@ -3,6 +3,7 @@ extension FluentBenchmarker {
         try self.testMigrator_success()
         try self.testMigrator_error()
         try self.testMigrator_sequence()
+        try self.testMigrator_addMultiple()
     }
 
     private func testMigrator_success() throws {
@@ -122,6 +123,29 @@ extension FluentBenchmarker {
 
             
             // Teardown
+            try migrator.revertAllBatches().wait()
+        }
+    }
+
+    private func testMigrator_addMultiple() throws {
+        try self.runTest(#function, []) {
+            let migrations = Migrations()
+            migrations.add([GalaxyMigration(), StarMigration(), GalaxySeed()])
+
+            let migrator = Migrator(
+                databaseFactory: { _ in self.database },
+                migrations: migrations,
+                on: self.database.eventLoop
+            )
+            try migrator.setupIfNeeded().wait()
+            try migrator.prepareBatch().wait()
+
+            let logs = try MigrationLog.query(on: self.database)
+                .sort(\.$batch, .ascending)
+                .all().wait()
+                .map { $0.batch }
+            XCTAssertEqual(logs, [1, 1, 1], "batch did not apply all three")
+
             try migrator.revertAllBatches().wait()
         }
     }
