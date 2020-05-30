@@ -32,32 +32,39 @@ jobs:
           - swiftlang/swift:nightly-master-bionic
           - swiftlang/swift:nightly-master-focal
         include:
-          - depscmd: 'apt-get -q update && apt-get -q install -y postgresql-client mysql-client libsqlite3-dev'
-            mysqlver: 8.0
+          - depscmd: 'apt-get -q update && apt-get -q install -y postgresql-client libsqlite3-dev'
           - image: swiftlang/swift:nightly-master-centos8
-            depscmd: 'dnf install -y zlib-devel postgresql mysql sqlite-devel'
-            mysqlver: 8.0
+            depscmd: 'dnf install -y postgresql sqlite-devel'
           - image: swiftlang/swift:nightly-master-amazonlinux2
-            depscmd: 'yum install -y zlib-devel postgresql mysql sqlite-devel'
-            mysqlver: 5.7
+            depscmd: 'yum install -y postgresql sqlite-devel'
     container: ${{ matrix.image }}
     services:
-      postgres:
+      postgres-a:
         image: postgres:latest
         env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
-      mysql:
-        image: mysql:${{ matrix.mysqlver }}
+      postgres-b:
+        image: postgres:latest
+        env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
+      mysql-a:
+        image: mysql:latest
         env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
-      mongo:
+      mysql-b:
+        image: mysql:latest
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
+      mongo-a:
+        image: mongo:latest
+      mongo-b:
         image: mongo:latest
     env:
-      POSTGRES_HOSTNAME: postgres
-      PGHOST: 'postgres'
+      POSTGRES_HOSTNAME_A: postgres-a
+      POSTGRES_HOSTNAME_B: postgres-b
+      MYSQL_HOSTNAME_A: mysql-a
+      MYSQL_HOSTNAME_B: mysql-b
+      MONGO_HOSTNAME_A: mongo-a
+      MONGO_HOSTNAME_B: mongo-b
       PGUSER: 'vapor_username'
       PGPASSWORD: 'vapor_password'
-      MYSQL_HOSTNAME: mysql
-      MYSQL_HOST: mysql
-      MONGO_HOSTNAME: mongo
+      PGDATABASE: 'vapor_database'
     steps:
       - name: Install dependencies
         run: ${{ matrix.depscmd }}
@@ -68,15 +75,12 @@ jobs:
           curl -L 'https://www.sqlite.org/src/tarball/sqlite.tar.gz?r=release' | tar xz && cd sqlite
           export CFLAGS="-DSQLITE_DISABLE_DIRSYNC=1 -DSQLITE_SECURE_DELETE=1"
           ./configure --prefix=/usr --libdir=/usr/lib64 --with-tcl=/usr/lib64 --enable-all && make all install
-          printf '#!/bin/bash\nexec psql -dvapor_database "$@" </dev/null\n' >/usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
+          printf '#!/bin/bash\nexec psql "$@" </dev/null\n' >/usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
       - name: Wait for all database servers to be ready
-        # Note: I had `mongo --eval ';'` here too but non-Ubuntu runners don't have easy Mongo and we don't really need it
-        run: until pg_isready -hpostgres && mysqladmin -hmysql ping; do sleep 1; done
+        # Actually we just wait for Postgres, because it's the easiest to install on all the various runners
+        # and because it usually takes the longest to start.
+        run: until pg_isready -hpostgres-a && pg_isready -hpostgres-b; do sleep 1; done
         timeout-minutes: 2
-      - name: Create extra test DB for Postgres and MySQL
-        run: |
-          createdb -Ovapor_username vapor_migration_extra
-          mysql <<<"CREATE DATABASE vapor_migration_extra; GRANT ALL ON vapor_migration_extra.* TO vapor_username@'%';"
       - name: Checkout fluent-kit
         uses: actions/checkout@v2
         with: { path: 'fluent-kit' }
@@ -111,11 +115,20 @@ jobs:
 
   macOS:
     env:
-      POSTGRES_HOSTNAME: '127.0.0.1'
+      POSTGRES_HOSTNAME_A: '127.0.0.1'
+      POSTGRES_HOSTNAME_B: '127.0.0.1'
+      POSTGRES_DATABASE_A: vapor_database_a
+      POSTGRES_DATABASE_B: vapor_database_b
       PGHOST: '127.0.0.1'
-      MYSQL_HOSTNAME: '127.0.0.1'
+      MYSQL_HOSTNAME_A: '127.0.0.1'
+      MYSQL_HOSTNAME_B: '127.0.0.1'
+      MYSQL_DATABASE_A: vapor_database_a
+      MYSQL_DATABASE_B: vapor_database_b
       MYSQL_HOST: '127.0.0.1'
-      MONGO_HOSTNAME: '127.0.0.1'
+      MONGO_HOSTNAME_A: '127.0.0.1'
+      MONGO_HOSTNAME_B: '127.0.0.1'
+      MONGO_DATABASE_A: vapor_database_a
+      MONGO_DATABASE_B: vapor_database_b
     runs-on: macos-latest
     steps:
       - name: Select latest available Xcode
@@ -139,7 +152,7 @@ jobs:
         run: |
           createuser --createdb --login vapor_username
           mysql -uroot --batch <<<"CREATE USER vapor_username@localhost IDENTIFIED BY 'vapor_password';"
-          for db in vapor_database vapor_migration_extra; do
+          for db in vapor_database_{a,b}; do
             createdb -Ovapor_username $db
             psql $db <<<"ALTER SCHEMA public OWNER TO vapor_username;"
             mysql -uroot --batch <<<"CREATE DATABASE $db; GRANT ALL PRIVILEGES ON $db.* TO vapor_username@localhost;"
