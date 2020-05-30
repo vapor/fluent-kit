@@ -14,7 +14,8 @@ public final class Migrations {
     public func add(_ migration: Migration, to id: DatabaseID? = nil) {
         self.storage.append(.init(id: id, migration: migration))
     }
-
+    
+    @inlinable
     public func add(_ migrations: Migration..., to id: DatabaseID? = nil) {
         self.add(migrations, to: id)
     }

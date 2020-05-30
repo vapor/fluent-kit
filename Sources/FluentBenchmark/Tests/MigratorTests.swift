@@ -129,25 +129,37 @@ extension FluentBenchmarker {
 
     private func testMigrator_addMultiple() throws {
         try self.runTest(#function, []) {
+            let logger = Logger(label: "codes.vapor.tests")
+            let databaseIds = Array(self.databases.ids()).prefix(2)
+            let databases = databaseIds.map { self.databases.database($0, logger: logger, on: self.databases.eventLoopGroup.next())! }
             let migrations = Migrations()
-            migrations.add([GalaxyMigration(), StarMigration(), GalaxySeed()])
-            migrations.add(PlanetMigration(), PlanetTagMigration(), to: self.databases.ids().first)
+            
+            migrations.add([GalaxyMigration(), StarMigration(), GalaxySeed()], to: databaseIds[0])
+            migrations.add(GalaxyMigration(), StarMigration(), PlanetMigration(), to: databaseIds[1])
 
             let migrator = Migrator(
-                databaseFactory: { _ in self.database },
+                databases: self.databases,
                 migrations: migrations,
-                on: self.database.eventLoop
+                logger: Logger(label: "codes.vapor.tests"),
+                on: self.databases.eventLoopGroup.next()
             )
             try migrator.setupIfNeeded().wait()
             try migrator.prepareBatch().wait()
 
-            let logs = try MigrationLog.query(on: self.database)
+            let logs1 = try MigrationLog.query(on: databases[0])
                 .sort(\.$batch, .ascending)
-                .all().wait()
-                .map { $0.batch }
-            XCTAssertEqual(logs, [1, 1, 1, 1, 1], "batch did not apply all five")
+                .all(\.$batch).wait()
+            XCTAssertEqual(logs1, [1, 1, 1], "batch did not apply first three")
+
+            let logs2 = try MigrationLog.query(on: databases[1])
+                .sort(\.$batch, .ascending)
+                .all(\.$batch).wait()
+            XCTAssertEqual(logs2, [1, 1, 1], "batch did not apply second three")
 
             try migrator.revertAllBatches().wait()
+
+            XCTAssertEqual(try MigrationLog.query(on: databases[0]).count().wait(), 0, "Revert of first batch was incomplete")
+            XCTAssertEqual(try MigrationLog.query(on: databases[1]).count().wait(), 0, "Revert of second batch was incomplete")
         }
     }
 }
