@@ -12,6 +12,15 @@ public final class QueryBuilder<Model>
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
 
+    public convenience init?(database: Database, namespace: [String]) {
+        guard TableAlias.enabled || namespace.count == 0 else { return nil }
+        self.init(
+            query: .init(schema: Model.schema, alias: Model.alias, namespace: namespace),
+            database: database,
+            models: [Model.self]
+        )
+    }
+    
     public convenience init(database: Database) {
         self.init(
             query: .init(schema: Model.schema, alias: Model.alias),
@@ -23,6 +32,7 @@ public final class QueryBuilder<Model>
     private init(
         query: DatabaseQuery,
         database: Database,
+        namespace: [String] = [],
         models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
         includeDeleted: Bool = false,
@@ -148,7 +158,7 @@ public final class QueryBuilder<Model>
             Field.Model == Model
     {
         let copy = self.copy()
-        copy.query.fields = [.path(Model.path(for: key), schema: Model.schema)]
+        copy.query.fields = [.path(Model.path(for: key), schema: Model.schemaOrAlias)]
         return copy.all().map {
             $0.map {
                 $0[keyPath: key].value!

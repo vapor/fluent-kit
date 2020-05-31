@@ -1,6 +1,7 @@
 public struct DatabaseQuery {
     public var schema: String
     public var alias: String?
+    public var namespace: [String]
     public var customIDKey: FieldKey?
     public var isUnique: Bool
     public var fields: [Field]
@@ -12,9 +13,10 @@ public struct DatabaseQuery {
     public var limits: [Limit]
     public var offsets: [Offset]
 
-    init(schema: String, alias: String? = nil) {
+    init(schema: String, alias: String? = nil, namespace: [String] = []) {
         self.schema = schema
         self.alias = alias
+        self.namespace = namespace
         self.isUnique = false
         self.fields = []
         self.action = .read
@@ -35,7 +37,7 @@ extension DatabaseQuery: CustomStringConvertible {
             self.schema
         ]
         if let alias = self.alias {
-            parts.append(" as \(alias)")
+            parts.append("as \(alias)")
         }
         if self.isUnique {
             parts.append("unique")

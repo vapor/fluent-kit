@@ -1,3 +1,5 @@
+import class FluentKit.TableAlias
+
 public struct SQLQueryConverter {
     let delegate: SQLConverterDelegate
     public init(delegate: SQLConverterDelegate) {
@@ -43,8 +45,13 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        if let alias = query.alias {
-            select.tables.append(SQLAlias(SQLIdentifier(query.schema), as: SQLIdentifier(alias)))
+        if TableAlias.enabled, let alias = query.alias {
+            do {
+                let fullPath: SQLIdentifier = query.namespace.count > 0
+                    ? try self.delegate.nameSpacedSchema(query.schema, query.namespace)
+                    : SQLIdentifier(query.schema)
+                select.tables.append(SQLAlias(fullPath, as: SQLIdentifier(alias)))
+            } catch { fatalError(error.localizedDescription) }
         } else {
             select.tables.append(SQLIdentifier(query.schema))
         }

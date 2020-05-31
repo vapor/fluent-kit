@@ -7,6 +7,13 @@ extension Model {
     public static func query(on database: Database) -> QueryBuilder<Self> {
         .init(database: database)
     }
+    
+    public static func query(on database: Database,
+                             in namespace: [String] = []) -> QueryBuilder<Self> {
+        let query = QueryBuilder<Self>(database: database, namespace: namespace)
+        if let query = query { return query }
+        fatalError("Table aliasing must be enabled for namespaced tables")
+    }
 
     public static func find(
         _ id: Self.IDValue?,

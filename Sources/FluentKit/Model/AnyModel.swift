@@ -1,7 +1,9 @@
 public protocol AnyModel: Schema, CustomStringConvertible { }
 
 extension AnyModel {
-    public static var alias: String? { nil }
+    public static var alias: String? {
+        return TableAlias.enabled ? tableAliases.alias(self.schema) : nil
+    }
 }
 
 extension AnyModel {
@@ -50,3 +52,32 @@ private struct InfoKey: ExpressibleByStringLiteral, Hashable, CustomStringConver
         self.value = value
     }
 }
+
+
+
+// Internal schema to alias map for tables
+public final class TableAlias {
+    public static let enabled = true
+    private var schemaMap: [String: String] = [:]
+
+    internal func alias(_ schema: String) -> String {
+        guard TableAlias.enabled else { return schema }
+        if !schemaMap.keys.contains(schema) {
+            schemaMap[schema] = base26(schemaMap.count)
+        }
+        return schemaMap[schema]!
+    }
+
+    private func base26(_ value: Int) -> String {
+       var value = abs(value)
+       var result = String()
+       repeat {
+           result += String(Unicode.Scalar(UInt8((value % 26) + 97)))
+           value /= 26
+       } while value > 0
+
+       return result
+    }
+}
+
+internal let tableAliases = TableAlias()

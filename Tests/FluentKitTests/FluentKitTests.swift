@@ -25,8 +25,10 @@ final class FluentKitTests: XCTestCase {
     func testGalaxyPlanetSorts() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).sort(\.$name, .descending).all().wait()
+        let p = Planet.schemaOrAlias
+        let s = Star.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "\#(p)"."name" DESC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db)
@@ -34,12 +36,12 @@ final class FluentKitTests: XCTestCase {
             .sort(Star.self, \.$name, .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "\#(s)"."name" ASC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db).sort(\.$id, .descending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."id" DESC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "\#(p)"."id" DESC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db)
@@ -47,12 +49,12 @@ final class FluentKitTests: XCTestCase {
             .sort(Star.self, \.$id, .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."id" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "\#(s)"."id" ASC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db).sort("name", .descending).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "planets"."name" DESC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "\#(p)"."name" DESC"#), true)
         db.reset()
         
         _ = try Planet.query(on: db)
@@ -60,7 +62,7 @@ final class FluentKitTests: XCTestCase {
             .sort(Star.self, "name", .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "\#(s)"."name" ASC"#), true)
         db.reset()
     }
     
@@ -68,32 +70,34 @@ final class FluentKitTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         
         _ = try Planet.query(on: db).all(\.$name).wait()
+        let p = Planet.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(p)"."name" AS "\#(p)_name" FROM "planets" AS "\#(p)""#)
         db.reset()
     }
     
     func testSQLDistinct() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         
+        let p = Planet.schemaOrAlias
         _ = try Planet.query(on: db).unique().all(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "\#(p)"."name" AS "\#(p)_name" FROM "planets" AS "\#(p)""#)
         db.reset()
         
         _ = try Planet.query(on: db).unique().all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.starts(with: #"SELECT DISTINCT "planets"."#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.starts(with: #"SELECT DISTINCT "\#(p)"."#), true)
         db.reset()
         
         _ = try? Planet.query(on: db).unique().count(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "aggregate" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("\#(p)"."name")) AS "aggregate" FROM "planets" AS "\#(p)""#)
         db.reset()
         
         _ = try? Planet.query(on: db).unique().sum(\.$id).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "aggregate" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("\#(p)"."id")) AS "aggregate" FROM "planets" AS "\#(p)""#)
         db.reset()
     }
 
@@ -341,9 +345,10 @@ final class FluentKitTests: XCTestCase {
                 .filter(\.$nickName != "first")
                 .count()
                 .wait()
+            let p = Planet2.schemaOrAlias
             XCTAssertEqual(db.sqlSerializers.count, 1)
             let result: String = (db.sqlSerializers.first?.sql)!
-            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1"#
+            let expected = #"SELECT COUNT("\#(p)"."id") AS "aggregate" FROM "planets" AS "\#(p)" WHERE "\#(p)"."nickname" <> $1"#
             XCTAssertEqual(result, expected)
             db.reset()
         }
@@ -355,9 +360,10 @@ final class FluentKitTests: XCTestCase {
                 .filter(\.$nickName != nil)
                 .count()
                 .wait()
+            let p = Planet2.schemaOrAlias
             XCTAssertEqual(db.sqlSerializers.count, 1)
             let result: String = (db.sqlSerializers.first?.sql)!
-            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" IS NOT NULL"#
+            let expected = #"SELECT COUNT("\#(p)"."id") AS "aggregate" FROM "planets" AS "\#(p)" WHERE "\#(p)"."nickname" IS NOT NULL"#
             XCTAssertEqual(result, expected)
             db.reset()
         }
@@ -371,9 +377,10 @@ final class FluentKitTests: XCTestCase {
                 .filter(\.$nickName != "third")
                 .count()
                 .wait()
+            let p = Planet2.schemaOrAlias
             XCTAssertEqual(db.sqlSerializers.count, 1)
             let result: String = (db.sqlSerializers.first?.sql)!
-            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" = $2 AND "planets"."nickname" <> $3"#
+            let expected = #"SELECT COUNT("\#(p)"."id") AS "aggregate" FROM "planets" AS "\#(p)" WHERE "\#(p)"."nickname" <> $1 AND "\#(p)"."nickname" = $2 AND "\#(p)"."nickname" <> $3"#
             XCTAssertEqual(result, expected)
             db.reset()
         }
@@ -387,9 +394,10 @@ final class FluentKitTests: XCTestCase {
                 .filter(\.$nickName == "second")
                 .count()
                 .wait()
+            let p = Planet2.schemaOrAlias
             XCTAssertEqual(db.sqlSerializers.count, 1)
             let result: String = (db.sqlSerializers.first?.sql)!
-            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" IS NOT NULL AND "planets"."nickname" = $2"#
+            let expected = #"SELECT COUNT("\#(p)"."id") AS "aggregate" FROM "planets" AS "\#(p)" WHERE "\#(p)"."nickname" <> $1 AND "\#(p)"."nickname" IS NOT NULL AND "\#(p)"."nickname" = $2"#
             XCTAssertEqual(result, expected)
             db.reset()
         }

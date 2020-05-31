@@ -46,7 +46,7 @@ extension QueryBuilder {
         where Value: Codable
     {
         self.filter(
-            .path(fieldPath, schema: Model.schema),
+            .path(fieldPath, schema: Model.schemaOrAlias),
             method,
             .bind(value)
         )
@@ -68,9 +68,9 @@ extension QueryBuilder {
         _ rightPath: [FieldKey]
     ) -> Self {
         self.filter(
-            .path(leftPath, schema: Model.schema),
+            .path(leftPath, schema: Model.schemaOrAlias),
             method,
-            .path(rightPath, schema: Model.schema)
+            .path(rightPath, schema: Model.schemaOrAlias)
         )
     }
 

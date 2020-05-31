@@ -1,6 +1,6 @@
 //
 //  FilterQueryTests.swift
-//  
+//
 //
 //  Created by Mathew Polzin on 3/8/20.
 //
@@ -16,32 +16,36 @@ final class FilterQueryTests: XCTestCase {
     func test_enumEquals() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status == .done).all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" = 'done'"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."status" = 'done'"#)
         db.reset()
     }
 
     func test_enumNotEquals() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status != .done).all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" <> 'done'"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."status" <> 'done'"#)
         db.reset()
     }
 
     func test_enumIn() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status ~~ [.done, .notDone]).all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" IN ('done' , 'notDone')"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."status" IN ('done' , 'notDone')"#)
         db.reset()
     }
 
     func test_enumNotIn() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status !~ [.done, .notDone]).all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" NOT IN ('done' , 'notDone')"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."status" NOT IN ('done' , 'notDone')"#)
         db.reset()
     }
 
@@ -49,32 +53,36 @@ final class FilterQueryTests: XCTestCase {
     func test_stringEquals() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description == "hello").all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" = $1"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."description" = $1"#)
         db.reset()
     }
 
     func test_stringNotEquals() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description != "hello").all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" <> $1"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."description" <> $1"#)
         db.reset()
     }
 
     func test_stringIn() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description ~~ ["hello"]).all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" IN ($1)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."description" IN ($1)"#)
         db.reset()
     }
 
     func test_stringNotIn() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description !~ ["hello"]).all().wait()
+        let t = Task.schemaOrAlias
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" NOT IN ($1)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "\#(t)"."id" AS "\#(t)_id", "\#(t)"."description" AS "\#(t)_description", "\#(t)"."status" AS "\#(t)_status" FROM "tasks" AS "\#(t)" WHERE "\#(t)"."description" NOT IN ($1)"#)
         db.reset()
     }
 }

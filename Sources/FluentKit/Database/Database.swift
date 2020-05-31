@@ -22,10 +22,12 @@ public protocol Database {
 }
 
 extension Database {
-    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
+    public func query<Model>(_ model: Model.Type, in namespace: [String] = []) -> QueryBuilder<Model>
         where Model: FluentKit.Model
     {
-        return .init(database: self)
+        let query = QueryBuilder<Model>(database: self, namespace: namespace)
+        if let query = query { return query }
+        fatalError("Table aliasing must be enabled for namespaced tables")
     }
 }
 

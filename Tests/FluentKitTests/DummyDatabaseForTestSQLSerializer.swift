@@ -143,4 +143,11 @@ struct DummyDatabaseConverterDelegate: SQLConverterDelegate {
     func nestedFieldExpression(_ column: String, _ path: [String]) -> SQLExpression {
         return SQLRaw("\(column)->>'\(path[0])'")
     }
+    
+    func nameSpacedSchema(_ table: String, _ path: [String]) throws -> SQLIdentifier {
+        var path = path
+        path.append(table)
+        guard path.count <= 2 else { throw FluentError.invalidSchema(db: "DummyDatabase", schema: path.joined(separator: ".")) }
+        return SQLIdentifier(path.joined(separator: #"".""#))
+    }
 }
