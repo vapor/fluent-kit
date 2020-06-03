@@ -42,7 +42,7 @@ extension Database {
         self.context.eventLoop
     }
 
-    public var history: QueryHistory {
+    public var history: QueryHistory? {
         self.context.history
     }
 }
@@ -61,13 +61,13 @@ public struct DatabaseContext {
     public let configuration: DatabaseConfiguration
     public let logger: Logger
     public let eventLoop: EventLoop
-    public var history: QueryHistory
+    public var history: QueryHistory?
     
     public init(
         configuration: DatabaseConfiguration,
         logger: Logger,
         eventLoop: EventLoop,
-        history: QueryHistory = .init()
+        history: QueryHistory? = nil
     ) {
         self.configuration = configuration
         self.logger = logger

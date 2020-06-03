@@ -98,7 +98,7 @@ public final class Databases {
         _ id: DatabaseID? = nil,
         logger: Logger,
         on eventLoop: EventLoop,
-        history: QueryHistory = .init()
+        history: QueryHistory? = nil
     ) -> Database? {
         self.lock.lock()
         defer { self.lock.unlock() }

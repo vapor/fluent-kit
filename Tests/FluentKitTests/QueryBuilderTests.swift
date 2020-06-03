@@ -3,6 +3,7 @@
 import XCTest
 import Foundation
 import XCTFluent
+import NIO
 
 final class QueryBuilderTests: XCTestCase {
     func testFirstEmptyResult() throws {
@@ -77,12 +78,12 @@ final class QueryBuilderTests: XCTestCase {
             Planet(id: UUID(), name: "P3", starId: starId)
         ]
         let test = ArrayTestDatabase()
-        let db = test.db
+        let db = test.database(context: .init(configuration: test.configuration, logger: test.db.logger, eventLoop: test.db.eventLoop, history: .init()))
         test.append(planets.map(TestOutput.init))
 
         let retrievedPlanets = try Planet.query(on: db).all().wait()
         XCTAssertEqual(retrievedPlanets.count, planets.count)
-        XCTAssertEqual(db.history.queries.count, 1)
-        XCTAssertEqual(db.history.queries.first?.schema, Planet.schema)
+        XCTAssertEqual(db.history?.queries.count, 1)
+        XCTAssertEqual(db.history?.queries.first?.schema, Planet.schema)
     }
 }
