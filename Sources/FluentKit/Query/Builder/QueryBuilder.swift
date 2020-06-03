@@ -17,8 +17,7 @@ public final class QueryBuilder<Model>
         self.init(
             query: .init(schema: Model.schema),
             database: database,
-            models: [Model.self],
-            history: database.history
+            models: [Model.self]
         )
     }
 
@@ -28,8 +27,7 @@ public final class QueryBuilder<Model>
         models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
         includeDeleted: Bool = false,
-        shouldForceDelete: Bool = false,
-        history: QueryHistory = .init()
+        shouldForceDelete: Bool = false
     ) {
         self.query = query
         self.database = database
@@ -37,7 +35,7 @@ public final class QueryBuilder<Model>
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
         self.shouldForceDelete = shouldForceDelete
-        self.history = history
+        self.history = database.history
         // Pass through custom ID key for database if used.
         let idKey = Model()._$id.key
         switch idKey {

@@ -68,4 +68,19 @@ final class QueryBuilderTests: XCTestCase {
         XCTAssertEqual(retrievedPlanets.count, planets.count)
         XCTAssertEqual(retrievedPlanets.map(\.name), planets.map(\.name))
     }
+
+    func testQueryHistory() throws {
+        let starId = UUID()
+        let planets = [
+            Planet(id: UUID(), name: "P1", starId: starId),
+            Planet(id: UUID(), name: "P2", starId: starId),
+            Planet(id: UUID(), name: "P3", starId: starId)
+        ]
+        let test = ArrayTestDatabase()
+        test.append(planets.map(TestOutput.init))
+
+        let retrievedPlanets = try Planet.query(on: test.db).all().wait()
+        XCTAssertEqual(retrievedPlanets.count, planets.count)
+        XCTAssertEqual(test.db.history.queries.count, 1)
+    }
 }
