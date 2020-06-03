@@ -91,7 +91,7 @@ extension TestDatabase {
         ))
     }
 
-    func database(context: DatabaseContext) -> Database {
+    public func database(context: DatabaseContext) -> Database {
         _TestDatabase(test: self, context: context)
     }
 }

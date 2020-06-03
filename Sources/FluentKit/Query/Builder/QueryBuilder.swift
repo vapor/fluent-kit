@@ -264,6 +264,7 @@ public final class QueryBuilder<Model>
         }
 
         self.database.logger.debug("\(self.query)")
+        self.database.history?.add(self.query)
 
         let done = self.database.execute(query: query) { output in
             assert(
