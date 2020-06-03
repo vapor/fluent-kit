@@ -11,12 +11,14 @@ public final class QueryBuilder<Model>
     internal var shouldForceDelete: Bool
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
+    public var history: QueryHistory
 
     public convenience init(database: Database) {
         self.init(
             query: .init(schema: Model.schema),
             database: database,
-            models: [Model.self]
+            models: [Model.self],
+            history: database.history
         )
     }
 
@@ -26,7 +28,8 @@ public final class QueryBuilder<Model>
         models: [Schema.Type] = [],
         eagerLoaders: [AnyEagerLoader] = [],
         includeDeleted: Bool = false,
-        shouldForceDelete: Bool = false
+        shouldForceDelete: Bool = false,
+        history: QueryHistory = .init()
     ) {
         self.query = query
         self.database = database
@@ -34,6 +37,7 @@ public final class QueryBuilder<Model>
         self.eagerLoaders = eagerLoaders
         self.includeDeleted = includeDeleted
         self.shouldForceDelete = shouldForceDelete
+        self.history = history
         // Pass through custom ID key for database if used.
         let idKey = Model()._$id.key
         switch idKey {
@@ -264,6 +268,7 @@ public final class QueryBuilder<Model>
         }
 
         self.database.logger.debug("\(self.query)")
+        self.history.add(self.query)
 
         let done = self.database.execute(query: query) { output in
             assert(
