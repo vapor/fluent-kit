@@ -61,7 +61,7 @@ public struct DatabaseContext {
     public let configuration: DatabaseConfiguration
     public let logger: Logger
     public let eventLoop: EventLoop
-    public var history: QueryHistory?
+    public let history: QueryHistory?
     
     public init(
         configuration: DatabaseConfiguration,
