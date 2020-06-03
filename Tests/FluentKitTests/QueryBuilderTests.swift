@@ -77,10 +77,12 @@ final class QueryBuilderTests: XCTestCase {
             Planet(id: UUID(), name: "P3", starId: starId)
         ]
         let test = ArrayTestDatabase()
+        let db = test.db
         test.append(planets.map(TestOutput.init))
 
-        let retrievedPlanets = try Planet.query(on: test.db).all().wait()
+        let retrievedPlanets = try Planet.query(on: db).all().wait()
         XCTAssertEqual(retrievedPlanets.count, planets.count)
-        XCTAssertEqual(test.db.history.queries.count, 1)
+        XCTAssertEqual(db.history.queries.count, 1)
+        XCTAssertEqual(db.history.queries.first?.schema, Planet.schema)
     }
 }
