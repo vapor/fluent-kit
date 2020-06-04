@@ -122,7 +122,11 @@ extension TimestampProperty: AnyCodableProperty {
 
     public func decode(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        self.value = try container.decode(Date?.self)
+        if container.decodeNil() {
+            self.value = nil
+        } else {
+            self.value = try container.decode(Date?.self)
+        }
     }
 }
 
