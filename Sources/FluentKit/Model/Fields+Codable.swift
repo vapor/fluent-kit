@@ -6,7 +6,7 @@ extension Fields {
             $0 as? AnyCodableProperty
         }.forEach { label, property in
             do {
-                let decoder = ContainerDecoder(container: container, key:   .string(label))
+                let decoder = ContainerDecoder(container: container, key: .string(label))
                 try property.decode(from: decoder)
             } catch {
                 throw DecodingError.typeMismatch(
@@ -100,9 +100,9 @@ private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
     }
 
     func decodeNil() -> Bool {
-        do {
-            return try self.container.decodeNil(forKey: self.key)
-        } catch {
+        if self.container.contains(self.key) {
+            return try! self.container.decodeNil(forKey: self.key)
+        } else {
             return true
         }
     }
