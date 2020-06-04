@@ -195,7 +195,7 @@ public struct SQLSchemaConverter {
             return SQLRaw("BIGINT")
         case .string:
             return SQLDataType.text
-        case .dictionary:
+        case .json:
             return SQLRaw("JSON")
         case .uuid:
             return SQLRaw("UUID")
@@ -221,12 +221,8 @@ public struct SQLSchemaConverter {
             return SQLRaw("FLOAT")
         case .double:
             return SQLRaw("DOUBLE")
-        case .array(let type):
-            if let type = type {
-                return SQLArrayDataType(type: self.dataType(type))
-            } else {
-                return SQLRaw("JSON")
-            }
+        case .array(of: let type):
+            return SQLArrayDataType(type: self.dataType(type))
         case .custom(let any):
             return custom(any)
         }

@@ -9,6 +9,8 @@ public struct DatabaseSchema {
     }
     
     public indirect enum DataType {
+        case json
+        
         public static var int: DataType {
             return .int64
         }
@@ -49,19 +51,7 @@ public struct DatabaseSchema {
         case data
         case uuid
 
-
-        public static var json: DataType {
-            .dictionary
-        }
-        public static var dictionary: DataType {
-            .dictionary(of: nil)
-        }
-        case dictionary(of: DataType?)
-
-        public static var array: DataType {
-            .array(of: nil)
-        }
-        case array(of: DataType?)
+        case array(of: DataType)
         case custom(Any)
     }
 
