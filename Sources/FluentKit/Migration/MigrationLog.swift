@@ -70,9 +70,9 @@ struct V4NameMigration: Migration {
             let releaseCandidateDefaultName = "\(type(of: migration))"
             let v4DefaultName = String(reflecting:type(of: migration))
 
-            // if the migration does not override the default name
-            // NOTE we use the _current_ style of default, not the
-            // release candidate style of default name.
+            // if the migration does not override the default name.
+            // NOTE we compare to the _current_ style of default, not
+            // the release candidate style of default name.
             if migration.name == v4DefaultName {
                 migrationNameMap[releaseCandidateDefaultName] = v4DefaultName
             } else {
