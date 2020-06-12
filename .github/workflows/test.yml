@@ -86,7 +86,10 @@ jobs:
         with: { path: 'fluent-kit' }
       - name: Checkout Postgres driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver', branch: 'tn-dict-datatype' }
+        with:
+          repository: vapor/fluent-postgres-driver
+          path: fluent-postgres-driver
+          ref: tn-dict-datatype
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
         with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
