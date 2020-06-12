@@ -254,7 +254,7 @@ private final class Foo: Model {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "bar")
+    @OptionalField(key: "bar")
     var bar: String?
 
     init() { }
