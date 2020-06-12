@@ -135,7 +135,7 @@ private final class DatabaseMigrator {
 
     func setupIfNeeded() -> EventLoopFuture<Void> {
         return MigrationLog.migration.prepare(on: self.database).flatMap {
-            V4NameMigration(allMigrations: self.migrations).prepare(on: self.database)
+            V1NameMigration(allMigrations: self.migrations).prepare(on: self.database)
         }
     }
 

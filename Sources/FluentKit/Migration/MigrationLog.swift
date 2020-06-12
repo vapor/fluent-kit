@@ -51,10 +51,10 @@ private struct MigrationLogMigration: Migration {
 }
 
 // This migration just exists to smooth the gap between
-// how migrations were named between the first Vapor 4
-// alpha and the Vapor 4.0.0 release.
-@available(*, deprecated, message: "Remove in Vapor 5")
-struct V4NameMigration: Migration {
+// how migrations were named between the first FluentKit 1
+// alpha and the FluentKit 1.0.0 release.
+@available(*, deprecated, message: "Remove in FluentKit 2")
+struct V1NameMigration: Migration {
     let nameMapping: [String: String]
 
     init(allMigrations: [Migration]) {
