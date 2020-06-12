@@ -32,25 +32,39 @@ jobs:
           - swiftlang/swift:nightly-master-bionic
           - swiftlang/swift:nightly-master-focal
         include:
-          - depscmd: 'apt-get -q update && apt-get -q install -y postgresql-client libsqlite3-dev'
+          - depscmd: apt-get -q update && apt-get -q install -y libsqlite3-dev
           - image: swiftlang/swift:nightly-master-centos8
-            depscmd: 'dnf install -y postgresql sqlite-devel'
+            depscmd: dnf install -y sqlite-devel
           - image: swiftlang/swift:nightly-master-amazonlinux2
-            depscmd: 'yum install -y postgresql sqlite-devel'
+            depscmd: yum install -y sqlite-devel
     container: ${{ matrix.image }}
     services:
       postgres-a:
         image: postgres:latest
-        env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
+        env:
+          POSTGRES_USER: vapor_username
+          POSTGRES_PASSWORD: vapor_password
+          POSTGRES_DB: vapor_database
       postgres-b:
         image: postgres:latest
-        env: { POSTGRES_USER: vapor_username, POSTGRES_PASSWORD: vapor_password, POSTGRES_DB: vapor_database }
+        env: 
+          POSTGRES_USER: vapor_username
+          POSTGRES_PASSWORD: vapor_password
+          POSTGRES_DB: vapor_database
       mysql-a:
         image: mysql:latest
-        env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
+        env: 
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_USER: vapor_username
+          MYSQL_PASSWORD: vapor_password
+          MYSQL_DATABASE: vapor_database
       mysql-b:
         image: mysql:latest
-        env: { MYSQL_ALLOW_EMPTY_PASSWORD: 1, MYSQL_USER: vapor_username, MYSQL_PASSWORD: vapor_password, MYSQL_DATABASE: vapor_database }
+        env: 
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_USER: vapor_username
+          MYSQL_PASSWORD: vapor_password
+          MYSQL_DATABASE: vapor_database
       mongo-a:
         image: mongo:latest
       mongo-b:
@@ -76,14 +90,15 @@ jobs:
           export CFLAGS="-DSQLITE_DISABLE_DIRSYNC=1 -DSQLITE_SECURE_DELETE=1"
           ./configure --prefix=/usr --libdir=/usr/lib64 --with-tcl=/usr/lib64 --enable-all && make all install
           printf '#!/bin/bash\nexec psql "$@" </dev/null\n' >/usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
-      - name: Wait for all database servers to be ready
-        # Actually we just wait for Postgres, because it's the easiest to install on all the various runners
-        # and because it usually takes the longest to start.
-        run: until pg_isready -hpostgres-a && pg_isready -hpostgres-b; do sleep 1; done
+      # - name: Wait for all database servers to be ready
+      #   # Actually we just wait for Postgres, because it's the easiest to install on all the various runners
+      #   # and because it usually takes the longest to start.
+      #   run: until pg_isready -hpostgres-a && pg_isready -hpostgres-b; do sleep 1; done
         timeout-minutes: 2
-      - name: Checkout fluent-kit
+      - name: Checkout FluentKit
         uses: actions/checkout@v2
-        with: { path: 'fluent-kit' }
+        with: 
+          path: fluent-kit
       - name: Checkout Postgres driver
         uses: actions/checkout@v2
         with:
@@ -92,14 +107,20 @@ jobs:
           ref: tn-dict-datatype
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
+        with: 
+          repository: vapor/fluent-mysql-driver
+          path: fluent-mysql-driver
       - name: Checkout SQLite driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
+        with: 
+          repository: vapor/fluent-sqlite-driver
+          path: fluent-sqlite-driver
       - name: Checkout Mongo driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
-      - name: Link drivers to local fluent-kit
+        with: 
+          repository: vapor/fluent-mongo-driver
+          path: fluent-mongo-driver
+      - name: Link drivers to local FluentKit
         run: |
           swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
           swift package --package-path fluent-mysql-driver edit fluent-kit --path fluent-kit
@@ -136,7 +157,8 @@ jobs:
     steps:
       - name: Select latest available Xcode
         uses: maxim-lobanov/setup-xcode@1.0
-        with: { 'xcode-version': 'latest' }
+        with:
+          xcode-version: latest
       - name: Replace Postgres install, add MySQL and Mongo installs
         run: |
           brew uninstall --force postgresql php && rm -rf /usr/local/{etc,var}/{postgres,pg}*
@@ -160,21 +182,31 @@ jobs:
             psql $db <<<"ALTER SCHEMA public OWNER TO vapor_username;"
             mysql -uroot --batch <<<"CREATE DATABASE $db; GRANT ALL PRIVILEGES ON $db.* TO vapor_username@localhost;"
           done
-      - name: Checkout fluent-kit
+      - name: Checkout FluentKit
         uses: actions/checkout@v2
-        with: { path: 'fluent-kit' }
+        with:
+          path: fluent-kit
       - name: Checkout Postgres driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-postgres-driver', path: 'fluent-postgres-driver' }
+        with:
+          repository: vapor/fluent-postgres-driver
+          path: fluent-postgres-driver
+          ref: tn-dict-datatype
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-mysql-driver', path: 'fluent-mysql-driver' }
+        with:
+          repository: vapor/fluent-mysql-driver
+          path: fluent-mysql-driver
       - name: Checkout SQLite driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-sqlite-driver', path: 'fluent-sqlite-driver' }
+        with: 
+          repository: vapor/fluent-sqlite-driver
+          path: fluent-sqlite-driver
       - name: Checkout Mongo driver
         uses: actions/checkout@v2
-        with: { repository: 'vapor/fluent-mongo-driver', path: 'fluent-mongo-driver' }
+        with:
+          repository: vapor/fluent-mongo-driver
+          path: fluent-mongo-driver
       - name: Link drivers to local fluent-kit
         run: |
           swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
