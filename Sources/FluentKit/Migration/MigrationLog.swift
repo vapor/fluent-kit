@@ -58,17 +58,34 @@ struct V4NameMigration: Migration {
     let nameMapping: [String: String]
 
     init(allMigrations: [Migration]) {
+        // map from old style default names
+        // to new style default names
         var migrationNameMap = [String: String]()
+
+        // a set of names that are manually
+        // chosen by migration author.
+        var nameOverrides = Set<String>()
 
         for migration in allMigrations {
             let releaseCandidateDefaultName = "\(type(of: migration))"
             let v4DefaultName = String(reflecting:type(of: migration))
 
             // if the migration does not override the default name
+            // NOTE we use the _current_ style of default, not the
+            // release candidate style of default name.
             if migration.name == v4DefaultName {
                 migrationNameMap[releaseCandidateDefaultName] = v4DefaultName
+            } else {
+                nameOverrides.insert(migration.name)
             }
         }
+        // we must not rename anything that has an overridden
+        // name that happens to be the same as the old-style
+        // of default name.
+        for overriddenName in nameOverrides {
+            migrationNameMap.removeValue(forKey: overriddenName)
+        }
+
         nameMapping = migrationNameMap
     }
 
