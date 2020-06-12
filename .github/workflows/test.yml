@@ -1,7 +1,7 @@
 # TODO: When we get the ability to reference workflows from other repos, this one should pull in the ones from
 # each driver instead of this incomplete reimplementation of each one.
 # See https://github.community/t/is-it-possible-to-use-the-same-workflow-in-different-repositories/17719/6
-name: Test Matrix
+name: test
 on:
   pull_request:
   push:

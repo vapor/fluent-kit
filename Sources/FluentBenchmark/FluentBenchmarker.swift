@@ -78,6 +78,6 @@ public final class FluentBenchmarker {
     }
     
     private func log(_ message: String) {
-        print("[FluentBenchmark] \(message)")
+        self.database.logger.info("[FluentBenchmark] \(message)")
     }
 }

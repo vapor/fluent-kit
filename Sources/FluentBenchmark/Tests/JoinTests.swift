@@ -101,10 +101,9 @@ extension FluentBenchmarker {
 
                 for match in matches {
                     let home = try match.joined(HomeTeam.self)
+                    self.database.logger.debug("home: \(home)")
                     let away = try match.joined(AwayTeam.self)
-                    print(match.name)
-                    print("home: \(home.name)")
-                    print("away: \(away.name)")
+                    self.database.logger.debug("away: \(away)")
                 }
             }
         }
