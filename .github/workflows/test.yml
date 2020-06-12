@@ -1,22 +1,17 @@
 # TODO: When we get the ability to reference workflows from other repos, this one should pull in the ones from
 # each driver instead of this incomplete reimplementation of each one.
 # See https://github.community/t/is-it-possible-to-use-the-same-workflow-in-different-repositories/17719/6
-
 name: Test Matrix
-
 on:
   pull_request:
   push:
     branches:
     - master
-
 defaults:
   run:
     shell: bash
-
 jobs:
-
-  Linux:
+  linux:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -32,11 +27,11 @@ jobs:
           - swiftlang/swift:nightly-master-bionic
           - swiftlang/swift:nightly-master-focal
         include:
-          - depscmd: apt-get -q update && apt-get -q install -y libsqlite3-dev
-          - image: swiftlang/swift:nightly-master-centos8
-            depscmd: dnf install -y sqlite-devel
-          - image: swiftlang/swift:nightly-master-amazonlinux2
-            depscmd: yum install -y sqlite-devel
+          - install_dependencies: apt-get -q update && apt-get -q install -y libsqlite3-dev
+          - install_dependencies: dnf install -y sqlite-devel
+            image: swiftlang/swift:nightly-master-centos8
+          - install_dependencies: yum install -y sqlite-devel
+            image: swiftlang/swift:nightly-master-amazonlinux2
     container: ${{ matrix.image }}
     services:
       postgres-a:
@@ -54,14 +49,14 @@ jobs:
       mysql-a:
         image: mysql:latest
         env: 
-          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
           MYSQL_USER: vapor_username
           MYSQL_PASSWORD: vapor_password
           MYSQL_DATABASE: vapor_database
       mysql-b:
         image: mysql:latest
         env: 
-          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
           MYSQL_USER: vapor_username
           MYSQL_PASSWORD: vapor_password
           MYSQL_DATABASE: vapor_database
@@ -76,25 +71,10 @@ jobs:
       MYSQL_HOSTNAME_B: mysql-b
       MONGO_HOSTNAME_A: mongo-a
       MONGO_HOSTNAME_B: mongo-b
-      PGUSER: 'vapor_username'
-      PGPASSWORD: 'vapor_password'
-      PGDATABASE: 'vapor_database'
+      LOG_LEVEL: info
     steps:
       - name: Install dependencies
-        run: ${{ matrix.depscmd }}
-      - name: Update AmazonLinux2's too-old SQLite and compensate for its Postgres
-        if: ${{ endsWith(matrix.image, 'amazonlinux2') }}
-        run: |
-          yum install -y file tcl-devel make
-          curl -L 'https://www.sqlite.org/src/tarball/sqlite.tar.gz?r=release' | tar xz && cd sqlite
-          export CFLAGS="-DSQLITE_DISABLE_DIRSYNC=1 -DSQLITE_SECURE_DELETE=1"
-          ./configure --prefix=/usr --libdir=/usr/lib64 --with-tcl=/usr/lib64 --enable-all && make all install
-          printf '#!/bin/bash\nexec psql "$@" </dev/null\n' >/usr/bin/pg_isready && chmod 0755 /usr/bin/pg_isready
-      # - name: Wait for all database servers to be ready
-      #   # Actually we just wait for Postgres, because it's the easiest to install on all the various runners
-      #   # and because it usually takes the longest to start.
-      #   run: until pg_isready -hpostgres-a && pg_isready -hpostgres-b; do sleep 1; done
-        timeout-minutes: 2
+        run: ${{ matrix.install_dependencies }}
       - name: Checkout FluentKit
         uses: actions/checkout@v2
         with: 
@@ -136,7 +116,6 @@ jobs:
         run: swift test --package-path fluent-sqlite-driver --enable-test-discovery --sanitize=thread
       - name: Run Mongo driver tests with Thread Sanitizer
         run: swift test --package-path fluent-mongo-driver --enable-test-discovery --sanitize=thread
-
   macOS:
     env:
       POSTGRES_HOSTNAME_A: '127.0.0.1'
@@ -207,7 +186,7 @@ jobs:
         with:
           repository: vapor/fluent-mongo-driver
           path: fluent-mongo-driver
-      - name: Link drivers to local fluent-kit
+      - name: Link drivers to local FluentKit
         run: |
           swift package --package-path fluent-postgres-driver edit fluent-kit --path fluent-kit
           swift package --package-path fluent-mysql-driver edit fluent-kit --path fluent-kit
