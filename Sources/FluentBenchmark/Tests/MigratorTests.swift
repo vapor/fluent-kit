@@ -93,7 +93,7 @@ extension FluentBenchmarker {
             let logs1 = try MigrationLog.query(on: database1).all().wait()
             XCTAssertEqual(logs1.count, 1)
             XCTAssertEqual(logs1.first?.batch, 1)
-            XCTAssertEqual(logs1.first?.name, "\(GalaxyMigration.self)")
+            XCTAssertEqual(logs1.first?.name, String(reflecting: GalaxyMigration.self))
 
             do {
                 let count = try MigrationLog.query(on: database2).count().wait()
@@ -117,7 +117,7 @@ extension FluentBenchmarker {
             let logs2 = try MigrationLog.query(on: database2).all().wait()
             XCTAssertEqual(logs2.count, 1)
             XCTAssertEqual(logs2.first?.batch, 1)
-            XCTAssertEqual(logs2.first?.name, "\(GalaxyMigration.self)")
+            XCTAssertEqual(logs2.first?.name, String(reflecting: GalaxyMigration.self))
 
             try XCTAssertEqual(MigrationLog.query(on: database1).count().wait(), 1)
 
