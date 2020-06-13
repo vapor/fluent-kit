@@ -6,10 +6,7 @@ on:
   pull_request:
   push:
     branches:
-    - master
-defaults:
-  run:
-    shell: bash
+      - master
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -17,16 +14,16 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          # - swift:5.2-xenial
-          # - swift:5.2-bionic
-          # - swiftlang/swift:nightly-5.2-xenial
-          # - swiftlang/swift:nightly-5.2-bionic
-          # - swiftlang/swift:nightly-5.3-xenial
-          # - swiftlang/swift:nightly-5.3-bionic
-          # - swiftlang/swift:nightly-master-xenial
-          # - swiftlang/swift:nightly-master-bionic
-          # - swiftlang/swift:nightly-master-focal
-          # - swiftlang/swift:nightly-master-centos8
+          - swift:5.2-xenial
+          - swift:5.2-bionic
+          - swiftlang/swift:nightly-5.2-xenial
+          - swiftlang/swift:nightly-5.2-bionic
+          - swiftlang/swift:nightly-5.3-xenial
+          - swiftlang/swift:nightly-5.3-bionic
+          - swiftlang/swift:nightly-master-xenial
+          - swiftlang/swift:nightly-master-bionic
+          - swiftlang/swift:nightly-master-focal
+          - swiftlang/swift:nightly-master-centos8
           - swiftlang/swift:nightly-master-amazonlinux2
     container: ${{ matrix.image }}
     services:
@@ -71,7 +68,7 @@ jobs:
     steps:  
       - name: Install AmazonLinux dependencies
         if: ${{ endsWith(matrix.image, 'amazonlinux2') }}
-        run: yum install -y libsqlite3-dev
+        run: yum install -y sqlite-devel
       - name: Install CentOS dependencies
         if: ${{ endsWith(matrix.image, 'centos8') }}
         run: dnf install -y sqlite-devel
@@ -116,6 +113,7 @@ jobs:
       - name: Run MySQL driver tests with Thread Sanitizer
         run: swift test --package-path fluent-mysql-driver --enable-test-discovery --sanitize=thread
       - name: Run SQLite driver tests with Thread Sanitizer
+        if: ${{ !endsWith(matrix.image, 'amazonlinux2') }}
         run: swift test --package-path fluent-sqlite-driver --enable-test-discovery --sanitize=thread
       - name: Run Mongo driver tests with Thread Sanitizer
         run: swift test --package-path fluent-mongo-driver --enable-test-discovery --sanitize=thread
