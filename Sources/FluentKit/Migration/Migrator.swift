@@ -134,9 +134,24 @@ private final class DatabaseMigrator {
     // MARK: Setup
 
     func setupIfNeeded() -> EventLoopFuture<Void> {
-        return MigrationLog.migration.prepare(on: self.database).flatMap {
-            self.fixPrereleaseMigrationNames()
+        return MigrationLog.migration.prepare(on: self.database)
+            .flatMap(self.preventUnstableNames)
+            .flatMap(self.fixPrereleaseMigrationNames)
+    }
+
+    private func preventUnstableNames() -> EventLoopFuture<Void> {
+        for migration in self.migrations {
+            let migrationName = migration.name
+            guard migration.name == migration.defaultName else { continue }
+            guard migrationName.contains("$") else { continue }
+
+            if migrationName.contains("unknown context at") {
+                self.database.logger.critical("The migration at \(migrationName) is in a private context. Either explicitly give it a name by adding the `var name: String` property or make the migration `internal` or `public` instead of `private`.")
+                fatalError("Private migrations not allowed")
+            }
+            self.database.logger.error("The migration at \(migrationName) has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.")
         }
+        return self.database.eventLoop.makeSucceededFuture(())
     }
 
     // This migration just exists to smooth the gap between
@@ -153,14 +168,12 @@ private final class DatabaseMigrator {
         var nameOverrides = Set<String>()
 
         for migration in self.migrations {
-            let releaseCandidateDefaultName = "\(type(of: migration))"
-            let v4DefaultName = String(reflecting:type(of: migration))
+            // if the migration does not override the default name
+            // then it is a candidate for a name change.
+            if migration.name == migration.defaultName {
+                let releaseCandidateDefaultName = "\(type(of: migration))"
 
-            // if the migration does not override the default name.
-            // NOTE we compare to the _current_ style of default, not
-            // the release candidate style of default name.
-            if migration.name == v4DefaultName {
-                migrationNameMap[releaseCandidateDefaultName] = v4DefaultName
+                migrationNameMap[releaseCandidateDefaultName] = migration.defaultName
             } else {
                 nameOverrides.insert(migration.name)
             }

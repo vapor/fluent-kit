@@ -6,6 +6,10 @@ public protocol Migration {
 
 extension Migration {
     public var name: String {
+        return defaultName
+    }
+
+    internal var defaultName: String {
         return String(reflecting: Self.self)
     }
 }
