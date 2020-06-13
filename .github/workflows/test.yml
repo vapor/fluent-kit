@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - swift:5.2-xenial
+          # - swift:5.2-xenial
           # - swift:5.2-bionic
           # - swiftlang/swift:nightly-5.2-xenial
           # - swiftlang/swift:nightly-5.2-bionic
@@ -26,12 +26,8 @@ jobs:
           # - swiftlang/swift:nightly-master-xenial
           # - swiftlang/swift:nightly-master-bionic
           # - swiftlang/swift:nightly-master-focal
-        include:
-          - install_dependencies: apt-get -q update && apt-get -q install -y libsqlite3-dev
           # - image: swiftlang/swift:nightly-master-centos8
-          #   install_dependencies: dnf install -y sqlite-devel
           - image: swiftlang/swift:nightly-master-amazonlinux2
-            install_dependencies: yum install -y libsqlite3-dev
     container: ${{ matrix.image }}
     services:
       postgres-a:
@@ -72,9 +68,16 @@ jobs:
       MONGO_HOSTNAME_A: mongo-a
       MONGO_HOSTNAME_B: mongo-b
       LOG_LEVEL: info
-    steps:
-      - name: Install dependencies
-        run: ${{ matrix.install_dependencies }}
+    steps:  
+      - name: Install AmazonLinux dependencies
+        if: ${{ endsWith(matrix.image, 'amazonlinux2') }}
+        run: yum install -y libsqlite3-dev
+      - name: Install CentOS dependencies
+        if: ${{ endsWith(matrix.image, 'centos8') }}
+        run: dnf install -y sqlite-devel
+      - name: Install Ubuntu dependencies
+        if: ${{ endsWith(matrix.image, 'xenial') || endsWith(matrix.image, 'bionic') || endsWith(matrix.image, 'focal') }}
+        run: apt-get -q update && apt-get -q install -y libsqlite3-dev
       - name: Checkout FluentKit
         uses: actions/checkout@v2
         with: 
