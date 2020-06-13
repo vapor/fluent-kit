@@ -9,6 +9,7 @@ extension FluentBenchmarker {
         try self.testFilter_group()
         try self.testFilter_emptyGroup()
         try self.testFilter_emptyRightHandSide()
+        try self.testFilter_optionalStringContains()
     }
 
     private func testFilter_field() throws {
@@ -93,4 +94,42 @@ extension FluentBenchmarker {
             XCTAssertEqual(secondQuery, 0)
         }
     }
+
+    private func testFilter_optionalStringContains() throws {
+        let builder = Foo.query(on: self.database)
+            .filter(\.$bar ~~ "bAz")
+        let filter = builder.query.filters[0]
+        switch filter {
+        case .value(let field, let method, let value):
+            switch field {
+            case .path(let path, let schema):
+                XCTAssertEqual(path, ["bar"])
+                XCTAssertEqual(schema, "foos")
+            default:
+                XCTFail("invalid field")
+            }
+            switch method {
+            case .contains(let inverse, let contains):
+                XCTAssertEqual(inverse, false)
+                XCTAssertEqual(contains, .anywhere)
+            default:
+                XCTFail("invalid method: \(method)")
+            }
+            switch value {
+            case .bind(let bind):
+                XCTAssertEqual(bind as? String, "bAz")
+            default:
+                XCTFail("invalid value")
+            }
+        default:
+            XCTFail("invalid filter")
+        }
+    }
+}
+
+private final class Foo: Model {
+    static let schema = "foos"
+    @ID var id: UUID?
+    @OptionalField(key: "bar") var bar: String?
+    init() { }
 }
