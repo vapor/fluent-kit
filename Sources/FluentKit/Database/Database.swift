@@ -41,6 +41,10 @@ extension Database {
     public var eventLoop: EventLoop {
         self.context.eventLoop
     }
+
+    public var history: QueryHistory? {
+        self.context.history
+    }
 }
 
 public protocol DatabaseDriver {
@@ -57,15 +61,18 @@ public struct DatabaseContext {
     public let configuration: DatabaseConfiguration
     public let logger: Logger
     public let eventLoop: EventLoop
+    public let history: QueryHistory?
     
     public init(
         configuration: DatabaseConfiguration,
         logger: Logger,
-        eventLoop: EventLoop
+        eventLoop: EventLoop,
+        history: QueryHistory? = nil
     ) {
         self.configuration = configuration
         self.logger = logger
         self.eventLoop = eventLoop
+        self.history = history
     }
 }
 

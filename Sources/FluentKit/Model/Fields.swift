@@ -1,6 +1,8 @@
 public protocol Fields: class, Codable {
     var properties: [AnyProperty] { get }
     init()
+    func input(to input: DatabaseInput)
+    func output(from output: DatabaseOutput) throws
 }
 
 // MARK: Has Changes

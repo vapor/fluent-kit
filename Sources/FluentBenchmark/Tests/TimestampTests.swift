@@ -8,9 +8,10 @@ extension FluentBenchmarker {
         try self.testTimestamp_createOnBulkCreate()
         try self.testTimestamp_createOnBulkUpdate()
         try self.testTimestamp_updateNoChanges()
+        try self.testTimestamp_decode()
     }
 
-    public func testTimestamp_touch() throws {
+    private func testTimestamp_touch() throws {
         try runTest(#function, [
             UserMigration(),
         ]) {
@@ -29,7 +30,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testTimestamp_ISO8601() throws {
+    private func testTimestamp_ISO8601() throws {
         try runTest(#function, [
             EventMigration(),
         ]) {
@@ -60,7 +61,7 @@ extension FluentBenchmarker {
         }
     }
     
-    public func testTimestamp_createOnUpdate() throws {
+    private func testTimestamp_createOnUpdate() throws {
         try runTest(#function, [
             EventMigration()
         ]) {
@@ -80,7 +81,7 @@ extension FluentBenchmarker {
         }
     }
     
-    public func testTimestamp_createOnBulkCreate() throws {
+    private func testTimestamp_createOnBulkCreate() throws {
         try runTest(#function, [
             UserMigration(),
         ]) {
@@ -100,7 +101,7 @@ extension FluentBenchmarker {
         }
     }
     
-    public func testTimestamp_createOnBulkUpdate() throws {
+    private func testTimestamp_createOnBulkUpdate() throws {
         try runTest(#function, [
             UserMigration(),
         ]) {
@@ -124,7 +125,7 @@ extension FluentBenchmarker {
         }
     }
 
-    public func testTimestamp_updateNoChanges() throws {
+    private func testTimestamp_updateNoChanges() throws {
         try runTest(#function, [
             EventMigration()
         ]) {
@@ -139,6 +140,16 @@ extension FluentBenchmarker {
             let storedEvent = try Event.find(event.id, on: self.database).wait()
             XCTAssertEqual(storedEvent?.updatedAt, updatedAtPreSave)
         }
+    }
+
+
+    private func testTimestamp_decode() throws {
+        let json = """
+        { "name": "Vapor", "createdAt": null }
+        """.data(using: .utf8)!
+        let user = try! JSONDecoder().decode(User.self, from: json)
+        XCTAssertNil(user.createdAt)
+        XCTAssertNil(user.updatedAt)
     }
 }
 
@@ -163,7 +174,6 @@ private final class User: Model {
         self.id = id
         self.name = name
         self.createdAt = nil
-        self.updatedAt = nil
     }
 }
 

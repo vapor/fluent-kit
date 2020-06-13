@@ -6,6 +6,6 @@ public protocol Migration {
 
 extension Migration {
     public var name: String {
-        return "\(Self.self)"
+        return String(reflecting: Self.self)
     }
 }

@@ -5,7 +5,6 @@ extension FluentBenchmarker {
         try self.testModel_uuid()
         try self.testModel_decode()
         try self.testModel_nullField()
-        try self.testModel_nullField_2()
         try self.testModel_nullField_batchCreate()
         try self.testModel_idGeneration()
         try self.testModel_jsonColumn()
@@ -70,49 +69,6 @@ extension FluentBenchmarker {
             XCTAssertEqual(all.count, 1)
 
             guard let fetched = try Foo.query(on: self.database)
-                .filter(\.$id == foo.id!)
-                .first().wait()
-            else {
-                XCTFail("no model returned")
-                return
-            }
-            guard fetched.bar == nil else {
-                XCTFail("unexpected non-nil value")
-                return
-            }
-        }
-    }
-
-    private func testModel_nullField_2() throws {
-        try runTest(#function, [
-            FooMigration(),
-        ]) {
-            let foo = Foo_2(bar: "test")
-            try foo.save(on: self.database).wait()
-            guard foo.bar != nil else {
-                XCTFail("unexpected nil value")
-                return
-            }
-            foo.bar = nil
-            try foo.save(on: self.database).wait()
-            guard foo.bar == nil else {
-                XCTFail("unexpected non-nil value")
-                return
-            }
-
-            // test find + update with nil value works
-            guard let found = try Foo_2.find(foo.id, on: self.database).wait() else {
-                XCTFail("unexpected nil value")
-                return
-            }
-            try found.update(on: self.database).wait()
-
-            let all = try Foo_2.query(on: self.database)
-                .filter(\.$bar == nil)
-                .all().wait()
-            XCTAssertEqual(all.count, 1)
-
-            guard let fetched = try Foo_2.query(on: self.database)
                 .filter(\.$id == foo.id!)
                 .first().wait()
             else {
@@ -254,7 +210,7 @@ private final class Foo: Model {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "bar")
+    @OptionalField(key: "bar")
     var bar: String?
 
     init() { }
@@ -275,23 +231,6 @@ private struct FooMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema("foos").delete()
-    }
-}
-
-private final class Foo_2: Model {
-    static let schema = "foos"
-
-    @ID(key: .id)
-    var id: UUID?
-
-    @OptionalField(key: "bar")
-    var bar: String?
-
-    init() { }
-
-    init(id: IDValue? = nil, bar: String?) {
-        self.id = id
-        self.bar = bar
     }
 }
 
