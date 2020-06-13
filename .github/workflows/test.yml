@@ -26,8 +26,8 @@ jobs:
           # - swiftlang/swift:nightly-master-xenial
           # - swiftlang/swift:nightly-master-bionic
           # - swiftlang/swift:nightly-master-focal
-          # - image: swiftlang/swift:nightly-master-centos8
-          - image: swiftlang/swift:nightly-master-amazonlinux2
+          # - swiftlang/swift:nightly-master-centos8
+          - swiftlang/swift:nightly-master-amazonlinux2
     container: ${{ matrix.image }}
     services:
       postgres-a:
