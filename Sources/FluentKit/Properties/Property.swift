@@ -43,8 +43,3 @@ extension QueryableProperty {
         .bind(value)
     }
 }
-
-//#warning("TODO: better name? this is a 'top-level' / settable property")
-//public protocol AnyFieldProperty: AnyProperty {
-//    var key: FieldKey { get }
-//}

@@ -21,7 +21,7 @@ extension FluentBenchmarker {
             let time = Date().timeIntervalSince(start)
             // Run took 24.121525049209595 seconds.
             // Run took 0.33231091499328613 seconds.
-            print("Run took \(time) seconds.")
+            self.database.logger.info("Run took \(time) seconds.")
             XCTAssertEqual(expeditions.count, 300)
         }
     }

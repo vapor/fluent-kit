@@ -17,7 +17,6 @@ extension FluentBenchmarker {
             guard let moon = moons.first else {
                 return
             }
-            print(moon)
 
             XCTAssertEqual(moon.name, "Moon")
             XCTAssertEqual(moon.planet.name, "Earth")
@@ -26,10 +25,9 @@ extension FluentBenchmarker {
             XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
 
             // Test JSON
-            let json = try prettyJSON(moon)
-            print(json)
-            let decoded = try JSONDecoder().decode(FlatMoon.self, from: Data(json.utf8))
-            print(decoded)
+            let json = prettyJSON(moon)
+            self.database.logger.debug(json)
+            let decoded = try JSONDecoder().decode(FlatMoon.self, from: Data(json.description.utf8))
             XCTAssertEqual(decoded.name, "Moon")
             XCTAssertEqual(decoded.planet.name, "Earth")
             XCTAssertEqual(decoded.planet.type, .smallRocky)
@@ -59,7 +57,6 @@ extension FluentBenchmarker {
 //            guard let moon = moons.first else {
 //                return
 //            }
-//            print(moon)
 //
 //            XCTAssertEqual(moon.name, "Moon")
 //            XCTAssertEqual(moon.planet.name, "Earth")
@@ -69,9 +66,7 @@ extension FluentBenchmarker {
 //
 //            // Test JSON
 //            let json = try prettyJSON(moon)
-//            print(json)
 //            let decoded = try JSONDecoder().decode(NestedMoon.self, from: Data(json.utf8))
-//            print(decoded)
 //            XCTAssertEqual(decoded.name, "Moon")
 //            XCTAssertEqual(decoded.planet.name, "Earth")
 //            XCTAssertEqual(decoded.planet.type, .smallRocky)
