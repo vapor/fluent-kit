@@ -84,7 +84,6 @@ jobs:
         with:
           repository: vapor/fluent-postgres-driver
           path: fluent-postgres-driver
-          ref: tn-dict-datatype
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
         with: 
@@ -171,7 +170,6 @@ jobs:
         with:
           repository: vapor/fluent-postgres-driver
           path: fluent-postgres-driver
-          ref: tn-dict-datatype
       - name: Checkout MySQL driver
         uses: actions/checkout@v2
         with:
