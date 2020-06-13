@@ -175,7 +175,7 @@ private final class DatabaseMigrator {
         self.database.logger.debug("Checking for pre-release migration names.")
         return MigrationLog.query(on: self.database).filter(\.$name ~~ migrationNameMap.keys).count().flatMap { count in
             if count > 0 {
-                self.database.logger.notice("Fixing pre-release migration names")
+                self.database.logger.info("Fixing pre-release migration names")
                 let queries = migrationNameMap.map { oldName, newName -> EventLoopFuture<Void> in
                     self.database.logger.info("Renaming migration \(oldName) to \(newName)")
                     return MigrationLog.query(on: self.database)
