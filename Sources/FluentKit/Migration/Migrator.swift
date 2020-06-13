@@ -139,6 +139,11 @@ private final class DatabaseMigrator {
             .flatMap(self.fixPrereleaseMigrationNames)
     }
 
+    /// An unstable name is a name that is not the same every time migrations
+    /// are run.
+    ///
+    /// For example, the default name for `Migrations` in private contexts
+    /// will include an identifier that can change from one execution to the next.
     private func preventUnstableNames() -> EventLoopFuture<Void> {
         for migration in self.migrations {
             let migrationName = migration.name
