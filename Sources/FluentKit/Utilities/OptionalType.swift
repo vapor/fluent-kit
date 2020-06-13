@@ -6,6 +6,7 @@ public protocol AnyOptionalType {
 
 public protocol OptionalType: AnyOptionalType {
     associatedtype Wrapped
+    init(_ wrapped: Wrapped)
 }
 
 extension OptionalType {

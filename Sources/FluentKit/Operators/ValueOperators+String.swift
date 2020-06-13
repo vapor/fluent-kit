@@ -1,117 +1,117 @@
 // MARK: Field.Value
 
-public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
-        Field.Value: CustomStringConvertible
+        Field.Value == String
 {
     lhs ~= Field.queryValue(rhs)
 }
 
-public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
         Field.Value: OptionalType,
-        Field.Value.Wrapped: CustomStringConvertible
+        Field.Value.Wrapped == String
 {
-    lhs ~= Field.queryValue(rhs)
+    lhs ~= Field.queryValue(.init(rhs))
 }
 
-public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
-        Field.Value: CustomStringConvertible
+        Field.Value == String
 {
     lhs ~~ Field.queryValue(rhs)
 }
 
-public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
         Field.Value: OptionalType,
-        Field.Value.Wrapped: CustomStringConvertible
+        Field.Value.Wrapped == String
 {
-    lhs ~~ Field.queryValue(rhs)
+    lhs ~~ Field.queryValue(.init(rhs))
 }
 
-public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
-        Field.Value: CustomStringConvertible
+        Field.Value == String
 {
     lhs =~ Field.queryValue(rhs)
 }
 
-public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
         Field.Value: OptionalType,
-        Field.Value.Wrapped: CustomStringConvertible
+        Field.Value.Wrapped == String
 {
-    lhs =~ Field.queryValue(rhs)
+    lhs =~ Field.queryValue(.init(rhs))
 }
 
-public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
-        Field.Value: CustomStringConvertible
+        Field.Value == String
 {
     lhs !~= Field.queryValue(rhs)
 }
 
-public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
         Field.Value: OptionalType,
-        Field.Value.Wrapped: CustomStringConvertible
+        Field.Value.Wrapped == String
 {
-    lhs !~= Field.queryValue(rhs)
+    lhs !~= Field.queryValue(.init(rhs))
 }
 
-public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
-        Field.Value: CustomStringConvertible
+        Field.Value == String
 {
     lhs !~ Field.queryValue(rhs)
 }
 
-public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
         Field.Value: OptionalType,
-        Field.Value.Wrapped: CustomStringConvertible
+        Field.Value.Wrapped == String
 {
-    lhs !~ Field.queryValue(rhs)
+    lhs !~ Field.queryValue(.init(rhs))
 }
 
-public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
-        Field.Value: CustomStringConvertible
+        Field.Value == String
 {
     lhs !=~ Field.queryValue(rhs)
 }
 
-public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> ModelValueFilter<Model>
+public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
         Model: FluentKit.Model,
         Field: QueryableProperty,
         Field.Value: OptionalType,
-        Field.Value.Wrapped: CustomStringConvertible
+        Field.Value.Wrapped == String
 {
-    lhs !=~ Field.queryValue(rhs)
+    lhs !=~ Field.queryValue(.init(rhs))
 }
 
 // MARK: DatabaseQuery.Value
