@@ -82,6 +82,7 @@ public struct SQLQueryConverter {
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
         select.orderBy = query.sorts.map(self.sort)
+        select.groupBy = query.groups.map(self.field)
         if let limit = query.limits.first {
             switch limit {
             case .count(let count):
