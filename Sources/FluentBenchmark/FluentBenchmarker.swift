@@ -29,6 +29,7 @@ public final class FluentBenchmarker {
         try self.testEagerLoad()
         try self.testEnum()
         try self.testFilter()
+        try self.testGroupBy()
         try self.testGroup()
         try self.testID()
         try self.testJoin()
