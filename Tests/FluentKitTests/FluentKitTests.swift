@@ -63,7 +63,26 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
         db.reset()
     }
-    
+
+    func testGroupBy() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        _ = try Planet.query(on: db).group(by: \.$id).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planet"."id""#), true)
+        db.reset()
+
+        _ = try Planet.query(on: db).group(by: \.$name).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planet"."name""#), true)
+        db.reset()
+
+        _ = try Planet.query(on: db).join(Star.self, on: \Planet.$star.$id == \Star.$id).group(by: Star.self, \.$id).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "star"."id""#), true)
+        db.reset()
+    }
+
     func testSingleColumnSelect() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         
