@@ -69,17 +69,26 @@ final class FluentKitTests: XCTestCase {
 
         _ = try Planet.query(on: db).group(by: \.$id).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planet"."id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planets"."id""#), true)
         db.reset()
 
         _ = try Planet.query(on: db).group(by: \.$name).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planet"."name""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planets"."name""#), true)
         db.reset()
 
         _ = try Planet.query(on: db).join(Star.self, on: \Planet.$star.$id == \Star.$id).group(by: Star.self, \.$id).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "star"."id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "stars"."id""#), true)
+        db.reset()
+
+        _ = try Planet.query(on: db)
+            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .group(by: \.$name)
+            .group(by: Star.self, \.$id)
+            .all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"GROUP BY "planets"."name", "stars"."id""#), true)
         db.reset()
     }
 
