@@ -8,6 +8,7 @@ public struct DatabaseQuery {
     public var input: [Value]
     public var joins: [Join]
     public var sorts: [Sort]
+    public var groups: [Field]
     public var limits: [Limit]
     public var offsets: [Offset]
 
@@ -20,6 +21,7 @@ public struct DatabaseQuery {
         self.input = []
         self.joins = []
         self.sorts = []
+        self.groups = []
         self.limits = []
         self.offsets = []
     }
@@ -43,6 +45,12 @@ extension DatabaseQuery: CustomStringConvertible {
         }
         if !self.input.isEmpty {
             parts.append("input=\(self.input)")
+        }
+        if !self.sorts.isEmpty {
+            parts.append("sorts=\(self.sorts)")
+        }
+        if !self.groups.isEmpty {
+            parts.append("groups=\(self.groups)")
         }
         if !self.limits.isEmpty {
             parts.append("limits=\(self.limits)")
