@@ -144,11 +144,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
         let ids = models.compactMap {
             $0[keyPath: self.relationKey].id
         }
-
-        guard !ids.isEmpty else {
-            return database.eventLoop.makeSucceededFuture(())
-        }
-
+        
         return To.query(on: database)
             .filter(\._$id ~~ Set(ids))
             .all()
