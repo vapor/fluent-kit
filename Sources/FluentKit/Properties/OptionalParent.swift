@@ -144,11 +144,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
         let ids = models.compactMap {
             $0[keyPath: self.relationKey].id
         }
-
-        guard !ids.isEmpty else {
-            return database.eventLoop.makeSucceededFuture(())
-        }
-
+        
         return To.query(on: database)
             .filter(\._$id ~~ Set(ids))
             .all()
@@ -170,8 +166,9 @@ private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoa
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs = models.compactMap {
-            $0[keyPath: self.relationKey].value!
+        let throughs: [Through] = models.compactMap {
+            print($0)
+            return $0[keyPath: self.relationKey].value!
         }
         return self.loader.run(models: throughs, on: database)
     }
