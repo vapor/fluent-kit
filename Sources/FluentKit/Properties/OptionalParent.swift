@@ -166,9 +166,8 @@ private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoa
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs: [Through] = models.compactMap {
-            print($0)
-            return $0[keyPath: self.relationKey].value!
+        let throughs = models.compactMap {
+            $0[keyPath: self.relationKey].value!
         }
         return self.loader.run(models: throughs, on: database)
     }
