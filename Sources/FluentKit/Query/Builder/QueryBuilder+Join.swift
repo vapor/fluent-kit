@@ -12,6 +12,33 @@ extension QueryBuilder {
         self.join(Foreign.self, filter.foreign, to: Local.self, filter.local , method: method)
     }
 
+    func join<From, To>(
+        parent: KeyPath<From, ParentProperty<From, To>>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self {
+        join(To.self, on: parent.appending(path: \.$id) == \To._$id, method: method)
+    }
+
+    func join<From, To>(
+        children: KeyPath<From, ChildrenProperty<From, To>>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self {
+        switch From()[keyPath: children].parentKey {
+        case .optional(let parent): return join(To.self, on: \From._$id == parent.appending(path: \.$id), method: method)
+        case .required(let parent): return join(To.self, on: \From._$id == parent.appending(path: \.$id), method: method)
+        }
+    }
+
+    func join<From, To, Through>(
+        siblings: KeyPath<From, SiblingsProperty<From, To, Through>>
+    ) -> Self
+        where From: FluentKit.Model, To: FluentKit.Model, Through: FluentKit.Model
+    {
+        let siblings = From()[keyPath: siblings]
+        return join(Through.self, on: siblings.from.appending(path: \.$id) == \From._$id)
+            .join(To.self, on: siblings.to.appending(path: \.$id) == \To._$id)
+    }
+
     @discardableResult
     private func join<Foreign, Local>(
         _ foreign: Foreign.Type,

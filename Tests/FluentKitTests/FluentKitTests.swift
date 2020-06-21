@@ -30,7 +30,7 @@ final class FluentKitTests: XCTestCase {
         db.reset()
         
         _ = try Planet.query(on: db)
-            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .join(parent: \Planet.$star)
             .sort(Star.self, \.$name, .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
@@ -43,7 +43,7 @@ final class FluentKitTests: XCTestCase {
         db.reset()
         
         _ = try Planet.query(on: db)
-            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .join(parent: \Planet.$star)
             .sort(Star.self, \.$id, .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
@@ -56,11 +56,30 @@ final class FluentKitTests: XCTestCase {
         db.reset()
         
         _ = try Planet.query(on: db)
-            .join(Star.self, on: \Planet.$star.$id == \Star.$id)
+            .join(parent: \Planet.$star)
             .sort(Star.self, "name", .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "stars"."name" ASC"#), true)
+        db.reset()
+    }
+
+    func testJoins() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Planet.query(on: db).join(children: \Planet.$moons).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "moons" ON "planets"."id" = "moons"."planet_id"#), true)
+        db.reset()
+
+        _ = try Planet.query(on: db).join(parent: \Planet.$star).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "stars" ON "planets"."star_id" = "stars"."id"#), true)
+        db.reset()
+
+        _ = try Planet.query(on: db).join(siblings: \Planet.$tags).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planets"."id" = "planet+tag"."planet_id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "tags" ON "planet+tag"."tag_id" = "tags"."id""#), true)
         db.reset()
     }
     
