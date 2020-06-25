@@ -41,7 +41,7 @@ When submitting issues, try to find the most appropriate package. When in doubt,
 
 ## Feature Requests
 
-Please read these guideliens before submitting a feature request to FluentKit. Due to the large volume of issues we receive, feature requests that do not follow these guidelines will be closed.
+Please read these guidelines before submitting a feature request to FluentKit. Due to the large volume of issues we receive, feature requests that do not follow these guidelines will be closed.
 
 ### Do:
 
