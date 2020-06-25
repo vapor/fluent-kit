@@ -2,6 +2,43 @@
 
 👋 Welcome to the Vapor team! 
 
+## Overview
+
+Fluent is an ORM framework for Swift. You can read more about it at [docs.vapor.codes/4.0/fluent/overview/](https://docs.vapor.codes/4.0/fluent/overview/).
+
+Fluent strives to:
+
+- Create an easy to use abstraction for storing data
+
+- Provide consistency across varying database backends
+
+- Feel at home alongside Swift's standard library
+
+- Use Swift's type system to eliminate common errors
+
+- Take advantage of advanced Swift features
+
+Fluent is not:
+
+- A SQL builder (see [sql-kit](https://github.com/vapor/sql-kit))
+
+- Suitable for working with arbitrary table structures (restrictions and assumptions exist)
+
+- The most performant way to access your data (abstraction cost)
+
+## Packages
+
+Fluent consists of several packages. 
+
+- [`fluent-kit`](https://github.com/vapor/fluent-kit): Core of the ORM. Models, relations, query builder, etc. 
+- [`fluent`](https://github.com/vapor/fluent): Integrates FluentKit with [`Vapor`](https://github.com/vapor/vapor).
+- [`fluent-postgres-driver`](https://github.com/vapor/fluent-postgres-driver): PostgreSQL driver for Fluent built on [PostgresKit](https://github.com/vapor/postgres-kit).
+- [`fluent-mysql-driver`](https://github.com/vapor/fluent-mysql-driver): MySQL driver for Fluent built on [MySQLKit](https://github.com/vapor/mysql-kit).
+- [`fluent-sqlite-driver`](https://github.com/vapor/fluent-sqlite-driver): SQLite driver for Fluent built on [SQLiteKit](https://github.com/vapor/sqlite-kit).
+- [`fluent-mongo-driver`](https://github.com/vapor/fluent-mongo-driver): MongoDB driver for Fluent built on [MongoKitten](https://github.com/OpenKitten/MongoKitten).
+
+When submitting issues, try to find the most appropriate package. When in doubt, use [`fluent-kit`](https://github.com/vapor/fluent-kit).
+
 ## Feature Requests
 
 Please read these guideliens before submitting a feature request to FluentKit. Due to the large volume of issues we receive, feature requests that do not follow these guidelines will be closed.
