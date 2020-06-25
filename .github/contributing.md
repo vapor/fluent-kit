@@ -36,7 +36,7 @@ Please read these guideliens before submitting a feature request to FluentKit. D
 
 - ❌ Propose an API soley because it exists in one of the database drivers. 
 
-> Just because one of the underlying database drivers supports something does not Fluent should offer an API for it. Fluent is meant to abstract database functionality, making it easier to use.
+> Just because one of the underlying database drivers supports something does not mean Fluent should offer an API for it. Fluent is meant to abstract database functionality, making it easier to use.
 
 - ❌ Define your problem or solution in terms of the underlying database driver.
 
@@ -46,7 +46,7 @@ Please read these guideliens before submitting a feature request to FluentKit. D
 
 > Fluent is not built for working with existing database schemas or databases created by different ORMs. Other libraries, like SQLKit, are better suited for this.
 
-- ❌ Submit large PRs without discussion first
+- ❌ Submit large PRs without discussion first.
 
 > Give everyone a chance to understand your idea and get on the same page before submitting code. This can be through a GitHub issue or the Swift forums. 
 
