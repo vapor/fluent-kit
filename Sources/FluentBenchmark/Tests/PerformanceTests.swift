@@ -1,12 +1,12 @@
 extension FluentBenchmarker {
-    public func testPerformance() throws {
-        try self.testPerformance_largeModel()
+    public func testPerformance(decimalType: DatabaseSchema.DataType = .string) throws {
+        try self.testPerformance_largeModel(decimalType: decimalType)
         try self.testPerformance_siblings()
     }
 
-    private func testPerformance_largeModel() throws {
+    private func testPerformance_largeModel(decimalType: DatabaseSchema.DataType) throws {
         try runTest(#function, [
-            FooMigration()
+            FooMigration(decimalType: decimalType)
         ]) {
             for _ in 0..<100 {
                 let foo = Foo(
@@ -91,6 +91,8 @@ private final class Foo: Model {
 }
 
 private struct FooMigration: Migration {
+    let decimalType: DatabaseSchema.DataType
+
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
@@ -102,7 +104,7 @@ private struct FooMigration: Migration {
             .field("corge", .array(of: .int), .required)
             .field("grault", .array(of: .double), .required)
             .field("garply", .array(of: .string), .required)
-            .field("fred", .string, .required)
+            .field("fred", self.decimalType, .required)
             .field("plugh", .int)
             .field("xyzzy", .double)
             .field("thud", .json, .required)
