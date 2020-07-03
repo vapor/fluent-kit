@@ -393,7 +393,16 @@ final class FluentKitTests: XCTestCase {
             XCTAssertEqual(result, expected)
             db.reset()
         }
+
+    func testSQLQueryStringFieldKeyInterpolation() {
+        let fieldKey = FieldKey("test")
+        let db = DummyDatabaseForTestSQLSerializer()
+        let rawQuery = db.raw("\(fieldKey)")
+        var serializer = SQLSerializer(database: db)
+        rawQuery.query.serialize(to: &serializer)
+        XCTAssertEqual(serializer.sql, "test")
     }
+}
 
 final class User: Model {
     static let schema = "users"
