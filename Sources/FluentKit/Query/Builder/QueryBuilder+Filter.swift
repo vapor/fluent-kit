@@ -13,6 +13,21 @@ extension QueryBuilder {
     }
 
     @discardableResult
+    public func filter<Joined, Field>(
+        _ joined: Joined.Type,
+        _ field: KeyPath<Joined, Field>,
+        _ method: DatabaseQuery.Filter.Method,
+        _ value: Field.Value
+    ) -> Self
+        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
+    {
+        self.filter(.path(
+            Joined.path(for: field),
+            schema: Joined.schemaOrAlias
+        ), method, .bind(value))
+    }
+
+    @discardableResult
     public func filter<Left, Right>(
         _ lhsField: KeyPath<Model, Left>,
         _ method: DatabaseQuery.Filter.Method,

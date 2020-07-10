@@ -51,6 +51,12 @@ public final class ArrayTestDatabase: TestDatabase {
         self.results.append(result)
     }
 
+    public func append<M>(_ result: [M]) 
+        where M: Model
+    {
+        self.results.append(result.map { TestOutput($0) })
+    }
+
     public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
         guard !self.results.isEmpty else {
             throw TestDatabaseError.ranOutOfResults
