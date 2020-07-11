@@ -89,3 +89,19 @@ extension DatabaseQuery.Sort {
         .custom(expression)
     }
 }
+
+extension FieldKey: SQLExpression {
+    public func serialize(to serializer: inout SQLSerializer) {
+        switch self {
+        case .id:
+            serializer.write("id")
+        case .aggregate:
+            serializer.write("aggregate")
+        case .prefix(let prefix, let key):
+            prefix.serialize(to: &serializer)
+            key.serialize(to: &serializer)
+        case .string(let string):
+            serializer.write(string)
+        }
+    }
+}
