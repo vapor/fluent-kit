@@ -379,21 +379,30 @@ final class FluentKitTests: XCTestCase {
         }
 
     func testPlanel2FilterPlaceholder4() throws {
-            let db = DummyDatabaseForTestSQLSerializer()
-            _ = try Planet2
-                .query(on: db)
-                .filter(\.$nickName != "first")
-                .filter(\.$nickName != nil)
-                .filter(\.$nickName == "second")
-                .count()
-                .wait()
-            XCTAssertEqual(db.sqlSerializers.count, 1)
-            let result: String = (db.sqlSerializers.first?.sql)!
-            let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" IS NOT NULL AND "planets"."nickname" = $2"#
-            XCTAssertEqual(result, expected)
-            db.reset()
-        }
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Planet2
+            .query(on: db)
+            .filter(\.$nickName != "first")
+            .filter(\.$nickName != nil)
+            .filter(\.$nickName == "second")
+            .count()
+            .wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        let result: String = (db.sqlSerializers.first?.sql)!
+        let expected = #"SELECT COUNT("planets"."id") AS "aggregate" FROM "planets" WHERE "planets"."nickname" <> $1 AND "planets"."nickname" IS NOT NULL AND "planets"."nickname" = $2"#
+        XCTAssertEqual(result, expected)
+        db.reset()
     }
+
+    func testLoggerOverride() throws {
+        let db: Database = DummyDatabaseForTestSQLSerializer()
+        XCTAssertEqual(db.logger.logLevel, .info)
+        var logger = db.logger
+        logger.logLevel = .critical
+        let new = db.logging(to: logger)
+        XCTAssertEqual(new.logger.logLevel, .critical)
+    }
+}
 
 final class User: Model {
     static let schema = "users"
