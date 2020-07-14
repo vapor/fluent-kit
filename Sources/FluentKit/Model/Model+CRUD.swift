@@ -25,7 +25,7 @@ extension Model {
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
             var input = self.collectInput()
-            if self._$id.generator == .database {
+            if case .default = self._$id.inputValue {
                 let idKey = Self()._$id.key
                 input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
