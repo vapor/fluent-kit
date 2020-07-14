@@ -96,33 +96,17 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_optionalStringContains() throws {
-        let builder = Foo.query(on: self.database)
-            .filter(\.$bar ~~ "bAz")
-        let filter = builder.query.filters[0]
-        switch filter {
-        case .value(let field, let method, let value):
-            switch field {
-            case .path(let path, let schema):
-                XCTAssertEqual(path, ["bar"])
-                XCTAssertEqual(schema, "foos")
-            default:
-                XCTFail("invalid field")
-            }
-            switch method {
-            case .contains(let inverse, let contains):
-                XCTAssertEqual(inverse, false)
-                XCTAssertEqual(contains, .anywhere)
-            default:
-                XCTFail("invalid method: \(method)")
-            }
-            switch value {
-            case .bind(let bind):
-                XCTAssertEqual(bind as? String, "bAz")
-            default:
-                XCTFail("invalid value")
-            }
-        default:
-            XCTFail("invalid filter")
+        try self.runTest(#function, [
+            FooMigration()
+        ]) {
+            try Foo(bar: "foo").create(on: self.database).wait()
+            try Foo(bar: "bar").create(on: self.database).wait()
+            try Foo(bar: "baz").create(on: self.database).wait()
+            let foos = try Foo.query(on: self.database)
+                .filter(\.$bar ~~ "ba")
+                .all()
+                .wait()
+            XCTAssertEqual(foos.count, 2)
         }
     }
 }
@@ -131,5 +115,17 @@ private final class Foo: Model {
     static let schema = "foos"
     @ID var id: UUID?
     @OptionalField(key: "bar") var bar: String?
-    init() { }
+    init(bar: String? = nil) {
+        self.bar = bar
+    }
+}
+
+private struct FooMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos").id().field("bar", .string).create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos").delete()
+    }
 }
