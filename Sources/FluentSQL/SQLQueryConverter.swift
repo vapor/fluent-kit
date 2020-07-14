@@ -245,7 +245,15 @@ public struct SQLQueryConverter {
                     right: SQLLiteral.null
                 )
             case (.contains(let inverse, let method), .bind(let bind)):
-                guard let string = bind as? CustomStringConvertible else {
+                let maybeString: String?
+                if let string = bind as? String {
+                    maybeString = string
+                } else if let convertible = bind as? CustomStringConvertible {
+                    maybeString = convertible.description
+                } else {
+                    maybeString = nil
+                }
+                guard let string = maybeString else {
                     fatalError("Only string binds are supported with contains")
                 }
                 let right: SQLExpression
