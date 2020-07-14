@@ -115,6 +115,7 @@ private final class Foo: Model {
     static let schema = "foos"
     @ID var id: UUID?
     @OptionalField(key: "bar") var bar: String?
+    init() { }
     init(bar: String? = nil) {
         self.bar = bar
     }
