@@ -16,17 +16,25 @@ extension FluentBenchmarker {
             UserMigration(),
         ]) {
             let user = User(name: "A")
-            XCTAssertEqual(user.createdAt, nil)
-            XCTAssertEqual(user.updatedAt, nil)
+            XCTAssertNil(user.createdAt)
+            XCTAssertNil(user.updatedAt)
+            XCTAssertNil(user.addressedAt)
             try user.create(on: self.database).wait()
             XCTAssertNotNil(user.createdAt)
             XCTAssertNotNil(user.updatedAt)
             XCTAssertEqual(user.updatedAt, user.createdAt)
+            XCTAssertNil(user.addressedAt)
             user.name = "B"
             try user.save(on: self.database).wait()
             XCTAssertNotNil(user.createdAt)
             XCTAssertNotNil(user.updatedAt)
             XCTAssertNotEqual(user.updatedAt, user.createdAt)
+            XCTAssertNil(user.addressedAt)
+            let addressedTime = Date(timeIntervalSince1970: 1592571570.0)
+            user.addressedAt = addressedTime
+            try user.save(on: self.database).wait()
+            XCTAssertNotNil(user.addressedAt)
+            XCTAssertEqual(user.addressedAt?.timeIntervalSinceReferenceDate ?? 0.0, addressedTime.timeIntervalSinceReferenceDate, accuracy: 0.10)
         }
     }
 
@@ -37,20 +45,25 @@ extension FluentBenchmarker {
             let event = Event(name: "ServerSide.swift")
             try event.create(on: self.database).wait()
 
-            event.name = "Vapor Bay"
-            try event.save(on: self.database).wait()
-
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions.insert(.withFractionalSeconds)
+
+            event.name = "Vapor Bay"
+            event.nudgedAt = formatter.date(from: "2020-06-19T05:00:00.123Z")!
+            try event.save(on: self.database).wait()
+
             let createdAt = formatter.string(from: event.createdAt!)
             let updatedAt = formatter.string(from: event.updatedAt!)
+            let nudgedAt = formatter.string(from: event.nudgedAt!)
             try Event.query(on: self.database).run({ output in
                 do {
                     let schema = output.schema("events")
                     let createdAtField = try schema.decode(event.$createdAt.$timestamp.key, as: String.self)
                     let updatedAtField = try schema.decode(event.$updatedAt.$timestamp.key, as: String.self)
+                    let nudgedAtField = try schema.decode(event.$nudgedAt.$timestamp.key, as: String.self)
                     XCTAssertEqual(createdAtField, createdAt)
                     XCTAssertEqual(updatedAtField, updatedAt)
+                    XCTAssertEqual(nudgedAtField, nudgedAt)
                 } catch let error {
                     XCTFail("Timestamp decoding from database output failed with error: \(error)")
                 }
@@ -168,6 +181,9 @@ private final class User: Model {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
 
+    @Timestamp(key: "addressed_at", on: .none)
+    var addressedAt: Date?
+
     init() { }
     
     init(id: IDValue? = nil, name: String) {
@@ -184,6 +200,7 @@ private struct UserMigration: Migration {
             .field("name", .string, .required)
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
+            .field("addressed_at", .datetime)
             .create()
     }
 
@@ -211,6 +228,9 @@ private final class Event: Model {
     @Timestamp(key: "deleted_at", on: .delete, format: .iso8601(withMilliseconds: true))
     var deletedAt: Date?
 
+    @Timestamp(key: "nudged_at", on: .delete, format: .iso8601(withMilliseconds: true))
+    var nudgedAt: Date?
+
     init() { }
 
     init(id: IDValue? = nil, name: String) {
@@ -219,6 +239,7 @@ private final class Event: Model {
         self.createdAt = nil
         self.updatedAt = nil
         self.deletedAt = nil
+        self.nudgedAt = nil
     }
 }
 
@@ -230,6 +251,7 @@ private struct EventMigration: Migration {
             .field("created_at", .string)
             .field("updated_at", .string)
             .field("deleted_at", .string)
+            .field("nudged_at", .string)
             .create()
     }
 
