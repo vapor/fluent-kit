@@ -3,6 +3,7 @@
 import XCTest
 import Foundation
 import FluentSQL
+import XCTFluent
 
 final class FluentKitTests: XCTestCase {
     func testMigrationLogNames() throws {
@@ -457,6 +458,38 @@ final class FluentKitTests: XCTestCase {
             XCTAssert(foo is Bar?.Type)
             XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
         }
+    }
+
+    func testDatabaseGeneratedIDOverride() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+            @ID(custom: .id) var id: Int?
+            init() { }
+            init(id: Int?) {
+                self.id = id
+            }
+        }
+
+
+        let test = CallbackTestDatabase { query in
+            switch query.input[0] {
+            case .dictionary(let input):
+                switch input["id"] {
+                case .bind(let bind):
+                    XCTAssertEqual(bind as? Int, 1)
+                default:
+                    XCTFail("invalid input: \(input)")
+                }
+            default:
+                XCTFail("invalid input: \(query)")
+            }
+            return [
+                TestOutput(["id": 0])
+            ]
+        }
+        let foo = Foo(id: 1)
+        try foo.create(on: test.db).wait()
+        XCTAssertEqual(foo.id, 1)
     }
 }
 
