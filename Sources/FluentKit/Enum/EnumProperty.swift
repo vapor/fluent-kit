@@ -90,10 +90,12 @@ extension EnumProperty: AnyDatabaseProperty {
 
 extension EnumProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
-        try self.field.encode(to: encoder)
+        var container = encoder.singleValueContainer()
+        try container.encode(self.wrappedValue)
     }
 
     public func decode(from decoder: Decoder) throws {
-        try self.field.decode(from: decoder)
+        let container = try decoder.singleValueContainer()
+        self.value = try container.decode(Value.self)
     }
 }

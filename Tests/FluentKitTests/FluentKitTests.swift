@@ -402,6 +402,62 @@ final class FluentKitTests: XCTestCase {
         let new = db.logging(to: logger)
         XCTAssertEqual(new.logger.logLevel, .critical)
     }
+
+    func testEnumDecode() throws {
+        enum Bar: String, Codable, Equatable {
+            case baz
+        }
+        final class Foo: Model {
+            static let schema = "foos"
+            @ID var id: UUID?
+            @Enum(key: "bar") var bar: Bar
+            init() { }
+        }
+
+        do {
+            let foo = try JSONDecoder().decode(Foo.self, from: Data("""
+            {"bar": "baz"}
+            """.utf8))
+            XCTAssertEqual(foo.bar, .baz)
+        }
+        do {
+            _ = try JSONDecoder().decode(Foo.self, from: Data("""
+            {"bar": "qux"}
+            """.utf8))
+            XCTFail("should not have passed")
+        } catch DecodingError.typeMismatch(let foo, let context) {
+            XCTAssert(foo is Bar.Type)
+            XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
+        }
+    }
+
+    func testOptionalEnumDecode() throws {
+        enum Bar: String, Codable, Equatable {
+            case baz
+        }
+        final class Foo: Model {
+            static let schema = "foos"
+            @ID var id: UUID?
+            @OptionalEnum(key: "bar") var bar: Bar?
+            init() { }
+        }
+
+        do {
+            let foo = try JSONDecoder().decode(Foo.self, from: Data("""
+            {"bar": "baz"}
+            """.utf8))
+            XCTAssertEqual(foo.bar, .baz)
+        }
+        do {
+            _ = try JSONDecoder().decode(Foo.self, from: Data("""
+            {"bar": "qux"}
+            """.utf8))
+            XCTFail("should not have passed")
+        } catch DecodingError.typeMismatch(let foo, let context) {
+            XCTAssert(foo is Bar?.Type)
+            XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
+        }
+    }
 }
 
 final class User: Model {
