@@ -491,6 +491,15 @@ final class FluentKitTests: XCTestCase {
         try foo.create(on: test.db).wait()
         XCTAssertEqual(foo.id, 1)
     }
+
+
+    func testQueryBuilderFieldsFor() throws {
+        let test = ArrayTestDatabase()
+        let builder = User.query(on: test.db)
+        XCTAssertEqual(builder.query.fields.count, 0)
+        _ = builder.fields(for: User.self)
+        XCTAssertEqual(builder.query.fields.count, 9)
+    }
 }
 
 final class User: Model {
