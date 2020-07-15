@@ -56,6 +56,19 @@ public final class QueryBuilder<Model>
 
     // MARK: Fields
 
+    public func fields<Joined>(for model: Joined.Type) -> Self 
+        where Joined: Schema & Fields
+    {
+        self.addFields(for: Joined.self, to: &self.query)
+        return self
+    }
+
+    internal func addFields(for model: (Schema & Fields).Type, to query: inout DatabaseQuery) {
+        query.fields += model.keys.map { path in
+            .path([path], schema: model.schemaOrAlias)
+        }
+    }
+
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
         where Field: QueryableProperty, Field.Model == Model
     {
@@ -231,9 +244,7 @@ public final class QueryBuilder<Model>
         // add fields from all models being queried.
         if query.fields.isEmpty {
             for model in self.models {
-                query.fields += model.keys.map { path in
-                    .path([path], schema: model.schemaOrAlias)
-                }
+                self.addFields(for: model, to: &query)
             }
         }
 
