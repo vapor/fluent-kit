@@ -91,17 +91,29 @@ extension DatabaseQuery.Sort {
 }
 
 extension FieldKey: SQLExpression {
+    /// See `SQLExpression`.
     public func serialize(to serializer: inout SQLSerializer) {
+        SQLIdentifier(self.string(for: serializer.dialect))
+            .serialize(to: &serializer)
+    }
+
+    // Converts `FieldKey` to a string.
+    // 
+    // `.description` is not used here since that isn't
+    // _necessarily_ a SQL compatible value.
+    //
+    // SQLSerializer is passed in case a different dialect may
+    // need to have special values for id / aggregate.
+    private func string(for dialect: SQLDialect) -> String {
         switch self {
         case .id:
-            serializer.write("id")
+            return "id"
         case .aggregate:
-            serializer.write("aggregate")
+            return "aggregate"
         case .prefix(let prefix, let key):
-            prefix.serialize(to: &serializer)
-            key.serialize(to: &serializer)
+            return prefix.string(for: dialect) + key.string(for: dialect)
         case .string(let string):
-            serializer.write(string)
+            return string
         }
     }
 }
