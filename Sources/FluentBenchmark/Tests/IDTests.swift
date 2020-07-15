@@ -22,7 +22,7 @@ extension FluentBenchmarker {
             let foo1 = Foo()
             try foo1.save(on: self.database).wait()
             XCTAssertNotNil(foo1.id)
-            let foo2 = Foo()
+            let foo2 = Foo(id: nil)
             try foo2.save(on: self.database).wait()
             XCTAssertNotNil(foo2.id)
             XCTAssertNotEqual(foo1.id, foo2.id)
@@ -49,7 +49,7 @@ extension FluentBenchmarker {
             let foo1 = AutoincrementingFoo()
             try foo1.save(on: self.database).wait()
             XCTAssertEqual(foo1.id, 1)
-            let foo2 = AutoincrementingFoo()
+            let foo2 = AutoincrementingFoo(id: nil)
             try foo2.save(on: self.database).wait()
             XCTAssertEqual(foo2.id, 2)
         }
@@ -63,7 +63,7 @@ extension FluentBenchmarker {
             let foo1 = CustomAutoincrementingFoo()
             try foo1.save(on: self.database).wait()
             XCTAssertEqual(foo1.id, 1)
-            let foo2 = CustomAutoincrementingFoo()
+            let foo2 = CustomAutoincrementingFoo(id: nil)
             try foo2.save(on: self.database).wait()
             XCTAssertEqual(foo2.id, 2)
         }

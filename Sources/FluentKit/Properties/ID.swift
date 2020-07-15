@@ -81,9 +81,17 @@ public final class IDProperty<Model, Value>
     }
 
     func generate() {
-        guard self.inputValue == nil else {
+        // Check if current value is nil.
+        switch self.inputValue {
+        case .none, .null:
+            break
+        case .bind(let value) where value.isNil:
+            break
+        default:
             return
         }
+
+        // If nil, generate a value.
         switch self.generator {
         case .database:
             self.inputValue = .default
@@ -166,4 +174,15 @@ protocol AnyID {
     func generate()
     var exists: Bool { get set }
     var cachedOutput: DatabaseOutput? { get set }
+}
+
+
+private extension Encodable {
+    var isNil: Bool {
+        if let optional = self as? AnyOptionalType {
+            return optional.wrappedValue == nil
+        } else {
+            return false
+        }
+    }
 }
