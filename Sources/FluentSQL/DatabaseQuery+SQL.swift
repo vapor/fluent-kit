@@ -102,7 +102,7 @@ extension FieldKey: SQLExpression {
     // `.description` is not used here since that isn't
     // _necessarily_ a SQL compatible value.
     //
-    // SQLSerializer is passed in case a different dialect may
+    // SQLDialect is passed in case a specific dialect may
     // need to have special values for id / aggregate.
     private func string(for dialect: SQLDialect) -> String {
         switch self {
