@@ -12,7 +12,7 @@ extension FluentBenchmarker {
 
     // The actual performance test.
     private func run(on database: Database) throws {
-        try self.runTest(#function, [
+        try self.runTest("testPerformance_siblings", [
             PersonMigration(),
             ExpeditionMigration(),
             ExpeditionOfficerMigration(),
@@ -41,7 +41,7 @@ extension FluentBenchmarker {
     private func withConnection(_ closure: @escaping (Database) throws -> ()) throws {
         try self.database.withConnection { connection -> EventLoopFuture<Void> in
             let promise = connection.eventLoop.makePromise(of: Void.self)
-            DispatchQueue.main.async {
+            DispatchQueue.global().async {
                 do {
                     try closure(connection)
                     promise.succeed(())
