@@ -2,6 +2,9 @@ import XCTest
 
 extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {
+        let database = try self.database.withConnection { 
+            $0.eventLoop.makeSucceededFuture($0)
+        }.wait()
         try self.runTest(#function, [
             PersonMigration(),
             ExpeditionMigration(),
@@ -11,7 +14,7 @@ extension FluentBenchmarker {
             PersonSeed(),
             ExpeditionSeed(),
             ExpeditionPeopleSeed(),
-        ]) {
+        ], on: database) {
             let start = Date()
             let expeditions = try Expedition.query(on: self.database)
                 .with(\.$officers)
