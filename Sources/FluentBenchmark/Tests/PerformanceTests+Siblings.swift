@@ -5,7 +5,7 @@ extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {
         // This test makes a huge amount of queries. 
         // Doing it on a connection pool can result in deadlock timeouts.
-        self.withConnection { connection in 
+        try self.withConnection { connection in 
             try self.run(on: connection)
         }
     }
@@ -38,7 +38,7 @@ extension FluentBenchmarker {
 
     // Gets a single db connection using `withConnection`
     // then returns to the main thread for execution.
-    private func withConnection(_ closure: (Database) throws -> ()) throws {
+    private func withConnection(_ closure: @escaping (Database) throws -> ()) throws {
         try self.database.withConnection { connection -> EventLoopFuture<Void> in
             let promise = connection.eventLoop.makePromise(of: Void.self)
             DispatchQueue.main.async {
