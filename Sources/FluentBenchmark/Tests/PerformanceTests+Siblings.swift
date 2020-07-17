@@ -1,10 +1,23 @@
 import XCTest
+import Dispatch
 
 extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {
-        let database = try self.database.withConnection { 
-            $0.eventLoop.makeSucceededFuture($0)
+        try self.database.withConnection { connection -> EventLoopFuture<Void> in
+            let promise = connection.eventLoop.makePromise(of: Void.self)
+            DispatchQueue.main.async {
+                do {
+                    try self.run(on: connection)
+                    promise.succeed(())
+                } catch {
+                    promise.fail(error)
+                }
+            }
+            return promise.futureResult
         }.wait()
+    }
+
+    private func run(on database: Database) throws {
         try self.runTest(#function, [
             PersonMigration(),
             ExpeditionMigration(),
