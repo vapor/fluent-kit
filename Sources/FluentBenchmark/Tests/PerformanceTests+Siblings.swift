@@ -1,7 +1,17 @@
 import XCTest
+import Dispatch
 
 extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {
+        // This test makes a huge amount of queries. 
+        // Doing it on a connection pool can result in deadlock timeouts.
+        self.withConnection { connection in 
+            try self.run(on: connection)
+        }
+    }
+
+    // The actual performance test.
+    private func run(on database: Database) throws {
         try self.runTest(#function, [
             PersonMigration(),
             ExpeditionMigration(),
@@ -11,7 +21,7 @@ extension FluentBenchmarker {
             PersonSeed(),
             ExpeditionSeed(),
             ExpeditionPeopleSeed(),
-        ]) {
+        ], on: database) {
             let start = Date()
             let expeditions = try Expedition.query(on: self.database)
                 .with(\.$officers)
@@ -25,6 +35,25 @@ extension FluentBenchmarker {
             XCTAssertEqual(expeditions.count, 300)
         }
     }
+
+    // Gets a single db connection using `withConnection`
+    // then returns to the main thread for execution.
+    private func withConnection(_ closure: (Database) throws -> ()) throws {
+        try self.database.withConnection { connection -> EventLoopFuture<Void> in
+            let promise = connection.eventLoop.makePromise(of: Void.self)
+            DispatchQueue.main.async {
+                do {
+                    try closure(connection)
+                    promise.succeed(())
+                } catch {
+                    promise.fail(error)
+                }
+            }
+            return promise.futureResult
+        }.wait()
+    }
+
+
 }
 
 private struct PersonSeed: Migration {
