@@ -12,14 +12,40 @@ extension QueryBuilder {
         self.join(Foreign.self, filter.foreign, to: Local.self, filter.local , method: method)
     }
 
-    func join<From, To>(
+    /// This will join a foreign table based on a `ParentProperty`relation
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     try Planet.query(on: db)
+    ///         .join(parent: \Planet.$star)
+    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///
+    /// - Parameters:
+    ///   - parent: The `ParentProperty` to join
+    ///   - method: The method to use. The default is an inner join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<From, To>(
         parent: KeyPath<From, ParentProperty<From, To>>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self {
         join(To.self, on: parent.appending(path: \.$id) == \To._$id, method: method)
     }
 
-    func join<From, To>(
+    /// This will join a foreign table based on a `ChildrenProperty`relation
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     try Star.query(on: db)
+    ///         .join(children: \Planet.$planets)
+    ///         .filter(Planet.self, \Planet.$name == "Earth")
+    ///
+    /// - Parameters:
+    ///   - children: The `ChildrenProperty` to join
+    ///   - method: The method to use. The default is an inner join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<From, To>(
         children: KeyPath<From, ChildrenProperty<From, To>>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self {
@@ -29,7 +55,20 @@ extension QueryBuilder {
         }
     }
 
-    func join<From, To, Through>(
+    /// This will join the foreign table based on a `SiblingsProperty`relation
+    /// This will result in joining two tables. The Pivot table and the wanted model table
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     try Star.query(on: db)
+    ///         .join(siblings: \Planet.$tags)
+    ///         .filter(Tag.self, \Tag.$name == "Something")
+    ///
+    /// - Parameters:
+    ///   - siblings: The `SiblingsProperty` to join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<From, To, Through>(
         siblings: KeyPath<From, SiblingsProperty<From, To, Through>>
     ) -> Self
         where From: FluentKit.Model, To: FluentKit.Model, Through: FluentKit.Model
