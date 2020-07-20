@@ -43,7 +43,7 @@ final class FluentKitTests: XCTestCase {
         db.reset()
         
         _ = try Planet.query(on: db)
-            .join(parent: \Planet.$star)
+            .join(parent: \.$star)
             .sort(Star.self, \.$id, .ascending)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
