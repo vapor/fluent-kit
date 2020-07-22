@@ -33,7 +33,7 @@ extension QueryBuilder {
         case .dictionary(var existing):
             let path = Model.path(for: field)
             assert(path.count == 1, "Set on nested properties is not yet supported.")
-            existing[path[0]] = .bind(value)
+            existing[path[0]] = Field.queryValue(value)
             self.query.input[0] = .dictionary(existing)
         default:
             fatalError()
