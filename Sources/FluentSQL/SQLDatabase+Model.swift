@@ -1,6 +1,12 @@
 import SQLKit
 
 extension SQLQueryFetcher {
+    public func first<Model>(decoding model: Model.Type) -> EventLoopFuture<Model?> 
+        where Model: FluentKit.Model
+    {
+        self.all(decoding: Model.self).map { $0.first }
+    }
+
     public func all<Model>(decoding model: Model.Type) -> EventLoopFuture<[Model]> 
         where Model: FluentKit.Model
     {
