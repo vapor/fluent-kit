@@ -3,15 +3,15 @@ import Dispatch
 
 extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {
-        // This test makes a huge amount of queries. 
-        // Doing it on a connection pool can result in deadlock timeouts.
-        try self.withConnection { connection in 
-            try self.run(on: connection)
-        }
-    }
+        // we know database will outlive this test
+        // so doing this is fine.
+        // otherwise threading is a PITA
+        let conn = try self.database.withConnection { 
+            $0.eventLoop.makeSucceededFuture($0)
+        }.wait()
 
-    // The actual performance test.
-    private func run(on database: Database) throws {
+        // this test makes a ton of queries so doing it
+        // on a single connection helps combat pool timeouts
         try self.runTest("testPerformance_siblings", [
             PersonMigration(),
             ExpeditionMigration(),
@@ -21,9 +21,9 @@ extension FluentBenchmarker {
             PersonSeed(),
             ExpeditionSeed(),
             ExpeditionPeopleSeed(),
-        ], on: database) {
+        ], on: conn) {
             let start = Date()
-            let expeditions = try Expedition.query(on: self.database)
+            let expeditions = try Expedition.query(on: conn)
                 .with(\.$officers)
                 .with(\.$scientists)
                 .with(\.$doctors)
@@ -35,25 +35,6 @@ extension FluentBenchmarker {
             XCTAssertEqual(expeditions.count, 300)
         }
     }
-
-    // Gets a single db connection using `withConnection`
-    // then returns to the main thread for execution.
-    private func withConnection(_ closure: @escaping (Database) throws -> ()) throws {
-        try self.database.withConnection { connection -> EventLoopFuture<Void> in
-            let promise = connection.eventLoop.makePromise(of: Void.self)
-            DispatchQueue.global().async {
-                do {
-                    try closure(connection)
-                    promise.succeed(())
-                } catch {
-                    promise.fail(error)
-                }
-            }
-            return promise.futureResult
-        }.wait()
-    }
-
-
 }
 
 private struct PersonSeed: Migration {
