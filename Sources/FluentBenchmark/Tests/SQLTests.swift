@@ -16,7 +16,7 @@ extension FluentBenchmarker {
              try tanner.create(on: self.database).wait()
              print(tanner)
 
-             let users = try sql.raw("SELECT * FROM users_sql").all(decoding: User.self).wait()
+             let users = try sql.raw("SELECT * FROM users").all(decoding: User.self).wait()
              XCTAssertEqual(users.count, 1)
              if let user = users.first {
                 XCTAssertEqual(user.id, tanner.id)
@@ -30,7 +30,7 @@ extension FluentBenchmarker {
 
 
 private final class User: Model {
-    static let schema = "users_sql"
+    static let schema = "users"
 
     @ID(key: .id)
     var id: UUID?
@@ -70,7 +70,7 @@ private struct UserMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.eventLoop.makeSucceededFuture(())
+        database.schema("users").delete()
     }
 }
 
