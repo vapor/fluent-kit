@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mysql-a:
-        image: ${{ matrix.dbimage }}
+        image: mysql:latest
         env: 
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
           MYSQL_USER: vapor_username
           MYSQL_PASSWORD: vapor_password
           MYSQL_DATABASE: vapor_database
       mysql-b:
-        image: ${{ matrix.dbimage }}
+        image: mysql:latest
         env: 
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
           MYSQL_USER: vapor_username
