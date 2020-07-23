@@ -3,6 +3,15 @@ import Dispatch
 
 extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {
+        // we know database will outlive this test
+        // so doing this is fine.
+        // otherwise threading is a PITA
+        let conn = try self.database.withConnection { 
+            $0.eventLoop.makeSucceededFuture($0)
+        }.wait()
+
+        // this test makes a ton of queries so doing it
+        // on a single connection helps combat pool timeouts
         try self.runTest("testPerformance_siblings", [
             PersonMigration(),
             ExpeditionMigration(),
@@ -12,9 +21,9 @@ extension FluentBenchmarker {
             PersonSeed(),
             ExpeditionSeed(),
             ExpeditionPeopleSeed(),
-        ]) {
+        ], on: conn) {
             let start = Date()
-            let expeditions = try Expedition.query(on: self.database)
+            let expeditions = try Expedition.query(on: conn)
                 .with(\.$officers)
                 .with(\.$scientists)
                 .with(\.$doctors)

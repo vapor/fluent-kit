@@ -55,10 +55,11 @@ public final class FluentBenchmarker {
     internal func runTest(
         _ name: String, 
         _ migrations: [Migration], 
+        on database: Database? = nil,
         _ test: () throws -> ()
     ) throws {
         self.log("Running \(name)...")
-        let database = self.database
+        let database = database ?? self.database
 
         // Prepare migrations.
         for migration in migrations {
