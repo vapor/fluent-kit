@@ -52,7 +52,7 @@ jobs:
           - fluent-mysql-driver
           - fluent-mongo-driver
     steps:
-      - name: Install dependencies
+      - name: Install SQLite dependencies
         run: apt-get -q update && apt-get -q install -y libsqlite3-dev
         if: ${{ contains(matrix.dependent, 'sqlite') }}
       - name: Check out package
@@ -91,7 +91,9 @@ jobs:
           # 5.3 Unstable
           - swiftlang/swift:nightly-5.3-bionic
           # Master Unsable
-          - swiftlang/swift:nightly-master-focal
+          # Temporarily disabled because master has
+          # been broken for ages
+          # - swiftlang/swift:nightly-master-focal
     container: ${{ matrix.image }}
     steps:
       - name: Checkout code
@@ -105,6 +107,8 @@ jobs:
         uses: maxim-lobanov/setup-xcode@1.0
         with: 
           xcode-version: latest
+      - name: Check out package
+        uses: actions/checkout@v2
       - name: Run tests with Thread Sanitizer
         run: swift test --enable-test-discovery --sanitize=thread
         env:
