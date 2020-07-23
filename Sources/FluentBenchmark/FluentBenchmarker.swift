@@ -45,6 +45,7 @@ public final class FluentBenchmarker {
         try self.testSiblings()
         try self.testSoftDelete()
         try self.testSort()
+        try self.testSQL()
         try self.testTimestamp()
         try self.testTransaction()
         try self.testUnique()
