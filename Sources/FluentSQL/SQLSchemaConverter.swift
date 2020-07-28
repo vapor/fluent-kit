@@ -1,6 +1,13 @@
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
     func nestedFieldExpression(_ column: String, _ path: [String]) -> SQLExpression
+    func beforeConvert(_ schema: DatabaseSchema) -> DatabaseSchema
+}
+
+extension SQLConverterDelegate {
+    public func beforeConvert(_ schema: DatabaseSchema) -> DatabaseSchema {
+        schema
+    }
 }
 
 public struct SQLSchemaConverter {
@@ -10,6 +17,7 @@ public struct SQLSchemaConverter {
     }
     
     public func convert(_ schema: DatabaseSchema) -> SQLExpression {
+        let schema = self.delegate.beforeConvert(schema)
         switch schema.action {
         case .create:
             return self.create(schema)
