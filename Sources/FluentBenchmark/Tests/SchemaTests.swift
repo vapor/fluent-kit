@@ -4,6 +4,7 @@ extension FluentBenchmarker {
     public func testSchema() throws {
         try self.testSchema_addConstraint()
         try self.testSchema_addNamedConstraint()
+        try self.testSchema_fieldReference()
     }
 
     private func testSchema_addConstraint() throws {
@@ -55,6 +56,18 @@ extension FluentBenchmarker {
             // Remove unique constraint
             try AddNamedUniqueConstraintToCategories().revert(on: self.database).wait()
             try Category(name: "a").create(on: self.database).wait()
+        }
+    }
+    
+    private func testSchema_fieldReference() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            XCTAssertThrowsError(
+                try Star.query(on: self.database)
+                    .filter(\.$name == "Sun")
+                    .delete().wait()
+            )
         }
     }
 }
