@@ -1,10 +1,10 @@
 import FluentSQL
 
 extension FluentBenchmarker {
-    public func testSchema(sql: Bool = true) throws {
+    public func testSchema(foreignKeys: Bool = true) throws {
         try self.testSchema_addConstraint()
         try self.testSchema_addNamedConstraint()
-        if sql {
+        if foreignKeys {
             try self.testSchema_fieldReference()
         }
     }
