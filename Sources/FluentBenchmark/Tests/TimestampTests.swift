@@ -9,6 +9,7 @@ extension FluentBenchmarker {
         try self.testTimestamp_createOnBulkUpdate()
         try self.testTimestamp_updateNoChanges()
         try self.testTimestamp_decode()
+        try self.testTimestamp_createBatch()
     }
 
     private func testTimestamp_touch() throws {
@@ -163,6 +164,19 @@ extension FluentBenchmarker {
         let user = try! JSONDecoder().decode(User.self, from: json)
         XCTAssertNil(user.createdAt)
         XCTAssertNil(user.updatedAt)
+    }
+
+    private func testTimestamp_createBatch() throws {
+        try runTest(#function, [
+            EventMigration()
+        ]) {
+            try [
+                Event(name: "A"),
+                Event(name: "B")
+            ].create(on: self.database).wait()
+
+            try XCTAssertEqual(Event.query(on: self.database).count().wait(), 2)
+        }
     }
 }
 
