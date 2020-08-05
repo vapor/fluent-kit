@@ -8,6 +8,8 @@ extension Fields {
             do {
                 let decoder = ContainerDecoder(container: container, key: .string(label))
                 try property.decode(from: decoder)
+            } catch let decodingError as DecodingError {
+                throw decodingError
             } catch {
                 throw DecodingError.typeMismatch(
                     type(of: property).anyValueType,
@@ -70,6 +72,27 @@ enum ModelCodingKey: CodingKey {
     }
 }
 
+extension ModelCodingKey: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .string(let string):
+            return string.description
+        case .int(let int):
+            return int.description
+        }
+    }
+}
+
+extension ModelCodingKey: CustomDebugStringConvertible {
+    var debugDescription: String {
+        switch self {
+        case .string(let string):
+            return string.debugDescription
+        case .int(let int):
+            return int.description
+        }
+    }
+}
 
 private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
     let container: KeyedDecodingContainer<ModelCodingKey>

@@ -294,7 +294,14 @@ final class FluentKitTests: XCTestCase {
     // GitHub PR: https://github.com/vapor/fluent-kit/pull/209
     func testDecodeEnumProperty() throws {
         let json = """
-        {"name": "Squeeky", "type": "mouse"}
+        {
+            "name": "Squeeky",
+            "type": "mouse",
+            "foo": {
+                "bar": 42,
+                "baz": "hi"
+            }
+        }
         """
         do {
             let toy = try JSONDecoder().decode(Toy.self, from: Data(json.utf8))
@@ -445,8 +452,7 @@ final class FluentKitTests: XCTestCase {
             {"bar": "qux"}
             """.utf8))
             XCTFail("should not have passed")
-        } catch DecodingError.typeMismatch(let foo, let context) {
-            XCTAssert(foo is Bar.Type)
+        } catch DecodingError.dataCorrupted(let context) {
             XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
         }
     }
@@ -473,8 +479,7 @@ final class FluentKitTests: XCTestCase {
             {"bar": "qux"}
             """.utf8))
             XCTFail("should not have passed")
-        } catch DecodingError.typeMismatch(let foo, let context) {
-            XCTAssert(foo is Bar?.Type)
+        } catch DecodingError.dataCorrupted(let context) {
             XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
         }
     }
@@ -511,13 +516,25 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(foo.id, 1)
     }
 
-
     func testQueryBuilderFieldsFor() throws {
         let test = ArrayTestDatabase()
         let builder = User.query(on: test.db)
         XCTAssertEqual(builder.query.fields.count, 0)
         _ = builder.fields(for: User.self)
         XCTAssertEqual(builder.query.fields.count, 9)
+    }
+
+    func testGroupCodable() throws {
+        XCTAssertThrowsError(try JSONDecoder().decode(User.self, from: .init("""
+        {"name": "Tanner"}
+        """.utf8))) { error in
+            switch error as? DecodingError {
+            case .some(.keyNotFound(let key, _)):
+                XCTAssertEqual(key.description, "pet")
+            default:
+                XCTFail("Unexpected error: \(error)")
+            }
+        }
     }
 }
 
