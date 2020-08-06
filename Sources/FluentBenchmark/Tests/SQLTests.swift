@@ -12,18 +12,46 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             UserMigration()
         ]) {
-             let tanner = User(firstName: "Tanner", lastName: "Nelson", parentID: UUID())
-             try tanner.create(on: self.database).wait()
-             print(tanner)
+            let tanner = User(firstName: "Tanner", lastName: "Nelson", parentID: UUID())
+            try tanner.create(on: self.database).wait()
 
-             let users = try sql.raw("SELECT * FROM users").all(decoding: User.self).wait()
-             XCTAssertEqual(users.count, 1)
-             if let user = users.first {
-                XCTAssertEqual(user.id, tanner.id)
-                XCTAssertEqual(user.firstName, tanner.firstName)
-                XCTAssertEqual(user.lastName, tanner.lastName)
-                XCTAssertEqual(user.$parent.id, tanner.$parent.id)
-             }
+            // test db.first(decoding:)
+            do {
+                let user = try sql.raw("SELECT * FROM users").first(decoding: User.self).wait()
+                XCTAssertNotNil(user)
+                if let user = user {
+                    XCTAssertEqual(user.id, tanner.id)
+                    XCTAssertEqual(user.firstName, tanner.firstName)
+                    XCTAssertEqual(user.lastName, tanner.lastName)
+                    XCTAssertEqual(user.$parent.id, tanner.$parent.id)
+                }
+            }
+
+            // test db.all(decoding:)
+            do {
+                let users = try sql.raw("SELECT * FROM users").all(decoding: User.self).wait()
+                XCTAssertEqual(users.count, 1)
+                if let user = users.first {
+                    XCTAssertEqual(user.id, tanner.id)
+                    XCTAssertEqual(user.firstName, tanner.firstName)
+                    XCTAssertEqual(user.lastName, tanner.lastName)
+                    XCTAssertEqual(user.$parent.id, tanner.$parent.id)
+                }
+            }
+
+            // test row.decode()
+            do {
+                let users = try sql.raw("SELECT * FROM users").all().wait().map {
+                    try $0.decode(model: User.self)
+                }
+                XCTAssertEqual(users.count, 1)
+                if let user = users.first {
+                    XCTAssertEqual(user.id, tanner.id)
+                    XCTAssertEqual(user.firstName, tanner.firstName)
+                    XCTAssertEqual(user.lastName, tanner.lastName)
+                    XCTAssertEqual(user.$parent.id, tanner.$parent.id)
+                }
+            }
         }
     }
 }

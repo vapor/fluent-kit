@@ -20,6 +20,16 @@ extension SQLQueryFetcher {
     }
 }
 
+extension SQLRow {
+    public func decode<Model>(model: Model.Type) throws -> Model
+        where Model: FluentKit.Model
+    {
+        let model = Model()
+        try model.output(from: SQLDatabaseOutput(sql: self))
+        return model
+    }
+}
+
 private struct SQLDatabaseOutput: DatabaseOutput {
     let sql: SQLRow
 
