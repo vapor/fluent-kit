@@ -5,17 +5,17 @@ extension Fields {
         try self.labeledProperties.compactMapValues {
             $0 as? AnyCodableProperty
         }.forEach { label, property in
+            print(label, property)
             do {
                 let decoder = ContainerDecoder(container: container, key: .string(label))
                 try property.decode(from: decoder)
             } catch let decodingError as DecodingError {
                 throw decodingError
             } catch {
-                throw DecodingError.typeMismatch(
-                    type(of: property).anyValueType,
+                throw DecodingError.dataCorrupted(
                     .init(
                         codingPath: [ModelCodingKey.string(label)],
-                        debugDescription: "Could not decode property",
+                        debugDescription: "Could not decode property: \(property)",
                         underlyingError: error
                     )
                 )
@@ -107,7 +107,18 @@ private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
     }
 
     func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
+        do {
+            return try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
+        } catch DecodingError.typeMismatch(let type, let context) {
+            throw DecodingError.typeMismatch(
+                type,
+                .init(
+                    codingPath: [self.key] + context.codingPath,
+                    debugDescription: "Could not decode key",
+                    underlyingError: nil
+                )
+            )
+        }
     }
 
     func unkeyedContainer() throws -> UnkeyedDecodingContainer {
