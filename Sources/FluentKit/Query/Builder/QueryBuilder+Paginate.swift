@@ -9,7 +9,7 @@ extension QueryBuilder {
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
         let count = self.count()
-        let items = self.copy().range(request.start..<request.end).all()
+        let items = request.end < 0 ? self.copy().range(request.start...).all() : self.copy().range(request.start..<request.end).all()
         return items.and(count).map { (models, total) in
             Page(
                 items: models,
@@ -90,10 +90,16 @@ public struct PageRequest: Decodable {
     }
 
     var start: Int {
-        (self.page - 1) * self.per
+        if self.per < 0 {
+            return 0
+        }
+        return (self.page - 1) * self.per
     }
 
     var end: Int {
-        self.page * self.per
+        if self.per < 0 {
+            return -1
+        }
+        return self.page * self.per
     }
 }
