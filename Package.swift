@@ -5,7 +5,7 @@ let package = Package(
     name: "fluent-kit",
     platforms: [
         .macOS(.v10_15),
-        .iOS(.v10)
+        .iOS(.v13)
     ],
     products: [
         .library(name: "FluentKit", targets: ["FluentKit"]),
