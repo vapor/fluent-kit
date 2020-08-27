@@ -1,9 +1,9 @@
 extension FluentBenchmarker {
     public func testSoftDelete() throws {
-//        try self.testSoftDelete_model()
-//        try self.testSoftDelete_query()
-//        try self.testSoftDelete_onBulkDelete()
-//        try self.testSoftDelete_forceOnQuery()
+        try self.testSoftDelete_model()
+        try self.testSoftDelete_query()
+        try self.testSoftDelete_onBulkDelete()
+        try self.testSoftDelete_forceOnQuery()
         try self.testSoftDelete_parent()
     }
     
