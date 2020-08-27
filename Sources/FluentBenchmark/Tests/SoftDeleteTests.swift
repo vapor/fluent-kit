@@ -97,7 +97,7 @@ extension FluentBenchmarker {
     // Tests eager load of @Parent relation that has been soft-deleted.
     private func testSoftDelete_parent() throws {
         final class Foo: Model {
-            static let schema = "foo"
+            static let schema = "foos"
 
             @ID(key: .id)
             var id: UUID?
@@ -110,19 +110,19 @@ extension FluentBenchmarker {
 
         struct FooMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("foo")
+                database.schema("foos")
                     .id()
                     .field("bar", .uuid, .required)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("foo").delete()
+                database.schema("foos").delete()
             }
         }
 
         final class Bar: Model {
-            static let schema = "bar"
+            static let schema = "bars"
 
             @ID(key: .id)
             var id: UUID?
@@ -135,14 +135,14 @@ extension FluentBenchmarker {
 
         struct BarMigration: Migration {
             func prepare(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("bar")
+                database.schema("bars")
                     .id()
                     .field("deleted_at", .datetime)
                     .create()
             }
 
             func revert(on database: Database) -> EventLoopFuture<Void> {
-                database.schema("bar").delete()
+                database.schema("bars").delete()
             }
         }
 
