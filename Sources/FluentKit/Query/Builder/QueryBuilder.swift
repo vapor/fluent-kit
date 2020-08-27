@@ -223,6 +223,12 @@ public final class QueryBuilder<Model>
                 // run eager loads
                 return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: self.eagerLoaders) { loader in
                     return loader.anyRun(models: all, on: self.database)
+                }.flatMapErrorThrowing { error in
+                    if case .previousError(let error) = error as? EventLoopFutureQueue.ContinueError {
+                        throw error
+                    } else {
+                        throw error
+                    }
                 }
             }
         } else {

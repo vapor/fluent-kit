@@ -4,6 +4,7 @@ extension FluentBenchmarker {
         try self.testSoftDelete_query()
         try self.testSoftDelete_onBulkDelete()
         try self.testSoftDelete_forceOnQuery()
+        try self.testSoftDelete_parent()
     }
     
     private func testCounts(
@@ -90,6 +91,93 @@ extension FluentBenchmarker {
 
             try Trash.query(on: self.database).delete(force: true).wait()
             try testCounts(allCount: 0, realCount: 0)
+        }
+    }
+
+    // Tests eager load of @Parent relation that has been soft-deleted.
+    private func testSoftDelete_parent() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+
+            @ID(key: .id)
+            var id: UUID?
+
+            @Parent(key: "bar")
+            var bar: Bar
+
+            init() { }
+        }
+
+        struct FooMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("foos")
+                    .id()
+                    .field("bar", .uuid, .required)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("foos").delete()
+            }
+        }
+
+        final class Bar: Model {
+            static let schema = "bars"
+
+            @ID(key: .id)
+            var id: UUID?
+
+            @Timestamp(key: "deleted_at", on: .delete)
+            var deletedAt: Date?
+
+            init() { }
+        }
+
+        struct BarMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("bars")
+                    .id()
+                    .field("deleted_at", .datetime)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("bars").delete()
+            }
+        }
+
+        try self.runTest(#function, [
+            FooMigration(),
+            BarMigration(),
+        ]) {
+            let bar1 = Bar()
+            try bar1.create(on: self.database).wait()
+            let bar2 = Bar()
+            try bar2.create(on: self.database).wait()
+
+            let foo1 = Foo()
+            foo1.$bar.id = bar1.id!
+            try foo1.create(on: self.database).wait()
+
+            let foo2 = Foo()
+            foo2.$bar.id = bar2.id!
+            try foo2.create(on: self.database).wait()
+
+            // test fetch
+            let foos = try Foo.query(on: self.database).with(\.$bar).all().wait()
+            XCTAssertEqual(foos.count, 2)
+            XCTAssertNotNil(foos[0].$bar.value)
+            XCTAssertNotNil(foos[1].$bar.value)
+
+            // soft-delete bar 1
+            try bar1.delete(on: self.database).wait()
+
+            // test fetch again
+            // this should throw an error now because one of the
+            // parents is missing and the results cannot be loaded
+            XCTAssertThrowsError(try Foo.query(on: self.database).with(\.$bar).all().wait()) { error in
+                XCTAssertEqual("\(error)", FluentError.missingParent.description)
+            }
         }
     }
 }
