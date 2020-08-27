@@ -143,12 +143,16 @@ private struct ParentEagerLoader<From, To>: EagerLoader
         return To.query(on: database)
             .filter(\._$id ~~ Set(ids))
             .all()
-            .map
+            .flatMapThrowing
         {
             for model in models {
-                model[keyPath: self.relationKey].value = $0.filter {
+                guard let parent = $0.filter({
                     $0.id == model[keyPath: self.relationKey].id
-                }.first
+                }).first else {
+                    database.logger.debug("No parent '\(To.self)' with id '\(model[keyPath: self.relationKey].id)' was found in eager-load results.")
+                    throw FluentError.missingParent
+                }
+                model[keyPath: self.relationKey].value = parent
             }
         }
     }
