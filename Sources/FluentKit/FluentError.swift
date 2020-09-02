@@ -7,6 +7,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
     case relationNotLoaded(name: String)
     case missingParent
     case noResults
+    case missingInput
 
     public var description: String {
         switch self {
@@ -22,6 +23,8 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
             return "invalid field: \(name) type: \(valueType) error: \(error)"
         case .noResults:
             return "Query returned no results"
+        case .missingInput:
+            return "Missing query input"
         }
     }
 

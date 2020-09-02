@@ -28,7 +28,7 @@ extension FluentBenchmarker {
                 }.flatMapThrowing {
                     throw Test()
                 }
-            }
+            }   
             do {
                 try result.wait()
             } catch is Test {

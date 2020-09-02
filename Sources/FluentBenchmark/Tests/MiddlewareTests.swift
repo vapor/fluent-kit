@@ -9,6 +9,7 @@ extension FluentBenchmarker {
             UserMigration(),
         ]) {
             self.databases.middleware.use(UserMiddleware())
+            defer { self.databases.middleware.clear() }
 
             let user = User(name: "A")
             // create
@@ -30,9 +31,9 @@ extension FluentBenchmarker {
 
             // soft delete
             do {
-                try user.delete(on: self.database).wait()
+                try user.delete(force: false, on: self.database).wait()
             } catch let error as TestError {
-                XCTAssertEqual(error.string, "didSoftDelete")
+                XCTAssertEqual(error.string, "didDelete(force: false)")
             }
             XCTAssertEqual(user.name, "E")
 
@@ -48,7 +49,7 @@ extension FluentBenchmarker {
             do {
                 try user.delete(force: true, on: self.database).wait()
             } catch let error as TestError {
-                XCTAssertEqual(error.string, "didDelete")
+                XCTAssertEqual(error.string, "didDelete(force: true)")
             }
             XCTAssertEqual(user.name, "G")
         }
@@ -58,8 +59,8 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.clear()
             self.databases.middleware.use(UserBatchMiddleware())
+            defer { self.databases.middleware.clear() }
 
             let user = User(name: "A")
             let user2 = User(name: "B")
@@ -101,16 +102,8 @@ private final class User: Model {
 }
 
 private struct UserBatchMiddleware: ModelMiddleware {
-    func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        if model.name == "A" {
-            model.name = "AA"
-            return next.create(model, on: db)
-        } else if model.name == "C" {
-            model.name = "CC"
-            return next.create(model, on: db)
-        } else {
-            return db.eventLoop.makeFailedFuture(TestError(string: "cancelCreation"))
-        }
+    func batchCreate(models: [User], on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        db.eventLoop.makeFailedFuture(TestError(string: "cancelCreation"))
     }
 }
 
@@ -131,11 +124,14 @@ private struct UserMiddleware: ModelMiddleware {
         }
     }
 
-    func softDelete(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        model.name = "E"
-
-        return next.softDelete(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
+    func delete(model: User, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        if force {
+            model.name = "G"
+        } else {
+            model.name = "E"
+        }
+        return next.delete(model, force: force, on: db).flatMap {
+            return db.eventLoop.makeFailedFuture(TestError(string: "didDelete(force: \(force))"))
         }
     }
 
@@ -144,14 +140,6 @@ private struct UserMiddleware: ModelMiddleware {
 
         return next.restore(model , on: db).flatMap {
             return db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
-        }
-    }
-
-    func delete(model: User, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        model.name = "G"
-
-        return next.delete(model, force: force, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
         }
     }
 }
