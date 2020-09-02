@@ -57,9 +57,10 @@ extension FluentBenchmarker {
             defer { self.databases.middleware.clear() }
             try performTest()
 
-            self.databases.middleware.use(UserMiddlewareDeprecated())
-            defer { self.databases.middleware.clear() }
-            try performTest()
+            // Uncomment to test deprecated middleware.
+            // self.databases.middleware.use(UserMiddlewareDeprecated())
+            // defer { self.databases.middleware.clear() }
+            // try performTest()
         }
     }
     

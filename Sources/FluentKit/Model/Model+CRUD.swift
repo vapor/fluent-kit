@@ -194,7 +194,7 @@ extension Model {
 
             // Get on delete timestamp property.
             guard let timestamp = models[0].timestamps.filter({ $0.trigger == .delete }).first else {
-                throw FluentError.missingInput
+                throw FluentError.cannotRestore
             }
             let input: [FieldKey: DatabaseQuery.Value] = [
                 timestamp.key: .null
