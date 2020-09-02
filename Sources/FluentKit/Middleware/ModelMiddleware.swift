@@ -1,3 +1,32 @@
+public enum ModelEvent {
+    case create
+    case update
+    case delete(Bool)
+    case restore
+    @available(*, deprecated)
+    case softDelete
+}
+
+public protocol ModelMiddleware: AnyModelMiddleware {
+    associatedtype Model: FluentKit.Model
+
+    func create(models: [Model], on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    func update(models: [Model], on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    func delete(models: [Model], force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    func restore(models: [Model], on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+
+    @available(*, deprecated)
+    func create(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    @available(*, deprecated)
+    func update(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    @available(*, deprecated)
+    func delete(model: Model, force: Bool, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    @available(*, deprecated)
+    func softDelete(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    @available(*, deprecated)
+    func restore(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+}
+
 public protocol AnyModelMiddleware {
     func handle(
         _ event: ModelEvent,
@@ -5,26 +34,6 @@ public protocol AnyModelMiddleware {
         on db: Database,
         chainingTo next: AnyModelResponder
     ) -> EventLoopFuture<Void>
-}
-
-public protocol ModelMiddleware: AnyModelMiddleware {
-    associatedtype Model: FluentKit.Model
-    
-    func create(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func update(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func delete(model: Model, force: Bool, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func softDelete(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func restore(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-
-    // batch
-    func batchCreate(models: [Model], on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-}
-
-extension ModelMiddleware {
-    @available(*, deprecated, message: "Backward compatability")
-    public func batchCreate(models: [Model], on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        next.create(models, on: database)
-    }
 }
 
 extension ModelMiddleware {
@@ -38,58 +47,100 @@ extension ModelMiddleware {
             return next.handle(event, anyModels, on: database)
         }
 
-        switch models.count {
-        case 1:
-            switch event {
-            case .create:
-                return self.create(model: models[0], on: database, next: next)
-            case .update:
-                return self.update(model: models[0], on: database, next: next)
-            case .delete(let force):
-                return self.delete(model: models[0], force: force, on: database, next: next)
-            case .softDelete:
-                return self.softDelete(model: models[0], on: database, next: next)
-            case .restore:
-                return self.restore(model: models[0], on: database, next: next)
-            }
+        switch event {
+        case .create:
+            return self.create(models: models, on: database, next: next)
+        case .update:
+            return self.update(models: models, on: database, next: next)
+        case .delete(let force):
+            return self.delete(models: models, force: force, on: database, next: next)
+        case .restore:
+            return self.restore(models: models, on: database, next: next)
         default:
-            switch event {
-            case .create:
-                return self.batchCreate(models: models, on: database, next: next)
-            default:
-                fatalError("Unsupported batch.")
-            }
+            database.logger.warning("Ignoring deprecated model event: \(event)")
+            return next.handle(event, models, on: database)
         }
-    }
-    
-    public func create(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.create(model, on: db)
-    }
-    
-    public func update(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.update(model, on: db)
-    }
-    
-    public func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.delete(model, force: force, on: db)
-    }
-    
-    public func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.softDelete(model, on: db)
-    }
-    
-    public func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.restore(model, on: db)
     }
 }
 
-public enum ModelEvent {
-    case create
-    case update
-    case delete(Bool)
-    case restore
-    case softDelete
+// Default implementations for required methods.
+// These were added in a minor update so they cannot be properly required.
+extension ModelMiddleware {
+    @available(*, deprecated)
+    public func create(models: [Model], on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        switch models.count {
+        case 1:
+            return self.create(model: models[0], on: database, next: next)
+        default:
+            database.logger.warning("Ignoring batch model event. \(Self.self).\(#function) method not implemented. ")
+            return next.create(models, on: database)
+        }
+    }
+
+    @available(*, deprecated)
+    public func update(models: [Model], on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        switch models.count {
+        case 1:
+            return self.update(model: models[0], on: database, next: next)
+        default:
+            database.logger.warning("Ignoring batch model event. \(Self.self).\(#function) method not implemented. ")
+            return next.create(models, on: database)
+        }
+    }
+
+    @available(*, deprecated)
+    public func delete(models: [Model], force: Bool, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        switch models.count {
+        case 1:
+            return self.delete(model: models[0], force: force, on: database, next: next)
+        default:
+            database.logger.warning("Ignoring batch model event. \(Self.self).\(#function) method not implemented. ")
+            return next.create(models, on: database)
+        }
+    }
+
+    @available(*, deprecated)
+    public func restore(models: [Model], on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        switch models.count {
+        case 1:
+            return self.restore(model: models[0], on: database, next: next)
+        default:
+            database.logger.warning("Ignoring batch model event. \(Self.self).\(#function) method not implemented. ")
+            return next.create(models, on: database)
+        }
+    }
 }
+
+// Default implementations for deprecated methods.
+// These are no longer required.
+extension ModelMiddleware {
+    @available(*, deprecated)
+    public func create(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        next.create(model, on: database)
+    }
+
+    @available(*, deprecated)
+    public func update(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.update(model, on: database)
+    }
+
+    @available(*, deprecated)
+    public func delete(model: Model, force: Bool, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.delete(model, force: force, on: database)
+    }
+
+    @available(*, deprecated)
+    public func softDelete(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.softDelete(model, on: database)
+    }
+
+    @available(*, deprecated)
+    public func restore(model: Model, on database: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+        return next.restore(model, on: database)
+    }
+}
+
+// MARK: Private
 
 extension AnyModelMiddleware {
     func makeResponder(chainingTo responder: AnyModelResponder) -> AnyModelResponder {
