@@ -9,7 +9,7 @@ extension QueryBuilder {
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
         let count = self.count()
-        let items = request.end < 0 ? self.copy().range(request.start...).all() : self.copy().range(request.start..<request.end).all()
+        let items = self.copy().range(request.start..<request.end).all()
         return items.and(count).map { (models, total) in
             Page(
                 items: models,
@@ -78,6 +78,10 @@ public struct PageRequest: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.page = try container.decodeIfPresent(Int.self, forKey: .page) ?? 1
         self.per = try container.decodeIfPresent(Int.self, forKey: .per) ?? 10
+        
+        if(self.page < 1 || self.per < 1){
+            throw FluentError.noResults
+        }
     }
 
     /// Crates a new `PageRequest`
@@ -90,16 +94,10 @@ public struct PageRequest: Decodable {
     }
 
     var start: Int {
-        if self.per < 0 {
-            return 0
-        }
-        return (self.page - 1) * self.per
+        (self.page - 1) * self.per
     }
 
     var end: Int {
-        if self.per < 0 {
-            return -1
-        }
-        return self.page * self.per
+        self.page * self.per
     }
 }
