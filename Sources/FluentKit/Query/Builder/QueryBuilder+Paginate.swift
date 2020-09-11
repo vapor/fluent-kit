@@ -80,7 +80,7 @@ public struct PageRequest: Decodable {
         self.per = try container.decodeIfPresent(Int.self, forKey: .per) ?? 10
         
         if(self.page < 1 || self.per < 1){
-            throw FluentError.noResults
+            throw FluentError.invalidPagination
         }
     }
 
