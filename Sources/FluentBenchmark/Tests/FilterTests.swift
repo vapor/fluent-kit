@@ -98,6 +98,7 @@ extension FluentBenchmarker {
 
     private func testFilter_optionalStringContains() throws {
         try self.runTest(#function, [
+            FooEnumMigration(),
             FooMigration()
         ]) {
             try Foo(bar: "foo").create(on: self.database).wait()
@@ -113,6 +114,7 @@ extension FluentBenchmarker {
 
     private func testFilter_enum() throws {
         try self.runTest(#function, [
+            FooEnumMigration(),
             FooMigration()
         ]) {
             try Foo(bar: "foo", type: .case1).create(on: self.database).wait()
@@ -149,19 +151,21 @@ private final class Foo: Model {
     }
 }
 
+private struct FooEnumMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.enum("foo_type").case("case1").case("case2").create().transform(to: ())
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.enum("foo_type").delete()
+    }
+}
+
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.enum("foo_type")
-            .case("case1")
-            .case("case2")
-            .create()
-            .flatMap { fooType in
-                database.schema("foos")
-                    .id()
-                    .field("bar", .string)
-                    .field("type", fooType, .required)
-                    .create()
-            }
+        database.enum("foo_type").read().flatMap { fooType in
+            database.schema("foos").id().field("bar", .string).field("type", fooType, .required).create()
+        }
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
