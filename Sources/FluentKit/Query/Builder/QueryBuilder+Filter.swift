@@ -9,7 +9,10 @@ extension QueryBuilder {
     ) -> Self
         where Field: QueryableProperty, Field.Model == Model
     {
-        self.filter(Model.path(for: field), method, value)
+        self.filter(.path(
+            Model.path(for: field),
+            schema: Model.schemaOrAlias
+        ), method, Field.queryValue(value))
     }
 
     @discardableResult

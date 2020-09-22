@@ -10,6 +10,7 @@ extension FluentBenchmarker {
         try self.testFilter_emptyGroup()
         try self.testFilter_emptyRightHandSide()
         try self.testFilter_optionalStringContains()
+        try self.testFilter_enum()
     }
 
     private func testFilter_field() throws {
@@ -109,21 +110,58 @@ extension FluentBenchmarker {
             XCTAssertEqual(foos.count, 2)
         }
     }
+
+    private func testFilter_enum() throws {
+        try self.runTest(#function, [
+            FooMigration()
+        ]) {
+            try Foo(bar: "foo", type: .case1).create(on: self.database).wait()
+            try Foo(bar: "bar", type: .case1).create(on: self.database).wait()
+            try Foo(bar: "baz", type: .case2).create(on: self.database).wait()
+            let foos1 = try Foo.query(on: self.database)
+                .filter(\.$type == .case1)
+                .all()
+                .wait()
+            XCTAssertEqual(foos1.count, 2)
+            let foos2 = try Foo.query(on: self.database)
+                .filter(\.$type == .case2)
+                .all()
+                .wait()
+            XCTAssertEqual(foos2.count, 1)
+        }
+    }
+}
+
+private enum FooEnumType: String, Codable {
+    case case1
+    case case2
 }
 
 private final class Foo: Model {
     static let schema = "foos"
     @ID var id: UUID?
     @OptionalField(key: "bar") var bar: String?
-    init() { }
-    init(bar: String? = nil) {
+    @Enum(key: "type") var type: FooEnumType
+    init() {}
+    init(bar: String? = nil, type: FooEnumType = .case1) {
         self.bar = bar
+        self.type = type
     }
 }
 
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("foos").id().field("bar", .string).create()
+        database.enum("foo_type")
+            .case("case1")
+            .case("case2")
+            .create()
+            .flatMap { fooType in
+                database.schema("foos")
+                    .id()
+                    .field("bar", .string)
+                    .field("type", fooType, .required)
+                    .create()
+            }
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
