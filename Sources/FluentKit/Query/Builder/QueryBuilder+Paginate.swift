@@ -88,9 +88,13 @@ public struct PageRequest: Decodable {
     /// - Parameters:
     ///   - page: Page number to request. Starts at `1`.
     ///   - per: Max items per page.
-    public init(page: Int, per: Int) {
+    public init(page: Int, per: Int) throws {
         self.page = page
         self.per = per
+        
+        if(self.page < 1 || self.per < 1){
+            throw FluentError.invalidPagination
+        }
     }
 
     var start: Int {
