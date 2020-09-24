@@ -44,6 +44,24 @@ extension FluentBenchmarker {
                 XCTAssertEqual(milkyWay.name, "Milky Way")
                 XCTAssertEqual(milkyWay.stars.count, 2)
             }
+            do {
+                XCTAssertThrowsError(try Planet.query(on: self.database)
+                                        .sort(\.$name)
+                                        .paginate(PageRequest(page: 1, per: -1))
+                                        .wait()) { error in
+                    guard case FluentError.invalidPagination = error else {
+                        return XCTFail()
+                    }
+                }
+                XCTAssertThrowsError(try Planet.query(on: self.database)
+                                        .sort(\.$name)
+                                        .paginate(PageRequest(page: -1, per: 1))
+                                        .wait()) { error in
+                    guard case FluentError.invalidPagination = error else {
+                        return XCTFail()
+                    }
+                }
+            }
         }
     }
 }
