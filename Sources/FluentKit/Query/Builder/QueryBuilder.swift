@@ -102,7 +102,7 @@ public final class QueryBuilder<Model>
     }
 
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
-        self.includeDeleted = true
+        self.includeDeleted = force
         self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
