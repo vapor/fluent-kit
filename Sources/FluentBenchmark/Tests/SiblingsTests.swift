@@ -2,6 +2,7 @@ extension FluentBenchmarker {
     public func testSiblings() throws {
         try self.testSiblings_attach()
         try self.testSiblings_detachArray()
+        try self.testSiblings_pivotLoading()
     }
 
     private func testSiblings_attach() throws {
@@ -88,16 +89,16 @@ extension FluentBenchmarker {
         }
     }
     
-    private func testSiblings_pivotsLoading() throws {
+    private func testSiblings_pivotLoading() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
             let earth = try Planet.query(on: self.database)
-                .filter(\.&name == "Earth").with(\.$tags).with(\.$tags.$pivots)
+                .filter(\.$name == "Earth").with(\.$tags).with(\.$tags.$pivots)
                 .first().wait()!
             
             // verify tag count
-            try XCTAssertEqual(earth.$tags.pivots.count, 2)
+            XCTAssertEqual(earth.$tags.pivots.count, 2)
         }
     }
 }
