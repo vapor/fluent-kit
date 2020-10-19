@@ -87,4 +87,17 @@ extension FluentBenchmarker {
             }
         }
     }
+    
+    private func testSiblings_pivotsLoading() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let earth = try Planet.query(on: self.database)
+                .filter(\.&name == "Earth").with(\.$tags).with(\.$tags.$pivots)
+                .first().wait()!
+            
+            // verify tag count
+            try XCTAssertEqual(earth.$tags.pivots.count, 2)
+        }
+    }
 }
