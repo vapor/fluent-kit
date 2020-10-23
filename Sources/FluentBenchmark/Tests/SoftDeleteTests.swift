@@ -80,15 +80,21 @@ extension FluentBenchmarker {
             try a.delete(on: self.database).wait()
             try XCTAssertEqual(Trash.query(on: self.database).all().wait().count, 0)
             try XCTAssertEqual(Trash.query(on: self.database).withDeleted().all().wait().map(\.contents), ["A"])
-            let deletedAt = try Date(timeIntervalSince1970: XCTUnwrap(a.deletedAt).timeIntervalSince1970.rounded(.down))
-            try XCTAssertEqual(Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt, deletedAt)
+            let deletedAt = try XCTUnwrap(a.deletedAt).timeIntervalSince1970.rounded(.down)
+            try XCTAssertEqual(
+                Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt?.timeIntervalSince1970.rounded(.down),
+                deletedAt
+            )
 
             // Delete all models
             sleep(1)
             try Trash.query(on: self.database).delete().wait()
 
             // Make sure the `.deletedAt` value doesn't change.
-            try XCTAssertEqual(Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt, deletedAt)
+            try XCTAssertEqual(
+                Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt?.timeIntervalSince1970.rounded(.down),
+                deletedAt
+            )
         }
     }
 
