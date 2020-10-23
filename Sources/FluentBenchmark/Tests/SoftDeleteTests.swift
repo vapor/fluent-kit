@@ -74,21 +74,21 @@ extension FluentBenchmarker {
             // Create soft-deletable model.
             let a = Trash(contents: "A")
             try a.create(on: self.database).wait()
-            XCTAssertEqual(Trash.query(on: self.database).all().wait().map(\.contents), ["A"])
+            try XCTAssertEqual(Trash.query(on: self.database).all().wait().map(\.contents), ["A"])
 
             // Delete model and make sure it still exists, with its `.deletedAt` property set.
             try a.delete(on: self.database).wait()
-            XCTAssertEqual(Trash.query(on: self.database).all().wait().count, 0)
-            XCTAssertEqual(Trash.query(on: self.database).withDeleted().all().wait().map(\.contents), ["A"])
+            try XCTAssertEqual(Trash.query(on: self.database).all().wait().count, 0)
+            try XCTAssertEqual(Trash.query(on: self.database).withDeleted().all().wait().map(\.contents), ["A"])
             let deletedAt = try XCTUnwrap(a.deletedAt)
-            XCTAssertEqual(Trash.query(on: self.database).first().wait()?.deletedAt, deletedAt)
+            try XCTAssertEqual(Trash.query(on: self.database).first().wait()?.deletedAt, deletedAt)
 
             // Delete all models
             sleep(1)
-            Trash.query(on: self.database).delete()
+            try Trash.query(on: self.database).delete().wait()
 
             // Make sure the `.deletedAt` value doesn't change.
-            XCTAssertEqual(Trash.query(on: self.database).first().wait()?.deletedAt, deletedAt)
+            try XCTAssertEqual(Trash.query(on: self.database).first().wait()?.deletedAt, deletedAt)
         }
     }
 
