@@ -2,6 +2,7 @@ extension FluentBenchmarker {
     public func testSoftDelete() throws {
         try self.testSoftDelete_model()
         try self.testSoftDelete_query()
+        try self.testSoftDelete_timestampUpdate()
         try self.testSoftDelete_onBulkDelete()
         try self.testSoftDelete_forceOnQuery()
         try self.testSoftDelete_parent()
@@ -65,7 +66,38 @@ extension FluentBenchmarker {
             XCTAssertEqual(trash.count, 0)
         }
     }
-    
+
+    private func testSoftDelete_timestampUpdate() throws {
+        try self.runTest(#function, [
+            TrashMigration()
+        ]) {
+            // Create soft-deletable model.
+            let a = Trash(contents: "A")
+            try a.create(on: self.database).wait()
+            try XCTAssertEqual(Trash.query(on: self.database).all().wait().map(\.contents), ["A"])
+
+            // Delete model and make sure it still exists, with its `.deletedAt` property set.
+            try a.delete(on: self.database).wait()
+            try XCTAssertEqual(Trash.query(on: self.database).all().wait().count, 0)
+            try XCTAssertEqual(Trash.query(on: self.database).withDeleted().all().wait().map(\.contents), ["A"])
+            let deletedAt = try XCTUnwrap(a.deletedAt).timeIntervalSince1970.rounded(.down)
+            try XCTAssertEqual(
+                Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt?.timeIntervalSince1970.rounded(.down),
+                deletedAt
+            )
+
+            // Delete all models
+            sleep(1)
+            try Trash.query(on: self.database).delete().wait()
+
+            // Make sure the `.deletedAt` value doesn't change.
+            try XCTAssertEqual(
+                Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt?.timeIntervalSince1970.rounded(.down),
+                deletedAt
+            )
+        }
+    }
+
     private func testSoftDelete_onBulkDelete() throws {
         try self.runTest(#function, [
             TrashMigration(),
