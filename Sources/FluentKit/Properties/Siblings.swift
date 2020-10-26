@@ -32,8 +32,7 @@ public final class SiblingsProperty<From, To, Through>
     ///             // you can now access the loaded pivots using:
     ///             let pivots = planet.$tags.pivots
     ///         }
-    ///         .join(from: Planet.self, parent: \.$star)
-    ///         .filter(Star.self, \Star.$name == "Sun")
+    
     @ChildrenProperty<From, Through>
     public var pivots: [Through]
 
