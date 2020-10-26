@@ -23,8 +23,7 @@ public final class SiblingsProperty<From, To, Through>
     
     public var value: [To]?
     
-    
-    /// Allows eager loading of pivot objects through the sibling relation without adding them as children of the model.
+    /// Allows eager loading of pivot objects through the sibling relation.
     /// Example:
     ///
     ///     Planet.query(on: db)
@@ -32,7 +31,6 @@ public final class SiblingsProperty<From, To, Through>
     ///             // you can now access the loaded pivots using:
     ///             let pivots = planet.$tags.pivots
     ///         }
-    
     @ChildrenProperty<From, Through>
     public var pivots: [Through]
 
