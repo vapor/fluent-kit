@@ -22,6 +22,17 @@ public final class SiblingsProperty<From, To, Through>
     var idValue: From.IDValue?
     
     public var value: [To]?
+    
+    /// Allows eager loading of pivot objects through the sibling relation.
+    /// Example:
+    ///
+    ///     Planet.query(on: db)
+    ///         .with(\.$tags).with(\.$tags.$pivots).first() { planet in
+    ///             // you can now access the loaded pivots using:
+    ///             let pivots = planet.$tags.pivots
+    ///         }
+    @ChildrenProperty<From, Through>
+    public var pivots: [Through]
 
     public init(
         through _: Through.Type,
@@ -30,6 +41,7 @@ public final class SiblingsProperty<From, To, Through>
     ) {
         self.from = from
         self.to = to
+        self._pivots = ChildrenProperty<From, Through>(for: from)
     }
 
     public var wrappedValue: [To] {
@@ -207,6 +219,7 @@ extension SiblingsProperty: AnyDatabaseProperty {
         let key = From()._$id.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
+            self._pivots.idValue = self.idValue
         }
     }
 }
