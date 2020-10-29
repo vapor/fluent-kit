@@ -7,6 +7,10 @@ extension FluentBenchmarker {
         if foreignKeys {
             try self.testSchema_fieldReference()
         }
+        if self.database is SQLDatabase {
+            try self.testSchema_customSqlConstraints()
+            try self.testSchema_customSqlFields()
+        }
     }
 
     private func testSchema_addConstraint() throws {
@@ -72,6 +76,60 @@ extension FluentBenchmarker {
             )
         }
     }
+
+    private func testSchema_customSqlConstraints() throws {
+        try self.runTest(#function, [
+            DeleteTableMigration(name: "custom_constraints")
+        ]) {
+            try self.database.schema("custom_constraints")
+                .id()
+                
+                // Test query string SQL for entire table constraints:
+                .constraint(.sql(embed: "CONSTRAINT \(ident: "id_unq_1") UNIQUE (\(ident: "id"))"))
+                
+                // Test raw SQL for table constraint definitions (but not names):
+                .constraint(.constraint(.sql(raw: "UNIQUE (id)"), name: "id_unq_2"))
+                .constraint(.constraint(.sql(embed: "UNIQUE (\(ident: "id")"), name: "id_unq_3"))
+                
+                .create().wait()
+                
+            try self.database.schema("custom_constraints")
+                // Test raw SQL for dropping constraints:
+                .deleteConstraint(.sql(embed: "\(SQLDropConstraint(name: SQLIdentifier("id_unq_1")))"))
+                .update().wait()
+        }
+    }
+
+    private func testSchema_customSqlFields() throws {
+        try self.runTest(#function, [
+            DeleteTableMigration(name: "custom_fields")
+        ]) {
+            try self.database.schema("custom_fields")
+                .id()
+                
+                // Test query string SQL for field data types:
+                .field("morenotid", .sql(embed: "\(raw: "TEXT")"))
+                
+                // Test raw SQL for field names:
+                .field(.definition(name: .sql(embed: "\(ident: "stillnotid")"), dataType: .int, constraints: [.required]))
+                
+                // Test raw SQL for field constraints:
+                .field("neverbeid", .string, .sql(embed: "NOT NULL"))
+                
+                // Test raw SQL for entire field definitions:
+                .field(.sql(raw: "idnah INTEGER NOT NULL"))
+                .field(.sql(embed: "\(ident: "notid") INTEGER"))
+                
+                .create().wait()
+                
+            try self.database.schema("custom_fields")
+                
+                // Test raw SQL for field updates:
+                .updateField(.sql(embed: "\(SQLAlterColumnDefinitionType(column: .init("notid"), dataType: .text))"))
+                
+                .update().wait()
+        }
+    }
 }
 
 final class Category: Model {
@@ -122,5 +180,18 @@ struct AddNamedUniqueConstraintToCategories: Migration {
         database.schema("categories")
             .deleteConstraint(name: "foo")
             .update()
+    }
+}
+
+/// Specialized utility used by the custom SQL tests, used to ensure they clean up after themselves.
+struct DeleteTableMigration: Migration {
+    let name: String
+    
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.eventLoop.future()
+    }
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema(self.name).delete()
     }
 }

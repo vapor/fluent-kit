@@ -269,7 +269,7 @@ public struct SQLSchemaConverter {
 /// SQL drop constraint expression.
 ///
 ///     `CONSTRAINT/KEY <name>`
-struct SQLDropConstraint: SQLExpression {
+public struct SQLDropConstraint: SQLExpression {
     public var name: SQLExpression
 
     public init(name: SQLExpression) {
