@@ -56,6 +56,12 @@ public final class IDProperty<Model, Value>
         }
     }
 
+    /// Initializes an `ID` property with the key `.id` and type `UUID`.
+    ///
+    /// If the property's type is not `UUID` or the key is not `.id`, the initializer will
+    /// fatal error. This allows Fluent to natively support databases like MongoDB.
+    ///
+    /// Use the `.init(custom:generatedBy:)` initializer to specify a custom ID key or type.
     public convenience init(key: FieldKey = .id) {
         guard Value.self is UUID.Type else {
             // Ensure the default @ID type is using UUID which
