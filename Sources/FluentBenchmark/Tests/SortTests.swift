@@ -1,9 +1,12 @@
 import FluentSQL
 
 extension FluentBenchmarker {
-    public func testSort() throws {
+    public func testSort(sql: Bool = true) throws {
         try self.testSort_basic()
-        try self.testSort_sql()
+        if sql {
+            try self.testSort_sql()
+            try self.testSort_embedSql()
+        }
     }
 
     private func testSort_basic() throws {
@@ -27,13 +30,19 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            guard self.database is SQLDatabase else {
-                self.database.logger.warning("Skipping \(#function)")
-                return
-            }
-
             let planets = try Planet.query(on: self.database)
                 .sort(.sql("name", .notEqual, "Earth"))
+                .all().wait()
+            XCTAssertEqual(planets.first?.name, "Earth")
+        }
+    }
+
+    private func testSort_embedSql() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .sort(.sql(embed: "\(ident: "name")\(SQLBinaryOperator.notEqual)\(literal: "Earth")"))
                 .all().wait()
             XCTAssertEqual(planets.first?.name, "Earth")
         }
