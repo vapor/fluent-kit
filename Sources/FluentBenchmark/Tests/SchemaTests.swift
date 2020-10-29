@@ -81,22 +81,26 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             DeleteTableMigration(name: "custom_constraints")
         ]) {
+            let normalized1 = (self.database as! SQLDatabase).dialect.normalizeSQLConstraint(identifier: SQLIdentifier("id_unq_1"))
+            
             try self.database.schema("custom_constraints")
                 .id()
                 
                 // Test query string SQL for entire table constraints:
-                .constraint(.sql(embed: "CONSTRAINT \(ident: "id_unq_1") UNIQUE (\(ident: "id"))"))
+                .constraint(.sql(embed: "CONSTRAINT \(normalized1) UNIQUE (\(ident: "id"))"))
                 
                 // Test raw SQL for table constraint definitions (but not names):
                 .constraint(.constraint(.sql(raw: "UNIQUE (id)"), name: "id_unq_2"))
-                .constraint(.constraint(.sql(embed: "UNIQUE (\(ident: "id")"), name: "id_unq_3"))
+                .constraint(.constraint(.sql(embed: "UNIQUE (\(ident: "id"))"), name: "id_unq_3"))
                 
                 .create().wait()
-                
-            try self.database.schema("custom_constraints")
-                // Test raw SQL for dropping constraints:
-                .deleteConstraint(.sql(embed: "\(SQLDropConstraint(name: SQLIdentifier("id_unq_1")))"))
-                .update().wait()
+            
+            if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
+                try self.database.schema("custom_constraints")
+                    // Test raw SQL for dropping constraints:
+                    .deleteConstraint(.sql(embed: "\(SQLDropConstraint(name: SQLIdentifier("id_unq_1")))"))
+                    .update().wait()
+            }
         }
     }
 
@@ -122,12 +126,14 @@ extension FluentBenchmarker {
                 
                 .create().wait()
                 
-            try self.database.schema("custom_fields")
-                
-                // Test raw SQL for field updates:
-                .updateField(.sql(embed: "\(SQLAlterColumnDefinitionType(column: .init("notid"), dataType: .text))"))
-                
-                .update().wait()
+            if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
+                try self.database.schema("custom_fields")
+                    
+                    // Test raw SQL for field updates:
+                    .updateField(.sql(embed: "\(SQLAlterColumnDefinitionType(column: .init("notid"), dataType: .text))"))
+                    
+                    .update().wait()
+            }
         }
     }
 }

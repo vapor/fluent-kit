@@ -90,7 +90,7 @@ public struct SQLSchemaConverter {
                     name: SQLIdentifier(name)
                 )
             case .custom(let any):
-                return custom(any)
+                return SQLConstraint(algorithm: any as! SQLExpression, name: customName.map(SQLIdentifier.init(_:)))
             }
         case .custom(let any):
             return custom(any)
