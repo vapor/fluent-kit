@@ -58,6 +58,11 @@ public final class SchemaBuilder {
         return self
     }
 
+    public func deleteConstraint(_ constraint: DatabaseSchema.ConstraintDelete) -> Self {
+        self.schema.deleteConstraints.append(constraint)
+        return self
+    }
+
     public func foreignKey(
         _ field: FieldKey,
         references foreignSchema: String,

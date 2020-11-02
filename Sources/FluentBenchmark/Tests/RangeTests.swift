@@ -1,5 +1,9 @@
 extension FluentBenchmarker {
     public func testRange() throws {
+        try self.testRange_basic()
+    }
+    
+    private func testRange_basic() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {

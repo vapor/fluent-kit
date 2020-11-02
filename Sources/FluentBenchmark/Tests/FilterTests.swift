@@ -5,6 +5,9 @@ extension FluentBenchmarker {
         try self.testFilter_field()
         if sql {
             try self.testFilter_sqlValue()
+            try self.testFilter_sqlEmbedValue()
+            try self.testFilter_sqlEmbedField()
+            try self.testFilter_sqlEmbedFilter()
         }
         try self.testFilter_group()
         try self.testFilter_emptyGroup()
@@ -36,6 +39,48 @@ extension FluentBenchmarker {
         ]) {
             let moon = try Moon.query(on: self.database)
                 .filter(\.$name == .sql(raw: "'Moon'"))
+                .first()
+                .wait()
+
+            XCTAssertNotNil(moon)
+            XCTAssertEqual(moon?.name, "Moon")
+        }
+    }
+
+    private func testFilter_sqlEmbedValue() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let moon = try Moon.query(on: self.database)
+                .filter(\.$name == .sql(embed: "\(literal: "Moon")"))
+                .first()
+                .wait()
+
+            XCTAssertNotNil(moon)
+            XCTAssertEqual(moon?.name, "Moon")
+        }
+    }
+
+    private func testFilter_sqlEmbedField() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let moon = try Moon.query(on: self.database)
+                .filter(.sql(embed: "\(ident: "name")"), .equal, .bind("Moon"))
+                .first()
+                .wait()
+
+            XCTAssertNotNil(moon)
+            XCTAssertEqual(moon?.name, "Moon")
+        }
+    }
+
+    private func testFilter_sqlEmbedFilter() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let moon = try Moon.query(on: self.database)
+                .filter(.sql(embed: "\(ident: "name")=\(literal: "Moon")"))
                 .first()
                 .wait()
 
