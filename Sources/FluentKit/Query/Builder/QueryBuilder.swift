@@ -81,6 +81,11 @@ public final class QueryBuilder<Model>
         self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
         return self
     }
+    
+    public func field(_ field: DatabaseQuery.Field) -> Self {
+        self.query.fields.append(field)
+        return self
+    }
 
     // MARK: Soft Delete
 
