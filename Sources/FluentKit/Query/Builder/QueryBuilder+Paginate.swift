@@ -58,6 +58,18 @@ public struct PageMetadata: Codable {
 
     /// Total number of items available.
     public let total: Int
+    
+    /// Creates a new `PageMetadata` instance.
+    ///
+    /// - Parameters:
+    ///.  - page: Current page number.
+    ///.  - per: Max items per page.
+    ///.  - total: Total number of items available.
+    public init(page: Int, per: Int, total: Int) {
+        self.page = page
+        self.per = per
+        self.total = total
+    }
 }
 
 /// Represents information needed to generate a `Page` from the full result set.
