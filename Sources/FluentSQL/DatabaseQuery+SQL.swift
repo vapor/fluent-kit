@@ -30,6 +30,24 @@ extension DatabaseQuery.Field {
     }
 }
 
+extension DatabaseQuery.Join {
+    public static func sql(raw: String) -> Self {
+        .sql(SQLRaw(raw))
+    }
+    
+    public static func sql(_ identifier: String) -> Self {
+        .sql(SQLIdentifier(identifier))
+    }
+    
+    public static func sql(embed: SQLQueryString) -> Self {
+        .sql(embed)
+    }
+    
+    public static func sql(_ expression: SQLExpression) -> Self {
+        .custom(expression)
+    }
+}
+
 extension DatabaseQuery.Filter {
     public static func sql(raw: String) -> Self {
         .sql(SQLRaw(raw))

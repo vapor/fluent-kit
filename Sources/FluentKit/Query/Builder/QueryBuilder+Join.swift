@@ -178,6 +178,24 @@ extension QueryBuilder {
         ))
         return self
     }
+    
+    @discardableResult
+    public func join<Foreign>(
+        _ foreign: Foreign.Type,
+        _ join: DatabaseQuery.Join
+    ) -> Self
+        where Foreign: Schema
+    {
+        self.models.append(Foreign.self)
+        self.query.joins.append(join)
+        return self
+    }
+    
+    @discardableResult
+    public func join(_ join: DatabaseQuery.Join) -> Self {
+        self.query.joins.append(join)
+        return self
+    }
 }
 
 // MARK: Local == Foreign
