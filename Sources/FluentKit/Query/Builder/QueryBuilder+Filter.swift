@@ -27,7 +27,7 @@ extension QueryBuilder {
         self.filter(.path(
             Joined.path(for: field),
             schema: Joined.schemaOrAlias
-        ), method, .bind(value))
+        ), method, Field.queryValue(value))
     }
 
     @discardableResult
