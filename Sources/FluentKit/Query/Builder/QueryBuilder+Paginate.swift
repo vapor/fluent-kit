@@ -2,12 +2,18 @@ extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
     ///
     /// This method will first `count()` the result set, then request a subset of the results using `range()` and `all()`.
+    ///
     /// - Parameters:
     ///     - request: Describes which page should be fetched.
+    ///     - maxPer: If `per` value of supplied `PageRequest` exceeds this value an error will be thrown. Default is 100.
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
-        _ request: PageRequest
+        _ request: PageRequest,
+        maxPer: Int = 100
     ) -> EventLoopFuture<Page<Model>> {
+        guard request.per <= maxPer else {
+            return database.eventLoop.makeFailedFuture(FluentError.maxPerValueExceeded)
+        }
         let count = self.count()
         let items = self.copy().range(request.start..<request.end).all()
         return items.and(count).map { (models, total) in
