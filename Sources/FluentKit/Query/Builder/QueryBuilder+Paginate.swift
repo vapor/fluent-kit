@@ -6,6 +6,7 @@ extension QueryBuilder {
     /// - Parameters:
     ///     - request: Describes which page should be fetched.
     ///     - maxPer: If `per` value of supplied `PageRequest` exceeds this value an error will be thrown. Default is 100.
+    ///     
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
         _ request: PageRequest,
