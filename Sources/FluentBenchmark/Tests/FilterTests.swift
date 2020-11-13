@@ -12,6 +12,7 @@ extension FluentBenchmarker {
         try self.testFilter_optionalStringContains()
         try self.testFilter_enum()
         try self.testFilter_joinedEnum()
+        try self.testFilter_joinedAliasedEnum()
     }
 
     private func testFilter_field() throws {
@@ -156,13 +157,43 @@ extension FluentBenchmarker {
             try Foo(bar: "baz", type: .baz, ownerID: bazOwner.requireID()).create(on: self.database).wait()
 
             let foos = try FooOwner.query(on: self.database)
-                .join(Foo.self, on: \Foo.$owner.$id == \FooOwner.$id)
+                .join(Foo.self, on: \Foo.$owner.$id == \.$id)
                 .filter(Foo.self, \.$type == .foo)
                 .all()
                 .wait()
 
             XCTAssertEqual(foos.count, 1)
             XCTAssertEqual(foos.first?.name, "foo_owner")
+        }
+    }
+
+    private func testFilter_joinedAliasedEnum() throws {
+        try self.runTest(#function, [
+            FooOwnerMigration(),
+            FooEnumMigration(),
+            FooMigration()
+        ]) {
+            let fooOwner = FooOwner(name: "foo_owner")
+            try fooOwner.create(on: self.database).wait()
+
+            let barOwner = FooOwner(name: "bar_owner")
+            try barOwner.create(on: self.database).wait()
+
+            let bazOwner = FooOwner(name: "baz_owner")
+            try bazOwner.create(on: self.database).wait()
+
+            try Foo(bar: "foo", type: .foo, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "bar", type: .bar, ownerID: barOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "baz", type: .baz, ownerID: bazOwner.requireID()).create(on: self.database).wait()
+
+            let bars = try FooOwner.query(on: self.database)
+                .join(FooAlias.self, on: \FooAlias.$owner.$id == \.$id)
+                .filter(FooAlias.self, \.$type == .bar)
+                .all()
+                .wait()
+
+            XCTAssertEqual(bars.count, 1)
+            XCTAssertEqual(bars.first?.name, "bar_owner")
         }
     }
 }
@@ -195,6 +226,11 @@ private final class Foo: Model {
         self.type = type
         self.$owner.id = ownerID
     }
+}
+
+private final class FooAlias: ModelAlias {
+    static let name = "foos_alias"
+    let model = Foo()
 }
 
 private struct FooEnumMigration: Migration {
