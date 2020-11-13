@@ -165,8 +165,6 @@ extension FluentBenchmarker {
             XCTAssertEqual(foos.first?.name, "foo_owner")
         }
     }
-
-    private func testFilter_joined
 }
 
 private final class FooOwner: Model {
