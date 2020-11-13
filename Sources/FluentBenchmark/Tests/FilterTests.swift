@@ -98,6 +98,7 @@ extension FluentBenchmarker {
 
     private func testFilter_optionalStringContains() throws {
         try self.runTest(#function, [
+            FooOwnerMigration(),
             FooEnumMigration(),
             FooMigration()
         ]) {
@@ -114,46 +115,95 @@ extension FluentBenchmarker {
 
     private func testFilter_enum() throws {
         try self.runTest(#function, [
+            FooOwnerMigration(),
             FooEnumMigration(),
             FooMigration()
         ]) {
-            try Foo(bar: "foo", type: .case1).create(on: self.database).wait()
-            try Foo(bar: "bar", type: .case1).create(on: self.database).wait()
-            try Foo(bar: "baz", type: .case2).create(on: self.database).wait()
-            let foos1 = try Foo.query(on: self.database)
-                .filter(\.$type == .case1)
+            try Foo(bar: "foo1", type: .foo).create(on: self.database).wait()
+            try Foo(bar: "foo2", type: .foo).create(on: self.database).wait()
+            try Foo(bar: "baz", type: .baz).create(on: self.database).wait()
+            let foos = try Foo.query(on: self.database)
+                .filter(\.$type == .foo)
                 .all()
                 .wait()
-            XCTAssertEqual(foos1.count, 2)
-            let foos2 = try Foo.query(on: self.database)
-                .filter(\.$type == .case2)
+            XCTAssertEqual(foos.count, 2)
+            let bazs = try Foo.query(on: self.database)
+                .filter(\.$type == .baz)
                 .all()
                 .wait()
-            XCTAssertEqual(foos2.count, 1)
+            XCTAssertEqual(bazs.count, 1)
+        }
+    }
+
+    private func testFilter_joinedEnum() throws {
+        try self.runTest(#function, [
+            FooOwnerMigration(),
+            FooEnumMigration(),
+            FooMigration()
+        ]) {
+            let fooOwner = FooOwner(name: "foo_owner")
+            try fooOwner.create(on: self.database).wait()
+
+            let barOwner = FooOwner(name: "bar_owner")
+            try barOwner.create(on: self.database).wait()
+
+            let bazOwner = FooOwner(name: "baz_owner")
+            try bazOwner.create(on: self.database).wait()
+
+            try Foo(bar: "foo", type: .foo, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "bar", type: .bar, ownerID: barOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "baz", type: .baz, ownerID: bazOwner.requireID()).create(on: self.database).wait()
+
+            let foos = try FooOwner.query(on: self.database)
+                .join(Foo.self, on: \Foo.$owner.$id == \FooOwner.$id)
+                .filter(Foo.self, \.$type == .foo)
+                .all()
+                .wait()
+
+            XCTAssertEqual(foos.count, 1)
+            XCTAssertEqual(foos.first?.name, "foo_owner")
         }
     }
 }
 
+private final class FooOwner: Model {
+    static let schema = "foo_owners"
+    @ID var id: UUID?
+    @Field(key: "name") var name: String
+    init() {}
+    init(name: String) {
+        self.name = name
+    }
+}
+
 private enum FooEnumType: String, Codable {
-    case case1
-    case case2
+    case foo
+    case bar
+    case baz
 }
 
 private final class Foo: Model {
     static let schema = "foos"
     @ID var id: UUID?
     @OptionalField(key: "bar") var bar: String?
-    @Enum(key: "type") var type: FooEnumType
+    @OptionalEnum(key: "type") var type: FooEnumType?
+    @OptionalParent(key: "owner_id") var owner: FooOwner?
     init() {}
-    init(bar: String? = nil, type: FooEnumType = .case1) {
+    init(bar: String? = nil, type: FooEnumType? = nil, ownerID: UUID? = nil) {
         self.bar = bar
         self.type = type
+        self.$owner.id = ownerID
     }
 }
 
 private struct FooEnumMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.enum("foo_type").case("case1").case("case2").create().transform(to: ())
+        database.enum("foo_type")
+            .case("foo")
+            .case("bar")
+            .case("baz")
+            .create()
+            .transform(to: ())
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -161,10 +211,28 @@ private struct FooEnumMigration: Migration {
     }
 }
 
+private struct FooOwnerMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foo_owners")
+            .id()
+            .field("name", .string, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foo_owners").delete()
+    }
+}
+
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.enum("foo_type").read().flatMap { fooType in
-            database.schema("foos").id().field("bar", .string).field("type", fooType, .required).create()
+            database.schema("foos")
+                .id()
+                .field("bar", .string)
+                .field("type", fooType)
+                .field("owner_id", .uuid, .references(FooOwner.schema, .id, onDelete: .setNull))
+                .create()
         }
     }
 
