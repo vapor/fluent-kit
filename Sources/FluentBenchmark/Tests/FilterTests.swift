@@ -11,6 +11,7 @@ extension FluentBenchmarker {
         try self.testFilter_emptyRightHandSide()
         try self.testFilter_optionalStringContains()
         try self.testFilter_enum()
+        try self.testFilter_joinedEnum()
     }
 
     private func testFilter_field() throws {
@@ -164,6 +165,8 @@ extension FluentBenchmarker {
             XCTAssertEqual(foos.first?.name, "foo_owner")
         }
     }
+
+    private func testFilter_joined
 }
 
 private final class FooOwner: Model {
