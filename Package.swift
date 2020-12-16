@@ -14,10 +14,10 @@ let package = Package(
         .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
-        .package(url: "https://github.com/apple/swift-log", from: "1.0.0"),
-        .package(url: "https://github.com/0xTim/sql-kit", from: "3.1.0"),
-        .package(url: "https://github.com/0xTim/async-kit", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.1.0"),
+        .package(url: "https://github.com/vapor/async-kit.git", from: "1.0.0"),
     ],
     targets: [
         .target(name: "FluentKit", dependencies: [
