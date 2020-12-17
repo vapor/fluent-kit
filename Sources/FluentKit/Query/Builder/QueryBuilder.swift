@@ -55,7 +55,8 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Fields
-
+    
+    @discardableResult
     public func fields<Joined>(for model: Joined.Type) -> Self 
         where Joined: Schema & Fields
     {
@@ -69,12 +70,14 @@ public final class QueryBuilder<Model>
         }
     }
 
+    @discardableResult
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
         where Field: QueryableProperty, Field.Model == Model
     {
         self.field(Model.self, field)
     }
 
+    @discardableResult
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
@@ -82,6 +85,7 @@ public final class QueryBuilder<Model>
         return self
     }
     
+    @discardableResult
     public func field(_ field: DatabaseQuery.Field) -> Self {
         self.query.fields.append(field)
         return self
@@ -89,6 +93,7 @@ public final class QueryBuilder<Model>
 
     // MARK: Soft Delete
 
+    @discardableResult
     public func withDeleted() -> Self {
         self.includeDeleted = true
         return self
@@ -114,7 +119,8 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Limit
-
+    
+    @discardableResult
     public func limit(_ count: Int) -> Self {
         self.query.limits.append(.count(count))
         return self
@@ -122,6 +128,7 @@ public final class QueryBuilder<Model>
 
     // MARK: Offset
 
+    @discardableResult
     public func offset(_ count: Int) -> Self {
         self.query.offsets.append(.count(count))
         return self
@@ -129,6 +136,7 @@ public final class QueryBuilder<Model>
 
     // MARK: Unqiue
 
+    @discardableResult
     public func unique() -> Self {
         self.query.isUnique = true
         return self
@@ -241,6 +249,7 @@ public final class QueryBuilder<Model>
         }
     }
 
+    @discardableResult
     internal func action(_ action: DatabaseQuery.Action) -> Self {
         self.query.action = action
         return self
