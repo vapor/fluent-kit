@@ -9,11 +9,12 @@ extension QueryBuilder {
     ///     
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
-        _ request: PageRequest,
-        maxPer: Int = 100
+        _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
-        guard request.per <= maxPer else {
-            return database.eventLoop.makeFailedFuture(FluentError.maxPerValueExceeded)
+        if let maxPerPage = database.context.maxPerPage {
+            guard request.per <= maxPerPage else {
+                return database.eventLoop.makeFailedFuture(FluentError.maxPerPageValueExceeded)
+            }
         }
         let count = self.count()
         let items = self.copy().range(request.start..<request.end).all()

@@ -87,6 +87,34 @@ final class QueryBuilderTests: XCTestCase {
         XCTAssertEqual(db.history?.queries.first?.schema, Planet.schema)
     }
 
+    func testPerPageLimit() throws {
+        let starId = UUID()
+        let planets = [
+            Planet(id: UUID(), name: "P1", starId: starId),
+            Planet(id: UUID(), name: "P2", starId: starId),
+            Planet(id: UUID(), name: "P3", starId: starId),
+            Planet(id: UUID(), name: "P4", starId: starId),
+            Planet(id: UUID(), name: "P5", starId: starId)
+        ]
+        let test = ArrayTestDatabase()
+        let db = test.database(
+            context: .init(
+                configuration: test.configuration,
+                logger: test.db.logger,
+                eventLoop: test.db.eventLoop,
+                history: .init(),
+                maxPerPage: 3
+            )
+        )
+        test.append(planets.map(TestOutput.init))
+
+        let pageRequest = PageRequest(page: 1, per: 4)
+        let retrievedPlanets = Planet.query(on: db).paginate(pageRequest)
+        XCTAssertThrowsError(try retrievedPlanets.wait(), "Should throw error") { error in
+            XCTAssertEqual("\(error)", FluentError.maxPerPageValueExceeded.description)
+        }
+    }
+
     // https://github.com/vapor/fluent-kit/issues/310
     func testJoinOverloads() throws {
         var query: DatabaseQuery?
