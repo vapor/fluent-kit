@@ -104,8 +104,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Select latest available Xcode
-        uses: maxim-lobanov/setup-xcode@1.0
-        with: 
+        uses: maxim-lobanov/setup-xcode@1
+        with:
           xcode-version: latest
       - name: Check out package
         uses: actions/checkout@v2
