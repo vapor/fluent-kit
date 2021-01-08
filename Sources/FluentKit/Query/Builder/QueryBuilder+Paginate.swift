@@ -9,19 +9,21 @@ extension QueryBuilder {
     public func paginate(
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
-        if let maxPerPage = database.context.maxPerPage {
-            guard request.per <= maxPerPage else {
-                return database.eventLoop.makeFailedFuture(FluentError.maxPerPageValueExceeded)
-            }
-        }
+        let trimmedRequest: PageRequest = {
+            guard let maxPerPage = database.context.maxPerPage else { return request }
+            return .init(
+                page: request.page,
+                per: Swift.min(request.per, maxPerPage)
+            )
+        }()
         let count = self.count()
-        let items = self.copy().range(request.start..<request.end).all()
+        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all()
         return items.and(count).map { (models, total) in
             Page(
                 items: models,
                 metadata: .init(
-                    page: request.page,
-                    per: request.per,
+                    page: trimmedRequest.page,
+                    per: trimmedRequest.per,
                     total: total
                 )
             )

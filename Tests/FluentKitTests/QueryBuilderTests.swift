@@ -109,10 +109,8 @@ final class QueryBuilderTests: XCTestCase {
         test.append(planets.map(TestOutput.init))
 
         let pageRequest = PageRequest(page: 1, per: 4)
-        let retrievedPlanets = Planet.query(on: db).paginate(pageRequest)
-        XCTAssertThrowsError(try retrievedPlanets.wait(), "Should throw error") { error in
-            XCTAssertEqual("\(error)", FluentError.maxPerPageValueExceeded.description)
-        }
+        let retrievedPlanets = try Planet.query(on: db).paginate(pageRequest).wait()
+        XCTAssertEqual(retrievedPlanets.items.count, 3)
     }
 
     // https://github.com/vapor/fluent-kit/issues/310

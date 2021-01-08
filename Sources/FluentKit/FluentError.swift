@@ -7,7 +7,6 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
     case relationNotLoaded(name: String)
     case missingParent
     case noResults
-    case maxPerPageValueExceeded
 
     public var description: String {
         switch self {
@@ -23,8 +22,6 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
             return "invalid field: \(name) type: \(valueType) error: \(error)"
         case .noResults:
             return "Query returned no results"
-        case .maxPerPageValueExceeded:
-            return "max allowed value exceeded for parameter: per"
         }
     }
 
