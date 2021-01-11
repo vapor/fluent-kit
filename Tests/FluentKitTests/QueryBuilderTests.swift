@@ -89,14 +89,35 @@ final class QueryBuilderTests: XCTestCase {
 
     func testPerPageLimit() throws {
         let starId = UUID()
-        let planets = [
-            Planet(id: UUID(), name: "P1", starId: starId),
-            Planet(id: UUID(), name: "P2", starId: starId),
-            Planet(id: UUID(), name: "P3", starId: starId),
-            Planet(id: UUID(), name: "P4", starId: starId),
-            Planet(id: UUID(), name: "P5", starId: starId)
+        let rows = [
+            TestOutput(["id": UUID(), "name": "a", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "b", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "c", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "d", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "e", "star_id": starId]),
         ]
-        let test = ArrayTestDatabase()
+        
+        let test = CallbackTestDatabase { query in
+            XCTAssertEqual(query.schema, "planets")
+            let result: [TestOutput]
+            if
+                let limit = query.limits.first,
+                case let DatabaseQuery.Limit.count(limitValue) = limit,
+                let offset = query.offsets.first,
+                case let DatabaseQuery.Offset.count(offsetValue) = offset
+            {
+                result = [TestOutput](rows[min(offsetValue, rows.count - 1)..<min(offsetValue + limitValue, rows.count)])
+            } else {
+                result = rows
+            }
+            switch query.action {
+            case .aggregate(_):
+                return [TestOutput([.aggregate: rows.count])]
+            default:
+                return result
+            }
+        }
+
         let db = test.database(
             context: .init(
                 configuration: test.configuration,
@@ -106,11 +127,10 @@ final class QueryBuilderTests: XCTestCase {
                 maxPerPage: 3
             )
         )
-        test.append(planets.map(TestOutput.init))
 
         let pageRequest = PageRequest(page: 1, per: 4)
         let retrievedPlanets = try Planet.query(on: db).paginate(pageRequest).wait()
-        XCTAssertEqual(retrievedPlanets.items.count, 3)
+        XCTAssertEqual(retrievedPlanets.items.count, 3, "Page size limit should be respected.")
     }
 
     // https://github.com/vapor/fluent-kit/issues/310
