@@ -30,6 +30,7 @@ private struct EnumMetadataMigration: Migration {
             .field("name", .string, .required)
             .field("case", .string, .required)
             .unique(on: "name", "case")
+            .ignoreExisting()
             .create()
     }
 
