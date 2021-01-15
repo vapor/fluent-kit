@@ -46,8 +46,8 @@ extension Database {
         self.context.history
     }
 
-    public var maxPerPage: Int? {
-        self.context.maxPerPage
+    public var pageSizeLimit: Int? {
+        self.context.pageSizeLimit
     }
 }
 
@@ -66,20 +66,20 @@ public struct DatabaseContext {
     public let logger: Logger
     public let eventLoop: EventLoop
     public let history: QueryHistory?
-    public let maxPerPage: Int?
+    public let pageSizeLimit: Int?
     
     public init(
         configuration: DatabaseConfiguration,
         logger: Logger,
         eventLoop: EventLoop,
         history: QueryHistory? = nil,
-        maxPerPage: Int? = nil
+        pageSizeLimit: Int? = nil
     ) {
         self.configuration = configuration
         self.logger = logger
         self.eventLoop = eventLoop
         self.history = history
-        self.maxPerPage = maxPerPage
+        self.pageSizeLimit = pageSizeLimit
     }
 }
 

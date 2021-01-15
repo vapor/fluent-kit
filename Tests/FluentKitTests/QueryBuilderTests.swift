@@ -118,19 +118,21 @@ final class QueryBuilderTests: XCTestCase {
             }
         }
 
+        let pageSizeLimit = 3
+
         let db = test.database(
             context: .init(
                 configuration: test.configuration,
                 logger: test.db.logger,
                 eventLoop: test.db.eventLoop,
                 history: .init(),
-                maxPerPage: 3
+                pageSizeLimit: pageSizeLimit
             )
         )
 
         let pageRequest = PageRequest(page: 1, per: 4)
         let retrievedPlanets = try Planet.query(on: db).paginate(pageRequest).wait()
-        XCTAssertEqual(retrievedPlanets.items.count, 3, "Page size limit should be respected.")
+        XCTAssertEqual(retrievedPlanets.items.count, pageSizeLimit, "Page size limit should be respected.")
     }
 
     // https://github.com/vapor/fluent-kit/issues/310

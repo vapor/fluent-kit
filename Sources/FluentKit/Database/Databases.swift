@@ -99,7 +99,7 @@ public final class Databases {
         logger: Logger,
         on eventLoop: EventLoop,
         history: QueryHistory? = nil,
-        maxPerPage: Int? = nil
+        pageSizeLimit: Int? = nil
     ) -> Database? {
         self.lock.lock()
         defer { self.lock.unlock() }
@@ -112,7 +112,7 @@ public final class Databases {
             logger: logger,
             eventLoop: eventLoop,
             history: history,
-            maxPerPage: maxPerPage
+            pageSizeLimit: pageSizeLimit
         )
         let driver: DatabaseDriver
         if let existing = self.drivers[id] {
