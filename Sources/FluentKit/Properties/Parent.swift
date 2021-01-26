@@ -149,7 +149,7 @@ private struct ParentEagerLoader<From, To>: EagerLoader
                 guard let parent = $0.filter({
                     $0.id == model[keyPath: self.relationKey].id
                 }).first else {
-                    database.logger.debug("No parent '\(To.self)' with id '\(model[keyPath: self.relationKey].id)' was found in eager-load results.")
+                    database.logger.error("No parent '\(To.self)' with id '\(model[keyPath: self.relationKey].id)' was found in eager-load results.")
                     throw FluentError.missingParent
                 }
                 model[keyPath: self.relationKey].value = parent
