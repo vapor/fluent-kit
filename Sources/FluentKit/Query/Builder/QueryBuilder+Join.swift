@@ -53,6 +53,51 @@ extension QueryBuilder {
     ) -> Self {
         join(from: Model.self, parent: parent, method: method)
     }
+    
+    /// This will join a foreign table based on a `@Child` relation
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     Planet.query(on: db)
+    ///         .join(child: \.$governor)
+    ///         .filter(Governor.self, \Governor.$name == "John Doe")
+    ///
+    /// - Parameters:
+    ///   - model: The `Model` to join from
+    ///   - child: The `ChildProperty` to join
+    ///   - method: The method to use. The default is an inner join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<From, To>(
+        from model: From.Type,
+        child: KeyPath<From, ChildProperty<From, To>>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self {
+        switch From()[keyPath: child].parentKey {
+        case .optional(let parent): return join(To.self, on: \From._$id == parent.appending(path: \.$id), method: method)
+        case .required(let parent): return join(To.self, on: \From._$id == parent.appending(path: \.$id), method: method)
+        }
+    }
+
+    /// This will join a foreign table based on a `@Child` relation
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     Planet.query(on: db)
+    ///         .join(child: \.$governor)
+    ///         .filter(Governor.self, \Governor.$name == "John Doe")
+    ///
+    /// - Parameters:
+    ///   - child: The `ChildProperty` to join
+    ///   - method: The method to use. The default is an inner join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<To>(
+        child: KeyPath<Model, ChildProperty<Model, To>>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self {
+        join(from: Model.self, child: child, method: method)
+    }
 
     /// This will join a foreign table based on a `@Children` relation
     ///

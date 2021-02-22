@@ -67,6 +67,11 @@ final class FluentKitTests: XCTestCase {
 
     func testJoins() throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Planet.query(on: db).join(child: \Planet.$governor).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "governors" ON "planets"."id" = "governors"."planet_id"#), true)
+        db.reset()
+        
         _ = try Planet.query(on: db).join(children: \Planet.$moons).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "moons" ON "planets"."id" = "moons"."planet_id"#), true)
