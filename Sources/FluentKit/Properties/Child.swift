@@ -223,19 +223,6 @@ private struct ChildEagerLoader<From, To>: EagerLoader
                 model[keyPath: self.relationKey].value = children.first
             }
         }
-//        return builder.all().map {
-//            for model in models {
-//                let id = model[keyPath: self.relationKey].idValue!
-//                model[keyPath: self.relationKey].value = $0.filter { child in
-//                    switch parentKey {
-//                    case .optional(let optional):
-//                        return child[keyPath: optional].id == id
-//                    case .required(let required):
-//                        return child[keyPath: required].id == id
-//                    }
-//                }
-//            }
-//        }
     }
 }
 
