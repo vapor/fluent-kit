@@ -61,21 +61,6 @@ public final class ChildProperty<From, To>
         return builder
     }
 
-    public func create(_ to: [To], on database: Database) -> EventLoopFuture<Void> {
-        guard let id = self.idValue else {
-            fatalError("Cannot save child to unsaved model.")
-        }
-        to.forEach {
-            switch self.parentKey {
-            case .required(let keyPath):
-                $0[keyPath: keyPath].id = id
-            case .optional(let keyPath):
-                $0[keyPath: keyPath].id = id
-            }
-        }
-        return to.create(on: database)
-    }
-
     public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
             fatalError("Cannot save child to unsaved model.")
