@@ -113,9 +113,9 @@ extension ChildProperty: AnyDatabaseProperty {
 
 extension ChildProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
-        if let rows = self.value {
+        if let child = self.value {
             var container = encoder.singleValueContainer()
-            try container.encode(rows)
+            try container.encode(child)
         }
     }
 
