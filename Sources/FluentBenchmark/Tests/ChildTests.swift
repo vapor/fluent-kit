@@ -93,7 +93,7 @@ private final class Foo: Model {
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(Foo.schema)
-            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
+            .field(.id, .uuid, .identifier(auto: false), .required)
             .field("name", .string, .required)
             .create()
     }
@@ -127,7 +127,7 @@ private final class Bar: Model {
 private struct BarMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(Bar.schema)
-            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
+            .field(.id, .uuid, .identifier(auto: false), .required)
             .field("bar", .int, .required)
             .field("foo_id", .uuid, .required)
             .unique(on: "foo_id")
@@ -162,8 +162,8 @@ private final class Baz: Model {
 
 private struct BazMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Baz,schema)
-            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
+        database.schema(Baz.schema)
+            .field(.id, .uuid, .identifier(auto: false), .required)
             .field("baz", .double, .required)
             .field("foo_id", .uuid)
             .create()

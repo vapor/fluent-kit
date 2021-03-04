@@ -28,8 +28,8 @@ public final class Governor: Model {
 
 public struct GovernorMigration: Migration {
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Governer.schema)
-            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
+        database.schema(Governor.schema)
+            .field(.id, .uuid, .identifier(auto: false), .required)
             .field("name", .string, .required)
             .field("planet_id", .uuid, .required, .references("planets", "id"))
             .unique(on: "planet_id")
