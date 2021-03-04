@@ -1,6 +1,3 @@
-# TODO: When we get the ability to reference workflows from other repos, this one should pull in the ones from
-# each driver instead of this incomplete reimplementation of each one.
-# See https://github.community/t/is-it-possible-to-use-the-same-workflow-in-different-repositories/17719/6
 name: test
 on:
   pull_request:
@@ -8,7 +5,11 @@ on:
     branches: 
       - main
       - master
+env:
+  LOG_LEVEL: info
+
 jobs:
+
   dependents:
     runs-on: ubuntu-latest
     services:
@@ -42,7 +43,7 @@ jobs:
         image: mongo:latest
       mongo-b:
         image: mongo:latest
-    container: swift:5.2-bionic
+    container: swift:5.3-focal
     strategy:
       fail-fast: false
       matrix:
@@ -77,41 +78,46 @@ jobs:
           MYSQL_HOSTNAME_B: mysql-b
           MONGO_HOSTNAME_A: mongo-a
           MONGO_HOSTNAME_B: mongo-b
-          LOG_LEVEL: info
+
   linux:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         image:
-          # 5.2 Stable
           - swift:5.2-bionic
-          # 5.2 Unstable
-          - swiftlang/swift:nightly-5.2-bionic
-          # 5.3 Unstable
+          - swift:5.2-focal
+          - swift:5.2-amazonlinux2
+          - swift:5.3-bionic
+          - swift:5.3-focal
+          - swift:5.3-amazonlinux2
           - swiftlang/swift:nightly-5.3-bionic
-          # Master Unsable
-          # Temporarily disabled because master has
-          # been broken for ages
-          # - swiftlang/swift:nightly-master-focal
+          - swiftlang/swift:nightly-5.3-focal
+          - swiftlang/swift:nightly-5.3-amazonlinux2
     container: ${{ matrix.image }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run tests with Thread Sanitizer
         run: swift test --enable-test-discovery --sanitize=thread
-  macOS:
-    runs-on: macos-latest
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode:
+          - latest
+          - latest-stable
+        macos:
+          - latest
+          - 11.0
+    runs-on: macos-${{ matrix.macos }}
     steps:
       - name: Select latest available Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with: 
-          xcode-version: latest-stable
+          xcode-version: ${{ matrix.xcode }}
       - name: Check out package
         uses: actions/checkout@v2
       - name: Run tests with Thread Sanitizer
         run: swift test --enable-test-discovery --sanitize=thread
-        env:
-          LOG_LEVEL: info
-
-
