@@ -8,6 +8,7 @@ on:
     branches: 
       - main
       - master
+      - feature/add-child-property
 jobs:
   dependents:
     runs-on: ubuntu-latest
