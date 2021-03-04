@@ -32,6 +32,7 @@ public struct GovernorMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("planet_id", .uuid, .required, .references("planets", "id"))
+            .unique(on: "planet_id")
             .create()
     }
 

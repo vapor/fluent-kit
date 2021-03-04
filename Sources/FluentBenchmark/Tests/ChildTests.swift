@@ -1,9 +1,11 @@
 extension FluentBenchmarker {
     public func testChild() throws {
-        try self.testChild_with()
+        try self.testChildEagerLoad()
+        try self.testParentEagerLoad()
+        try self.testOptionalParent()
     }
 
-    private func testChild_with() throws {
+    private func testChildEagerLoad() throws {
         try self.runTest(#function, [
             FooMigration(),
             BarMigration(),
@@ -22,8 +24,50 @@ extension FluentBenchmarker {
                 .all().wait()
 
             for foo in foos {
-                XCTAssertEqual(foo.bar.bar, 42)
-                XCTAssertEqual(foo.baz.baz, 3.14)
+                XCTAssertEqual(foo.bar?.bar, 42)
+                XCTAssertEqual(foo.baz?.baz, 3.14)
+            }
+        }
+    }
+    
+    private func testParentEagerLoad() throws {
+        try self.runTest(#function, [
+            FooMigration(),
+            BarMigration(),
+            BazMigration()
+        ]) {
+            let foo = Foo(name: "a")
+            try foo.save(on: self.database).wait()
+            let bar = Bar(bar: 42, fooID: foo.id!)
+            try bar.save(on: self.database).wait()
+
+            let bars = try Bar.query(on: self.database)
+                .with(\.$foo)
+                .all().wait()
+
+            for bar in bars {
+                XCTAssertEqual(bar.foo.name, "a")
+            }
+        }
+    }
+    
+    private func testOptionalParentEagerLoad() throws {
+        try self.runTest(#function, [
+            FooMigration(),
+            BarMigration(),
+            BazMigration()
+        ]) {
+            let foo = Foo(name: "a")
+            try foo.save(on: self.database).wait()
+            let baz = Baz(baz: 3.14)
+            try baz.save(on: self.database).wait()
+
+            let bazs = try Baz.query(on: self.database)
+                .with(\.$foo)
+                .all().wait()
+
+            for baz in bazs {
+                XCTAssertNil(baz.foo?.name)
             }
         }
     }
@@ -39,11 +83,11 @@ private final class Foo: Model {
     @Field(key: "name")
     var name: String
 
-    @Child(for: \.$foo)
-    var bar: Bar
+    @OptionalChild(for: \.$foo)
+    var bar: Bar?
 
-    @Child(for: \.$foo)
-    var baz: Baz
+    @OptionalChild(for: \.$foo)
+    var baz: Baz?
 
     init() { }
 
@@ -110,12 +154,12 @@ private final class Baz: Model {
     @Field(key: "baz")
     var baz: Double
 
-    @Parent(key: "foo_id")
-    var foo: Foo
+    @OptionalParent(key: "foo_id")
+    var foo: Foo?
 
     init() { }
 
-    init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue) {
+    init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue? = nil) {
         self.id = id
         self.baz = baz
         self.$foo.id = fooID
