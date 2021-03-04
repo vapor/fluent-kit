@@ -79,20 +79,23 @@ extension FluentBenchmarker {
             PlayerMigration()
         ]) {
             let game = Game(title: "Solitare")
-            try game.create(on: self.database).wait()
+            try game.save(on: self.database).wait()
             
             let frantisek = Player(name: "Frantisek", gameID: game.id!)
-            try frantisek.create(on: self.database).wait()
+            try frantisek.save(on: self.database).wait()
             
-            do {
-                let player = try sql.raw("SELECT * FROM players").first(decoding: Player.self).wait()
-                XCTAssertNotNil(player)
-                if let player = player {
-                    XCTAssertEqual(player.id, frantisek.id)
-                    XCTAssertEqual(player.name, frantisek.name)
-                    XCTAssertEqual(player.$game.id, frantisek.$game.id)
-                    XCTAssertEqual(player.$game.id, game.id)
-                }
+            
+            let player = try Player.query(on: self.database)
+                .with(\.$game)
+                .first().wait()
+            
+            XCTAssertNotNil(player)
+            if let player = player {
+                XCTAssertEqual(player.id, frantisek.id)
+                XCTAssertEqual(player.name, frantisek.name)
+                XCTAssertEqual(player.$game.id, frantisek.$game.id)
+                XCTAssertEqual(player.$game.id, game.id)
+                
             }
         }
     }
