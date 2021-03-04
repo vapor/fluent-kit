@@ -92,14 +92,14 @@ private final class Foo: Model {
 
 private struct FooMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("foos")
-            .field("id", .uuid, .identifier(auto: false))
+        database.schema(Foo.schema)
+            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
             .field("name", .string, .required)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("foos").delete()
+        database.schema(Foo.schema).delete()
     }
 }
 
@@ -126,8 +126,8 @@ private final class Bar: Model {
 
 private struct BarMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("bars")
-            .field("id", .uuid, .identifier(auto: false))
+        database.schema(Bar.schema)
+            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
             .field("bar", .int, .required)
             .field("foo_id", .uuid, .required)
             .unique(on: "foo_id")
@@ -135,7 +135,7 @@ private struct BarMigration: Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("bars").delete()
+        database.schema(Bar.schema).delete()
     }
 }
 
@@ -162,14 +162,14 @@ private final class Baz: Model {
 
 private struct BazMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("bazs")
-            .field("id", .uuid, .identifier(auto: false))
+        database.schema(Baz,schema)
+            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
             .field("baz", .double, .required)
             .field("foo_id", .uuid)
             .create()
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("bazs").delete()
+        database.schema(Baz.schema).delete()
     }
 }

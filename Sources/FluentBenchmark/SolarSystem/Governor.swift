@@ -28,8 +28,8 @@ public final class Governor: Model {
 
 public struct GovernorMigration: Migration {
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("governors")
-            .field("id", .uuid, .identifier(auto: false))
+        database.schema(Governer.schema)
+            .field(.id, .uuid, .identifier(auto: false), .required, .unique)
             .field("name", .string, .required)
             .field("planet_id", .uuid, .required, .references("planets", "id"))
             .unique(on: "planet_id")
@@ -37,7 +37,7 @@ public struct GovernorMigration: Migration {
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("governors").delete()
+        database.schema(Governor.schema).delete()
     }
 }
 
@@ -54,12 +54,9 @@ public struct GovernorSeed: Migration {
                 case "Earth":
                     governor = .init(name: "Jane Doe")
                 default:
-                    governor = nil
+                    return database.eventLoop.future(())
                 }
-                guard let gov = governor else {
-                    return database.eventLoop.makeSucceededFuture(())
-                }
-                return planet.$governor.create(gov, on: database)
+                return planet.$governor.create(governor!, on: database)
             }, on: database.eventLoop)
         }
     }
