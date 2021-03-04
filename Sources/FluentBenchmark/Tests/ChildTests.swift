@@ -1,12 +1,8 @@
 extension FluentBenchmarker {
     public func testChild() throws {
         try self.testChild_with()
-        try self.testParent_with()
-        try self.testOptionalParent_with()
     }
 
-    // Test relationship @Parent - @OptionalChild
-    // query(on: Parent)
     private func testChild_with() throws {
         try self.runTest(#function, [
             FooMigration(),
@@ -19,7 +15,9 @@ extension FluentBenchmarker {
             try bar.save(on: self.database).wait()
             let baz = Baz(baz: 3.14)
             try baz.save(on: self.database).wait()
-
+            
+            // Test relationship @Parent - @OptionalChild
+            // query(on: Parent)
             let foos = try Foo.query(on: self.database)
                 .with(\.$bar)
                 .with(\.$baz)
@@ -31,55 +29,31 @@ extension FluentBenchmarker {
                 // Child `baz` isn't eager loaded
                 XCTAssertNil(foo.baz?.baz)
             }
-        }
-    }
-    
-    // Test relationship @Parent - @OptionalChild
-    // query(on: Child)
-    private func testParent_with() throws {
-        try self.runTest(#function, [
-            FooMigration(),
-            BarMigration(),
-            BazMigration()
-        ]) {
-            let foo = Foo(name: "a")
-            try foo.save(on: self.database).wait()
-            let bar = Bar(bar: 42, fooID: foo.id!)
-            try bar.save(on: self.database).wait()
-
+            
+            // Test relationship @Parent - @OptionalChild
+            // query(on: Child)
             let bars = try Bar.query(on: self.database)
                 .with(\.$foo)
                 .all().wait()
-
+            
             for bar in bars {
                 XCTAssertEqual(bar.foo.name, "a")
             }
-        }
-    }
-    
-    // Test relationship @OptionalParent - @OptionalChild
-    // query(on: Child)
-    private func testOptionalParent_with() throws {
-        try self.runTest(#function, [
-            FooMigration(),
-            BarMigration(),
-            BazMigration()
-        ]) {
-            let foo = Foo(name: "a")
-            try foo.save(on: self.database).wait()
-            let baz = Baz(baz: 3.14)
-            try baz.save(on: self.database).wait()
-
+            
+            // Test relationship @OptionalParent - @OptionalChild
+            // query(on: Child)
             let bazs = try Baz.query(on: self.database)
                 .with(\.$foo)
                 .all().wait()
-
+            
             for baz in bazs {
                 // test with missing parent
                 XCTAssertNil(baz.foo?.name)
             }
             
             baz.$foo.id = foo.id
+            try baz.save(on: self.database).wait()
+            
             let updatedBazs = try Baz.query(on: self.database)
                 .with(\.$foo)
                 .all().wait()
@@ -156,6 +130,7 @@ private struct BarMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .int, .required)
             .field("foo_id", .uuid, .required)
+            .unique(on: "foo_id")
             .create()
     }
 
@@ -190,7 +165,7 @@ private struct BazMigration: Migration {
         database.schema("bazs")
             .field("id", .uuid, .identifier(auto: false))
             .field("baz", .double, .required)
-            .field("foo_id", .uuid, .required)
+            .field("foo_id", .uuid)
             .create()
     }
 
