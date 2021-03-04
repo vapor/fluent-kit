@@ -54,7 +54,7 @@ extension QueryBuilder {
         join(from: Model.self, parent: parent, method: method)
     }
     
-    /// This will join a foreign table based on a `@Child` relation
+    /// This will join a foreign table based on a `@OptionalChild` relation
     ///
     /// This will not decode the joined data, but can be used in order to filter.
     ///
@@ -70,7 +70,7 @@ extension QueryBuilder {
     @discardableResult
     public func join<From, To>(
         from model: From.Type,
-        child: KeyPath<From, ChildProperty<From, To>>,
+        child: KeyPath<From, OptionalChildProperty<From, To>>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self {
         switch From()[keyPath: child].parentKey {
@@ -79,7 +79,7 @@ extension QueryBuilder {
         }
     }
 
-    /// This will join a foreign table based on a `@Child` relation
+    /// This will join a foreign table based on a `@OptionalChild` relation
     ///
     /// This will not decode the joined data, but can be used in order to filter.
     ///
@@ -93,7 +93,7 @@ extension QueryBuilder {
     /// - Returns: A new `QueryBuilder`
     @discardableResult
     public func join<To>(
-        child: KeyPath<Model, ChildProperty<Model, To>>,
+        child: KeyPath<Model, OptionalChildProperty<Model, To>>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self {
         join(from: Model.self, child: child, method: method)

@@ -1,12 +1,12 @@
 extension Model {
-    public typealias Child<To> = ChildProperty<Self, To>
+    public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
         where To: FluentKit.Model
 }
 
 // MARK: Type
 
 @propertyWrapper
-public final class ChildProperty<From, To>
+public final class OptionalChildProperty<From, To>
     where From: Model, To: Model
 {
     public enum Key {
@@ -17,7 +17,7 @@ public final class ChildProperty<From, To>
     public let parentKey: Key
     var idValue: From.IDValue?
 
-    public var value: To?
+    public var value: To??
 
     public init(for parent: KeyPath<To, To.Parent<From>>) {
         self.parentKey = .required(parent)
@@ -27,7 +27,7 @@ public final class ChildProperty<From, To>
         self.parentKey = .optional(optionalParent)
     }
 
-    public var wrappedValue: To {
+    public var wrappedValue: To? {
         get {
             guard let value = self.value else {
                 fatalError("Child relation not eager loaded, use $ prefix to access: \(name)")
@@ -39,7 +39,7 @@ public final class ChildProperty<From, To>
         }
     }
 
-    public var projectedValue: ChildProperty<From, To> {
+    public var projectedValue: OptionalChildProperty<From, To> {
         return self
     }
     
@@ -75,7 +75,7 @@ public final class ChildProperty<From, To>
     }
 }
 
-extension ChildProperty: CustomStringConvertible {
+extension OptionalChildProperty: CustomStringConvertible {
     public var description: String {
         self.name
     }
@@ -83,16 +83,16 @@ extension ChildProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension ChildProperty: AnyProperty { }
+extension OptionalChildProperty: AnyProperty { }
 
-extension ChildProperty: Property {
+extension OptionalChildProperty: Property {
     public typealias Model = From
-    public typealias Value = To
+    public typealias Value = To?
 }
 
 // MARK: Database
 
-extension ChildProperty: AnyDatabaseProperty {
+extension OptionalChildProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         []
     }
@@ -111,7 +111,7 @@ extension ChildProperty: AnyDatabaseProperty {
 
 // MARK: Codable
 
-extension ChildProperty: AnyCodableProperty {
+extension OptionalChildProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         if let child = self.value {
             var container = encoder.singleValueContainer()
@@ -126,7 +126,7 @@ extension ChildProperty: AnyCodableProperty {
 
 // MARK: Relation
 
-extension ChildProperty: Relation {
+extension OptionalChildProperty: Relation {
     public var name: String {
         "Child<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
@@ -138,7 +138,7 @@ extension ChildProperty: Relation {
     }
 }
 
-extension ChildProperty.Key: CustomStringConvertible {
+extension OptionalChildProperty.Key: CustomStringConvertible {
     public var description: String {
         switch self {
         case .optional(let keyPath):
@@ -151,21 +151,21 @@ extension ChildProperty.Key: CustomStringConvertible {
 
 // MARK: Eager Loadable
 
-extension ChildProperty: EagerLoadable {
+extension OptionalChildProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, From.Child<To>>,
+        _ relationKey: KeyPath<From, From.OptionalChild<To>>,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = ChildEagerLoader(relationKey: relationKey)
+        let loader = OptionalChildEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
 
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
-        through: KeyPath<From, From.Child<To>>,
+        through: KeyPath<From, From.OptionalChild<To>>,
         to builder: Builder
     ) where
         Loader: EagerLoader,
@@ -178,13 +178,13 @@ extension ChildProperty: EagerLoadable {
     }
 }
 
-private struct ChildEagerLoader<From, To>: EagerLoader
+private struct OptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
-    let relationKey: KeyPath<From, From.Child<To>>
+    let relationKey: KeyPath<From, From.OptionalChild<To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let ids = models.map { $0.id! }
+        let ids = models.compactMap { $0.id! }
 
         let builder = To.query(on: database)
         let parentKey = From()[keyPath: self.relationKey].parentKey
@@ -214,11 +214,11 @@ private struct ChildEagerLoader<From, To>: EagerLoader
 private struct ThroughChildEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.Child<Through>>
+    let relationKey: KeyPath<From, From.OptionalChild<Through>>
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let throughs = models.map {
+        let throughs = models.compactMap {
             $0[keyPath: self.relationKey].value!
         }
         return self.loader.run(models: throughs, on: database)

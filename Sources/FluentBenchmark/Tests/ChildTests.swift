@@ -13,17 +13,54 @@ extension FluentBenchmarker {
             try foo.save(on: self.database).wait()
             let bar = Bar(bar: 42, fooID: foo.id!)
             try bar.save(on: self.database).wait()
-            let baz = Baz(baz: 3.14, fooID: foo.id!)
+            let baz = Baz(baz: 3.14)
             try baz.save(on: self.database).wait()
-
+            
+            // Test relationship @Parent - @OptionalChild
+            // query(on: Parent)
             let foos = try Foo.query(on: self.database)
                 .with(\.$bar)
                 .with(\.$baz)
                 .all().wait()
 
             for foo in foos {
-                XCTAssertEqual(foo.bar.bar, 42)
-                XCTAssertEqual(foo.baz.baz, 3.14)
+                // Child `bar` is eager loaded
+                XCTAssertEqual(foo.bar?.bar, 42)
+                // Child `baz` isn't eager loaded
+                XCTAssertNil(foo.baz?.baz)
+            }
+            
+            // Test relationship @Parent - @OptionalChild
+            // query(on: Child)
+            let bars = try Bar.query(on: self.database)
+                .with(\.$foo)
+                .all().wait()
+            
+            for bar in bars {
+                XCTAssertEqual(bar.foo.name, "a")
+            }
+            
+            // Test relationship @OptionalParent - @OptionalChild
+            // query(on: Child)
+            let bazs = try Baz.query(on: self.database)
+                .with(\.$foo)
+                .all().wait()
+            
+            for baz in bazs {
+                // test with missing parent
+                XCTAssertNil(baz.foo?.name)
+            }
+            
+            baz.$foo.id = foo.id
+            try baz.save(on: self.database).wait()
+            
+            let updatedBazs = try Baz.query(on: self.database)
+                .with(\.$foo)
+                .all().wait()
+            
+            for updatedBaz in updatedBazs {
+                // test with valid parent
+                XCTAssertEqual(updatedBaz.foo?.name, "a")
             }
         }
     }
@@ -39,11 +76,11 @@ private final class Foo: Model {
     @Field(key: "name")
     var name: String
 
-    @Child(for: \.$foo)
-    var bar: Bar
+    @OptionalChild(for: \.$foo)
+    var bar: Bar?
 
-    @Child(for: \.$foo)
-    var baz: Baz
+    @OptionalChild(for: \.$foo)
+    var baz: Baz?
 
     init() { }
 
@@ -93,6 +130,7 @@ private struct BarMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .int, .required)
             .field("foo_id", .uuid, .required)
+            .unique(on: "foo_id")
             .create()
     }
 
@@ -110,12 +148,12 @@ private final class Baz: Model {
     @Field(key: "baz")
     var baz: Double
 
-    @Parent(key: "foo_id")
-    var foo: Foo
+    @OptionalParent(key: "foo_id")
+    var foo: Foo?
 
     init() { }
 
-    init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue) {
+    init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue? = nil) {
         self.id = id
         self.baz = baz
         self.$foo.id = fooID
@@ -127,7 +165,7 @@ private struct BazMigration: Migration {
         database.schema("bazs")
             .field("id", .uuid, .identifier(auto: false))
             .field("baz", .double, .required)
-            .field("foo_id", .uuid, .required)
+            .field("foo_id", .uuid)
             .create()
     }
 

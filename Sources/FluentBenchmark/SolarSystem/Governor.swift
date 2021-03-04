@@ -47,16 +47,19 @@ public struct GovernorSeed: Migration {
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
         Planet.query(on: database).all().flatMap { planets in
             .andAllSucceed(planets.map { planet in
-                let governor: Governor
+                let governor: Governor?
                 switch planet.name {
                 case "Mars":
                     governor = .init(name: "John Doe")
                 case "Earth":
                     governor = .init(name: "Jane Doe")
                 default:
-                    governor = .init(name: "")
+                    governor = nil
                 }
-                return planet.$governor.create(governor, on: database)
+                guard let gov = governor else {
+                    return database.eventLoop.makeSucceededFuture(())
+                }
+                return planet.$governor.create(gov, on: database)
             }, on: database.eventLoop)
         }
     }
