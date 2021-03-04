@@ -14,6 +14,9 @@ public final class Planet: Model {
 
     @Children(for: \.$planet)
     public var moons: [Moon]
+    
+    @OptionalChild(for: \.$planet)
+    public var governor: Governor?
 
     @Siblings(through: PlanetTag.self, from: \.$planet, to: \.$tag)
     public var tags: [Tag]
