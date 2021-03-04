@@ -110,7 +110,7 @@ jobs:
           - latest-stable
         macos:
           - latest
-          - 11.0
+          #- 11.0
     runs-on: macos-${{ matrix.macos }}
     steps:
       - name: Select latest available Xcode
