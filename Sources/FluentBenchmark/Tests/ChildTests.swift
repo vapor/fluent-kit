@@ -1,6 +1,14 @@
+import FluentSQL
+
 extension FluentBenchmarker {
     public func testChild() throws {
         try self.testChild_with()
+        
+        guard let sql = self.database as? SQLDatabase else {
+            return
+        }
+        try self.testChild_sqlIdInt(sql)
+        
     }
 
     private func testChild_with() throws {
@@ -61,6 +69,30 @@ extension FluentBenchmarker {
             for updatedBaz in updatedBazs {
                 // test with valid parent
                 XCTAssertEqual(updatedBaz.foo?.name, "a")
+            }
+        }
+    }
+    
+    private func testChild_sqlIdInt(_ sql: SQLDatabase) throws {
+        try self.runTest(#function, [
+            GameMigration(),
+            PlayerMigration()
+        ]) {
+            let game = Game(title: "Solitare")
+            try game.create(on: self.database).wait()
+            
+            let frantisek = Player(name: "Frantisek", gameID: game.id!)
+            try frantisek.create(on: self.database).wait()
+            
+            do {
+                let player = try sql.raw("SELECT * FROM players").first(decoding: Player.self).wait()
+                XCTAssertNotNil(player)
+                if let player = player {
+                    XCTAssertEqual(player.id, frantisek.id)
+                    XCTAssertEqual(player.name, frantisek.name)
+                    XCTAssertEqual(player.$game.id, frantisek.$game.id)
+                    XCTAssertEqual(player.$game.id, game.id)
+                }
             }
         }
     }
@@ -171,5 +203,80 @@ private struct BazMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema(Baz.schema).delete()
+    }
+}
+
+private final class Game: Model {
+    static let schema = "games"
+
+    @ID(custom: .id, generatedBy: .database)
+    var id: Int?
+
+    @Field(key: "title")
+    var title: String
+
+    // It's a solitare game :P
+    @OptionalChild(for: \.$game)
+    var player: Player?
+    
+    init() { }
+
+    init(
+        id: Int? = nil,
+        title: String
+    ) {
+        self.id = id
+        self.title = title
+    }
+}
+
+private struct GameMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema(Game.schema)
+            .field(.id, .int, .identifier(auto: true), .required)
+            .field("title", .string, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema(Game.schema).delete()
+    }
+}
+
+private final class Player: Model {
+    static let schema = "players"
+
+    @ID(custom: .id, generatedBy: .database)
+    var id: Int?
+
+    @Field(key: "name")
+    var name: String
+
+    @Parent(key: "game_id")
+    var game: Game
+
+    init() { }
+
+    init(
+        id: Int? = nil,
+        name: String, gameID: Game.IDValue) {
+        self.id = id
+        self.name = name
+        self.$game.id = gameID
+    }
+}
+
+private struct PlayerMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema(Player.schema)
+            .field(.id, .int, .identifier(auto: true), .required)
+            .field("name", .string, .required)
+            .field("game_id", .uuid, .required)
+            .unique(on: "game_id")
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema(Player.schema).delete()
     }
 }
