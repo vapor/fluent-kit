@@ -274,7 +274,7 @@ private struct PlayerMigration: Migration {
         database.schema(Player.schema)
             .field(.id, .int, .identifier(auto: true), .required)
             .field("name", .string, .required)
-            .field("game_id", .uuid, .required)
+            .field("game_id", .int, .required)
             .unique(on: "game_id")
             .create()
     }
