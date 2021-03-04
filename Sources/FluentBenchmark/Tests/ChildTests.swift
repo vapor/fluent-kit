@@ -1,11 +1,13 @@
 extension FluentBenchmarker {
     public func testChild() throws {
-        try self.testChildEagerLoad()
-        try self.testParentEagerLoad()
-        try self.testOptionalParent()
+        try self.testChild_with()
+        try self.testParent_with()
+        try self.testOptionalParent_with()
     }
 
-    private func testChildEagerLoad() throws {
+    // Test relationship @Parent - @OptionalChild
+    // query(on: Parent)
+    private func testChild_with() throws {
         try self.runTest(#function, [
             FooMigration(),
             BarMigration(),
@@ -15,7 +17,7 @@ extension FluentBenchmarker {
             try foo.save(on: self.database).wait()
             let bar = Bar(bar: 42, fooID: foo.id!)
             try bar.save(on: self.database).wait()
-            let baz = Baz(baz: 3.14, fooID: foo.id!)
+            let baz = Baz(baz: 3.14)
             try baz.save(on: self.database).wait()
 
             let foos = try Foo.query(on: self.database)
@@ -24,13 +26,17 @@ extension FluentBenchmarker {
                 .all().wait()
 
             for foo in foos {
+                // Child `bar` is eager loaded
                 XCTAssertEqual(foo.bar?.bar, 42)
-                XCTAssertEqual(foo.baz?.baz, 3.14)
+                // Child `baz` isn't eager loaded
+                XCTAssertNil(foo.baz?.baz)
             }
         }
     }
     
-    private func testParentEagerLoad() throws {
+    // Test relationship @Parent - @OptionalChild
+    // query(on: Child)
+    private func testParent_with() throws {
         try self.runTest(#function, [
             FooMigration(),
             BarMigration(),
@@ -51,7 +57,9 @@ extension FluentBenchmarker {
         }
     }
     
-    private func testOptionalParentEagerLoad() throws {
+    // Test relationship @OptionalParent - @OptionalChild
+    // query(on: Child)
+    private func testOptionalParent_with() throws {
         try self.runTest(#function, [
             FooMigration(),
             BarMigration(),
@@ -67,7 +75,18 @@ extension FluentBenchmarker {
                 .all().wait()
 
             for baz in bazs {
+                // test with missing parent
                 XCTAssertNil(baz.foo?.name)
+            }
+            
+            baz.$foo.id = foo.id
+            let updatedBazs = try Baz.query(on: self.database)
+                .with(\.$foo)
+                .all().wait()
+            
+            for updatedBaz in updatedBazs {
+                // test with valid parent
+                XCTAssertEqual(updatedBaz.foo?.name, "a")
             }
         }
     }
