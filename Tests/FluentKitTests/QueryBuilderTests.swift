@@ -118,7 +118,7 @@ final class QueryBuilderTests: XCTestCase {
             }
         }
 
-        let pageSizeLimit = 3
+        let pageSizeLimit = 2
 
         let db = test.database(
             context: .init(
@@ -130,9 +130,10 @@ final class QueryBuilderTests: XCTestCase {
             )
         )
 
-        let pageRequest = PageRequest(page: 1, per: 4)
+        let pageRequest = PageRequest(page: 2, per: 3)
         let retrievedPlanets = try Planet.query(on: db).paginate(pageRequest).wait()
         XCTAssertEqual(retrievedPlanets.items.count, pageSizeLimit, "Page size limit should be respected.")
+        XCTAssertEqual(retrievedPlanets.items.first?.name, "c", "Page size limit should determine offset")
     }
 
     // https://github.com/vapor/fluent-kit/issues/310
