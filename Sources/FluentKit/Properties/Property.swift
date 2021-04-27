@@ -1,4 +1,4 @@
-public protocol AnyProperty: class {
+public protocol AnyProperty: AnyObject {
     static var anyValueType: Any.Type { get }
     var anyValue: Any? { get }
 }
