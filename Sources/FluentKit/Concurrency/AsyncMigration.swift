@@ -15,7 +15,7 @@ public extension AsyncMigration {
         }
         return promise.futureResult
     }
-
+    
     func revert(on database: Database) -> EventLoopFuture<Void> {
         let promise = database.eventLoop.makePromise(of: Void.self)
         promise.completeWithAsync {
