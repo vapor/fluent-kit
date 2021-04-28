@@ -176,6 +176,13 @@
     {
         try await self.aggregate(method, path, as: type).get()
     }
+
+    // MARK: - Paginate
+    func paginate(
+        _ request: PageRequest
+    ) async throws -> Page<Model> {
+        try await self.paginate(request).get()
+    }
  }
 
  #endif
