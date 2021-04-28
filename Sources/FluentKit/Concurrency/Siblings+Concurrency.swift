@@ -3,6 +3,11 @@
 
  @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
  public extension SiblingsProperty {
+
+    func load(on database: Database) async throws {
+        try await self.load(on: database).get()
+    }
+
     // MARK: Checking state
 
     func isAttached(to: To, on database: Database) async throws -> Bool {
