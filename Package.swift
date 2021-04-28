@@ -22,6 +22,7 @@ let package = Package(
     targets: [
         .target(name: "FluentKit", dependencies: [
             .product(name: "NIO", package: "swift-nio"),
+            .product(name: "_NIOConcurrency", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .product(name: "AsyncKit", package: "async-kit"),
         ]),
