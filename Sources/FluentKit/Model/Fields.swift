@@ -1,4 +1,4 @@
-public protocol Fields: class, Codable {
+public protocol Fields: AnyObject, Codable {
     var properties: [AnyProperty] { get }
     init()
     func input(to input: DatabaseInput)
