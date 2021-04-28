@@ -94,6 +94,9 @@ jobs:
           - swiftlang/swift:nightly-5.3-bionic
           - swiftlang/swift:nightly-5.3-focal
           - swiftlang/swift:nightly-5.3-amazonlinux2
+          - swiftlang/swift:nightly-5.4-bionic
+          - swiftlang/swift:nightly-5.4-focal
+          - swiftlang/swift:nightly-5.4-amazonlinux2
     container: ${{ matrix.image }}
     steps:
       - name: Checkout code
