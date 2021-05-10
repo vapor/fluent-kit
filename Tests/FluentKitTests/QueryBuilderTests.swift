@@ -87,6 +87,55 @@ final class QueryBuilderTests: XCTestCase {
         XCTAssertEqual(db.history?.queries.first?.schema, Planet.schema)
     }
 
+    func testPerPageLimit() throws {
+        let starId = UUID()
+        let rows = [
+            TestOutput(["id": UUID(), "name": "a", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "b", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "c", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "d", "star_id": starId]),
+            TestOutput(["id": UUID(), "name": "e", "star_id": starId]),
+        ]
+        
+        let test = CallbackTestDatabase { query in
+            XCTAssertEqual(query.schema, "planets")
+            let result: [TestOutput]
+            if
+                let limit = query.limits.first,
+                case let DatabaseQuery.Limit.count(limitValue) = limit,
+                let offset = query.offsets.first,
+                case let DatabaseQuery.Offset.count(offsetValue) = offset
+            {
+                result = [TestOutput](rows[min(offsetValue, rows.count - 1)..<min(offsetValue + limitValue, rows.count)])
+            } else {
+                result = rows
+            }
+            switch query.action {
+            case .aggregate(_):
+                return [TestOutput([.aggregate: rows.count])]
+            default:
+                return result
+            }
+        }
+
+        let pageSizeLimit = 2
+
+        let db = test.database(
+            context: .init(
+                configuration: test.configuration,
+                logger: test.db.logger,
+                eventLoop: test.db.eventLoop,
+                history: .init(),
+                pageSizeLimit: pageSizeLimit
+            )
+        )
+
+        let pageRequest = PageRequest(page: 2, per: 3)
+        let retrievedPlanets = try Planet.query(on: db).paginate(pageRequest).wait()
+        XCTAssertEqual(retrievedPlanets.items.count, pageSizeLimit, "Page size limit should be respected.")
+        XCTAssertEqual(retrievedPlanets.items.first?.name, "c", "Page size limit should determine offset")
+    }
+
     // https://github.com/vapor/fluent-kit/issues/310
     func testJoinOverloads() throws {
         var query: DatabaseQuery?

@@ -2,20 +2,28 @@ extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
     ///
     /// This method will first `count()` the result set, then request a subset of the results using `range()` and `all()`.
+    ///
     /// - Parameters:
     ///     - request: Describes which page should be fetched.
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
+        let trimmedRequest: PageRequest = {
+            guard let pageSizeLimit = database.context.pageSizeLimit else { return request }
+            return .init(
+                page: request.page,
+                per: Swift.min(request.per, pageSizeLimit)
+            )
+        }()
         let count = self.count()
-        let items = self.copy().range(request.start..<request.end).all()
+        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all()
         return items.and(count).map { (models, total) in
             Page(
                 items: models,
                 metadata: .init(
-                    page: request.page,
-                    per: request.per,
+                    page: trimmedRequest.page,
+                    per: trimmedRequest.per,
                     total: total
                 )
             )
