@@ -43,6 +43,28 @@ extension QueryBuilder {
     {
         self.filter(Model.path(for: lhsField), method, Model.path(for: rhsField))
     }
+    
+    @discardableResult
+    public func filter<LeftJoined, LeftField, RightJoined, RightField>(
+        _ leftJoined: LeftJoined.Type,
+        _ leftField: KeyPath<LeftJoined, LeftField>,
+        _ method: DatabaseQuery.Filter.Method,
+        _ rightJoined: RightJoined.Type,
+        _ rightField: KeyPath<RightJoined, RightField>
+    ) -> Self
+    where LeftJoined: Schema,
+          RightJoined: Schema,
+          LeftField: QueryableProperty,
+          RightField: QueryableProperty,
+          LeftField.Model == LeftJoined,
+          RightField.Model == RightJoined
+    {
+        self.filter(
+            .path(LeftJoined.path(for: leftField), schema: LeftJoined.schemaOrAlias),
+            method,
+            .path(RightJoined.path(for: rightField), schema: RightJoined.schemaOrAlias)
+        )
+    }
 
     @discardableResult
     public func filter<Value>(

@@ -16,6 +16,7 @@ extension FluentBenchmarker {
         try self.testFilter_enum()
         try self.testFilter_joinedEnum()
         try self.testFilter_joinedAliasedEnum()
+        try self.testFilter_conditionalAlias()
     }
 
     private func testFilter_field() throws {
@@ -241,6 +242,32 @@ extension FluentBenchmarker {
             XCTAssertEqual(bars.first?.name, "bar_owner")
         }
     }
+    
+    private func testFilter_conditionalAlias() throws {
+        try self.runTest(#function, [
+            FooOwnerMigration(),
+            FooEnumMigration(),
+            FooMigration()
+        ]) {
+            let fooOwner = FooOwner(name: "foo_owner")
+            try fooOwner.create(on: self.database).wait()
+            
+            try Foo(bar: "foo", number: 1, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "bar", number: 2, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "baz", number: 2, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "fab", number: 2, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+            try Foo(bar: "faz", number: 3, ownerID: fooOwner.requireID()).create(on: self.database).wait()
+
+            let bars = try FooOwner.query(on: self.database)
+                .join(FooAlias.self, on: \FooAlias.$owner.$id == \FooOwner.$id)
+                .join(BarAlias.self, on: \BarAlias.$owner.$id == \FooOwner.$id)
+                .filter(FooAlias.self, \.$number, .equal, BarAlias.self, \.$number)
+                .all()
+                .wait()
+
+            XCTAssertEqual(bars.count, 3)
+        }
+    }
 }
 
 private final class FooOwner: Model {
@@ -263,11 +290,13 @@ private final class Foo: Model {
     static let schema = "foos"
     @ID var id: UUID?
     @OptionalField(key: "bar") var bar: String?
+    @OptionalField(key: "number") var number: Int?
     @OptionalEnum(key: "type") var type: FooEnumType?
     @OptionalParent(key: "owner_id") var owner: FooOwner?
     init() {}
-    init(bar: String? = nil, type: FooEnumType? = nil, ownerID: UUID? = nil) {
+    init(bar: String? = nil, number: Int? = nil, type: FooEnumType? = nil, ownerID: UUID? = nil) {
         self.bar = bar
+        self.number = number
         self.type = type
         self.$owner.id = ownerID
     }
@@ -275,6 +304,11 @@ private final class Foo: Model {
 
 private final class FooAlias: ModelAlias {
     static let name = "foos_alias"
+    let model = Foo()
+}
+
+private final class BarAlias: ModelAlias {
+    static let name = "bars_alias"
     let model = Foo()
 }
 
@@ -312,6 +346,7 @@ private struct FooMigration: Migration {
             database.schema("foos")
                 .id()
                 .field("bar", .string)
+                .field("number", .int)
                 .field("type", fooType)
                 .field("owner_id", .uuid, .references(FooOwner.schema, .id, onDelete: .setNull))
                 .create()
