@@ -524,6 +524,21 @@ final class FluentKitTests: XCTestCase {
         _ = builder.fields(for: User.self)
         XCTAssertEqual(builder.query.fields.count, 9)
     }
+
+    func testPaginationDoesntCrashWithNegativeNumbers() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let pageRequest1 = PageRequest(page: -1, per: 10)
+        XCTAssertNoThrow(try Planet2
+            .query(on: db)
+            .paginate(pageRequest1)
+            .wait())
+
+        let pageRequest2 = PageRequest(page: 1, per: -10)
+        XCTAssertNoThrow(try Planet2
+            .query(on: db)
+            .paginate(pageRequest2)
+            .wait())
+    }
 }
 
 final class User: Model {
