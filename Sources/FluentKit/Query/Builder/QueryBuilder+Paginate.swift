@@ -10,10 +10,12 @@ extension QueryBuilder {
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
         let trimmedRequest: PageRequest = {
-            guard let pageSizeLimit = database.context.pageSizeLimit else { return request }
+            guard let pageSizeLimit = database.context.pageSizeLimit else {
+                return .init(page: Swift.max(request.page, 1), per: Swift.max(request.per, 1))
+            }
             return .init(
-                page: request.page,
-                per: Swift.min(request.per, pageSizeLimit)
+                page: Swift.max(request.page, 1),
+                per: Swift.max(Swift.min(request.per, pageSizeLimit), 1)
             )
         }()
         let count = self.count()
