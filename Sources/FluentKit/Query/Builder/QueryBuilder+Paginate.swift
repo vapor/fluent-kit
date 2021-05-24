@@ -12,7 +12,6 @@ extension QueryBuilder {
         let trimmedRequest: PageRequest = {
             guard let pageSizeLimit = database.context.pageSizeLimit else {
                 return .init(page: Swift.max(request.page, 1), per: Swift.max(request.per, 1))
-
             }
             return .init(
                 page: Swift.max(request.page, 1),
