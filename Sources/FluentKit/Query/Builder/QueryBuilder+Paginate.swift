@@ -120,7 +120,3 @@ public struct PageRequest: Decodable {
         self.page * self.per
     }
 }
-
-public struct PaginationError: Error {
-    public let message: String
-}
