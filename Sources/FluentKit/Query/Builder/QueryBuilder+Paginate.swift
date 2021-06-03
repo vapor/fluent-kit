@@ -34,7 +34,7 @@ extension QueryBuilder {
 }
 
 /// A single section of a larger, traversable result set.
-public struct Page<T>: Codable where T: Codable {
+public struct Page<T> {
     /// The page's items. Usually models.
     public let items: [T]
 
@@ -57,6 +57,9 @@ public struct Page<T>: Codable where T: Codable {
         )
     }
 }
+
+extension Page: Encodable where T: Encodable {}
+extension Page: Decodable where T: Decodable {}
 
 /// Metadata for a given `Page`.
 public struct PageMetadata: Codable {
