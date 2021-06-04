@@ -3,6 +3,7 @@ extension FluentBenchmarker {
         try self.testSiblings_attach()
         try self.testSiblings_detachArray()
         try self.testSiblings_pivotLoading()
+        try self.testSiblings_detachAll()
     }
 
     private func testSiblings_attach() throws {
