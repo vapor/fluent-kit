@@ -3,6 +3,7 @@ extension FluentBenchmarker {
         try self.testSiblings_attach()
         try self.testSiblings_detachArray()
         try self.testSiblings_pivotLoading()
+        try self.testSiblings_detachAll()
     }
 
     private func testSiblings_attach() throws {
@@ -99,6 +100,28 @@ extension FluentBenchmarker {
             
             // verify tag count
             XCTAssertEqual(earth.$tags.pivots.count, 2)
+        }
+    }
+    
+    private func testSiblings_detachAll() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let earth = try Planet.query(on: self.database)
+                .filter(\.$name == "Earth")
+                .first().wait()!
+            
+            // verify tag count
+            try XCTAssertEqual(earth.$tags.query(on: self.database).count().wait(), 2)
+            
+            try earth.$tags.detachAll(on: self.database).wait()
+            
+            // check earth has tags removed
+            do {
+                let tags = try earth.$tags.query(on: self.database)
+                    .all().wait()
+                XCTAssertEqual(tags.count, 0)
+            }
         }
     }
 }
