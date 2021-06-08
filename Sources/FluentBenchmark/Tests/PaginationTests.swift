@@ -46,4 +46,23 @@ extension FluentBenchmarker {
             }
         }
     }
+
+    public func testPaginationDoesntCrashWithInvalidValues() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            do {
+                _ = try Planet.query(on: self.database)
+                    .sort(\.$name)
+                    .paginate(PageRequest(page: -1, per: 2))
+                    .wait()
+            }
+            do {
+                _ = try Planet.query(on: self.database)
+                    .sort(\.$name)
+                    .paginate(PageRequest(page: 2, per: -2))
+                    .wait()
+            }
+        }
+    }
 }

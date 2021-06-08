@@ -2,20 +2,30 @@ extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
     ///
     /// This method will first `count()` the result set, then request a subset of the results using `range()` and `all()`.
+    ///
     /// - Parameters:
     ///     - request: Describes which page should be fetched.
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
+        let trimmedRequest: PageRequest = {
+            guard let pageSizeLimit = database.context.pageSizeLimit else {
+                return .init(page: Swift.max(request.page, 1), per: Swift.max(request.per, 1))
+            }
+            return .init(
+                page: Swift.max(request.page, 1),
+                per: Swift.max(Swift.min(request.per, pageSizeLimit), 1)
+            )
+        }()
         let count = self.count()
-        let items = self.copy().range(request.start..<request.end).all()
+        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all()
         return items.and(count).map { (models, total) in
             Page(
                 items: models,
                 metadata: .init(
-                    page: request.page,
-                    per: request.per,
+                    page: trimmedRequest.page,
+                    per: trimmedRequest.per,
                     total: total
                 )
             )
@@ -24,7 +34,7 @@ extension QueryBuilder {
 }
 
 /// A single section of a larger, traversable result set.
-public struct Page<T>: Codable where T: Codable {
+public struct Page<T> {
     /// The page's items. Usually models.
     public let items: [T]
 
@@ -47,6 +57,9 @@ public struct Page<T>: Codable where T: Codable {
         )
     }
 }
+
+extension Page: Encodable where T: Encodable {}
+extension Page: Decodable where T: Decodable {}
 
 /// Metadata for a given `Page`.
 public struct PageMetadata: Codable {
