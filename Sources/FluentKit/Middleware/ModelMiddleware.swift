@@ -1,4 +1,4 @@
-#if compiler(>=5.5) && $AsyncAwait
+#if compiler(>=5.5)
  import _NIOConcurrency
 #endif
 
@@ -20,16 +20,16 @@ public protocol ModelMiddleware: AnyModelMiddleware {
     func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
 
-    #if compiler(>=5.5) && $AsyncAwait
-    @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    #if compiler(>=5.5)
+    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     func create(model: Model, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     func update(model: Model, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     func softDelete(model: Model, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     func restore(model: Model, on db: Database, next: AnyModelResponder) async throws
     #endif
 }
