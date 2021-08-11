@@ -79,6 +79,8 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
     public func input(to input: DatabaseInput) {
         if let value = self.value {
             input.set(value.map { .enumCase($0.rawValue) } ?? .null, at: self.field.key)
+        } else {
+            input.set(.null, at: self.field.key)
         }
     }
 

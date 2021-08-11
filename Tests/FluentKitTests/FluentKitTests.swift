@@ -539,6 +539,44 @@ final class FluentKitTests: XCTestCase {
             .paginate(pageRequest2)
             .wait())
     }
+
+    func testBulkInsertWithMixedOptionalsDoesntCrash() throws {
+        enum Effort: String, Codable {
+            case moderate
+            case strenuous
+        }
+
+        final class Workout: Model {
+            static let schema = "workouts"
+
+            @ID var id: UUID?
+
+            @Field(key: "name")
+            var name: String
+
+            @OptionalField(key: "distance")
+            var distance: Double?
+
+            @OptionalEnum(key: "effort")
+            var effort: Effort?
+
+            init() {}
+
+            init(id: UUID? = nil, name: String, distance: Double? = nil, effort: Effort? = nil) {
+                self.id = id
+                self.name = name
+                self.distance = distance
+                self.effort = effort
+            }
+        }
+
+        let db = DummyDatabaseForTestSQLSerializer()
+        let workouts = [
+            Workout(name: "Yoga", distance: nil, effort: .moderate),
+            Workout(name: "Running", distance: 3.1, effort: nil),
+        ]
+        XCTAssertNoThrow(try workouts.create(on: db).wait())
+    }
 }
 
 final class User: Model {
