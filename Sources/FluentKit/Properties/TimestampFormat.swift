@@ -13,6 +13,10 @@ public protocol TimestampFormat {
 
 public struct TimestampFormatFactory<Format> {
     let makeFormat: () -> Format
+    
+    public init(_ makeFormat: @escaping () -> Format) {
+        self.makeFormat = makeFormat
+    }
 }
 
 // MARK: Default
