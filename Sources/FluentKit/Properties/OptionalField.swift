@@ -62,7 +62,7 @@ extension OptionalFieldProperty: Property {
             if let value = newValue {
                 self.inputValue = value.flatMap { .bind($0) } ?? .null
             } else {
-                self.inputValue = nil
+                self.inputValue = .null
             }
         }
     }
