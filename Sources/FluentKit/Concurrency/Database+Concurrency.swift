@@ -6,7 +6,7 @@ public extension Database {
     func transaction<T>(_ closure: @escaping (Database) async throws -> T) async throws -> T {
         try await self.transaction { db -> EventLoopFuture<T> in
             let promise = self.eventLoop.makePromise(of: T.self)
-            promise.completeWithAsync{ try await closure(db) }
+            promise.completeWithTask{ try await closure(db) }
             return promise.futureResult
         }.get()
     }
@@ -14,7 +14,7 @@ public extension Database {
     func withConnection<T>(_ closure: @escaping (Database) async throws -> T) async throws -> T {
         try await self.withConnection { db -> EventLoopFuture<T> in
             let promise = self.eventLoop.makePromise(of: T.self)
-            promise.completeWithAsync{ try await closure(db) }
+            promise.completeWithTask{ try await closure(db) }
             return promise.futureResult
         }.get()
     }
