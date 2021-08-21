@@ -11,7 +11,7 @@ public protocol AsyncMigration: Migration {
 public extension AsyncMigration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         let promise = database.eventLoop.makePromise(of: Void.self)
-        promise.completeWithAsync {
+        promise.completeWithTask {
             try await self.prepare(on: database)
         }
         return promise.futureResult
@@ -19,7 +19,7 @@ public extension AsyncMigration {
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
         let promise = database.eventLoop.makePromise(of: Void.self)
-        promise.completeWithAsync {
+        promise.completeWithTask {
             try await self.revert(on: database)
         }
         return promise.futureResult
