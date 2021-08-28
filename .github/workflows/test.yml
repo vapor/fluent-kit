@@ -4,7 +4,6 @@ on:
   push: 
     branches: 
       - main
-      - master
 env:
   LOG_LEVEL: info
 
@@ -43,7 +42,7 @@ jobs:
         image: mongo:latest
       mongo-b:
         image: mongo:latest
-    container: swift:5.3-focal
+    container: swift:5.4-focal
     strategy:
       fail-fast: false
       matrix:
@@ -91,9 +90,12 @@ jobs:
           - swift:5.3-bionic
           - swift:5.3-focal
           - swift:5.3-amazonlinux2
-          - swiftlang/swift:nightly-5.3-bionic
-          - swiftlang/swift:nightly-5.3-focal
-          - swiftlang/swift:nightly-5.3-amazonlinux2
+          - swift:5.4-bionic
+          - swift:5.4-focal
+          - swift:5.4-amazonlinux2
+          - swiftlang/swift:nightly-5.5-bionic
+          - swiftlang/swift:nightly-5.5-focal
+          - swiftlang/swift:nightly-5.5-amazonlinux2
     container: ${{ matrix.image }}
     steps:
       - name: Checkout code

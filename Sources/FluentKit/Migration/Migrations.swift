@@ -1,18 +1,12 @@
 public final class Migrations {
-    struct Item {
-        var id: DatabaseID?
-        var migration: Migration
-    }
-    
-    var storage: [Item]
-    var databases: Set<DatabaseID?> { Set(self.storage.map(\.id)) }
+    var storage: [DatabaseID?: [Migration]]
     
     public init() {
-        self.storage = []
+        self.storage = [:]
     }
     
     public func add(_ migration: Migration, to id: DatabaseID? = nil) {
-        self.storage.append(.init(id: id, migration: migration))
+        self.storage[id, default: []].append(migration)
     }
     
     @inlinable
@@ -21,6 +15,6 @@ public final class Migrations {
     }
 
     public func add(_ migrations: [Migration], to id: DatabaseID? = nil) {
-        self.storage.append(contentsOf: migrations.map { .init(id: id, migration: $0) })
+        self.storage[id, default: []].append(contentsOf: migrations)
     }
 }

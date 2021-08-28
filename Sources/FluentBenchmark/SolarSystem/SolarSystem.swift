@@ -34,7 +34,7 @@ public struct SolarSystem: Migration {
             all = migrations
         }
 
-        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all) { $0.prepare(on: database) }
+        return all.sequencedFlatMapEach(on: database.eventLoop) { $0.prepare(on: database) }
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -45,6 +45,6 @@ public struct SolarSystem: Migration {
             all = migrations
         }
 
-        return EventLoopFutureQueue(eventLoop: database.eventLoop).append(each: all.reversed()) { $0.revert(on: database) }
+        return all.reversed().sequencedFlatMapEach(on: database.eventLoop) { $0.revert(on: database) }
     }
 }
