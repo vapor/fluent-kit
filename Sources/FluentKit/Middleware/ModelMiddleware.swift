@@ -1,5 +1,5 @@
-#if compiler(>=5.5)
- import _NIOConcurrency
+#if compiler(>=5.5) && canImport(_Concurrency)
+import _NIOConcurrency
 #endif
 
 public protocol AnyModelMiddleware {
