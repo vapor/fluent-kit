@@ -1,5 +1,5 @@
 #if compiler(>=5.5) && canImport(_Concurrency)
-import _NIOConcurrency
+import NIOCore
 #endif
 
 public protocol AnyModelMiddleware {
@@ -20,7 +20,7 @@ public protocol ModelMiddleware: AnyModelMiddleware {
     func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
 
-    #if compiler(>=5.5)
+    #if compiler(>=5.5) && canImport(_Concurrency)
     @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     func create(model: Model, on db: Database, next: AnyModelResponder) async throws
     @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
