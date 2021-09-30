@@ -541,10 +541,7 @@ final class FluentKitTests: XCTestCase {
     }
     
     func testFieldsPropertiesPerformance() throws {
-        let options = XCTMeasureOptions()
-        options.iterationCount = 10
-        
-        self.measure(metrics: [XCTCPUMetric()], options: options) {
+        measure {
             for _ in 1 ... 10_000 {
                 XCTAssertEqual(LotsOfFields().properties.count, 21)
             }
