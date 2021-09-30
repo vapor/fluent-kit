@@ -69,26 +69,72 @@ extension Fields {
 
 // MARK: Properties
 
+#if compiler(<5.6) && compiler(>=5.2)
+@_silgen_name("swift_reflectionMirror_normalizedType")
+internal func _getNormalizedType<T>(_: T, type: Any.Type) -> Any.Type
+
+@_silgen_name("swift_reflectionMirror_count")
+internal func _getChildCount<T>(_: T, type: Any.Type) -> Int
+
+@_silgen_name("swift_reflectionMirror_subscript")
+internal func _getChild<T>(
+  of: T, type: Any.Type, index: Int,
+  outName: UnsafeMutablePointer<UnsafePointer<CChar>?>,
+  outFreeFunc: UnsafeMutablePointer<(@convention(c) (UnsafePointer<CChar>?) -> Void)?>
+) -> Any
+#endif
+
 extension Fields {
     public var properties: [AnyProperty] {
+#if compiler(<5.6) && compiler(>=5.2) && swift(>=5.2)
+        let type = _getNormalizedType(self, type: Swift.type(of: self))
+        let childCount = _getChildCount(self, type: type)
+        return (0 ..< childCount).compactMap({
+            var nameC: UnsafePointer<CChar>? = nil
+            var freeFunc: (@convention(c) (UnsafePointer<CChar>?) -> Void)? = nil
+            defer { freeFunc?(nameC) }
+            return _getChild(of: self, type: Self.self, index: $0, outName: &nameC, outFreeFunc: &freeFunc) as? AnyProperty
+        })
+#else
         Mirror(reflecting: self).children.compactMap {
             $0.value as? AnyProperty
         }
+#endif
     }
 
-    internal var labeledProperties: [String: AnyProperty] {
+    internal var labeledProperties: [String: AnyCodableProperty] {
+#if compiler(<5.6) && compiler(>=5.2) && swift(>=5.2)
+        let type = _getNormalizedType(self, type: Swift.type(of: self))
+        let childCount = _getChildCount(self, type: type)
+
+        return .init(uniqueKeysWithValues:
+            (0 ..< childCount).compactMap({
+                var nameC: UnsafePointer<CChar>? = nil
+                var freeFunc: (@convention(c) (UnsafePointer<CChar>?) -> Void)? = nil
+                defer { freeFunc?(nameC) }
+                guard let value = _getChild(
+                        of: self, type: Self.self, index: $0, outName: &nameC, outFreeFunc: &freeFunc
+                      ) as? AnyCodableProperty,
+                      let nameCC = nameC, nameCC.pointee != 0, nameCC.advanced(by: 1).pointee != 0,
+                      let name = String(validatingUTF8: nameCC.advanced(by: 1))
+                else { return nil }
+                return (name, value)
+            })
+        )
+#else
         .init(uniqueKeysWithValues:
             Mirror(reflecting: self).children.compactMap { child in
                 guard let label = child.label else {
                     return nil
                 }
-                guard let field = child.value as? AnyProperty else {
+                guard let field = child.value as? AnyCodableProperty else {
                     return nil
                 }
                 // remove underscore
                 return (String(label.dropFirst()), field)
             }
         )
+#endif
     }
 }
 
