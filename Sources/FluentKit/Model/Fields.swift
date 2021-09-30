@@ -127,7 +127,7 @@ extension Fields {
                 guard let label = child.label else {
                     return nil
                 }
-                guard let field = child.value as? AnyProperty else {
+                guard let field = child.value as? AnyCodableProperty else {
                     return nil
                 }
                 // remove underscore
