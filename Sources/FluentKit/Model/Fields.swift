@@ -87,7 +87,7 @@ internal func _getChild<T>(
 extension Fields {
     public var properties: [AnyProperty] {
 #if compiler(<5.6) && compiler(>=5.2) && swift(>=5.2)
-        let type = _getNormalizedType(self, type: type(of: self))
+        let type = _getNormalizedType(self, type: Swift.type(of: self))
         let childCount = _getChildCount(self, type: type)
         return (0 ..< childCount).compactMap({
             var nameC: UnsafePointer<CChar>? = nil
@@ -104,7 +104,7 @@ extension Fields {
 
     internal var labeledProperties: [String: AnyCodableProperty] {
 #if compiler(<5.6) && compiler(>=5.2) && swift(>=5.2)
-        let type = _getNormalizedType(self, type: type(of: self))
+        let type = _getNormalizedType(self, type: Swift.type(of: self))
         let childCount = _getChildCount(self, type: type)
 
         return .init(uniqueKeysWithValues:
