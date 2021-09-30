@@ -539,6 +539,17 @@ final class FluentKitTests: XCTestCase {
             .paginate(pageRequest2)
             .wait())
     }
+    
+    func testFieldsPropertiesPerformance() throws {
+        let options = XCTMeasureOptions()
+        options.iterationCount = 10
+        
+        self.measure(metrics: [XCTCPUMetric()], options: options) {
+            for _ in 1 ... 10_000 {
+                XCTAssertEqual(LotsOfFields().properties.count, 21)
+            }
+        }
+    }
 }
 
 final class User: Model {
@@ -647,4 +658,71 @@ final class Planet2: Model {
         self.name = name
         self.moonCount = moonCount
     }
+}
+
+final class LotsOfFields: Model {
+    static let schema = "never_used"
+    
+    @ID(custom: "id")
+    var id: Int?
+    
+    @Field(key: "field1")
+    var field1: String
+    
+    @Field(key: "field2")
+    var field2: String
+    
+    @Field(key: "field3")
+    var field3: String
+    
+    @Field(key: "field4")
+    var field4: String
+    
+    @Field(key: "field5")
+    var field5: String
+    
+    @Field(key: "field6")
+    var field6: String
+    
+    @Field(key: "field7")
+    var field7: String
+    
+    @Field(key: "field8")
+    var field8: String
+    
+    @Field(key: "field9")
+    var field9: String
+    
+    @Field(key: "field10")
+    var field10: String
+    
+    @Field(key: "field11")
+    var field11: String
+    
+    @Field(key: "field12")
+    var field12: String
+    
+    @Field(key: "field13")
+    var field13: String
+    
+    @Field(key: "field14")
+    var field14: String
+    
+    @Field(key: "field15")
+    var field15: String
+    
+    @Field(key: "field16")
+    var field16: String
+    
+    @Field(key: "field17")
+    var field17: String
+    
+    @Field(key: "field18")
+    var field18: String
+    
+    @Field(key: "field19")
+    var field19: String
+    
+    @Field(key: "field20")
+    var field20: String
 }
