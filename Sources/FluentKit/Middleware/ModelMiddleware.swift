@@ -1,7 +1,3 @@
-#if compiler(>=5.5) && canImport(_Concurrency)
-import NIOCore
-#endif
-
 public protocol AnyModelMiddleware {
     func handle(
         _ event: ModelEvent,
@@ -19,19 +15,6 @@ public protocol ModelMiddleware: AnyModelMiddleware {
     func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
     func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-
-    #if compiler(>=5.5) && canImport(_Concurrency)
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
-    func create(model: Model, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
-    func update(model: Model, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
-    func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
-    func softDelete(model: Model, on db: Database, next: AnyModelResponder) async throws
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
-    func restore(model: Model, on db: Database, next: AnyModelResponder) async throws
-    #endif
 }
 
 extension ModelMiddleware {
