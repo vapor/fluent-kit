@@ -108,15 +108,8 @@ public struct Migrator {
     private func migrators<Result>(
         _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
     ) -> EventLoopFuture<[Result]> {
-        return self.migrations.databases.map { id in
-            let migrations = self.migrations.storage.compactMap { item -> Migration? in
-                guard item.id == id else { return nil }
-                return item.migration
-            }
-
-            let migrator = DatabaseMigrator(id: id, database: self.databaseFactory(id), migrations: migrations)
-            return handler(migrator)
-        }.flatten(on: self.eventLoop)
+        return self.migrations.storage.map { handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1)) }
+            .flatten(on: self.eventLoop)
     }
 }
 
@@ -211,12 +204,8 @@ private final class DatabaseMigrator {
     // MARK: Prepare
 
     func prepareBatch() -> EventLoopFuture<Void> {
-        return self.unpreparedMigrations().flatMap { migrations in
-            return self.lastBatchNumber().and(value: migrations)
-        }.flatMap { batch, migrations in
-            return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: migrations) { migration in
-                self.prepare(migration, batch: batch + 1)
-            }
+        return self.lastBatchNumber().flatMap { batch in
+            self.unpreparedMigrations().sequencedFlatMapEach { self.prepare($0, batch: batch + 1) }
         }
     }
 
@@ -227,15 +216,11 @@ private final class DatabaseMigrator {
     }
 
     func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        return self.preparedMigrations(batch: number).flatMap { migrations in
-            return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: migrations, self.revert)
-        }
+        return self.preparedMigrations(batch: number).sequencedFlatMapEach(self.revert)
     }
 
     func revertAllBatches() -> EventLoopFuture<Void> {
-        return self.preparedMigrations().flatMap { migrations in
-            return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: migrations, self.revert)
-        }
+        return self.preparedMigrations().sequencedFlatMapEach(self.revert)
     }
 
     // MARK: Preview

@@ -4,7 +4,6 @@ on:
   push: 
     branches: 
       - main
-      - master
 env:
   LOG_LEVEL: info
 
@@ -43,10 +42,13 @@ jobs:
         image: mongo:latest
       mongo-b:
         image: mongo:latest
-    container: swift:5.3-focal
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
+        container:
+          - swift:5.4-focal
+          - swift:5.5-focal
         dependent:
           - fluent-sqlite-driver
           - fluent-postgres-driver
@@ -91,12 +93,15 @@ jobs:
           - swift:5.3-bionic
           - swift:5.3-focal
           - swift:5.3-amazonlinux2
-          - swiftlang/swift:nightly-5.3-bionic
-          - swiftlang/swift:nightly-5.3-focal
-          - swiftlang/swift:nightly-5.3-amazonlinux2
-          - swiftlang/swift:nightly-5.4-bionic
-          - swiftlang/swift:nightly-5.4-focal
-          - swiftlang/swift:nightly-5.4-amazonlinux2
+          - swift:5.4-bionic
+          - swift:5.4-focal
+          - swift:5.4-amazonlinux2
+          - swift:5.5-bionic
+          - swift:5.5-focal
+          - swift:5.5-amazonlinux2
+          - swiftlang/swift:nightly-main-bionic
+          - swiftlang/swift:nightly-main-focal
+          - swiftlang/swift:nightly-main-amazonlinux2
     container: ${{ matrix.image }}
     steps:
       - name: Checkout code
