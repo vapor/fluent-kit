@@ -65,23 +65,23 @@ extension AsyncModelMiddleware {
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension AnyModelResponder {
     public func create(_ model: AnyModel, on db: Database) async throws {
-        try await handle(.create, model, on: db)
+        return try await handle(.create, model, on: db)
     }
     
     public func update(_ model: AnyModel, on db: Database) async throws {
-        try await handle(.update, model, on: db)
+        return try await handle(.update, model, on: db)
     }
     
     public func restore(_ model: AnyModel, on db: Database) async throws {
-        try await handle(.restore, model, on: db)
+        return try await handle(.restore, model, on: db)
     }
     
     public func softDelete(_ model: AnyModel, on db: Database) async throws {
-        try await handle(.softDelete, model, on: db)
+        return try await handle(.softDelete, model, on: db)
     }
     
     public func delete(_ model: AnyModel, force: Bool, on db: Database) async throws {
-        try await handle(.delete(force), model, on: db)
+        return try await handle(.delete(force), model, on: db)
     }
 }
 
