@@ -1,7 +1,22 @@
 extension FluentBenchmarker {
     public func testUnique() throws {
+        try self.testUnique_field()
         try self.testUnique_fields()
         try self.testUnique_duplicateKey()
+    }
+
+    private func testUnique_field() throws {
+        try self.runTest(#function, [
+            QuxMigration(),
+        ]) {
+            try Foo(bar: "a", baz: 1).save(on: self.database).wait()
+            do {
+                try Foo(bar: "a", baz: 2).save(on: self.database).wait()
+                XCTFail("should have failed")
+            } catch _ as DatabaseError {
+                // pass
+            }
+        }
     }
 
     private func testUnique_fields() throws {
@@ -89,5 +104,19 @@ private struct BazMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema("bazs").delete()
+    }
+}
+
+private struct QuxMigration: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos")
+            .field("id", .uuid, .identifier(auto: false))
+            .field("bar", .string, .required, .unique)
+            .field("baz", .int, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("foos").delete()
     }
 }
