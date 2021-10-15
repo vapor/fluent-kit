@@ -236,6 +236,8 @@ public struct SQLSchemaConverter {
     
     private func fieldConstraint(_ fieldConstraint: DatabaseSchema.FieldConstraint) -> SQLExpression {
         switch fieldConstraint {
+        case .unique:
+            return SQLColumnConstraintAlgorithm.unique
         case .required:
             return SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):

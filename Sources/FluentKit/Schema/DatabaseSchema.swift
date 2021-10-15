@@ -79,6 +79,7 @@ public struct DatabaseSchema {
             )
         }
 
+        case unique
         case required
         case identifier(auto: Bool)
         case foreignKey(
