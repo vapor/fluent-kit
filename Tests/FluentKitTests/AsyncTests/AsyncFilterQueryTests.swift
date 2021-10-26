@@ -1,4 +1,5 @@
 #if compiler(>=5.5) && canImport(_Concurrency)
+#if !os(Linux)
 @testable import FluentKit
 @testable import FluentBenchmark
 import XCTest
@@ -73,4 +74,5 @@ final class AsyncFilterQueryTests: XCTestCase {
         db.reset()
     }
 }
+#endif
 #endif

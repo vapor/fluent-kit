@@ -1,4 +1,5 @@
 #if compiler(>=5.5) && canImport(_Concurrency)
+#if !os(Linux)
 @testable import FluentKit
 @testable import FluentBenchmark
 import XCTest
@@ -347,5 +348,5 @@ final class AsyncFluentKitTests: XCTestCase {
             .paginate(pageRequest2)
     }
 }
-
+#endif
 #endif
