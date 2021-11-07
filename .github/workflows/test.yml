@@ -6,6 +6,7 @@ on:
       - main
 env:
   LOG_LEVEL: info
+  SWIFT_DETERMINISTIC_HASHING: 1
 
 jobs:
 
