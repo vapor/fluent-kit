@@ -120,7 +120,12 @@ extension OptionalChildProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        // don't decode
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self.value = nil
+        } else {
+            self.value = try container.decode(Value.self)
+        }
     }
 }
 
