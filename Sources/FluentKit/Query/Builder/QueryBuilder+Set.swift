@@ -25,20 +25,32 @@ extension QueryBuilder {
             Field: QueryableProperty,
             Field.Model == Model
     {
+        return self.set(field, to: Field.queryValue(value))
+    }
+    
+    @discardableResult
+    public func set<Field>(
+        _ field: KeyPath<Model, Field>,
+        to value: DatabaseQuery.Value
+    ) -> Self
+    where
+        Field: QueryableProperty,
+        Field.Model == Model
+    {
         if self.query.input.isEmpty {
             self.query.input = [.dictionary([:])]
         }
-
+        
         switch self.query.input[0] {
         case .dictionary(var existing):
             let path = Model.path(for: field)
             assert(path.count == 1, "Set on nested properties is not yet supported.")
-            existing[path[0]] = Field.queryValue(value)
+            existing[path[0]] = value
             self.query.input[0] = .dictionary(existing)
         default:
             fatalError()
         }
-
+        
         return self
     }
 }

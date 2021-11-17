@@ -3,6 +3,7 @@ extension FluentBenchmarker {
         try self.testSet_multiple()
         try self.testSet_optional()
         try self.testSet_enum()
+        try self.testSet_queryValue()
     }
     
     private func testSet_multiple() throws {
@@ -40,6 +41,16 @@ extension FluentBenchmarker {
         ]) {
             try Test2.query(on: self.database)
                 .set(\.$foo, to: .bar)
+                .update().wait()
+        }
+    }
+    
+    private func testSet_queryValue() throws {
+        try runTest(#function, [
+            TestMigration(),
+        ]) {
+            try Test.query(on: self.database)
+                .set(\.$intValue, to: .bind(1))
                 .update().wait()
         }
     }
