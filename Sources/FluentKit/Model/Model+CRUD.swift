@@ -162,12 +162,12 @@ extension Collection where Element: FluentKit.Model {
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 model._$id.generate()
                 model.touchTimestamps(.create, .update)
-                input.append(model.collectInput())
+                input.append(model.collectInput(strategy: .bulkInsert))
                 return db.eventLoop.makeSucceededFuture(())
             }.create(model, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .set(self.map { $0.collectInput() })
+                .set(self.map { $0.collectInput(strategy: .bulkInsert) })
                 .create()
                 .map
             {

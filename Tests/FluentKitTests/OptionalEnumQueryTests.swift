@@ -63,11 +63,11 @@ final class OptionalEnumQueryTests: DbQueryTestCase {
     func testBulkInsertWithOnlyNulls() throws {
         let things = [Thing(id: 1, fb: nil), Thing(id: 2, fb: nil)]
         _ = try things.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("id") VALUES ($1), ($2)"#)
+        assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES (NULL, $1), (NULL, $2)"#)
     }
     
     // @see https://github.com/vapor/fluent-kit/issues/396
-    func SKIP_EXPECTED_FAILURE_testBulkInsertWithMixedNulls() throws {
+    func testBulkInsertWithMixedNulls() throws {
         let things = [Thing(id: 1, fb: nil), Thing(id: 2, fb: .fizz)]
         _ = try things.create(on: db).wait()
         assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES (NULL, $1), ('fizz', $2)"#)

@@ -1,7 +1,7 @@
 public protocol Fields: AnyObject, Codable {
     var properties: [AnyProperty] { get }
     init()
-    func input(to input: DatabaseInput)
+    func input(to input: DatabaseInput, strategy: CollectStrategy)
     func output(from output: DatabaseOutput) throws
 }
 
@@ -50,11 +50,12 @@ extension Fields {
         }
     }
 
-    public func input(to input: DatabaseInput) {
+    
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         self.properties.compactMap {
             $0 as? AnyDatabaseProperty
         }.forEach { field in
-            field.input(to: input)
+            field.input(to: input, strategy: strategy)
         }
     }
 
@@ -141,9 +142,9 @@ extension Fields {
 // MARK: Collect Input
 
 extension Fields {
-    internal func collectInput() -> [FieldKey: DatabaseQuery.Value] {
+    internal func collectInput(strategy: CollectStrategy = .default) -> [FieldKey: DatabaseQuery.Value] {
         let input = DictionaryInput()
-        self.input(to: input)
+        self.input(to: input, strategy: strategy)
         return input.storage
     }
 }

@@ -74,7 +74,7 @@ extension ParentProperty: AnyDatabaseProperty {
         self.$id.keys
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         self.$id.input(to: input)
     }
 

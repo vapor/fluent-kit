@@ -112,7 +112,7 @@ extension ChildrenProperty: AnyDatabaseProperty {
         []
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         // children never has input
     }
 

@@ -261,7 +261,7 @@ extension SiblingsProperty: AnyDatabaseProperty {
         []
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         // siblings never has input
     }
 

@@ -97,7 +97,7 @@ extension OptionalChildProperty: AnyDatabaseProperty {
         []
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         // child never has input
     }
 

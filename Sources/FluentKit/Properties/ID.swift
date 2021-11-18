@@ -149,7 +149,7 @@ extension IDProperty: AnyDatabaseProperty {
         self.field.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         self.field.input(to: input)
     }
 

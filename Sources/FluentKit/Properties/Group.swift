@@ -67,7 +67,7 @@ extension GroupProperty: AnyDatabaseProperty {
         .prefix(self.key, .string("_"))
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         self.value!.input(to: input.prefixed(by: self.prefix))
     }
 

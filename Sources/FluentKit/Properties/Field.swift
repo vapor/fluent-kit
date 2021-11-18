@@ -87,7 +87,7 @@ extension FieldProperty: AnyDatabaseProperty {
         [self.key]
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         if let inputValue = self.inputValue {
             input.set(inputValue, at: self.key)
         }

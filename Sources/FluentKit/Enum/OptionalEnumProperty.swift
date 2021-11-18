@@ -76,9 +76,11 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
         self.field.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         if let value = self.value {
             input.set(value.map { .enumCase($0.rawValue) } ?? .null, at: self.field.key)
+        } else if strategy == .bulkInsert {
+            input.set(.null, at: self.field.key)
         }
     }
 

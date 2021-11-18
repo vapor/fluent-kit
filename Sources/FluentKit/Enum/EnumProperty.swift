@@ -75,7 +75,7 @@ extension EnumProperty: AnyDatabaseProperty {
         self.field.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: DatabaseInput, strategy: CollectStrategy = .default) {
         if let value = self.value {
             input.set(.enumCase(value.rawValue), at: self.field.key)
         }

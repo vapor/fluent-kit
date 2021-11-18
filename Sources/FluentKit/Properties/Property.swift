@@ -19,9 +19,14 @@ extension AnyProperty where Self: Property {
     }
 }
 
+public enum CollectStrategy {
+    case `default`
+    case bulkInsert
+}
+
 public protocol AnyDatabaseProperty: AnyProperty {
     var keys: [FieldKey] { get }
-    func input(to input: DatabaseInput)
+    func input(to input: DatabaseInput, strategy: CollectStrategy)
     func output(from output: DatabaseOutput) throws
 }
 
