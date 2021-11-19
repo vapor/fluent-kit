@@ -114,6 +114,23 @@ private struct UserBatchMiddleware: ModelMiddleware {
     }
 }
 
+#if compiler(>=5.5) && canImport(_Concurrency)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+private struct AsyncUserBatchMiddleware: AsyncModelMiddleware {
+    func create(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+        if model.name == "A" {
+            model.name = "AA"
+            return try await next.create(model, on: db)
+        } else if model.name == "C" {
+            model.name = "CC"
+            return try await next.create(model, on: db)
+        } else {
+            throw TestError(string: "cancelCreation")
+        }
+    }
+}
+#endif
+
 private struct UserMiddleware: ModelMiddleware {
     func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "B"
