@@ -128,7 +128,7 @@ extension Collection where Element: FluentKit.Model {
             return database.eventLoop.makeSucceededFuture(())
         }
 
-        precondition(self.allSatisfy { !$0._$id.exists })
+        precondition(self.allSatisfy { $0._$id.exists })
 
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
