@@ -1,7 +1,13 @@
 extension FluentBenchmarker {
+
     public func testMiddleware() throws {
         try self.testMiddleware_methods()
         try self.testMiddleware_batchCreationFail()
+        #if compiler(>=5.5) && canImport(_Concurrency)
+        if #available(macOS 12, iOS 15, watchOS 8, tvOS 15, *) {
+            try self.testAsyncMiddleware_methods()
+        }
+        #endif
     }
     
     public func testMiddleware_methods() throws {
