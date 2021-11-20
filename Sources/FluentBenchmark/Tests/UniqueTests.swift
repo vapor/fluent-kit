@@ -13,7 +13,7 @@ extension FluentBenchmarker {
             do {
                 try Foo(bar: "a", baz: 2).save(on: self.database).wait()
                 XCTFail("should have failed")
-            } catch _ as DatabaseError {
+            } catch let error where error is DatabaseError {
                 // pass
             }
         }
