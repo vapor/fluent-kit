@@ -154,24 +154,19 @@ extension Collection where Element: FluentKit.Model {
         
         precondition(self.allSatisfy { !$0._$id.exists })
         
-        // Preallocate values and let the concurrent executions fill in the data by index.
-        // This is literally the exact method used by `EventLoopFuture.whenAllSucceed(_:promise:)`
-        var input: [[FieldKey: DatabaseQuery.Value]] = .init(repeating: [:], count: self.count)
-
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 model._$id.generate()
                 model.touchTimestamps(.create, .update)
-                input[idx] = model.collectInput()
                 return db.eventLoop.makeSucceededFuture(())
             }.create(model, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .set(input)
+                .set(self.map { $0.collectInput() })
                 .create()
         }.map {
-            self.forEach {
-                $0._$id.exists = true
+            for model in self {
+                model._$id.exists = true
             }
         }
     }
