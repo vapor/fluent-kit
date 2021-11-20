@@ -14,24 +14,32 @@ public protocol AsyncModelMiddleware: AnyModelMiddleware {
 
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension AsyncModelMiddleware {
-    public func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database, chainingTo next: AnyAsyncModelResponder) async throws {
-        guard let modelType = model as? Model else {
-            try await next.handle(event, model, on: db)
-            return
+    public func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database, chainingTo next: AnyModelResponder) -> EventLoopFuture<Void> {
+        let promise = db.eventLoop.makePromise(of: Void.self)
+        promise.completeWithTask {
+            guard let modelType = model as? Model else {
+                try await next.handle(event, model, on: db).get()
+                return
+            }
+
+            let responder = AsyncBasicModelResponder { responderEvent, responderModel, responderDB in
+                return try await next.handle(responderEvent, responderModel, on: responderDB).get()
+            }
+
+            switch event {
+            case .create:
+                try await self.create(model: modelType, on: db, next: responder)
+            case .update:
+                try await self.update(model: modelType, on: db, next: responder)
+            case .delete(let force):
+                try await self.delete(model: modelType, force: force, on: db, next: responder)
+            case .softDelete:
+                try await self.softDelete(model: modelType, on: db, next: responder)
+            case .restore:
+                try await self.restore(model: modelType, on: db, next: responder)
+            }
         }
-        
-        switch event {
-        case .create:
-            try await self.create(model: modelType, on: db, next: next)
-        case .update:
-            try await self.update(model: modelType, on: db, next: next)
-        case .delete(let force):
-            try await self.delete(model: modelType, force: force, on: db, next: next)
-        case .softDelete:
-            try await self.softDelete(model: modelType, on: db, next: next)
-        case .restore:
-            try await self.restore(model: modelType, on: db, next: next)
-        }
+        return promise.futureResult
     }
     
     public func create(model: Model, on db: Database, next: AnyAsyncModelResponder) async throws {
