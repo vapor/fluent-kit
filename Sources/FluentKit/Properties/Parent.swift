@@ -97,15 +97,7 @@ extension ParentProperty: AnyCodableProperty {
 
     public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        let unwrapper = try container.decode(DecoderUnwrapper.self, forKey: .string("id"))
-        try self.$id.decode(from: unwrapper.decoder)
-    }
-}
-
-private struct DecoderUnwrapper: Decodable {
-    let decoder: Decoder
-    init(from decoder: Decoder) throws {
-        self.decoder = decoder
+        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
     }
 }
 

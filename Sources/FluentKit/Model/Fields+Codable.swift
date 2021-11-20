@@ -105,14 +105,11 @@ private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
         do {
             return try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
         } catch DecodingError.typeMismatch(let type, let context) {
-            throw DecodingError.typeMismatch(
-                type,
-                .init(
-                    codingPath: [self.key] + context.codingPath,
-                    debugDescription: "Could not decode key",
-                    underlyingError: nil
-                )
-            )
+            throw DecodingError.typeMismatch(type, .init(
+                codingPath: context.codingPath + [self.key],
+                debugDescription: "Could not decode key",
+                underlyingError: context.underlyingError
+            ))
         }
     }
 
