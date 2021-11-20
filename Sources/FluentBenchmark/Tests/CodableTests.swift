@@ -17,7 +17,7 @@ extension FluentBenchmarker {
             _ = try JSONDecoder().decode(Question.self, from: .init(json.utf8))
             XCTFail("expected error")
         } catch DecodingError.typeMismatch(let type, let context) {
-            XCTAssertEqual(ObjectIdentifier(type), ObjectIdentifier(Project.self))
+            XCTAssertEqual(ObjectIdentifier(type), ObjectIdentifier([String: Any].self), "\(type) != \([String: Any].self)")
             XCTAssertEqual(context.codingPath.map(\.stringValue), ["project"])
         }
     }

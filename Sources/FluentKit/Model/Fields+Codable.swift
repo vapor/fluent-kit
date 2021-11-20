@@ -104,8 +104,8 @@ private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
     func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
         do {
             return try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
-        } catch DecodingError.typeMismatch(let type, let context) {
-            throw DecodingError.typeMismatch(type, .init(
+        } catch DecodingError.typeMismatch(let mismatchedType, let context) {
+            throw DecodingError.typeMismatch(mismatchedType, .init(
                 codingPath: context.codingPath + [self.key],
                 debugDescription: "Could not decode key",
                 underlyingError: context.underlyingError
