@@ -67,6 +67,11 @@ final class FluentKitTests: XCTestCase {
 
     func testJoins() throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Planet.query(on: db).join(child: \Planet.$governor).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "governors" ON "planets"."id" = "governors"."planet_id"#), true)
+        db.reset()
+        
         _ = try Planet.query(on: db).join(children: \Planet.$moons).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "moons" ON "planets"."id" = "moons"."planet_id"#), true)
@@ -524,6 +529,29 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(builder.query.fields.count, 9)
     }
 
+    func testPaginationDoesntCrashWithNegativeNumbers() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let pageRequest1 = PageRequest(page: -1, per: 10)
+        XCTAssertNoThrow(try Planet2
+            .query(on: db)
+            .paginate(pageRequest1)
+            .wait())
+
+        let pageRequest2 = PageRequest(page: 1, per: -10)
+        XCTAssertNoThrow(try Planet2
+            .query(on: db)
+            .paginate(pageRequest2)
+            .wait())
+    }
+    
+    func testFieldsPropertiesPerformance() throws {
+        measure {
+            for _ in 1 ... 10_000 {
+                XCTAssertEqual(LotsOfFields().properties.count, 21)
+            }
+        }
+    }
+
     func testGroupCodable() throws {
         XCTAssertThrowsError(try JSONDecoder().decode(User.self, from: .init("""
         {"name": "Tanner"}
@@ -533,7 +561,6 @@ final class FluentKitTests: XCTestCase {
                 XCTAssertEqual(key.description, "pet")
             default:
                 XCTFail("Unexpected error: \(error)")
-            }
         }
     }
 }
@@ -644,4 +671,71 @@ final class Planet2: Model {
         self.name = name
         self.moonCount = moonCount
     }
+}
+
+final class LotsOfFields: Model {
+    static let schema = "never_used"
+    
+    @ID(custom: "id")
+    var id: Int?
+    
+    @Field(key: "field1")
+    var field1: String
+    
+    @Field(key: "field2")
+    var field2: String
+    
+    @Field(key: "field3")
+    var field3: String
+    
+    @Field(key: "field4")
+    var field4: String
+    
+    @Field(key: "field5")
+    var field5: String
+    
+    @Field(key: "field6")
+    var field6: String
+    
+    @Field(key: "field7")
+    var field7: String
+    
+    @Field(key: "field8")
+    var field8: String
+    
+    @Field(key: "field9")
+    var field9: String
+    
+    @Field(key: "field10")
+    var field10: String
+    
+    @Field(key: "field11")
+    var field11: String
+    
+    @Field(key: "field12")
+    var field12: String
+    
+    @Field(key: "field13")
+    var field13: String
+    
+    @Field(key: "field14")
+    var field14: String
+    
+    @Field(key: "field15")
+    var field15: String
+    
+    @Field(key: "field16")
+    var field16: String
+    
+    @Field(key: "field17")
+    var field17: String
+    
+    @Field(key: "field18")
+    var field18: String
+    
+    @Field(key: "field19")
+    var field19: String
+    
+    @Field(key: "field20")
+    var field20: String
 }

@@ -90,7 +90,7 @@ public struct SQLSchemaConverter {
                     name: SQLIdentifier(name)
                 )
             case .custom(let any):
-                return custom(any)
+                return SQLConstraint(algorithm: any as! SQLExpression, name: customName.map(SQLIdentifier.init(_:)))
             }
         case .custom(let any):
             return custom(any)
@@ -269,7 +269,7 @@ public struct SQLSchemaConverter {
 /// SQL drop constraint expression.
 ///
 ///     `CONSTRAINT/KEY <name>`
-struct SQLDropConstraint: SQLExpression {
+public struct SQLDropConstraint: SQLExpression {
     public var name: SQLExpression
 
     public init(name: SQLExpression) {

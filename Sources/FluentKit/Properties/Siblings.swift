@@ -10,10 +10,10 @@ public final class SiblingsProperty<From, To, Through>
     where From: Model, To: Model, Through: Model
 {
     public enum AttachMethod {
-        // always create the pivot
+        /// Always create the pivot model
         case always
 
-        // only create the pivot if it doesn't already exist
+        /// Only create the pivot if it doesn't already exist
         case ifNotExists
     }
 
@@ -22,6 +22,17 @@ public final class SiblingsProperty<From, To, Through>
     var idValue: From.IDValue?
     
     public var value: [To]?
+    
+    /// Allows eager loading of pivot objects through the sibling relation.
+    /// Example:
+    ///
+    ///     Planet.query(on: db)
+    ///         .with(\.$tags).with(\.$tags.$pivots).first() { planet in
+    ///             // you can now access the loaded pivots using:
+    ///             let pivots = planet.$tags.pivots
+    ///         }
+    @ChildrenProperty<From, Through>
+    public var pivots: [Through]
 
     public init(
         through _: Through.Type,
@@ -30,6 +41,7 @@ public final class SiblingsProperty<From, To, Through>
     ) {
         self.from = from
         self.to = to
+        self._pivots = ChildrenProperty<From, Through>(for: from)
     }
 
     public var wrappedValue: [To] {
@@ -50,6 +62,11 @@ public final class SiblingsProperty<From, To, Through>
 
     // MARK: Checking state
 
+    /// Check whether a specific model is already attached through a sibling relationship.
+    ///
+    /// - Parameters:
+    ///     - to: The model to check whether it is attached through a pivot.
+    ///     - database: The database to perform check on.
     public func isAttached(to: To, on database: Database) -> EventLoopFuture<Bool> {
         guard let toID = to.id else {
             fatalError("Cannot attach unsaved model.")
@@ -58,6 +75,11 @@ public final class SiblingsProperty<From, To, Through>
         return self.isAttached(toID: toID, on: database)
     }
 
+    /// Check whether a specific model ID is already attached through a sibling relationship.
+    ///
+    /// - Parameters:
+    ///     - toID: The ID of the model to check whether it is attached through a pivot.
+    ///     - database: The database to perform the check on.
     public func isAttached(toID: To.IDValue, on database: Database) -> EventLoopFuture<Bool> {
         guard let fromID = self.idValue else {
             fatalError("Cannot check if siblings are attached to an unsaved model.")
@@ -72,6 +94,12 @@ public final class SiblingsProperty<From, To, Through>
 
     // MARK: Operations
 
+    /// Attach an array model to this model through a pivot.
+    ///
+    /// - Parameters:
+    ///     - tos: An array of models to attach through a sibling releationship
+    ///     - database: The database to perform the attachment on.
+    ///     - edit: An optional closure to edit the pivot model before saving it.
     public func attach(
         _ tos: [To],
         on database: Database,
@@ -93,6 +121,13 @@ public final class SiblingsProperty<From, To, Through>
         }.create(on: database)
     }
 
+    /// Attach a single model by creating a pivot model and specifying the attachment method.
+    ///
+    /// - Parameters:
+    ///     - to: The model to attach through a sibling releationship
+    ///     - method: The attachment method to use when deciding whether to create the pivot.
+    ///     - database: The database to perform the attachment on.
+    ///     - edit: An optional closure to edit the pivot model before saving it.
     public func attach(
         _ to: To,
         method: AttachMethod,
@@ -113,6 +148,12 @@ public final class SiblingsProperty<From, To, Through>
         }
     }
 
+    /// Attach a single model by creating a pivot model.
+    ///
+    /// - Parameters:
+    ///     - to: The model to attach through a sibling releationship
+    ///     - database: The database to perform the attachment on.
+    ///     - edit: An optional closure to edit the pivot model before saving it.
     public func attach(
         _ to: To,
         on database: Database,
@@ -132,7 +173,11 @@ public final class SiblingsProperty<From, To, Through>
         return pivot.save(on: database)
     }
 
-
+    /// Detaches an array of models from this model by deleting each pivot.
+    ///
+    /// - Parameters:
+    ///     - tos: An array of models to detach from this model.
+    ///     - database: The database to perform the attachment on.
     public func detach(_ tos: [To], on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             fatalError("Cannot detach siblings relation to unsaved model.")
@@ -150,12 +195,17 @@ public final class SiblingsProperty<From, To, Through>
             .delete()
     }
 
+    /// Detach a single model by deleting the pivot.
+    ///
+    /// - Parameters:
+    ///     - to: The model to detach from this model.
+    ///     - database: The database to perform the attachment on.
     public func detach(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot attach siblings relation to unsaved model.")
+            fatalError("Cannot detach siblings relation from unsaved model.")
         }
         guard let toID = to.id else {
-            fatalError("Cannot attach unsaved model.")
+            fatalError("Cannot detach unsaved model.")
         }
 
         return Through.query(on: database)
@@ -163,9 +213,21 @@ public final class SiblingsProperty<From, To, Through>
             .filter(self.to.appending(path: \.$id) == toID)
             .delete()
     }
+    
+    /// Detach all models by deleting all pivots from this model.
+    public func detachAll(on database: Database) -> EventLoopFuture<Void> {
+        guard let fromID = self.idValue else {
+            fatalError("Cannot detach siblings relation from unsaved model.")
+        }
+        
+        return Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .delete()
+    }
 
     // MARK: Query
 
+    /// Returns a `QueryBuilder` that can be used to query the siblings.
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let fromID = self.idValue else {
             fatalError("Cannot query siblings relation from unsaved model.")
@@ -207,6 +269,7 @@ extension SiblingsProperty: AnyDatabaseProperty {
         let key = From()._$id.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
+            self._pivots.idValue = self.idValue
         }
     }
 }

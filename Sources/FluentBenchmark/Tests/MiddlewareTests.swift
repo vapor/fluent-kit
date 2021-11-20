@@ -1,7 +1,13 @@
 extension FluentBenchmarker {
+
     public func testMiddleware() throws {
         try self.testMiddleware_methods()
         try self.testMiddleware_batchCreationFail()
+        #if compiler(>=5.5) && canImport(_Concurrency)
+        if #available(macOS 12, iOS 15, watchOS 8, tvOS 15, *) {
+            try self.testAsyncMiddleware_methods()
+        }
+        #endif
     }
     
     public func testMiddleware_methods() throws {
@@ -53,6 +59,59 @@ extension FluentBenchmarker {
             XCTAssertEqual(user.name, "G")
         }
     }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+    public func testAsyncMiddleware_methods() throws {
+        try self.runTest(#function, [
+            UserMigration(),
+        ]) {
+            self.databases.middleware.use(AsyncUserMiddleware())
+
+            let user = User(name: "A")
+            // create
+            do {
+                try user.create(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didCreate")
+            }
+            XCTAssertEqual(user.name, "B")
+
+            // update
+            user.name = "C"
+            do {
+                try user.update(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didUpdate")
+            }
+            XCTAssertEqual(user.name, "D")
+
+            // soft delete
+            do {
+                try user.delete(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didSoftDelete")
+            }
+            XCTAssertEqual(user.name, "E")
+
+            // restore
+            do {
+                try user.restore(on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didRestore")
+            }
+            XCTAssertEqual(user.name, "F")
+
+            // force delete
+            do {
+                try user.delete(force: true, on: self.database).wait()
+            } catch let error as TestError {
+                XCTAssertEqual(error.string, "didDelete")
+            }
+            XCTAssertEqual(user.name, "G")
+        }
+    }
+#endif
     
     public func testMiddleware_batchCreationFail() throws {
         try self.runTest(#function, [
@@ -113,6 +172,46 @@ private struct UserBatchMiddleware: ModelMiddleware {
         }
     }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+private struct AsyncUserMiddleware: AsyncModelMiddleware {
+    func create(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+        model.name = "B"
+
+        try await next.create(model, on: db)
+        throw TestError(string: "didCreate")
+    }
+
+    func update(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+        model.name = "D"
+
+        try await next.update(model, on: db)
+        throw TestError(string: "didUpdate")
+    }
+
+    func softDelete(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+        model.name = "E"
+
+        try await next.softDelete(model, on: db)
+        throw TestError(string: "didSoftDelete")
+    }
+
+    func restore(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+        model.name = "F"
+
+        try await next.restore(model , on: db)
+        throw TestError(string: "didRestore")
+    }
+
+    func delete(model: User, force: Bool, on db: Database, next: AnyAsyncModelResponder) async throws {
+        model.name = "G"
+
+        try await next.delete(model, force: force, on: db)
+        throw TestError(string: "didDelete")
+    }
+}
+#endif
 
 private struct UserMiddleware: ModelMiddleware {
     func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {

@@ -4,7 +4,8 @@ import PackageDescription
 let package = Package(
     name: "fluent-kit",
     platforms: [
-       .macOS(.v10_15)
+        .macOS(.v10_15),
+        .iOS(.v13)
     ],
     products: [
         .library(name: "FluentKit", targets: ["FluentKit"]),
@@ -13,14 +14,15 @@ let package = Package(
         .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.33.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.1.0"),
-        .package(url: "https://github.com/vapor/async-kit.git", from: "1.0.0"),
+        .package(url: "https://github.com/vapor/async-kit.git", from: "1.4.0"),
     ],
     targets: [
         .target(name: "FluentKit", dependencies: [
             .product(name: "NIO", package: "swift-nio"),
+            .product(name: "NIOCore", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .product(name: "AsyncKit", package: "async-kit"),
         ]),

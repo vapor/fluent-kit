@@ -55,7 +55,8 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Fields
-
+    
+    @discardableResult
     public func fields<Joined>(for model: Joined.Type) -> Self 
         where Joined: Schema & Fields
     {
@@ -69,21 +70,30 @@ public final class QueryBuilder<Model>
         }
     }
 
+    @discardableResult
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
         where Field: QueryableProperty, Field.Model == Model
     {
         self.field(Model.self, field)
     }
 
+    @discardableResult
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
         self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
         return self
     }
+    
+    @discardableResult
+    public func field(_ field: DatabaseQuery.Field) -> Self {
+        self.query.fields.append(field)
+        return self
+    }
 
     // MARK: Soft Delete
 
+    @discardableResult
     public func withDeleted() -> Self {
         self.includeDeleted = true
         return self
@@ -102,14 +112,15 @@ public final class QueryBuilder<Model>
     }
 
     public func delete(force: Bool = false) -> EventLoopFuture<Void> {
-        self.includeDeleted = true
+        self.includeDeleted = force
         self.shouldForceDelete = force
         self.query.action = .delete
         return self.run()
     }
 
     // MARK: Limit
-
+    
+    @discardableResult
     public func limit(_ count: Int) -> Self {
         self.query.limits.append(.count(count))
         return self
@@ -117,6 +128,7 @@ public final class QueryBuilder<Model>
 
     // MARK: Offset
 
+    @discardableResult
     public func offset(_ count: Int) -> Self {
         self.query.offsets.append(.count(count))
         return self
@@ -124,6 +136,7 @@ public final class QueryBuilder<Model>
 
     // MARK: Unqiue
 
+    @discardableResult
     public func unique() -> Self {
         self.query.isUnique = true
         return self
@@ -221,7 +234,7 @@ public final class QueryBuilder<Model>
                     return self.database.eventLoop.makeSucceededFuture(())
                 }
                 // run eager loads
-                return EventLoopFutureQueue(eventLoop: self.database.eventLoop).append(each: self.eagerLoaders) { loader in
+                return self.eagerLoaders.sequencedFlatMapEach(on: self.database.eventLoop) { loader in
                     return loader.anyRun(models: all, on: self.database)
                 }
             }
@@ -230,6 +243,7 @@ public final class QueryBuilder<Model>
         }
     }
 
+    @discardableResult
     internal func action(_ action: DatabaseQuery.Action) -> Self {
         self.query.action = action
         return self

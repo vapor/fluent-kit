@@ -96,7 +96,7 @@ public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 }
 
 public struct ModelValueFilter<Model> where Model: Fields {
-    init<Field>(
+    public init<Field>(
         _ lhs: KeyPath<Model, Field>,
         _ method: DatabaseQuery.Filter.Method,
         _ rhs: DatabaseQuery.Value

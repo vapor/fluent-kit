@@ -45,6 +45,10 @@ extension Database {
     public var history: QueryHistory? {
         self.context.history
     }
+
+    public var pageSizeLimit: Int? {
+        self.context.pageSizeLimit
+    }
 }
 
 public protocol DatabaseDriver {
@@ -62,17 +66,20 @@ public struct DatabaseContext {
     public let logger: Logger
     public let eventLoop: EventLoop
     public let history: QueryHistory?
+    public let pageSizeLimit: Int?
     
     public init(
         configuration: DatabaseConfiguration,
         logger: Logger,
         eventLoop: EventLoop,
-        history: QueryHistory? = nil
+        history: QueryHistory? = nil,
+        pageSizeLimit: Int? = nil
     ) {
         self.configuration = configuration
         self.logger = logger
         self.eventLoop = eventLoop
         self.history = history
+        self.pageSizeLimit = pageSizeLimit
     }
 }
 

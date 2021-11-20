@@ -127,6 +127,9 @@ extension Collection where Element: FluentKit.Model {
         guard self.count > 0 else {
             return database.eventLoop.makeSucceededFuture(())
         }
+
+        precondition(self.allSatisfy { $0._$id.exists })
+
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 return db.eventLoop.makeSucceededFuture(())
@@ -135,15 +138,11 @@ extension Collection where Element: FluentKit.Model {
             Element.query(on: database)
                 .filter(\._$id ~~ self.map { $0.id! })
                 .delete(force: force)
-                .map
-            {
-                if force {
-                    self.forEach {
-                        if force || $0.deletedTimestamp == nil {
-                            $0._$id.exists = false
-                        }
-                    }
-                }
+        }.map {
+            guard force else { return }
+            
+            for model in self where model.deletedTimestamp == nil {
+                model._$id.exists = false
             }
         }
     }
@@ -152,28 +151,22 @@ extension Collection where Element: FluentKit.Model {
         guard self.count > 0 else {
             return database.eventLoop.makeSucceededFuture(())
         }
-
-        self.forEach { model in
-            precondition(!model._$id.exists)
-        }
         
-        var input: [[FieldKey: DatabaseQuery.Value]] = []
-        return EventLoopFuture<Void>.andAllSucceed(self.map { model in
+        precondition(self.allSatisfy { !$0._$id.exists })
+        
+        return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 model._$id.generate()
                 model.touchTimestamps(.create, .update)
-                input.append(model.collectInput())
                 return db.eventLoop.makeSucceededFuture(())
             }.create(model, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
                 .set(self.map { $0.collectInput() })
                 .create()
-                .map
-            {
-                self.forEach {
-                    $0._$id.exists = true
-                }
+        }.map {
+            for model in self {
+                model._$id.exists = true
             }
         }
     }

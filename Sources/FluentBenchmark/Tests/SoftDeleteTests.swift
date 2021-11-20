@@ -2,8 +2,10 @@ extension FluentBenchmarker {
     public func testSoftDelete() throws {
         try self.testSoftDelete_model()
         try self.testSoftDelete_query()
+        try self.testSoftDelete_timestampUpdate()
         try self.testSoftDelete_onBulkDelete()
         try self.testSoftDelete_forceOnQuery()
+        try self.testSoftDelete_parent()
     }
     
     private func testCounts(
@@ -64,7 +66,38 @@ extension FluentBenchmarker {
             XCTAssertEqual(trash.count, 0)
         }
     }
-    
+
+    private func testSoftDelete_timestampUpdate() throws {
+        try self.runTest(#function, [
+            TrashMigration()
+        ]) {
+            // Create soft-deletable model.
+            let a = Trash(contents: "A")
+            try a.create(on: self.database).wait()
+            try XCTAssertEqual(Trash.query(on: self.database).all().wait().map(\.contents), ["A"])
+
+            // Delete model and make sure it still exists, with its `.deletedAt` property set.
+            try a.delete(on: self.database).wait()
+            try XCTAssertEqual(Trash.query(on: self.database).all().wait().count, 0)
+            try XCTAssertEqual(Trash.query(on: self.database).withDeleted().all().wait().map(\.contents), ["A"])
+            let deletedAt = try XCTUnwrap(a.deletedAt).timeIntervalSince1970.rounded(.down)
+            try XCTAssertEqual(
+                Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt?.timeIntervalSince1970.rounded(.down),
+                deletedAt
+            )
+
+            // Delete all models
+            sleep(1)
+            try Trash.query(on: self.database).delete().wait()
+
+            // Make sure the `.deletedAt` value doesn't change.
+            try XCTAssertEqual(
+                Trash.query(on: self.database).withDeleted().first().wait()?.deletedAt?.timeIntervalSince1970.rounded(.down),
+                deletedAt
+            )
+        }
+    }
+
     private func testSoftDelete_onBulkDelete() throws {
         try self.runTest(#function, [
             TrashMigration(),
@@ -90,6 +123,93 @@ extension FluentBenchmarker {
 
             try Trash.query(on: self.database).delete(force: true).wait()
             try testCounts(allCount: 0, realCount: 0)
+        }
+    }
+
+    // Tests eager load of @Parent relation that has been soft-deleted.
+    private func testSoftDelete_parent() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+
+            @ID(key: .id)
+            var id: UUID?
+
+            @Parent(key: "bar")
+            var bar: Bar
+
+            init() { }
+        }
+
+        struct FooMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("foos")
+                    .id()
+                    .field("bar", .uuid, .required)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("foos").delete()
+            }
+        }
+
+        final class Bar: Model {
+            static let schema = "bars"
+
+            @ID(key: .id)
+            var id: UUID?
+
+            @Timestamp(key: "deleted_at", on: .delete)
+            var deletedAt: Date?
+
+            init() { }
+        }
+
+        struct BarMigration: Migration {
+            func prepare(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("bars")
+                    .id()
+                    .field("deleted_at", .datetime)
+                    .create()
+            }
+
+            func revert(on database: Database) -> EventLoopFuture<Void> {
+                database.schema("bars").delete()
+            }
+        }
+
+        try self.runTest(#function, [
+            FooMigration(),
+            BarMigration(),
+        ]) {
+            let bar1 = Bar()
+            try bar1.create(on: self.database).wait()
+            let bar2 = Bar()
+            try bar2.create(on: self.database).wait()
+
+            let foo1 = Foo()
+            foo1.$bar.id = bar1.id!
+            try foo1.create(on: self.database).wait()
+
+            let foo2 = Foo()
+            foo2.$bar.id = bar2.id!
+            try foo2.create(on: self.database).wait()
+
+            // test fetch
+            let foos = try Foo.query(on: self.database).with(\.$bar).all().wait()
+            XCTAssertEqual(foos.count, 2)
+            XCTAssertNotNil(foos[0].$bar.value)
+            XCTAssertNotNil(foos[1].$bar.value)
+
+            // soft-delete bar 1
+            try bar1.delete(on: self.database).wait()
+
+            // test fetch again
+            // this should throw an error now because one of the
+            // parents is missing and the results cannot be loaded
+            XCTAssertThrowsError(try Foo.query(on: self.database).with(\.$bar).all().wait()) { error in
+                XCTAssertEqual("\(error)", FluentError.missingParent.description)
+            }
         }
     }
 }

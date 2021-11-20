@@ -84,4 +84,8 @@ extension AliasedField: AnyQueryableProperty where Field: AnyQueryableProperty {
     }
 }
 
-extension AliasedField: QueryableProperty where Field: QueryableProperty { }
+extension AliasedField: QueryableProperty where Field: QueryableProperty {
+    public static func queryValue(_ value: Field.Value) -> DatabaseQuery.Value {
+        Field.queryValue(value)
+    }
+}
