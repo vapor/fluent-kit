@@ -561,6 +561,7 @@ final class FluentKitTests: XCTestCase {
                 XCTAssertEqual(key.description, "pet")
             default:
                 XCTFail("Unexpected error: \(error)")
+            }
         }
     }
 }
