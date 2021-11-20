@@ -44,4 +44,17 @@ extension AnyAsyncModelResponder {
     }
 }
 
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+internal struct AsyncBasicModelResponder: AnyAsyncModelResponder {
+    private let _handle: (ModelEvent, AnyModel, Database) async throws -> Void
+
+    internal func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database) async throws {
+        return try await _handle(event, model, db)
+    }
+
+    init(handle: @escaping (ModelEvent, AnyModel, Database) async throws -> Void) {
+        self._handle = handle
+    }
+}
+
 #endif
