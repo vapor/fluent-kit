@@ -48,9 +48,7 @@ public struct Page<T> {
     }
 
     /// Maps a page's items to a different type using the supplied closure.
-    public func map<U>(_ transform: (T) throws -> (U)) rethrows -> Page<U>
-        where U: Codable
-    {
+    public func map<U>(_ transform: (T) throws -> (U)) rethrows -> Page<U> {
         try .init(
             items: self.items.map(transform),
             metadata: self.metadata
