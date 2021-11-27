@@ -30,7 +30,7 @@ extension SQLRow {
     }
 }
 
-private struct SQLDatabaseOutput: DatabaseOutput {
+internal struct SQLDatabaseOutput: DatabaseOutput {
     let sql: SQLRow
 
     var description: String {
