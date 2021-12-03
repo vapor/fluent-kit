@@ -12,6 +12,19 @@ extension QueryBuilder {
         self.join(Foreign.self, filter.foreign, to: Local.self, filter.local , method: method)
     }
 
+    @discardableResult
+    public func join<Foreign, Local>(
+        _ local: Local.Type,
+        _ foreign: Foreign.Type,
+        on join: DatabaseQuery.Join
+    ) -> Self
+        where Foreign: Schema, Local: Schema
+    {
+        self.models.append(Foreign.self)
+        self.query.joins.append(join)
+        return self
+    }
+
     /// This will join a foreign table based on a `@Parent` relation
     ///
     /// This will not decode the joined data, but can be used in order to filter.
