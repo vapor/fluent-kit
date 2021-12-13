@@ -20,7 +20,7 @@ public final class QueryBuilder<Model>
         )
     }
 
-    private init(
+    internal init(
         query: DatabaseQuery,
         database: Database,
         models: [Schema.Type] = [],
