@@ -22,6 +22,9 @@ public protocol Initializable {
     init()
 }
 
+
+#if !os(Linux) || !compiler(<5.3)
+
 // MARK: ViewBinder
 public final class ViewBinder<Base : FluentKit.Model, Prototype : Initializable> : DbView {
     
@@ -47,6 +50,7 @@ public final class ViewBinder<Base : FluentKit.Model, Prototype : Initializable>
     
 }
 
+#endif
 
 public extension QueryBuilder {
     
@@ -66,6 +70,8 @@ public extension QueryBuilder {
               view(as: View())
           }
     
+#if !os(Linux) || !compiler(<5.3)
+    
     func project<View>(onto prototype: View)
     -> QueryViewBuilder<ViewBinder<Model, View>> where
     View : DbView,
@@ -79,6 +85,8 @@ public extension QueryBuilder {
     View.Base == Model {
         project(onto: .init())
     }
+    
+#endif
     
 }
 
@@ -101,6 +109,8 @@ public final class QueryViewBuilder<View> where View : DbView {
 
 public extension QueryViewBuilder {
     
+#if !os(Linux) || !compiler(<5.3)
+    
     func bind<Base, Wrapped : Initializable, Property : QueryableProperty>(
         _ prop: KeyPath<Model, Property>,
         to writable: WritableKeyPath<Wrapped, Property>) -> Self
@@ -112,6 +122,8 @@ public extension QueryViewBuilder {
         }
         return self
     }
+    
+#endif
     
     private func prepareForFetch() {
         builder.query.fields = prototype.overrideFields
