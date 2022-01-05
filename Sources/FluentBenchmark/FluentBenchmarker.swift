@@ -1,6 +1,5 @@
 import FluentKit
 import Foundation
-import NIO
 import XCTest
 
 public final class FluentBenchmarker {

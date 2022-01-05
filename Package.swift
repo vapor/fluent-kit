@@ -21,7 +21,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "FluentKit", dependencies: [
-            .product(name: "NIO", package: "swift-nio"),
             .product(name: "NIOCore", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .product(name: "AsyncKit", package: "async-kit"),
@@ -35,12 +34,13 @@ let package = Package(
             .product(name: "SQLKit", package: "sql-kit"),
         ]),
         .target(name: "XCTFluent", dependencies: [
-            .target(name: "FluentKit")
+            .target(name: "FluentKit"),
+            .product(name: "NIOEmbedded", package: "swift-nio"),
         ]),
         .testTarget(name: "FluentKitTests", dependencies: [
             .target(name: "FluentBenchmark"),
             .target(name: "FluentSQL"),
-            .target(name: "XCTFluent")
+            .target(name: "XCTFluent"),
         ]),
     ]
 )

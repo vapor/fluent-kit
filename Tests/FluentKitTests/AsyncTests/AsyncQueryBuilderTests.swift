@@ -5,7 +5,6 @@
 import XCTest
 import Foundation
 import XCTFluent
-import NIO
 
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 final class AsyncQueryBuilderTests: XCTestCase {
