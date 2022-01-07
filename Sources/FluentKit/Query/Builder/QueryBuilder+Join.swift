@@ -66,6 +66,48 @@ extension QueryBuilder {
     ) -> Self {
         join(from: Model.self, parent: parent, method: method)
     }
+
+    /// This will join a foreign table based on a `@OptionalParent` relation
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     Planet.query(on: db)
+    ///         .join(from: Planet.self, parent: \.$star)
+    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///
+    /// - Parameters:
+    ///   - model: The `Model` to join from
+    ///   - parent: The `OptionalParentProperty` to join
+    ///   - method: The method to use. The default is an inner join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<From, To>(
+        from model: From.Type,
+        parent: KeyPath<From, OptionalParentProperty<From, To>>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self {
+        join(To.self, on: parent.appending(path: \.$id) == \To._$id, method: method)
+    }
+
+    /// This will join a foreign table based on a `@OptionalParent` relation
+    ///
+    /// This will not decode the joined data, but can be used in order to filter.
+    ///
+    ///     Planet.query(on: db)
+    ///         .join(parent: \.$star)
+    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///
+    /// - Parameters:
+    ///   - parent: The `OptionalParentProperty` to join
+    ///   - method: The method to use. The default is an inner join
+    /// - Returns: A new `QueryBuilder`
+    @discardableResult
+    public func join<To>(
+        parent: KeyPath<Model, OptionalParentProperty<Model, To>>,
+        method: DatabaseQuery.Join.Method = .inner
+    ) -> Self {
+        join(from: Model.self, parent: parent, method: method)
+    }
     
     /// This will join a foreign table based on a `@OptionalChild` relation
     ///
