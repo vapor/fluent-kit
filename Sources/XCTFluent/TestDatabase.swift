@@ -1,5 +1,5 @@
 import FluentKit
-import NIO
+import NIOEmbedded
 
 /// Lets you mock the row results for each query.
 ///

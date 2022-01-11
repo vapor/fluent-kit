@@ -3,7 +3,6 @@
 import XCTest
 import Foundation
 import XCTFluent
-import NIO
 
 final class QueryBuilderTests: XCTestCase {
     func testFirstEmptyResult() throws {

@@ -1,4 +1,6 @@
-import NIO
+import FluentKit
+import Foundation
+import NIOEmbedded
 
 public struct DummyDatabase: Database {
     public var context: DatabaseContext

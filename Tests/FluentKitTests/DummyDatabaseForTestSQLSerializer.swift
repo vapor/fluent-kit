@@ -1,7 +1,8 @@
 @testable import FluentKit
 import FluentSQL
-import NIO
+import NIOEmbedded
 import SQLKit
+import XCTFluent
 
 public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     public var inTransaction: Bool {
