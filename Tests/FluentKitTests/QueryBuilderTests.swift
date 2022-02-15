@@ -191,19 +191,15 @@ final class QueryBuilderTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
 
         _ = try Planet.query(on: db, for: .readOnly).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets""#)
-        print(db.sqlSerializers.first!.sql)
+        assertQuery(db, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets""#)
         db.reset()
 
         _ = try Planet.query(on: db, for: .update).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets" FOR UPDATE"#)
+        assertQuery(db, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets" FOR UPDATE"#)
         db.reset()
 
         _ = try Planet.query(on: db, for: .share).all().wait()
-        XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets" FOR SHARE"#)
+        assertQuery(db, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets" FOR SHARE"#)
         db.reset()
     }
 }
