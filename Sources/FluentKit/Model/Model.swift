@@ -4,18 +4,20 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func query(on database: Database, for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<Self> {
+    public static func query(on database: Database,
+                             for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<Self> {
         .init(database: database, for: readIntent)
     }
 
     public static func find(
         _ id: Self.IDValue?,
-        on database: Database
+        on database: Database,
+        for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly
     ) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)
         }
-        return Self.query(on: database)
+        return Self.query(on: database, for: readIntent)
             .filter(\._$id == id)
             .first()
     }
