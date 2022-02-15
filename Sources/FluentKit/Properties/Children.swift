@@ -47,11 +47,12 @@ public final class ChildrenProperty<From, To>
         return self.idValue
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: Database,
+                      for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query children relation from unsaved model.")
         }
-        let builder = To.query(on: database)
+        let builder = To.query(on: database, for: readIntent)
         switch self.parentKey {
         case .optional(let optional):
             builder.filter(optional.appending(path: \.$id) == id)

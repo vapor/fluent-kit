@@ -228,12 +228,13 @@ public final class SiblingsProperty<From, To, Through>
     // MARK: Query
 
     /// Returns a `QueryBuilder` that can be used to query the siblings.
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: Database,
+                      for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<To> {
         guard let fromID = self.idValue else {
             fatalError("Cannot query siblings relation from unsaved model.")
         }
 
-        return To.query(on: database)
+        return To.query(on: database, for: readIntent)
             .join(Through.self, on: \To._$id == self.to.appending(path: \.$id))
             .filter(Through.self, self.from.appending(path: \.$id) == fromID)
     }
