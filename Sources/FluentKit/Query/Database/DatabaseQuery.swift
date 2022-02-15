@@ -11,11 +11,11 @@ public struct DatabaseQuery {
     public var limits: [Limit]
     public var offsets: [Offset]
 
-    init(schema: String, for readLockingClause: Action.ReadLockingClause = .readOnly) {
+    init(schema: String, for readIntent: Action.ReadIntent = .readOnly) {
         self.schema = schema
         self.isUnique = false
         self.fields = []
-        self.action = .read(readLockingClause)
+        self.action = .read(readIntent)
         self.filters = []
         self.input = []
         self.joins = []

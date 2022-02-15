@@ -187,7 +187,7 @@ final class QueryBuilderTests: XCTestCase {
         db.reset()
     }
 
-    func testReadLockingClause() throws {
+    func testReadIntent() throws {
         let db = DummyDatabaseForTestSQLSerializer()
 
         _ = try Planet.query(on: db, for: .readOnly).all().wait()

@@ -12,9 +12,9 @@ public final class QueryBuilder<Model>
     internal var models: [Schema.Type]
     public var eagerLoaders: [AnyEagerLoader]
 
-    public convenience init(database: Database, for readLockingClause: DatabaseQuery.Action.ReadLockingClause = .readOnly) {
+    public convenience init(database: Database, for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) {
         self.init(
-            query: .init(schema: Model.schema, for: readLockingClause),
+            query: .init(schema: Model.schema, for: readIntent),
             database: database,
             models: [Model.self]
         )

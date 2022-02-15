@@ -1,13 +1,13 @@
 extension DatabaseQuery {
     public enum Action {
-        public enum ReadLockingClause {
+        public enum ReadIntent {
             case readOnly
             case update
             case share
         }
 
         case create
-        case read(ReadLockingClause)
+        case read(ReadIntent)
         case update
         case delete
         case aggregate(Aggregate)
@@ -20,8 +20,8 @@ extension DatabaseQuery.Action: CustomStringConvertible {
         switch self {
         case .create:
             return "create"
-        case let .read(lockingClause):
-            return "read (\(lockingClause))"
+        case let .read(intent):
+            return "read (\(intent))"
         case .update:
             return "update"
         case .delete:
@@ -34,7 +34,7 @@ extension DatabaseQuery.Action: CustomStringConvertible {
     }
 }
 
-extension DatabaseQuery.Action.ReadLockingClause: CustomStringConvertible {
+extension DatabaseQuery.Action.ReadIntent: CustomStringConvertible {
     public var description: String {
         switch self {
         case .readOnly:

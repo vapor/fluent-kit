@@ -47,7 +47,7 @@ public struct SQLQueryConverter {
         var select = SQLSelect()
         select.tables.append(SQLIdentifier(query.schema))
         switch query.action {
-        case let .read(lockingClause):
+        case let .read(intent):
             select.isDistinct = query.isUnique
             select.columns = query.fields.map { field in
                 switch field {
@@ -77,7 +77,7 @@ public struct SQLQueryConverter {
                     )
                 }
             }
-            select.lockingClause = lockingClause.sqlLockingClause
+            select.lockingClause = intent.sqlLockingClause
         case .aggregate(let aggregate):
             select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
         default: break
@@ -456,7 +456,7 @@ extension DatabaseQuery.Value {
     }
 }
 
-extension DatabaseQuery.Action.ReadLockingClause {
+extension DatabaseQuery.Action.ReadIntent {
     var sqlLockingClause: SQLLockingClause? {
         switch self {
         case .readOnly:
