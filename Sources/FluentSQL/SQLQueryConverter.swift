@@ -1,3 +1,5 @@
+import FluentKit
+import SQLKit
 public struct SQLQueryConverter {
     let delegate: SQLConverterDelegate
     public init(delegate: SQLConverterDelegate) {
@@ -45,7 +47,7 @@ public struct SQLQueryConverter {
         var select = SQLSelect()
         select.tables.append(SQLIdentifier(query.schema))
         switch query.action {
-        case .read:
+        case let .read(lockingClause):
             select.isDistinct = query.isUnique
             select.columns = query.fields.map { field in
                 switch field {
@@ -75,6 +77,7 @@ public struct SQLQueryConverter {
                     )
                 }
             }
+            select.lockingClause = lockingClause.sqlLockingClause
         case .aggregate(let aggregate):
             select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
         default: break
@@ -449,6 +452,19 @@ extension DatabaseQuery.Value {
             return bind.isNil
         default:
             return false
+        }
+    }
+}
+
+extension DatabaseQuery.Action.ReadLockingClause {
+    var sqlLockingClause: SQLLockingClause? {
+        switch self {
+        case .readOnly:
+            return nil
+        case .share:
+            return .share
+        case .update:
+            return .update
         }
     }
 }

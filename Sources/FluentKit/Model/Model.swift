@@ -4,8 +4,8 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func query(on database: Database) -> QueryBuilder<Self> {
-        .init(database: database)
+    public static func query(on database: Database, for readLockingClause: DatabaseQuery.Action.ReadLockingClause = .readOnly) -> QueryBuilder<Self> {
+        .init(database: database, for: readLockingClause)
     }
 
     public static func find(

@@ -22,10 +22,10 @@ public protocol Database {
 }
 
 extension Database {
-    public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
+    public func query<Model>(_ model: Model.Type, for readLockingClause: DatabaseQuery.Action.ReadLockingClause = .readOnly) -> QueryBuilder<Model>
         where Model: FluentKit.Model
     {
-        return .init(database: self)
+        return .init(database: self, for: readLockingClause)
     }
 }
 
