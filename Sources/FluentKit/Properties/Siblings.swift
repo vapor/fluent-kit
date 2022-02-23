@@ -60,6 +60,11 @@ public final class SiblingsProperty<From, To, Through>
         return self
     }
 
+    public var fromId: From.IDValue? {
+        get { return self.idValue }
+        set { self.idValue = newValue }
+    }
+
     // MARK: Checking state
 
     /// Check whether a specific model is already attached through a sibling relationship.

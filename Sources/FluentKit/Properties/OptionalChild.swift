@@ -44,7 +44,8 @@ public final class OptionalChildProperty<From, To>
     }
     
     public var fromId: From.IDValue? {
-        return self.idValue
+        get { return self.idValue }
+        set { self.idValue = newValue }
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
