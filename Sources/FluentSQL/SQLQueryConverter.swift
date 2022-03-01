@@ -121,6 +121,21 @@ public struct SQLQueryConverter {
                 return self.value(value)
             }
         }
+
+        if let conflictStrategy = query.conflictResolutionStrategy {
+            let targets = conflictStrategy.targets.map { self.field($0) }
+
+            switch conflictStrategy.action {
+            case .ignore:
+                insert.conflictStrategy = SQLConflictResolutionStrategy(targets: targets, action: .noAction)
+            case .update(let values):
+                let assignments = values.map {
+                    SQLColumnAssignment(setting: self.key($0.key), to: self.value($0.value))
+                }
+                insert.conflictStrategy = SQLConflictResolutionStrategy(targets: targets, action: .update(assignments: assignments, predicate: nil))
+            }
+        }
+        
         return insert
     }
     

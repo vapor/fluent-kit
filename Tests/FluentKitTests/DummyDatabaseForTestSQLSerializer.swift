@@ -106,6 +106,8 @@ struct DummyDatabaseDialect: SQLDialect {
         return SQLRaw("'")
     }
 
+    var upsertSyntax: SQLUpsertSyntax { .standard }
+
     func bindPlaceholder(at position: Int) -> SQLExpression {
         return SQLRaw("$" + position.description)
     }

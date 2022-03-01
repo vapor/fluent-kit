@@ -10,6 +10,7 @@ public struct DatabaseQuery {
     public var sorts: [Sort]
     public var limits: [Limit]
     public var offsets: [Offset]
+    public var conflictResolutionStrategy: ConflictResolutionStrategy?
 
     init(schema: String) {
         self.schema = schema
@@ -49,6 +50,9 @@ extension DatabaseQuery: CustomStringConvertible {
         }
         if !self.offsets.isEmpty {
             parts.append("offsets=\(self.offsets)")
+        }
+        if let conflictResolutionStrategy = self.conflictResolutionStrategy {
+            parts.append("conflictResolution=\(conflictResolutionStrategy)")
         }
         return parts.joined(separator: " ")
     }
