@@ -48,7 +48,17 @@ extension QueryBuilder {
         case .update(let closure):
             let builder = UpsertBuilder<Model>()
             closure(builder)
-            action = .update(builder.values)
+            var updates = builder.values
+
+            let timestamps = Model().timestamps.filter { $0.trigger == .update }
+            for timestamp in timestamps {
+                // Only add timestamps if they weren't already set
+                if updates[timestamp.key] == nil {
+                    updates[timestamp.key] = timestamp.currentTimestampInput
+                }
+            }
+
+            action = .update(updates)
         }
         query.conflictResolutionStrategy = .init(targets: targets, action: action)
 

@@ -17,7 +17,6 @@ extension DatabaseQuery.ConflictResolutionStrategy: CustomStringConvertible {
     }
 }
 
-
 extension DatabaseQuery.ConflictResolutionStrategy.ConflictAction: CustomStringConvertible {
     public var description: String {
         switch self {
