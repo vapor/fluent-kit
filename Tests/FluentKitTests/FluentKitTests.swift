@@ -552,6 +552,55 @@ final class FluentKitTests: XCTestCase {
             }
         }
     }
+
+    func testConflictUpdate() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        try Thing.query(on: db)
+            .set(\.$name, to: "First")
+            .create(
+                onConflict: \.$name,
+                strategy: .update { builder in
+                    builder.set(\.$name, to: "Last")
+                }
+            )
+            .wait()
+
+        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO UPDATE SET "name" = $2"#)
+        db.reset()
+    }
+
+    func testConflictIgnore() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        try Thing.query(on: db)
+            .set(\.$name, to: "First")
+            .create(
+                onConflict: \.$name,
+                strategy: .ignore
+            )
+            .wait()
+
+        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO NOTHING"#)
+        db.reset()
+    }
+
+    func testModelUpsert() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        let thing = Thing()
+        thing.name = "First"
+        try thing.create(
+            onConflict: \.$name,
+            .update {
+                $0.set(\.$name, to: "Last")
+            },
+            on: db
+        ).wait()
+
+        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO UPDATE SET "name" = $2"#)
+        db.reset()
+    }
 }
 
 final class User: Model {
@@ -727,4 +776,21 @@ final class LotsOfFields: Model {
     
     @Field(key: "field20")
     var field20: String
+}
+
+private final class Thing: Model {
+    static let schema = "things"
+
+    @ID(custom: "id", generatedBy: .user)
+    var id: Int?
+
+    @OptionalField(key: "name")
+    var name: String?
+
+    init() {}
+
+    init(id: Int, name: String? = nil) {
+        self.id = id
+        self.name = name
+    }
 }

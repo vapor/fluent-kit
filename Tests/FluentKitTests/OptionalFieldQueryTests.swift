@@ -70,32 +70,6 @@ final class OptionalFieldQueryTests: DbQueryTestCase {
         _ = try things.create(on: db).wait()
         assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES ($1, $2), (NULL, $3)"#)
     }
-
-    func testConflictUpdate() throws {
-        try Thing.query(on: db)
-            .set(\.$name, to: "First")
-            .create(
-                onConflict: \.$name,
-                strategy: .update { builder in
-                    builder.set(\.$name, to: "Last")
-                }
-            )
-            .wait()
-
-        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO UPDATE SET "name" = $2"#)
-    }
-
-    func testConflictIgnore() throws {
-        try Thing.query(on: db)
-            .set(\.$name, to: "First")
-            .create(
-                onConflict: \.$name,
-                strategy: .ignore
-            )
-            .wait()
-
-        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO NOTHING"#)
-    }
 }
 
 private final class Thing: Model {

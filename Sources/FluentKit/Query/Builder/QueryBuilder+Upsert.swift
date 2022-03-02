@@ -22,14 +22,14 @@ public class UpsertBuilder<Model> where Model: FluentKit.Model {
 
 extension QueryBuilder {
 
-    public enum ConflictStrategy<Model: FluentKit.Model> {
+    public enum ConflictStrategy {
         case ignore
         case update((UpsertBuilder<Model>) -> Void)
     }
 
     public func create<Field>(
         onConflict field: KeyPath<Model, Field>,
-        strategy: ConflictStrategy<Model>
+        strategy: ConflictStrategy
     ) -> EventLoopFuture<Void>
         where
             Field: QueryableProperty,
@@ -38,30 +38,8 @@ extension QueryBuilder {
         create(onConflict: Model.path(for: field), strategy: strategy)
     }
 
-    public func create(onConflict fields: [FieldKey], strategy: ConflictStrategy<Model>) -> EventLoopFuture<Void> {
-        let targets = fields.map { DatabaseQuery.Field.path([$0], schema: Model.schema) }
-
-        let action: DatabaseQuery.ConflictResolutionStrategy.ConflictAction
-        switch strategy {
-        case .ignore:
-            action = .ignore
-        case .update(let closure):
-            let builder = UpsertBuilder<Model>()
-            closure(builder)
-            var updates = builder.values
-
-            let timestamps = Model().timestamps.filter { $0.trigger == .update }
-            for timestamp in timestamps {
-                // Only add timestamps if they weren't already set
-                if updates[timestamp.key] == nil {
-                    updates[timestamp.key] = timestamp.currentTimestampInput
-                }
-            }
-
-            action = .update(updates)
-        }
-        query.conflictResolutionStrategy = .init(targets: targets, action: action)
-
+    public func create(onConflict fields: [FieldKey], strategy: ConflictStrategy) -> EventLoopFuture<Void> {
+        query.conflictResolutionStrategy = .init(fields: fields, strategy: strategy)
         query.action = .create
         return self.run()
     }

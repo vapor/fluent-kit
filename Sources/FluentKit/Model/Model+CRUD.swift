@@ -13,15 +13,27 @@ extension Model {
         }.handle(.create, self, on: database)
     }
 
-    private func _create(on database: Database) -> EventLoopFuture<Void> {
+    public func create<Field: QueryableProperty>(onConflict field: KeyPath<Self, Field>, _ strategy: QueryBuilder<Self>.ConflictStrategy, on database: Database) -> EventLoopFuture<Void> where Field.Model == Self {
+        create(onConflict: Self.path(for: field), strategy, on: database)
+    }
+
+    public func create(onConflict fields: [FieldKey], _ strategy: QueryBuilder<Self>.ConflictStrategy, on database: Database) -> EventLoopFuture<Void> {
+        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
+            let conflictStrategy = DatabaseQuery.ConflictResolutionStrategy(fields: fields, strategy: strategy)
+            return model.handle(event, conflictResolutionStrategy: conflictStrategy, on: db)
+        }.handle(.create, self, on: database)
+    }
+
+    private func _create(conflictResolutionStrategy: DatabaseQuery.ConflictResolutionStrategy?, on database: Database) -> EventLoopFuture<Void> {
         precondition(!self._$id.exists)
         self.touchTimestamps(.create, .update)
         self._$id.generate()
         let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
-        Self.query(on: database)
+        let query = Self.query(on: database)
             .set(self.collectInput())
             .action(.create)
-            .run { promise.succeed($0) }
+        query.query.conflictResolutionStrategy = conflictResolutionStrategy
+        query.run { promise.succeed($0) }
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
             var input = self.collectInput()
@@ -106,10 +118,10 @@ extension Model {
         }
     }
 
-    private func handle(_ event: ModelEvent, on db: Database) -> EventLoopFuture<Void> {
+    private func handle(_ event: ModelEvent, conflictResolutionStrategy: DatabaseQuery.ConflictResolutionStrategy? = nil, on db: Database) -> EventLoopFuture<Void> {
         switch event {
         case .create:
-            return _create(on: db)
+            return _create(conflictResolutionStrategy: conflictResolutionStrategy, on: db)
         case .delete(let force):
             return _delete(force: force, on: db)
         case .restore:
