@@ -566,7 +566,7 @@ final class FluentKitTests: XCTestCase {
             )
             .wait()
 
-        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO UPDATE SET "name" = $2"#)
+        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("name") DO UPDATE SET "name" = $2"#)
         db.reset()
     }
 
@@ -581,7 +581,7 @@ final class FluentKitTests: XCTestCase {
             )
             .wait()
 
-        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO NOTHING"#)
+        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("name") DO NOTHING"#)
         db.reset()
     }
 
@@ -598,7 +598,7 @@ final class FluentKitTests: XCTestCase {
             on: db
         ).wait()
 
-        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("things"."name") DO UPDATE SET "name" = $2"#)
+        assertLastQuery(db, #"INSERT INTO "things" ("name") VALUES ($1) ON CONFLICT ("name") DO UPDATE SET "name" = $2 RETURNING "things"."name" AS "things_name", "things"."id" AS "things_id""#)
         db.reset()
     }
 }

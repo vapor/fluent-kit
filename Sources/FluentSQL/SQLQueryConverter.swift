@@ -99,7 +99,7 @@ public struct SQLQueryConverter {
         insert.returning = self.returning(query)
 
         if let conflictStrategy = query.conflictResolutionStrategy {
-            let targets = conflictStrategy.targets.map { self.field($0) }
+            let targets = conflictStrategy.targets.map { self.key($0) }
 
             switch conflictStrategy.action {
             case .ignore:

@@ -90,6 +90,8 @@ struct DummyDatabaseDialect: SQLDialect {
         true
     }
 
+    var supportsReturning: Bool { true }
+
     var enumSyntax: SQLEnumSyntax {
         .unsupported
     }

@@ -17,6 +17,17 @@ extension Model {
         create(onConflict: Self.path(for: field), strategy, on: database)
     }
 
+    public func create<Field1: QueryableProperty, Field2: QueryableProperty>(
+        onConflict field1: KeyPath<Self, Field1>,
+        _ field2: KeyPath<Self, Field2>,
+        _ strategy: QueryBuilder<Self>.ConflictStrategy,
+        on database: Database
+    ) -> EventLoopFuture<Void>
+    where Field1.Model == Self, Field2.Model == Self
+    {
+        create(onConflict: [Self.path(for: field1)[0], Self.path(for: field2)[0]], strategy, on: database)
+    }
+
     public func create(onConflict fields: [FieldKey], _ strategy: QueryBuilder<Self>.ConflictStrategy, on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             let conflictStrategy = DatabaseQuery.ConflictResolutionStrategy(fields: fields, strategy: strategy)
@@ -32,16 +43,21 @@ extension Model {
         let query = Self.query(on: database)
             .set(self.collectInput())
             .action(.create)
+
         query.query.conflictResolutionStrategy = conflictResolutionStrategy
+        if case let .update(updates) = conflictResolutionStrategy?.action {
+            query.query.returning = updates.keys.map {
+                DatabaseQuery.Field.path([$0], schema: Self.schema)
+            }
+            query.query.returning.append(DatabaseQuery.Field.path([self._$id.key], schema: Self.schema))
+        }
+
         query.run { promise.succeed($0) }
             .cascadeFailure(to: promise)
+
         return promise.futureResult.flatMapThrowing { output in
-            var input = self.collectInput()
-            if case .default = self._$id.inputValue {
-                let idKey = Self()._$id.key
-                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
-            }
-            try self.output(from: SavedInput(input))
+            try self.output(from: SavedInput(self.collectInput()))
+            try self.output(from: output.schema(Self.schema))
         }
     }
 

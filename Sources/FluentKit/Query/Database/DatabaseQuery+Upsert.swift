@@ -1,7 +1,7 @@
 extension DatabaseQuery {
 
     public struct ConflictResolutionStrategy {
-        public var targets: [Field]
+        public var targets: [FieldKey]
         public var action: ConflictAction
 
         public enum ConflictAction {
@@ -10,7 +10,7 @@ extension DatabaseQuery {
         }
 
         init<Model: FluentKit.Model>(fields: [FieldKey], strategy: QueryBuilder<Model>.ConflictStrategy) {
-            targets = fields.map { DatabaseQuery.Field.path([$0], schema: Model.schema) }
+            targets = fields
 
             switch strategy {
             case .ignore:
