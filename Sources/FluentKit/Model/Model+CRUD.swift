@@ -56,7 +56,11 @@ extension Model {
             .cascadeFailure(to: promise)
 
         return promise.futureResult.flatMapThrowing { output in
-            try self.output(from: SavedInput(self.collectInput()))
+            var input = self.collectInput()
+            if case .default = self._$id.inputValue {
+                input.removeValue(forKey: self._$id.key)
+            }
+            try self.output(from: SavedInput(input))
             try self.output(from: output.schema(Self.schema))
         }
     }
