@@ -22,6 +22,7 @@ public struct SQLQueryConverter {
     private func delete(_ query: DatabaseQuery) -> SQLExpression {
         var delete = SQLDelete(table: SQLIdentifier(query.schema))
         delete.predicate = self.filters(query.filters)
+        delete.returning = self.returning(query)
         return delete
     }
     
@@ -38,6 +39,7 @@ public struct SQLQueryConverter {
             ))
         }
         update.predicate = self.filters(query.filters)
+        update.returning = self.returning(query)
         return update
     }
     
@@ -47,34 +49,7 @@ public struct SQLQueryConverter {
         switch query.action {
         case .read:
             select.isDistinct = query.isUnique
-            select.columns = query.fields.map { field in
-                switch field {
-                case .custom(let any):
-                    return custom(any)
-                case .path(let path, let schema):
-                    let field: SQLExpression
-                    let key: FieldKey
-
-                    // determine field type based on count
-                    switch path.count {
-                    case 1:
-                        key = path[0]
-                        field = SQLColumn(self.key(key), table: schema)
-                    case 2...:
-                        key = path[0]
-                        field = self.delegate.nestedFieldExpression(
-                            self.key(key),
-                            path[1...].map(self.key)
-                        )
-                    default:
-                        fatalError("Field path must not be empty.")
-                    }
-                    return SQLAlias(
-                        field,
-                        as: SQLIdentifier(schema + "_" + self.key(key))
-                    )
-                }
-            }
+            select.columns = query.fields.map(self.alias)
         case .aggregate(let aggregate):
             select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
         default: break
@@ -121,6 +96,7 @@ public struct SQLQueryConverter {
                 return self.value(value)
             }
         }
+        insert.returning = self.returning(query)
 
         if let conflictStrategy = query.conflictResolutionStrategy {
             let targets = conflictStrategy.targets.map { self.field($0) }
@@ -218,6 +194,18 @@ public struct SQLQueryConverter {
             default:
                 fatalError("Field path must not be empty.")
             }
+        }
+    }
+
+    private func alias(_ field: DatabaseQuery.Field) -> SQLExpression {
+        switch field {
+        case .custom(let any):
+            return custom(any)
+        case .path(let path, let schema):
+            return SQLAlias(
+                self.field(field),
+                as: SQLIdentifier(schema + "_" + self.key(path[0]))
+            )
         }
     }
 
@@ -395,6 +383,12 @@ public struct SQLQueryConverter {
         case .prefix(let prefix, let key):
             return self.key(prefix) + self.key(key)
         }
+    }
+
+    private func returning(_ query: DatabaseQuery) -> SQLReturning? {
+        guard !query.returning.isEmpty else { return nil }
+
+        return SQLReturning(query.returning.map(self.alias))
     }
 }
 
