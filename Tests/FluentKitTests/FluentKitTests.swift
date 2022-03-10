@@ -234,6 +234,17 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
     }
+
+    func testDropForeignKeyTableConstraint() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema("planets")
+            .deleteConstraint(name: "fk:planets.galaxy_id")
+            .update()
+            .wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"ALTER TABLE "planets" DROP CONSTRAINT "fk:planets.galaxy_id""#)
+    }
+
     
     func testIfNotExistsTableCreate() throws {
         let db = DummyDatabaseForTestSQLSerializer()
