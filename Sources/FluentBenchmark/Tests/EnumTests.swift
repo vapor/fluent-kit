@@ -1,7 +1,7 @@
 extension FluentBenchmarker {
     public func testEnum() throws {
         try self.testEnum_basic()
-        try self.testEnum_addCase()
+        try self.testEnum_addCases()
         try self.testEnum_raw()
         try self.testEnum_queryFound()
         try self.testEnum_queryMissing()
@@ -21,17 +21,17 @@ extension FluentBenchmarker {
         }
     }
 
-    private func testEnum_addCase() throws {
+    private func testEnum_addCases() throws {
         try self.runTest(#function, [
             FooMigration(),
-            BarAddQuuzMigration()
+            BarAddQuzAndQuzzMigration()
         ]) {
-            let foo = Foo(bar: .baz, baz: .qux)
+            let foo = Foo(bar: .quz, baz: .quzz)
             try foo.save(on: self.database).wait()
 
             let fetched = try Foo.find(foo.id, on: self.database).wait()
-            XCTAssertEqual(fetched?.bar, .baz)
-            XCTAssertEqual(fetched?.baz, .qux)
+            XCTAssertEqual(fetched?.bar, .quz)
+            XCTAssertEqual(fetched?.baz, .quzz)
         }
     }
 
@@ -216,7 +216,7 @@ extension FluentBenchmarker {
 }
 
 private enum Bar: String, Codable {
-    case baz, qux, quuz
+    case baz, qux, quz, quzz
 }
 
 private final class Foo: Model {
@@ -264,10 +264,11 @@ private struct FooMigration: Migration {
     }
 }
 
-private struct BarAddQuuzMigration: Migration {
+private struct BarAddQuzAndQuzzMigration: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.enum("bar")
-            .case("quuz")
+            .case("quz")
+            .case("quzz")
             .update()
             .flatMap
         { bar in
