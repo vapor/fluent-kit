@@ -33,7 +33,7 @@ private final class HasChangesInput: DatabaseInput {
 
 extension Fields {
     public static func path<Property>(for field: KeyPath<Self, Property>) -> [FieldKey]
-        where Property: QueryableProperty
+        where Property: AnyQueryableProperty
     {
          Self.init()[keyPath: field].path
     }
