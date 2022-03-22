@@ -30,7 +30,7 @@ public struct SQLQueryConverter {
     private func update(_ query: DatabaseQuery) -> SQLExpression {
         var update = SQLUpdate(table: SQLIdentifier(query.schema))
         guard case .dictionary(let values) = query.input.first! else {
-            fatalError()
+            fatalError("Missing query input generating update query")
         }
         values.forEach { (key, value) in
             update.values.append(SQLBinaryExpression(

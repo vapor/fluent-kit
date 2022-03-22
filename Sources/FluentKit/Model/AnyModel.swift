@@ -26,7 +26,7 @@ extension AnyModel {
         where Joined: Schema
     {
         guard let output = self.anyID.cachedOutput else {
-            fatalError("Can only access joined models using models fetched from database.")
+            fatalError("Can only access joined models using models fetched from database (from \(Self.self) to \(Joined.self)).")
         }
         let joined = Joined()
         try joined.output(from: output.schema(Joined.schemaOrAlias))

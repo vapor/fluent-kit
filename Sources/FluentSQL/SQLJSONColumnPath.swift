@@ -17,7 +17,7 @@ public struct SQLJSONColumnPath: SQLExpression {
                 let inner = path[0..<path.count - 1].map { "'\($0)'" }.joined(separator: "->")
                 serializer.write("\(column)->\(inner)->>'\(path.last!)'")
             default:
-                fatalError()
+                fatalError("Impossible path array count serializing column \(self.column) as JSON")
             }
         default:
             let path = self.path.joined(separator: ".")

@@ -70,6 +70,12 @@ public struct PageMetadata: Codable {
     /// Total number of items available.
     public let total: Int
     
+    /// Computed total number of pages with `1` being the minimum.
+    public var pageCount: Int {
+        let count = Int((Double(self.total)/Double(self.per)).rounded(.up))
+        return count < 1 ? 1 : count
+    }
+    
     /// Creates a new `PageMetadata` instance.
     ///
     /// - Parameters:

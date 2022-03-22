@@ -35,7 +35,7 @@ public final class OptionalChildProperty<From, To>
             return value
         }
         set {
-            fatalError("Child relation is get-only.")
+            fatalError("Child relation  \(self.name) is get-only.")
         }
     }
 
@@ -44,13 +44,14 @@ public final class OptionalChildProperty<From, To>
     }
     
     public var fromId: From.IDValue? {
-        return self.idValue
+        get { return self.idValue }
+        set { self.idValue = newValue }
     }
 
     public func query(on database: Database,
                       for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<To> {
         guard let id = self.idValue else {
-            fatalError("Cannot query child relation from unsaved model.")
+            fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
         let builder = To.query(on: database, for: readIntent)
         switch self.parentKey {
@@ -64,7 +65,7 @@ public final class OptionalChildProperty<From, To>
 
     public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
-            fatalError("Cannot save child to unsaved model.")
+            fatalError("Cannot save child in \(self.name) to unsaved model in.")
         }
         switch self.parentKey {
         case .required(let keyPath):
