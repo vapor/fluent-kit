@@ -19,7 +19,7 @@ public final class GroupProperty<Model, Value>
     public var wrappedValue: Value {
         get {
             guard let value = self.value else {
-                fatalError("Cannot access unitialized Group field: \(self.description)")
+                fatalError("Cannot access uninitialized Group field: \(self.description)")
             }
             return value
         }
