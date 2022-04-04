@@ -30,12 +30,12 @@ public final class ChildrenProperty<From, To>
     public var wrappedValue: [To] {
         get {
             guard let value = self.value else {
-                fatalError("Children relation not eager loaded, use $ prefix to access: \(name)")
+                fatalError("Children relation not eager loaded, use $ prefix to access: \(self.name)")
             }
             return value
         }
         set {
-            fatalError("Children relation is get-only.")
+            fatalError("Children relation \(self.name) is get-only.")
         }
     }
 
@@ -44,12 +44,13 @@ public final class ChildrenProperty<From, To>
     }
     
     public var fromId: From.IDValue? {
-        return self.idValue
+        get { return self.idValue }
+        set { self.idValue = newValue }
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
-            fatalError("Cannot query children relation from unsaved model.")
+            fatalError("Cannot query children relation \(self.name) from unsaved model.")
         }
         let builder = To.query(on: database)
         switch self.parentKey {
@@ -63,7 +64,7 @@ public final class ChildrenProperty<From, To>
 
     public func create(_ to: [To], on database: Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
-            fatalError("Cannot save child to unsaved model.")
+            fatalError("Cannot save child in relation \(self.name) to unsaved model.")
         }
         to.forEach {
             switch self.parentKey {
@@ -78,7 +79,7 @@ public final class ChildrenProperty<From, To>
 
     public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
-            fatalError("Cannot save child to unsaved model.")
+            fatalError("Cannot save child in relation \(self.name) to unsaved model.")
         }
         switch self.parentKey {
         case .required(let keyPath):

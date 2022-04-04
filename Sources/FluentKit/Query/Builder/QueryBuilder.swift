@@ -1,5 +1,5 @@
 import AsyncKit
-import NIO
+import NIOCore
 
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model

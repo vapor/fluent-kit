@@ -33,7 +33,7 @@ private final class HasChangesInput: DatabaseInput {
 
 extension Fields {
     public static func path<Property>(for field: KeyPath<Self, Property>) -> [FieldKey]
-        where Property: QueryableProperty
+        where Property: AnyQueryableProperty
     {
          Self.init()[keyPath: field].path
     }
@@ -69,7 +69,7 @@ extension Fields {
 
 // MARK: Properties
 
-#if compiler(<5.6) && compiler(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
 @_silgen_name("swift_reflectionMirror_normalizedType")
 internal func _getNormalizedType<T>(_: T, type: Any.Type) -> Any.Type
 
@@ -86,7 +86,7 @@ internal func _getChild<T>(
 
 extension Fields {
     public var properties: [AnyProperty] {
-#if compiler(<5.6) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
         let type = _getNormalizedType(self, type: Swift.type(of: self))
         let childCount = _getChildCount(self, type: type)
         return (0 ..< childCount).compactMap({
@@ -103,7 +103,7 @@ extension Fields {
     }
 
     internal var labeledProperties: [String: AnyCodableProperty] {
-#if compiler(<5.6) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
         let type = _getNormalizedType(self, type: Swift.type(of: self))
         let childCount = _getChildCount(self, type: type)
 

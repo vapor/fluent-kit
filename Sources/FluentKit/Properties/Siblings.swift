@@ -47,17 +47,22 @@ public final class SiblingsProperty<From, To, Through>
     public var wrappedValue: [To] {
         get {
             guard let value = self.value else {
-                fatalError("Siblings relation not eager loaded, use $ prefix to access: \(name)")
+                fatalError("Siblings relation not eager loaded, use $ prefix to access: \(self.name)")
             }
             return value
         }
         set {
-            fatalError("Siblings relation is get-only.")
+            fatalError("Siblings relation \(self.name) is get-only.")
         }
     }
 
     public var projectedValue: SiblingsProperty<From, To, Through> {
         return self
+    }
+
+    public var fromId: From.IDValue? {
+        get { return self.idValue }
+        set { self.idValue = newValue }
     }
 
     // MARK: Checking state
@@ -82,7 +87,7 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform the check on.
     public func isAttached(toID: To.IDValue, on database: Database) -> EventLoopFuture<Bool> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot check if siblings are attached to an unsaved model.")
+            fatalError("Cannot check if siblings are attached to an unsaved model in \(self.name).")
         }
 
         return Through.query(on: database)
@@ -106,12 +111,12 @@ public final class SiblingsProperty<From, To, Through>
         _ edit: (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot attach siblings relation to unsaved model.")
+            fatalError("Cannot attach siblings relation \(self.name) to unsaved model.")
         }
 
         return tos.map { to -> Through in
             guard let toID = to.id else {
-                fatalError("Cannot attach unsaved model.")
+                fatalError("Cannot attach unsaved model to \(self.name).")
             }
             let pivot = Through()
             pivot[keyPath: self.from].id = fromID
@@ -160,10 +165,10 @@ public final class SiblingsProperty<From, To, Through>
         _ edit: (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot attach siblings relation to unsaved model.")
+            fatalError("Cannot attach siblings relation \(self.name) to unsaved model.")
         }
         guard let toID = to.id else {
-            fatalError("Cannot attach unsaved model.")
+            fatalError("Cannot attach unsaved model \(self.name).")
         }
 
         let pivot = Through()
@@ -180,11 +185,11 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform the attachment on.
     public func detach(_ tos: [To], on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot detach siblings relation to unsaved model.")
+            fatalError("Cannot detach siblings relation \(self.name) to unsaved model.")
         }
         let toIDs = tos.map { to -> To.IDValue in
             guard let toID = to.id else {
-                fatalError("Cannot detach unsaved model.")
+                fatalError("Cannot detach unsaved model \(self.name).")
             }
             return toID
         }
@@ -202,10 +207,10 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform the attachment on.
     public func detach(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot detach siblings relation from unsaved model.")
+            fatalError("Cannot detach siblings relation \(self.name) from unsaved model.")
         }
         guard let toID = to.id else {
-            fatalError("Cannot detach unsaved model.")
+            fatalError("Cannot detach unsaved model \(self.name).")
         }
 
         return Through.query(on: database)
@@ -217,7 +222,7 @@ public final class SiblingsProperty<From, To, Through>
     /// Detach all models by deleting all pivots from this model.
     public func detachAll(on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot detach siblings relation from unsaved model.")
+            fatalError("Cannot detach siblings relation \(self.name) from unsaved model.")
         }
         
         return Through.query(on: database)
@@ -230,7 +235,7 @@ public final class SiblingsProperty<From, To, Through>
     /// Returns a `QueryBuilder` that can be used to query the siblings.
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot query siblings relation from unsaved model.")
+            fatalError("Cannot query siblings relation \(self.name) from unsaved model.")
         }
 
         return To.query(on: database)

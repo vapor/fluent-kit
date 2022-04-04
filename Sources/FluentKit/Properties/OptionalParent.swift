@@ -17,7 +17,7 @@ public final class OptionalParentProperty<From, To>
             self.value ?? nil
         }
         set {
-            fatalError("OptionalParent relation is get-only.")
+            fatalError("OptionalParent relation \(self.name) is get-only.")
         }
     }
 

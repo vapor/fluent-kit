@@ -47,7 +47,7 @@ extension OptionalFieldProperty: Property {
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 case .null:
-                    return nil
+                    return .some(.none)
                 default:
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
@@ -58,9 +58,10 @@ extension OptionalFieldProperty: Property {
             }
         }
         set {
-
             if let value = newValue {
-                self.inputValue = value.flatMap { .bind($0) } ?? .null
+                self.inputValue = value
+                    .flatMap { .bind($0) }
+                    ?? .null
             } else {
                 self.inputValue = nil
             }

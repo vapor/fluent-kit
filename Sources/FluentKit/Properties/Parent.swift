@@ -15,11 +15,11 @@ public final class ParentProperty<From, To>
     public var wrappedValue: To {
         get {
             guard let value = self.value else {
-                fatalError("Parent relation not eager loaded, use $ prefix to access: \(name)")
+                fatalError("Parent relation not eager loaded, use $ prefix to access: \(self.name)")
             }
             return value
         }
-        set { fatalError("use $ prefix to access") }
+        set { fatalError("use $ prefix to access \(self.name)") }
     }
 
     public var projectedValue: ParentProperty<From, To> {

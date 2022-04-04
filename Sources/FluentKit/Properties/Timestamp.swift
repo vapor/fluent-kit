@@ -30,7 +30,10 @@ public final class TimestampProperty<Model, Format>
 
     public var wrappedValue: Date? {
         get {
-            self.value ?? nil
+            switch self.value {
+                case .none, .some(.none): return nil
+                case .some(.some(let value)): return value
+            }
         }
         set {
             self.value = .some(newValue)
@@ -52,7 +55,7 @@ public final class TimestampProperty<Model, Format>
     }
 
     public func touch(date: Date?) {
-        self.value = date
+        self.wrappedValue = date
     }
 }
 
@@ -75,13 +78,23 @@ extension TimestampProperty: AnyProperty { }
 extension TimestampProperty: Property {
     public var value: Date?? {
         get {
-            self.$timestamp.value.flatMap {
-                .some($0.flatMap { self.format.parse($0) })
+            switch self.$timestamp.value {
+                case .some(.some(let timestamp)):
+                    return .some(self.format.parse(timestamp))
+                case .some(.none):
+                    return .some(.none)
+                case .none:
+                    return .none
             }
         }
         set {
-            self.$timestamp.value = newValue.flatMap {
-                .some($0.flatMap { self.format.serialize($0) })
+            switch newValue {
+                case .some(.some(let newValue)):
+                    self.$timestamp.value = .some(self.format.serialize(newValue))
+                case .some(.none):
+                    self.$timestamp.value = .some(.none)
+                case .none:
+                    self.$timestamp.value = .none
             }
         }
     }
@@ -118,7 +131,7 @@ extension TimestampProperty: AnyDatabaseProperty {
 extension TimestampProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(self.value)
+        try container.encode(self.wrappedValue)
     }
 
     public func decode(from decoder: Decoder) throws {

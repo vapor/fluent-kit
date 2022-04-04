@@ -12,6 +12,9 @@ public final class Planet: Model {
     @Parent(key: "star_id")
     public var star: Star
 
+    @OptionalParent(key: "possible_star_id")
+    public var possibleStar: Star?
+
     @Children(for: \.$planet)
     public var moons: [Moon]
     
@@ -41,6 +44,7 @@ public struct PlanetMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("star_id", .uuid, .required, .references("stars", "id"))
+            .field("possible_star_id", .uuid, .references("stars", "id"))
             .create()
     }
 

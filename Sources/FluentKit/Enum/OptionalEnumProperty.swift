@@ -48,8 +48,13 @@ extension OptionalEnumProperty: Property {
             }
         }
         set {
-            self.field.value = newValue?.map {
-                $0.rawValue
+            switch newValue {
+            case .some(.some(let newValue)):
+                self.field.value = .some(.some(newValue.rawValue))
+            case .some(.none):
+                self.field.value = .some(.none)
+            case .none:
+                self.field.value = .none
             }
         }
     }
