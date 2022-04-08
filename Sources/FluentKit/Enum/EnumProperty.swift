@@ -76,8 +76,15 @@ extension EnumProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let value = self.value {
-            input.set(.enumCase(value.rawValue), at: self.field.key)
+        guard let value = self.field.inputValue else { return }
+
+        switch value {
+        case .bind(let bind as String):
+            input.set(.enumCase(bind), at: self.field.key)
+        case .enumCase(let string):
+            input.set(.enumCase(string), at: self.field.key)
+        default:
+            fatalError("Unexpected input value type for '\(Model.self)'.'\(self.field.key)': \(value)")
         }
     }
 
