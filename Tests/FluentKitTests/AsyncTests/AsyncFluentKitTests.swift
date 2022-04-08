@@ -1,7 +1,7 @@
 #if compiler(>=5.5) && canImport(_Concurrency)
 #if !os(Linux)
-@testable import FluentKit
-@testable import FluentBenchmark
+import FluentKit
+import FluentBenchmark
 import XCTest
 import Foundation
 import FluentSQL
