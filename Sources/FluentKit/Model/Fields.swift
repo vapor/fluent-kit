@@ -69,21 +69,6 @@ extension Fields {
 
 // MARK: Properties
 
-#if compiler(<5.7) && compiler(>=5.2)
-@_silgen_name("swift_reflectionMirror_normalizedType")
-internal func _getNormalizedType<T>(_: T, type: Any.Type) -> Any.Type
-
-@_silgen_name("swift_reflectionMirror_count")
-internal func _getChildCount<T>(_: T, type: Any.Type) -> Int
-
-@_silgen_name("swift_reflectionMirror_subscript")
-internal func _getChild<T>(
-  of: T, type: Any.Type, index: Int,
-  outName: UnsafeMutablePointer<UnsafePointer<CChar>?>,
-  outFreeFunc: UnsafeMutablePointer<(@convention(c) (UnsafePointer<CChar>?) -> Void)?>
-) -> Any
-#endif
-
 extension Fields {
     public var properties: [AnyProperty] {
 #if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
