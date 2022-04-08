@@ -35,8 +35,9 @@ extension AnyModel {
 
     var anyID: AnyID {
         for (nameC, child) in _FastChildSequence(subject: self) {
-            if nameC?.advanced(by: 0).pointee == 0x5f, nameC?.advanced(by: 1).pointee == 0x69,
-               nameC?.advanced(by: 2).pointee == 0x64, nameC?.advanced(by: 3).pointee == 0x00,
+            /// Match a property named `_id` which conforms to `AnyID`. `as?` is expensive, so check that last.
+            if nameC?.advanced(by: 0).pointee == 0x5f/* '_' */, nameC?.advanced(by: 1).pointee == 0x69/* 'i' */,
+               nameC?.advanced(by: 2).pointee == 0x64/* 'd' */, nameC?.advanced(by: 3).pointee == 0x00/* '\0' */,
                let idChild = child as? AnyID
             {
                 return idChild
