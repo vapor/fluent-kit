@@ -93,11 +93,11 @@ internal struct _FastChildIterator: IteratorProtocol {
             self.lastNameBox = nil
             return nil
         }
-        if let label = child.label {
-            var nameC = calloc(label.utf8.count + 1, MemoryLayout<CChar>.size)
-            memcpy(nameC, label.utf8, label.utf8.count)
-            self.lastNameBox = _CStringBox(name: nameC, freeFunc: free(_:))
-            return (name: nameC, child: child.value)
+        if var label = child.label {
+            let nameC = calloc(label.utf8.count + 1, MemoryLayout<CChar>.size).bindMemory(to: CChar.self, capacity: label.utf8.count + 1)
+            label.withUTF8 { _ = memcpy(nameC, $0.baseAddress!, $0.count) }
+            self.lastNameBox = _CStringBox(ptr: UnsafePointer(nameC), freeFunc: { free($0.map { UnsafeMutableRawPointer(mutating: $0) }) })
+            return (name: UnsafePointer(nameC), child: child.value)
         } else {
             self.lastNameBox = nil
             return (name: nil, child: child.value)
