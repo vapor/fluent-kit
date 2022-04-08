@@ -1,4 +1,4 @@
-@testable import FluentKit
+import FluentKit
 import FluentSQL
 import NIOEmbedded
 import SQLKit

@@ -5,8 +5,8 @@
 //  Created by Mathew Polzin on 3/8/20.
 //
 
-@testable import FluentKit
-@testable import FluentBenchmark
+import FluentKit
+import FluentBenchmark
 import XCTest
 import Foundation
 import FluentSQL

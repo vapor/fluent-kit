@@ -1,5 +1,5 @@
-@testable import FluentKit
-@testable import FluentBenchmark
+import FluentKit
+import FluentBenchmark
 import XCTest
 import Foundation
 import XCTFluent
