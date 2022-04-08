@@ -82,8 +82,17 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let value = self.value {
-            input.set(value.map { .enumCase($0.rawValue) } ?? .null, at: self.field.key)
+        guard let value = self.field.inputValue else { return }
+
+        switch value {
+        case .bind(let bind as String):
+            input.set(.enumCase(bind), at: self.field.key)
+        case .enumCase(let string):
+            input.set(.enumCase(string), at: self.field.key)
+        case .null:
+            input.set(.null, at: self.field.key)
+        default:
+            fatalError("Unexpected input value type on '\(Model.self): \(value)")
         }
     }
 

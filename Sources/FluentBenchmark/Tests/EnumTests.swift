@@ -13,11 +13,13 @@ extension FluentBenchmarker {
             FooMigration()
         ]) {
             let foo = Foo(bar: .baz, baz: .qux)
+            XCTAssertTrue(foo.hasChanges)
             try foo.save(on: self.database).wait()
 
             let fetched = try Foo.find(foo.id, on: self.database).wait()
             XCTAssertEqual(fetched?.bar, .baz)
             XCTAssertEqual(fetched?.baz, .qux)
+            XCTAssertEqual(fetched?.hasChanges, false)
         }
     }
 
