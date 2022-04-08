@@ -92,7 +92,7 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
         case .null:
             input.set(.null, at: self.field.key)
         default:
-            fatalError("Unexpected input value type on '\(Model.self): \(value)")
+            fatalError("Unexpected input value type for '\(Model.self).'\(self.field.key)': \(value)")
         }
     }
 
