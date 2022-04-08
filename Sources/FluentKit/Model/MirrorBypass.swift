@@ -1,4 +1,10 @@
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin.C
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import Glibc
+#endif
+
+#if compiler(<5.7) && compiler(>=5.2)
 @_silgen_name("swift_reflectionMirror_normalizedType")
 internal func _getNormalizedType<T>(_: T, type: Any.Type) -> Any.Type
 
@@ -24,7 +30,7 @@ internal struct _FastChildIterator: IteratorProtocol {
         deinit { self.freeFunc(self.ptr) }
     }
     
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
     private let subject: AnyObject
     private let type: Any.Type
     private let childCount: Int
@@ -34,7 +40,7 @@ internal struct _FastChildIterator: IteratorProtocol {
 #endif
     private var lastNameBox: _CStringBox?
     
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
     fileprivate init(subject: AnyObject, type: Any.Type, childCount: Int) {
         self.subject = subject
         self.type = type
@@ -48,7 +54,7 @@ internal struct _FastChildIterator: IteratorProtocol {
 #endif
     
     init(subject: AnyObject) {
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
         let type = _getNormalizedType(subject, type: Swift.type(of: subject))
         self.init(
             subject: subject,
@@ -69,7 +75,7 @@ internal struct _FastChildIterator: IteratorProtocol {
     /// - Note: Ironically, in the fallback case that uses `Mirror` directly, preserving this semantic actually imposes
     ///   an _additional_ performance penalty.
     mutating func next() -> (name: UnsafePointer<CChar>?, child: Any)? {
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
         guard self.index < self.childCount else {
             self.lastNameBox = nil // ensure any lingering name gets freed
             return nil
@@ -101,7 +107,7 @@ internal struct _FastChildIterator: IteratorProtocol {
 }
 
 internal struct _FastChildSequence: Sequence {
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
     private let subject: AnyObject
     private let type: Any.Type
     private let childCount: Int
@@ -110,7 +116,7 @@ internal struct _FastChildSequence: Sequence {
 #endif
 
     init(subject: AnyObject) {
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
+#if compiler(<5.7) && compiler(>=5.2)
         self.subject = subject
         self.type = _getNormalizedType(subject, type: Swift.type(of: subject))
         self.childCount = _getChildCount(subject, type: self.type)
@@ -120,10 +126,10 @@ internal struct _FastChildSequence: Sequence {
     }
     
     func makeIterator() -> _FastChildIterator {
-#if compiler(<5.7) && compiler(>=5.2) && swift(>=5.2)
-        .init(subject: self.subject, type: self.type, childCount: self.childCount)
+#if compiler(<5.7) && compiler(>=5.2)
+        return _FastChildIterator(subject: self.subject, type: self.type, childCount: self.childCount)
 #else
-        .init(iterator: self.children.makeIterator())
+        return _FastChildIterator(iterator: self.children.makeIterator())
 #endif
     }
 }
