@@ -9,7 +9,7 @@ extension Model {
 
     public func create(on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            model.handle(event, on: db)
+            try model.handle(event, on: db)
         }.handle(.create, self, on: database)
     }
 
@@ -35,19 +35,20 @@ extension Model {
 
     public func update(on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            model.handle(event, on: db)
+            try model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
 
-    private func _update(on database: Database) -> EventLoopFuture<Void> {
+    private func _update(on database: Database) throws -> EventLoopFuture<Void> {
         precondition(self._$id.exists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
         }
         self.touchTimestamps(.update)
         let input = self.collectInput()
+        guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
-            .filter(\._$id == self.id!)
+            .filter(\._$id == id)
             .set(input)
             .update()
             .flatMapThrowing
@@ -60,18 +61,19 @@ extension Model {
         if !force, let timestamp = self.deletedTimestamp {
             timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-                model.handle(event, on: db)
+                try model.handle(event, on: db)
             }.handle(.softDelete, self, on: database)
         } else {
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-                model.handle(event, on: db)
+                try model.handle(event, on: db)
             }.handle(.delete(force), self, on: database)
         }
     }
 
-    private func _delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
+    private func _delete(force: Bool = false, on database: Database) throws -> EventLoopFuture<Void> {
+        guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
-            .filter(\._$id == self.id!)
+            .filter(\._$id == id)
             .delete(force: force)
             .map
         {
@@ -83,19 +85,20 @@ extension Model {
 
     public func restore(on database: Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            model.handle(event, on: db)
+            try model.handle(event, on: db)
         }.handle(.restore, self, on: database)
     }
 
-    private func _restore(on database: Database) -> EventLoopFuture<Void> {
+    private func _restore(on database: Database) throws -> EventLoopFuture<Void> {
         guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
             fatalError("no delete timestamp on this model")
         }
         timestamp.touch(date: nil)
         precondition(self._$id.exists)
+        guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
             .withDeleted()
-            .filter(\._$id == self.id!)
+            .filter(\._$id == id)
             .set(self.collectInput())
             .action(.update)
             .run()
@@ -106,18 +109,18 @@ extension Model {
         }
     }
 
-    private func handle(_ event: ModelEvent, on db: Database) -> EventLoopFuture<Void> {
+    private func handle(_ event: ModelEvent, on db: Database) throws -> EventLoopFuture<Void> {
         switch event {
         case .create:
             return _create(on: db)
         case .delete(let force):
-            return _delete(force: force, on: db)
+            return try _delete(force: force, on: db)
         case .restore:
-            return _restore(on: db)
+            return try _restore(on: db)
         case .softDelete:
-            return _delete(force: false, on: db)
+            return try _delete(force: false, on: db)
         case .update:
-            return _update(on: db)
+            return try _update(on: db)
         }
     }
 }
