@@ -362,7 +362,8 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
                 map[fromID, default: []].append(to)
             }
             for model in models {
-                model[keyPath: self.relationKey].value = map[model.id!] ?? []
+                guard let id = model.id else { throw FluentError.idRequired }
+                model[keyPath: self.relationKey].value = map[id] ?? []
             }
         }
     }
