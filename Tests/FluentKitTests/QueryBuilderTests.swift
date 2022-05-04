@@ -186,4 +186,20 @@ final class QueryBuilderTests: XCTestCase {
         print(db.sqlSerializers.first!.sql)
         db.reset()
     }
+
+    func testReadIntent() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        _ = try Planet.query(on: db, for: .readOnly).all().wait()
+        assertQuery(db, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets""#)
+        db.reset()
+
+        _ = try Planet.query(on: db, for: .update).all().wait()
+        assertQuery(db, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets" FOR UPDATE"#)
+        db.reset()
+
+        _ = try Planet.query(on: db, for: .share).all().wait()
+        assertQuery(db, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id" FROM "planets" FOR SHARE"#)
+        db.reset()
+    }
 }

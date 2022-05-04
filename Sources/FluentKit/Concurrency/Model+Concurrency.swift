@@ -5,9 +5,10 @@ import NIOCore
 public extension Model {
     static func find(
         _ id: Self.IDValue?,
-        on database: Database
+        on database: Database,
+        for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly
     ) async throws -> Self? {
-        try await self.find(id, on: database).get()
+        try await self.find(id, on: database, for: readIntent).get()
     }
     
     // MARK: - CRUD

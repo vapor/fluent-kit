@@ -32,8 +32,9 @@ public final class ParentProperty<From, To>
         self._id = .init(key: key)
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
-        return To.query(on: database)
+    public func query(on database: Database,
+                      for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<To> {
+        return To.query(on: database, for: readIntent)
             .filter(\._$id == self.id)
     }
 }

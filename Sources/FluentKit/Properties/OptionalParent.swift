@@ -31,8 +31,9 @@ public final class OptionalParentProperty<From, To>
         self._id = .init(key: key)
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
-        let builder = To.query(on: database)
+    public func query(on database: Database,
+                      for readIntent: DatabaseQuery.Action.ReadIntent = .readOnly) -> QueryBuilder<To> {
+        let builder = To.query(on: database, for: readIntent)
         if let id = self.id {
             builder.filter(\._$id == id)
         } else {
