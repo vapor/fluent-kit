@@ -1,6 +1,6 @@
 extension Database {
-    public func schema(_ schema: String) -> SchemaBuilder {
-        return .init(database: self, schema: schema)
+    public func schema(_ schema: String, space: String? = nil) -> SchemaBuilder {
+        return .init(database: self, schema: schema, space: space)
     }
 }
 
@@ -8,9 +8,9 @@ public final class SchemaBuilder {
     let database: Database
     public var schema: DatabaseSchema
 
-    init(database: Database, schema: String) {
+    init(database: Database, schema: String, space: String? = nil) {
         self.database = database
-        self.schema = .init(schema: schema)
+        self.schema = .init(schema: schema, space: space)
     }
 
     public func id() -> Self {
@@ -66,6 +66,7 @@ public final class SchemaBuilder {
     public func foreignKey(
         _ field: FieldKey,
         references foreignSchema: String,
+        inSpace foreignSpace: String? = nil,
         _ foreignField: FieldKey,
         onDelete: DatabaseSchema.ForeignKeyAction = .noAction,
         onUpdate: DatabaseSchema.ForeignKeyAction = .noAction,
@@ -75,6 +76,7 @@ public final class SchemaBuilder {
             .foreignKey(
                 [.key(field)],
                 foreignSchema,
+                space: foreignSpace,
                 [.key(foreignField)],
                 onDelete: onDelete,
                 onUpdate: onUpdate

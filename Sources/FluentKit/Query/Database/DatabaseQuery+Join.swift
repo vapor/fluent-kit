@@ -13,6 +13,16 @@ extension DatabaseQuery {
             foreign: Field,
             local: Field
         )
+        
+        case extendedJoin(
+            schema: String,
+            space: String?,
+            alias: String?,
+            Method,
+            foreign: Field,
+            local: Field
+        )
+        
         case custom(Any)
     }
 }
@@ -26,6 +36,14 @@ extension DatabaseQuery.Join: CustomStringConvertible {
                 schemaString = "\(schema) as \(alias)"
             } else {
                 schemaString = "\(schema)"
+            }
+            return "\(schemaString) \(method) on \(foreign) == \(local)"
+        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
+            let schemaString: String
+            if let alias = alias {
+                schemaString = "\(space.map { "\($0)." } ?? "")\(schema) as \(alias)"
+            } else {
+                schemaString = "\(space.map { "\($0)." } ?? "")\(schema)"
             }
             return "\(schemaString) \(method) on \(foreign) == \(local)"
         case .custom(let custom):

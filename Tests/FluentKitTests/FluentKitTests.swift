@@ -545,6 +545,35 @@ final class FluentKitTests: XCTestCase {
             .wait())
     }
     
+    func testModelsWithSpacesSpecified() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema(AltPlanet.schema, space: AltPlanet.space)
+            .id()
+            .field("name", .string, .required)
+            .field("star_id", .uuid, .references(Star.schema, "id"), .required)
+            .field("possible_star_id", .uuid, .references(Star.schema, "id"))
+            .field("createdAt", .datetime)
+            .field("updatedAt", .datetime)
+            .field("deletedAt", .datetime, .sql(.default(SQLLiteral.null)))
+            .create()
+            .wait()
+        _ = try AltPlanet.query(on: db).filter(\.$name == "Earth").all().wait()
+        try AltPlanet(name: "Nemesis").create(on: db).wait()
+        let updateMe = AltPlanet(id: UUID(), name: "Vulcan")
+        updateMe.$id.exists = true
+        try updateMe.update(on: db).wait()
+        try AltPlanet.query(on: db).filter(\.$name != "Arret").delete(force: true).wait()
+        _ = try Star.query(on: db).join(AltPlanet.self, on: \AltPlanet.$star.$id == \Star.$id).fields(for: Star.self).withDeleted().first().wait()
+        
+        XCTAssertEqual(db.sqlSerializers.count, 6)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(0).first?.sql, #"CREATE TABLE "mirror_universe"."planets"("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "star_id" UUID REFERENCES "stars" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION NOT NULL, "possible_star_id" UUID REFERENCES "stars" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ DEFAULT NULL)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(1).first?.sql, #"SELECT "mirror_universe"."planets"."id" AS "mirror_universe_planets_id", "mirror_universe"."planets"."name" AS "mirror_universe_planets_name", "mirror_universe"."planets"."star_id" AS "mirror_universe_planets_star_id", "mirror_universe"."planets"."possible_star_id" AS "mirror_universe_planets_possible_star_id", "mirror_universe"."planets"."createdAt" AS "mirror_universe_planets_createdAt", "mirror_universe"."planets"."updatedAt" AS "mirror_universe_planets_updatedAt", "mirror_universe"."planets"."deletedAt" AS "mirror_universe_planets_deletedAt" FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" = $1 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $2)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "mirror_universe"."planets" ("id", "createdAt", "updatedAt", "name") VALUES ($1, $2, $3, $4)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(3).first?.sql, #"UPDATE "mirror_universe"."planets" SET "updatedAt" = $1, "name" = $2, "id" = $3 WHERE "mirror_universe"."planets"."id" = $4 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $5)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(4).first?.sql, #"DELETE FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" <> $1"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(5).first?.sql, #"SELECT "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "stars" INNER JOIN "mirror_universe"."planets" ON "stars"."id" = "mirror_universe"."planets"."star_id" LIMIT 1"#)
+    }
+    
     func testFieldsPropertiesPerformance() throws {
         measure {
             for _ in 1 ... 10_000 {
@@ -659,6 +688,45 @@ final class Planet2: Model {
         self.id = id
         self.name = name
         self.moonCount = moonCount
+    }
+}
+
+final class AltPlanet: Model {
+    public static let space: String? = "mirror_universe"
+    public static let schema = "planets"
+
+    @ID(key: .id)
+    public var id: UUID?
+
+    @Field(key: "name")
+    public var name: String
+
+    @Parent(key: "star_id")
+    public var star: Star
+
+    @OptionalParent(key: "possible_star_id")
+    public var possibleStar: Star?
+    
+    @Timestamp(key: "createdAt", on: .create)
+    public var createdAt: Date?
+
+    @Timestamp(key: "updatedAt", on: .update)
+    public var updatedAt: Date?
+
+    @Timestamp(key: "deletedAt", on: .delete)
+    public var deletedAt: Date?
+
+    public init() {}
+
+    public init(id: IDValue? = nil, name: String) {
+        self.id = id
+        self.name = name
+    }
+
+    public init(id: IDValue? = nil, name: String, starId: UUID) {
+        self.id = id
+        self.name = name
+        self.$star.id = starId
     }
 }
 

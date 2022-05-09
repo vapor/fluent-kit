@@ -269,12 +269,13 @@ extension QueryBuilder {
         where Foreign: Schema, Local: Schema
     {
         self.models.append(Foreign.self)
-        self.query.joins.append(.join(
+        self.query.joins.append(.extendedJoin(
             schema: Foreign.schema,
+            space: Foreign.space,
             alias: Foreign.alias,
             method,
-            foreign: .path(foreignPath, schema: Foreign.schemaOrAlias),
-            local: .path(localPath, schema: Local.schemaOrAlias)
+            foreign: .extendedPath(foreignPath, schema: Foreign.schemaOrAlias, space: Foreign.space),
+            local: .extendedPath(localPath, schema: Local.schemaOrAlias, space: Local.space)
         ))
         return self
     }
