@@ -158,6 +158,10 @@ final class AsyncQueryBuilderTests: XCTestCase {
             case .path(let path, let schema):
                 XCTAssertEqual(path, ["name"])
                 XCTAssertEqual(schema, "stars")
+            case .extendedPath(let path, let schema, let space):
+                XCTAssertEqual(path, ["name"])
+                XCTAssertEqual(schema, "stars")
+                XCTAssertNil(space)
             default:
                 XCTFail("\(field)")
             }

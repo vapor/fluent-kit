@@ -67,12 +67,14 @@ public struct DatabaseSchema {
     public enum FieldConstraint {
         public static func references(
             _ schema: String,
+            space: String? = nil,
             _ field: FieldKey,
             onDelete: ForeignKeyAction = .noAction,
             onUpdate: ForeignKeyAction = .noAction
         ) -> Self {
             .foreignKey(
                 schema,
+                space: space,
                 .key(field),
                 onDelete: onDelete,
                 onUpdate: onUpdate
@@ -83,6 +85,7 @@ public struct DatabaseSchema {
         case identifier(auto: Bool)
         case foreignKey(
             _ schema: String,
+            space: String? = nil,
             _ field: FieldName,
             onDelete: ForeignKeyAction,
             onUpdate: ForeignKeyAction
@@ -100,6 +103,7 @@ public struct DatabaseSchema {
         case foreignKey(
             _ fields: [FieldName],
             _ schema: String,
+            space: String? = nil,
             _ foreign: [FieldName],
             onDelete: ForeignKeyAction,
             onUpdate: ForeignKeyAction
@@ -142,6 +146,7 @@ public struct DatabaseSchema {
 
     public var action: Action
     public var schema: String
+    public var space: String?
     public var createFields: [FieldDefinition]
     public var updateFields: [FieldUpdate]
     public var deleteFields: [FieldName]
@@ -149,9 +154,10 @@ public struct DatabaseSchema {
     public var deleteConstraints: [ConstraintDelete]
     public var exclusiveCreate: Bool
     
-    public init(schema: String) {
+    public init(schema: String, space: String? = nil) {
         self.action = .create
         self.schema = schema
+        self.space = space
         self.createFields = []
         self.updateFields = []
         self.deleteFields = []

@@ -1,3 +1,5 @@
+import FluentKit
+
 public struct SQLQueryConverter {
     let delegate: SQLConverterDelegate
     public init(delegate: SQLConverterDelegate) {
@@ -20,13 +22,13 @@ public struct SQLQueryConverter {
     // MARK: Private
     
     private func delete(_ query: DatabaseQuery) -> SQLExpression {
-        var delete = SQLDelete(table: SQLIdentifier(query.schema))
+        var delete = SQLDelete(table: SQLQualifiedTable(query.schema, space: query.space))
         delete.predicate = self.filters(query.filters)
         return delete
     }
     
     private func update(_ query: DatabaseQuery) -> SQLExpression {
-        var update = SQLUpdate(table: SQLIdentifier(query.schema))
+        var update = SQLUpdate(table: SQLQualifiedTable(query.schema, space: query.space))
         guard case .dictionary(let values) = query.input.first! else {
             fatalError("Missing query input generating update query")
         }
@@ -43,38 +45,11 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        select.tables.append(SQLIdentifier(query.schema))
+        select.tables.append(SQLQualifiedTable(query.schema, space: query.space))
         switch query.action {
         case .read:
             select.isDistinct = query.isUnique
-            select.columns = query.fields.map { field in
-                switch field {
-                case .custom(let any):
-                    return custom(any)
-                case .path(let path, let schema):
-                    let field: SQLExpression
-                    let key: FieldKey
-
-                    // determine field type based on count
-                    switch path.count {
-                    case 1:
-                        key = path[0]
-                        field = SQLColumn(self.key(key), table: schema)
-                    case 2...:
-                        key = path[0]
-                        field = self.delegate.nestedFieldExpression(
-                            self.key(key),
-                            path[1...].map(self.key)
-                        )
-                    default:
-                        fatalError("Field path must not be empty.")
-                    }
-                    return SQLAlias(
-                        field,
-                        as: SQLIdentifier(schema + "_" + self.key(key))
-                    )
-                }
-            }
+            select.columns = query.fields.map { field in self.field(field, aliased: true) }
         case .aggregate(let aggregate):
             select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
         default: break
@@ -102,7 +77,7 @@ public struct SQLQueryConverter {
     }
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
-        var insert = SQLInsert(table: SQLIdentifier(query.schema))
+        var insert = SQLInsert(table: SQLQualifiedTable(query.schema, space: query.space))
         guard case .dictionary(let first) = query.input.first! else {
             fatalError("Unexpected query input: \(query.input)")
         }
@@ -169,11 +144,19 @@ public struct SQLQueryConverter {
             return SQLJoin(
                 method: self.joinMethod(method),
                 table: table,
-                expression: SQLBinaryExpression(
-                    left: self.field(local),
-                    op: SQLBinaryOperator.equal,
-                    right: self.field(foreign)
-                )
+                expression: SQLBinaryExpression(left: self.field(local), op: SQLBinaryOperator.equal, right: self.field(foreign))
+            )
+        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
+            let table: SQLExpression
+            if let alias = alias {
+                table = SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier(alias))
+            } else {
+                table = SQLQualifiedTable(schema, space: space)
+            }
+            return SQLJoin(
+                method: self.joinMethod(method),
+                table: table,
+                expression: SQLBinaryExpression(left: self.field(local), op: SQLBinaryOperator.equal, right: self.field(foreign))
             )
         }
     }
@@ -186,26 +169,42 @@ public struct SQLQueryConverter {
             return custom(any)
         }
     }
-
-    private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+    
+    private func field(_ field: DatabaseQuery.Field, aliased: Bool = false) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
         case .path(let path, let schema):
             switch path.count {
             case 1:
-                return SQLColumn(self.key(path[0]), table: schema)
+                let field = SQLColumn(self.key(path[0]), table: schema)
+                return aliased ? SQLAlias(field, as: schema + "_" + self.key(path[0])) : field
             case 2...:
-                return self.delegate.nestedFieldExpression(
+                let field = self.delegate.nestedFieldExpression(
                     self.key(path[0]),
                     path[1...].map(self.key)
                 )
+                return aliased ? SQLAlias(field, as: schema + "_" + self.key(path[0])) : field
+            default:
+                fatalError("Field path must not be empty.")
+            }
+        case .extendedPath(let path, let schema, let space):
+            switch path.count {
+            case 1:
+                let field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
+                return aliased ? SQLAlias(field, as: (space.map { "\($0)_" } ?? "") + schema + "_" + self.key(path[0])) : field
+            case 2...:
+                let field = self.delegate.nestedFieldExpression(
+                    self.key(path[0]),
+                    path[1...].map(self.key)
+                )
+                return aliased ? SQLAlias(field, as: (space.map { "\($0)_" } ?? "") + schema + "_" + self.key(path[0])) : field
             default:
                 fatalError("Field path must not be empty.")
             }
         }
     }
-
+    
     private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> SQLExpression {
         switch aggregate {
         case .custom(let any):

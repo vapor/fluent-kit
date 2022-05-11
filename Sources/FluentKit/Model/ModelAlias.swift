@@ -19,6 +19,10 @@ public protocol _ModelAlias: Schema {
 }
 
 extension _ModelAlias {
+    public static var space: String? {
+        Model.space
+    }
+    
     public static var schema: String {
         Model.schema
     }

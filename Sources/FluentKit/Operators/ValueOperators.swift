@@ -12,7 +12,7 @@ extension QueryBuilder {
         where Joined: Schema
     {
         self.filter(
-            .path(filter.path, schema: Joined.schemaOrAlias),
+            .extendedPath(filter.path, schema: Joined.schemaOrAlias, space: Joined.space),
             filter.method,
             filter.value
         )

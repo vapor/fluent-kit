@@ -14,7 +14,7 @@ public final class QueryBuilder<Model>
 
     public convenience init(database: Database) {
         self.init(
-            query: .init(schema: Model.schema),
+            query: .init(schema: Model.schema, space: Model.space),
             database: database,
             models: [Model.self]
         )
@@ -66,7 +66,7 @@ public final class QueryBuilder<Model>
 
     internal func addFields(for model: (Schema & Fields).Type, to query: inout DatabaseQuery) {
         query.fields += model.keys.map { path in
-            .path([path], schema: model.schemaOrAlias)
+            .extendedPath([path], schema: model.schemaOrAlias, space: model.space)
         }
     }
 
@@ -81,7 +81,7 @@ public final class QueryBuilder<Model>
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
-        self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schema))
+        self.query.fields.append(.extendedPath(Joined.path(for: field), schema: Joined.schema, space: Joined.space))
         return self
     }
     
@@ -174,7 +174,7 @@ public final class QueryBuilder<Model>
             Field.Model == Model
     {
         let copy = self.copy()
-        copy.query.fields = [.path(Model.path(for: key), schema: Model.schema)]
+        copy.query.fields = [.extendedPath(Model.path(for: key), schema: Model.schema, space: Model.space)]
         return copy.all().map {
             $0.map {
                 $0[keyPath: key].value!
@@ -192,7 +192,7 @@ public final class QueryBuilder<Model>
             Field.Model == Joined
     {
         let copy = self.copy()
-        copy.query.fields = [.path(Joined.path(for: field), schema: Joined.schemaOrAlias)]
+        copy.query.fields = [.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.space)]
         return copy.all().flatMapThrowing {
             try $0.map {
                 try $0.joined(Joined.self)[keyPath: field].value!
@@ -220,7 +220,7 @@ public final class QueryBuilder<Model>
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
-                try model.output(from: output.schema(Model.schema))
+                try model.output(from: output.schema((Model.space.map { "\($0)_" } ?? "") + Model.schema))
                 all.append(model)
                 return model
             }))

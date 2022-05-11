@@ -31,7 +31,7 @@ public struct SQLSchemaConverter {
     // MARK: Private
 
     private func update(_ schema: DatabaseSchema) -> SQLExpression {
-        var update = SQLAlterTable(name: self.name(schema.schema))
+        var update = SQLAlterTable(name: self.name(schema.schema, space: schema.space))
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
         update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
@@ -45,12 +45,12 @@ public struct SQLSchemaConverter {
     }
     
     private func delete(_ schema: DatabaseSchema) -> SQLExpression {
-        let delete = SQLDropTable(table: self.name(schema.schema))
+        let delete = SQLDropTable(table: self.name(schema.schema, space: schema.space))
         return delete
     }
     
     private func create(_ schema: DatabaseSchema) -> SQLExpression {
-        var create = SQLCreateTable(name: self.name(schema.schema))
+        var create = SQLCreateTable(name: self.name(schema.schema, space: schema.space))
         create.columns = schema.createFields.map(self.fieldDefinition)
         create.tableConstraints = schema.createConstraints.map {
             self.constraint($0, table: schema.schema)
@@ -61,8 +61,8 @@ public struct SQLSchemaConverter {
         return create
     }
     
-    private func name(_ string: String) -> SQLExpression {
-        return SQLIdentifier(string)
+    private func name(_ string: String, space: String? = nil) -> SQLExpression {
+        return SQLQualifiedTable(string, space: space)
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> SQLExpression {
@@ -75,9 +75,9 @@ public struct SQLSchemaConverter {
                     algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
                     name: SQLIdentifier(name)
                 )
-            case .foreignKey(let local, let schema, let foreign, let onDelete, let onUpdate):
+            case .foreignKey(let local, let schema, let space, let foreign, let onDelete, let onUpdate):
                 let reference = SQLForeignKey(
-                    table: self.name(schema),
+                    table: self.name(schema, space: space),
                     columns: foreign.map(self.fieldName),
                     onDelete: self.foreignKeyAction(onDelete),
                     onUpdate: self.foreignKeyAction(onUpdate)
@@ -114,7 +114,7 @@ public struct SQLSchemaConverter {
         let prefix: String
 
         switch algorithm {
-        case .foreignKey(let localFields, _, let foreignFields, _, _):
+        case .foreignKey(let localFields, _, _, let foreignFields, _, _):
             prefix = "fk"
             fieldNames = localFields + foreignFields
         case .unique(let fields):
@@ -240,9 +240,9 @@ public struct SQLSchemaConverter {
             return SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):
             return SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
-        case .foreignKey(let schema, let field, let onDelete, let onUpdate):
+        case .foreignKey(let schema, let space, let field, let onDelete, let onUpdate):
             return SQLColumnConstraintAlgorithm.references(
-                SQLIdentifier(schema),
+                self.name(schema, space: space),
                 self.fieldName(field),
                 onDelete: self.foreignKeyAction(onDelete),
                 onUpdate: self.foreignKeyAction(onUpdate)

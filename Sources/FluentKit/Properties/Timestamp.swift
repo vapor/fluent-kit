@@ -199,9 +199,10 @@ extension Schema {
         guard let timestamp = self.init().deletedTimestamp else {
             return
         }
-        let deletedAtField = DatabaseQuery.Field.path(
+        let deletedAtField = DatabaseQuery.Field.extendedPath(
             [timestamp.key],
-            schema: self.schemaOrAlias
+            schema: self.schemaOrAlias,
+            space: self.space
         )
         query.filters.append(.group([
             .value(deletedAtField, .equal, .null),
