@@ -51,6 +51,24 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
+    func testGroupSorts() async throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try await User.query(on: db).sort(\.$pet.$name).all { _ in }
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_name" ASC"#), true)
+        db.reset()
+
+        _ = try await User.query(on: db).sort(\.$pet.$toy.$name, .descending).all { _ in }
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_name" DESC"#), true)
+        db.reset()
+
+        _ = try await User.query(on: db).sort(\.$pet.$toy.$foo.$bar, .ascending).all { _ in }
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_foo_bar" ASC"#), true)
+        db.reset()
+    }
+
     func testJoins() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet.query(on: db).join(child: \Planet.$governor).all()
