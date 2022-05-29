@@ -142,6 +142,17 @@ extension IDProperty: AnyQueryableProperty {
 
 extension IDProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension IDProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension IDProperty: QueryAddressableProperty {
+    public var queryableProperty: IDProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension IDProperty: AnyDatabaseProperty {

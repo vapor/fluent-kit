@@ -74,6 +74,17 @@ extension OptionalEnumProperty: QueryableProperty {
     }
 }
 
+// MARK: Query-addressable
+
+extension OptionalEnumProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension OptionalEnumProperty: QueryAddressableProperty {
+    public var queryableProperty: OptionalEnumProperty<Model, WrappedValue> { self }
+}
+
 // MARK: Database
 
 extension OptionalEnumProperty: AnyDatabaseProperty {

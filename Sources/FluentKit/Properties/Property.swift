@@ -43,3 +43,33 @@ extension QueryableProperty {
         .bind(value)
     }
 }
+
+/// A property which can be addressed as a single value by a query, even if an indirection through
+/// a more convenient representation must be made to do so.
+///
+/// This protocol bridges the gap between `AnyQueryableProperty` - which describes a property whose
+/// singular `Value` directly relates to the value stored in the database for that property - and
+/// the concrete relations `Parent` and `OptionalParent`, for which the notions of equality and
+/// identity are not interchangeable. Via `AnyQueryAddressableProperty`, both of these categories
+/// may be handled dynamically, rather than special-casing on the behaviors of the relations.
+///
+/// In other words, to be "queryable" a property must be equatable, but to be "query-addressable",
+/// it need only be identifiable. Any queryable property is automatically query-addressable, but
+/// the reverse is not necessarily true.
+public protocol AnyQueryAddressableProperty: AnyProperty {
+    var anyQueryableProperty: AnyQueryableProperty { get }
+    var queryablePath: [FieldKey] { get }
+}
+
+/// The type-bound version of `AnyQueryAddressableProperty`.
+public protocol QueryAddressableProperty: AnyQueryAddressableProperty, Property {
+    associatedtype QueryablePropertyType: QueryableProperty where QueryablePropertyType.Model == Self.Model
+    var queryableProperty: QueryablePropertyType { get }
+    static func queryAddressableValue(_ value: QueryablePropertyType.Value) -> DatabaseQuery.Value
+}
+
+extension QueryAddressableProperty {
+    public static func queryAddressableValue(_ value: QueryablePropertyType.Value) -> DatabaseQuery.Value {
+        QueryablePropertyType.queryValue(value)
+    }
+}
