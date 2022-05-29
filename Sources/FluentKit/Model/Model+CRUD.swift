@@ -25,7 +25,7 @@ extension Model {
             .cascadeFailure(to: promise)
         return promise.futureResult.flatMapThrowing { output in
             var input = self.collectInput()
-            if case .default = self._$id.inputValue {
+            if self.anyID is AnyQueryableProperty, case .default = self._$id.inputValue {
                 let idKey = Self()._$id.key
                 input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
             }
@@ -48,7 +48,7 @@ extension Model {
         let input = self.collectInput()
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
-            .filter(\._$id == id)
+            .filter(id: id)
             .set(input)
             .update()
             .flatMapThrowing
@@ -73,7 +73,7 @@ extension Model {
     private func _delete(force: Bool = false, on database: Database) throws -> EventLoopFuture<Void> {
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
-            .filter(\._$id == id)
+            .filter(id: id)
             .delete(force: force)
             .map
         {
@@ -98,7 +98,7 @@ extension Model {
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
             .withDeleted()
-            .filter(\._$id == id)
+            .filter(id: id)
             .set(self.collectInput())
             .action(.update)
             .run()
@@ -130,7 +130,8 @@ extension Collection where Element: FluentKit.Model {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
-
+        
+        precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
         precondition(self.allSatisfy { $0.anyID.exists })
 
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
@@ -155,6 +156,7 @@ extension Collection where Element: FluentKit.Model {
             return database.eventLoop.makeSucceededFuture(())
         }
         
+        precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
         precondition(self.allSatisfy { !$0.anyID.exists })
         
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
