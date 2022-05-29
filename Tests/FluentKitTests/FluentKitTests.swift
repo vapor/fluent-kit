@@ -364,7 +364,7 @@ final class FluentKitTests: XCTestCase {
         }
     }
 
-    func testPlanel2FilterPlaceholder1() throws {
+    func testPlanet2FilterPlaceholder1() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -378,7 +378,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder2() throws {
+    func testPlanet2FilterPlaceholder2() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -392,7 +392,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder3() throws {
+    func testPlanet2FilterPlaceholder3() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -408,7 +408,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder4() throws {
+    func testPlanet2FilterPlaceholder4() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet2
             .query(on: db)
@@ -498,7 +498,6 @@ final class FluentKitTests: XCTestCase {
                 self.id = id
             }
         }
-
 
         let test = CallbackTestDatabase { query in
             switch query.input[0] {
