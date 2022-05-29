@@ -89,6 +89,8 @@ public struct SQLSchemaConverter {
                     ),
                     name: SQLIdentifier(name)
                 )
+            case .compositeIdentifier(let fields):
+                return SQLConstraint(algorithm: SQLTableConstraintAlgorithm.primaryKey(columns: fields.map(self.fieldName)), name: nil)
             case .custom(let any):
                 return SQLConstraint(algorithm: any as! SQLExpression, name: customName.map(SQLIdentifier.init(_:)))
             }
