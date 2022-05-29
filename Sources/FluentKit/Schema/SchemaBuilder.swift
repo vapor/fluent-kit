@@ -90,6 +90,29 @@ public final class SchemaBuilder {
         return self
     }
 
+    public func foreignKey(
+        _ fields: [FieldKey],
+        references foreignSchema: String,
+        inSpace foreignSpace: String? = nil,
+        _ foreignFields: [FieldKey],
+        onDelete: DatabaseSchema.ForeignKeyAction = .noAction,
+        onUpdate: DatabaseSchema.ForeignKeyAction = .noAction,
+        name: String? = nil
+    ) -> Self {
+        self.schema.createConstraints.append(.constraint(
+            .foreignKey(
+                fields.map { .key($0) },
+                foreignSchema,
+                space: foreignSpace,
+                foreignFields.map { .key($0) },
+                onDelete: onDelete,
+                onUpdate: onUpdate
+            ),
+            name: name
+        ))
+        return self
+    }
+
     public func updateField(
         _ key: FieldKey,
         _ dataType: DatabaseSchema.DataType
