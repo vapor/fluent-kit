@@ -22,6 +22,13 @@ final class CompositeIDTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt" FROM "composite+planet+tag" WHERE ("composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2) LIMIT 1""#)
     }
+    
+    func testCompositeIDMigration() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try CompositePlanetTagMigration().prepare(on: db).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "composite+planet+tag"("planet_id" UUID NOT NULL REFERENCES "planets" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "tag_id" UUID NOT NULL REFERENCES "tags" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, PRIMARY KEY ("planet_id", "tag_id"))"#)
+    }
 }
 
 public final class CompositePlanetTag: Model {
@@ -68,7 +75,7 @@ public final class CompositePlanetTag: Model {
     }
 }
 
-public struct PlanetTagMigration: Migration {
+public struct CompositePlanetTagMigration: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {

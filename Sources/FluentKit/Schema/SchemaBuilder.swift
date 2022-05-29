@@ -42,7 +42,7 @@ public final class SchemaBuilder {
     }
     
     public func compositeIdentifier(over fields: FieldKey...) -> Self {
-        self.constraint(.constraint(.compositeIdentifier(fields.map { .key($0) }), name: nil))
+        self.constraint(.constraint(.compositeIdentifier(fields.map { .key($0) }), name: ""))
     }
 
     public func constraint(_ constraint: DatabaseSchema.Constraint) -> Self {
