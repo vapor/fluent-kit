@@ -5,7 +5,7 @@ extension Model {
 
 // MARK: Type
 
-@propertyWrapper
+@propertyWrapper @dynamicMemberLookup
 public final class CompositeIDProperty<Model, Value>
     where Model: FluentKit.Model, Value: FluentKit.Fields
 {
@@ -31,6 +31,14 @@ public final class CompositeIDProperty<Model, Value>
         self.value = .init()
         self.exists = false
         self.cachedOutput = nil
+    }
+
+    public subscript<Nested>(
+         dynamicMember keyPath: KeyPath<Value, Nested>
+    ) -> Nested
+        where Nested: Property
+    {
+        return self.value![keyPath: keyPath]
     }
 }
 
