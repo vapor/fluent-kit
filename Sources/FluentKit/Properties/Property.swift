@@ -32,10 +32,17 @@ public protocol AnyCodableProperty: AnyProperty {
 
 public protocol AnyQueryableProperty: AnyProperty {
     var path: [FieldKey] { get }
+    func queryableValue() -> DatabaseQuery.Value?
 }
 
 public protocol QueryableProperty: AnyQueryableProperty, Property {
     static func queryValue(_ value: Value) -> DatabaseQuery.Value
+}
+
+extension AnyQueryableProperty where Self: QueryableProperty {
+    public func queryableValue() -> DatabaseQuery.Value? {
+        return self.value.map { Self.queryValue($0) }
+    }
 }
 
 extension QueryableProperty {
@@ -65,11 +72,4 @@ public protocol AnyQueryAddressableProperty: AnyProperty {
 public protocol QueryAddressableProperty: AnyQueryAddressableProperty, Property {
     associatedtype QueryablePropertyType: QueryableProperty where QueryablePropertyType.Model == Self.Model
     var queryableProperty: QueryablePropertyType { get }
-    static func queryAddressableValue(_ value: QueryablePropertyType.Value) -> DatabaseQuery.Value
-}
-
-extension QueryAddressableProperty {
-    public static func queryAddressableValue(_ value: QueryablePropertyType.Value) -> DatabaseQuery.Value {
-        QueryablePropertyType.queryValue(value)
-    }
 }

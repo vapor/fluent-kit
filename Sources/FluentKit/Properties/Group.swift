@@ -146,7 +146,7 @@ extension GroupPropertyPath: FluentKit.Property
 // MARK: + Queryable
 
 extension GroupPropertyPath: AnyQueryableProperty
-    where Property: AnyQueryableProperty
+    where Property: QueryableProperty
 {
     public var path: [FieldKey] {
         let subPath = self.property.path

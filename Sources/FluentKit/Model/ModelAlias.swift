@@ -82,7 +82,7 @@ extension AliasedField: Property {
     }
 }
 
-extension AliasedField: AnyQueryableProperty where Field: AnyQueryableProperty {
+extension AliasedField: AnyQueryableProperty where Field: QueryableProperty {
     public var path: [FieldKey] {
         self.field.path
     }
