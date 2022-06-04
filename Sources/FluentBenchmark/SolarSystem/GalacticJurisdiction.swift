@@ -11,15 +11,15 @@ public final class GalacticJurisdiction: Model {
         public var jurisdiction: Jurisdiction
         
         @Field(key: "rank")
-        public var rank: UInt
+        public var rank: Int
         
         public init() {}
         
-        public convenience init(galaxy: Galaxy, jurisdiction: Jurisdiction, rank: UInt) throws {
+        public convenience init(galaxy: Galaxy, jurisdiction: Jurisdiction, rank: Int) throws {
             try self.init(galaxyId: galaxy.requireID(), jurisdictionId: jurisdiction.requireID(), rank: rank)
         }
         
-        public init(galaxyId: Galaxy.IDValue, jurisdictionId: Jurisdiction.IDValue, rank: UInt) {
+        public init(galaxyId: Galaxy.IDValue, jurisdictionId: Jurisdiction.IDValue, rank: Int) {
             self.$galaxy.id = galaxyId
             self.$jurisdiction.id = jurisdictionId
             self.rank = rank
@@ -53,7 +53,7 @@ public struct GalacticJurisdictionMigration: Migration {
         database.schema(GalacticJurisdiction.schema)
             .field("galaxy_id", .uuid, .required, .references(Galaxy.schema, .id, onDelete: .cascade, onUpdate: .cascade))
             .field("jurisdiction_id", .uuid, .required, .references(Jurisdiction.schema, .id, onDelete: .cascade, onUpdate: .cascade))
-            .field("rank", .uint, .required)
+            .field("rank", .int, .required)
             .compositeIdentifier(over: "galaxy_id", "jurisdiction_id", "rank")
             .create()
     }
