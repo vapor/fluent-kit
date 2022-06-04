@@ -8,6 +8,11 @@ import FluentSQL
 
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 final class AsyncFilterQueryTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+
     // MARK: Enum
     func test_enumEquals() async throws {
         let db = DummyDatabaseForTestSQLSerializer()

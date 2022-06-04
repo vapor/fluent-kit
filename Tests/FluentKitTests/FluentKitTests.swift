@@ -6,6 +6,11 @@ import FluentSQL
 import XCTFluent
 
 final class FluentKitTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+    
     func testMigrationLogNames() throws {
         XCTAssertEqual(MigrationLog.path(for: \.$id), [.id])
         XCTAssertEqual(MigrationLog.path(for: \.$name), ["name"])

@@ -5,6 +5,11 @@ import Foundation
 import XCTFluent
 
 final class QueryBuilderTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+
     func testFirstEmptyResult() throws {
         let test = ArrayTestDatabase()
         test.append([])

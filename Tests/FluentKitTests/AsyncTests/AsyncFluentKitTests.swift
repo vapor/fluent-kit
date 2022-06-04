@@ -9,6 +9,11 @@ import XCTFluent
 
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 final class AsyncFluentKitTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+
     func testGalaxyPlanetSorts() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet.query(on: db).sort(\.$name, .descending).all()

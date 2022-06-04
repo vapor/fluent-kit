@@ -8,6 +8,11 @@ import XCTFluent
 
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 final class AsyncQueryBuilderTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+
     func testFirstEmptyResult() async throws {
         let test = ArrayTestDatabase()
         test.append([])

@@ -13,6 +13,11 @@ extension Collection {
 }
 
 final class CompositeIDTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+
     func testCompositeModelCRUD() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         let model = CompositePlanetTag(
