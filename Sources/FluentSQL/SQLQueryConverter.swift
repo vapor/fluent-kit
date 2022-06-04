@@ -33,10 +33,9 @@ public struct SQLQueryConverter {
             fatalError("Missing query input generating update query")
         }
         values.forEach { (key, value) in
-            update.values.append(SQLBinaryExpression(
-                left: SQLColumn(self.key(key)),
-                op: SQLBinaryOperator.equal,
-                right: self.value(value)
+            update.values.append(SQLColumnAssignment(
+                setting: SQLColumn(self.key(key)),
+                to: self.value(value)
             ))
         }
         update.predicate = self.filters(query.filters)
