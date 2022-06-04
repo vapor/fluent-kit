@@ -16,20 +16,27 @@ extension Model {
     private func _create(on database: Database) -> EventLoopFuture<Void> {
         precondition(!self.anyID.exists)
         self.touchTimestamps(.create, .update)
-        self.anyID.generate()
-        let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
-        Self.query(on: database)
-            .set(self.collectInput())
-            .action(.create)
-            .run { promise.succeed($0) }
-            .cascadeFailure(to: promise)
-        return promise.futureResult.flatMapThrowing { output in
-            var input = self.collectInput()
-            if self.anyID is AnyQueryableProperty, case .default = self._$id.inputValue {
-                let idKey = Self()._$id.key
-                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+        if self.anyID is AnyQueryableProperty {
+            self.anyID.generate()
+            let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
+            Self.query(on: database)
+                .set(self.collectInput())
+                .action(.create)
+                .run { promise.succeed($0) }
+                .cascadeFailure(to: promise)
+            return promise.futureResult.flatMapThrowing { output in
+                var input = self.collectInput()
+                if case .default = self._$id.inputValue {
+                    let idKey = Self()._$id.key
+                    input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                }
+                try self.output(from: SavedInput(input))
             }
-            try self.output(from: SavedInput(input))
+        } else {
+            return Self.query(on: database)
+                .set(self.collectInput())
+                .action(.create)
+                .run()
         }
     }
 
