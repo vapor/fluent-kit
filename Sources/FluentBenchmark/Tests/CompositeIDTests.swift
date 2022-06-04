@@ -14,7 +14,7 @@ extension FluentBenchmarker {
             let newModel = CompositeIDModel(name: "A", dimensions: 1, additionalInfo: nil)
             try newModel.create(on: self.database).wait()
             
-            let count = try CompositeIDModel.query(on: self.database).count().wait()
+            let count = try CompositeIDModel.query(on: self.database).count(\.$id.$name).wait()
             XCTAssertEqual(count, 1)
             
             let anotherNewModel = CompositeIDModel(name: "A", dimensions: 1, additionalInfo: nil)
@@ -46,7 +46,6 @@ extension FluentBenchmarker {
             let foundByOtherPartial = try CompositeIDModel.query(on: self.database).filter(\.$id.$dimensions == 2).all().wait()
             XCTAssertEqual(foundByOtherPartial.count, 1)
             XCTAssertEqual(foundByOtherPartial.first?.id?.name, "A")
-            
         }
     }
     
@@ -170,13 +169,7 @@ public struct CompositeIDModelSeed: Migration {
     }
     
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        CompositeIDModel.query(on: database)
-            .group(.or) { $0
-                .group(.and) { $0.filter(\.$id.$name == "A").filter(\.$id.$dimensions == 1) }
-                .group(.and) { $0.filter(\.$id.$name == "A").filter(\.$id.$dimensions == 2) }
-                .group(.and) { $0.filter(\.$id.$name == "B").filter(\.$id.$dimensions == 1) }
-            }
-            .delete()
+        CompositeIDModel.query(on: database).delete()
     }
 }
 
