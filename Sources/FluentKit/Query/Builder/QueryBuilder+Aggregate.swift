@@ -13,6 +13,14 @@ extension QueryBuilder {
         self.aggregate(.count, key, as: Int.self)
     }
 
+    public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
+        where
+            Field: QueryableProperty,
+            Field.Model == Model.IDValue
+    {
+        self.aggregate(.count, key, as: Int.self)
+    }
+
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where
             Field: QueryableProperty,
@@ -89,6 +97,19 @@ extension QueryBuilder {
         where
             Field: QueryableProperty,
             Field.Model == Model,
+            Result: Codable
+    {
+        self.aggregate(method, Model.path(for: field), as: Result.self)
+    }
+
+    public func aggregate<Field, Result>(
+        _ method: DatabaseQuery.Aggregate.Method,
+        _ field: KeyPath<Model, Field>,
+        as type: Result.Type = Result.self
+    ) -> EventLoopFuture<Result>
+        where
+            Field: QueryableProperty,
+            Field.Model == Model.IDValue,
             Result: Codable
     {
         self.aggregate(method, Model.path(for: field), as: Result.self)

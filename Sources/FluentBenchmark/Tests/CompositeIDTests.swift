@@ -26,7 +26,7 @@ extension FluentBenchmarker {
             let anotherDifferentNewModel = CompositeIDModel(name: "A", dimensions: 2, additionalInfo: nil)
             try anotherDifferentNewModel.create(on: self.database).wait()
 
-            let countAgain = try CompositeIDModel.query(on: self.database).count().wait()
+            let countAgain = try CompositeIDModel.query(on: self.database).count(\.$id.$name).wait()
             XCTAssertEqual(countAgain, 3)
         }
     }
@@ -60,11 +60,9 @@ extension FluentBenchmarker {
             existing.additionalInfo = "additional"
             try existing.update(on: self.database).wait()
             
-            XCTAssertEqual(try CompositeIDModel.query(on: self.database).filter(\.$additionalInfo == "additional").count().wait(), 1)
+            XCTAssertEqual(try CompositeIDModel.query(on: self.database).filter(\.$additionalInfo == "additional").count(\.$id.$name).wait(), 1)
             
-            existing.id!.dimensions = 3
-            try existing.update(on: self.database).wait()
-            
+            try CompositeIDModel.query(on: self.database).filter(\.$id.$name == "A").filter(\.$id.$dimensions == 1).set(\.$id.$dimensions, to: 3).update().wait()
             XCTAssertNotNil(try CompositeIDModel.find(.init(name: "A", dimensions: 3), on: self.database).wait())
         }
     }
@@ -168,7 +166,7 @@ public struct CompositeIDModelSeed: Migration {
             CompositeIDModel(name: "A", dimensions: 1, additionalInfo: nil),
             CompositeIDModel(name: "A", dimensions: 2, additionalInfo: nil),
             CompositeIDModel(name: "B", dimensions: 1, additionalInfo: nil),
-        ].create(on: database)
+        ].map { $0.create(on: database) }.flatten(on: database.eventLoop)
     }
     
     public func revert(on database: Database) -> EventLoopFuture<Void> {

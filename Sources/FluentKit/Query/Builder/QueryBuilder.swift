@@ -40,6 +40,8 @@ public final class QueryBuilder<Model>
             case .id: break
             case let other: self.query.customIDKey = other
             }
+        } else {
+            self.query.customIDKey = .string("")
         }
     }
 
