@@ -11,6 +11,9 @@ public final class Galaxy: Model {
 
     @Children(for: \.$galaxy)
     public var stars: [Star]
+    
+    @Siblings(through: GalacticJurisdiction.self, from: \.$id.$galaxy, to: \.$id.$jurisdiction)
+    public var jurisdictions: [Jurisdiction]
 
     public init() { }
 
