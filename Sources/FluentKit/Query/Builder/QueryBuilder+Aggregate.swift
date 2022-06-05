@@ -2,89 +2,117 @@ extension QueryBuilder {
     // MARK: Aggregate
 
     public func count() -> EventLoopFuture<Int> {
-        self.count(\._$id)
+        if let fieldsId = Model.init().anyID as? Fields {
+            return self.aggregate(.count, (fieldsId.properties.first! as! AnyQueryAddressableProperty).anyQueryableProperty.path)
+        } else {
+            return self.count(\._$id)
+        }
     }
 
     public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
     {
         self.aggregate(.count, key, as: Int.self)
     }
 
     public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model.IDValue
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.count, key, as: Int.self)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        self.aggregate(.sum, key)
+    }
+
+    public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.sum, key)
     }
 
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where
-            Field: QueryableProperty,
-            Field.Value: OptionalType,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        self.aggregate(.sum, key)
+    }
+
+    public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         self.aggregate(.sum, key)
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        self.aggregate(.average, key)
+    }
+
+    public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.average, key)
     }
 
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where
-            Field: QueryableProperty,
-            Field.Value: OptionalType,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        self.aggregate(.average, key)
+    }
+
+    public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         self.aggregate(.average, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        self.aggregate(.minimum, key)
+    }
+
+    public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where
-            Field: QueryableProperty,
-            Field.Value: OptionalType,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        self.aggregate(.minimum, key)
+    }
+
+    public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         self.aggregate(.minimum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        self.aggregate(.maximum, key)
+    }
+
+    public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where
-            Field: QueryableProperty,
-            Field.Value: OptionalType,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        self.aggregate(.maximum, key)
+    }
+
+    public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         self.aggregate(.maximum, key)
     }
@@ -94,10 +122,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model,
-            Result: Codable
+        where Field: QueryableProperty, Field.Model == Model, Result: Codable
     {
         self.aggregate(method, Model.path(for: field), as: Result.self)
     }
@@ -107,10 +132,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model.IDValue,
-            Result: Codable
+        where Field: QueryableProperty, Field.Model == Model.IDValue, Result: Codable
     {
         self.aggregate(method, Model.path(for: field), as: Result.self)
     }

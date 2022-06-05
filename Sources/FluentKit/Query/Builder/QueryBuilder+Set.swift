@@ -21,9 +21,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
     ) -> Self
-        where
-            Field: QueryableProperty,
-            Field.Model == Model.IDValue
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         if self.query.input.isEmpty {
             self.query.input = [.dictionary([:])]
@@ -47,9 +45,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
     ) -> Self
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
     {
         if self.query.input.isEmpty {
             self.query.input = [.dictionary([:])]
