@@ -12,6 +12,15 @@ extension QueryBuilder {
         self.sort(Model.path(for: field), direction)
     }
 
+    public func sort<Field>(
+        _ field: KeyPath<Model, GroupPropertyPath<Model, Field>>,
+        _ direction: DatabaseQuery.Sort.Direction = .ascending
+    ) -> Self
+        where Field: QueryableProperty
+    {
+        self.sort(Model.path(for: field), direction)
+    }
+
     public func sort(
         _ path: FieldKey,
         _ direction: DatabaseQuery.Sort.Direction = .ascending
