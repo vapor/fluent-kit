@@ -1,4 +1,5 @@
 import FluentKit
+import Foundation
 
 public final class GalacticJurisdiction: Model {
     public static let schema = "galaxy_jurisdictions"
@@ -68,10 +69,31 @@ public struct GalacticJurisdictionSeed: Migration {
     public init() {}
     
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.eventLoop.makeSucceededVoidFuture()
+        database.eventLoop.flatSubmit {
+            Galaxy.query(on: database).all().and(
+            Jurisdiction.query(on: database).all())
+        }.flatMap { galaxies, jurisdictions in
+            [
+                ("Milky Way", "Old", 0),
+                ("Milky Way", "Corporate", 1),
+                ("Andromeda", "Military", 0),
+                ("Andromeda", "Corporate", 1),
+                ("Andromeda", "None", 2),
+                ("Pinwheel Galaxy", "Q", 0),
+                ("Messier 82", "None", 0),
+                ("Messier 82", "Military", 1),
+            ]
+            .sequencedFlatMapEach(on: database.eventLoop) { galaxyName, jurisdictionName, rank in
+                GalacticJurisdiction.init(id: try! .init(
+                    galaxy: galaxies.first(where: { $0.name == galaxyName })!,
+                    jurisdiction: jurisdictions.first(where: { $0.title == jurisdictionName })!,
+                    rank: rank
+                )).create(on: database)
+            }
+        }
     }
     
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.eventLoop.makeSucceededVoidFuture()
+        GalacticJurisdiction.query(on: database).delete()
     }
 }

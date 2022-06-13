@@ -5,6 +5,7 @@ extension FluentBenchmarker {
         try self.testCompositeID_lookup()
         try self.testCompositeID_update()
         try self.testCompositeID_asPivot()
+        try self.testCompositeID_eagerLoaders()
     }
     
     private func testCompositeID_create() throws {
@@ -73,7 +74,6 @@ extension FluentBenchmarker {
             GalacticJurisdictionMigration(),
             GalaxySeed(),
             JurisdictionSeed(),
-            GalacticJurisdictionSeed(),
         ]) {
             let milkyWayGalaxy = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Milky Way").first().wait())
             let andromedaGalaxy = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Andromeda").first().wait())
@@ -90,6 +90,35 @@ extension FluentBenchmarker {
             XCTAssertTrue(pivots.contains(where: { $0.id!.$galaxy.id == milkyWayGalaxy.id! && $0.id!.$jurisdiction.id == oldJurisdiction.id! && $0.id!.rank == 1 }))
             XCTAssertTrue(pivots.contains(where: { $0.id!.$galaxy.id == milkyWayGalaxy.id! && $0.id!.$jurisdiction.id == noneJurisdiction.id! && $0.id!.rank == 2 }))
             XCTAssertTrue(pivots.contains(where: { $0.id!.$galaxy.id == andromedaGalaxy.id! && $0.id!.$jurisdiction.id == noneJurisdiction.id! && $0.id!.rank == 0 }))
+        }
+    }
+    
+    private func testCompositeID_eagerLoaders() throws {
+        try self.runTest(#function, [
+            GalaxyMigration(),
+            StarMigration(),
+            JurisdictionMigration(),
+            GalacticJurisdictionMigration(),
+            GalaxySeed(),
+            StarSeed(),
+            JurisdictionSeed(),
+            GalacticJurisdictionSeed(),
+        ]) {
+            let milkyWayGalaxy = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Milky Way").with(\.$jurisdictions).first().wait())
+            XCTAssertEqual(milkyWayGalaxy.jurisdictions.count, 2)
+            
+            let militaryJurisdiction = try XCTUnwrap(Jurisdiction.query(on: self.database).filter(\.$title == "Military").with(\.$galaxies).with(\.$galaxies.$pivots).first().wait())
+            XCTAssertEqual(militaryJurisdiction.galaxies.count, 2)
+            XCTAssertEqual(militaryJurisdiction.$galaxies.pivots.count, 2)
+            
+            let corporateMilkyWayPivot = try XCTUnwrap(GalacticJurisdiction.query(on: self.database)
+                .join(parent: \.$id.$galaxy).filter(Galaxy.self, \.$name == "Milky Way")
+                .join(parent: \.$id.$jurisdiction).filter(Jurisdiction.self, \.$title == "Corporate")
+                .with(\.$id.$galaxy) { $0.with(\.$stars) }.with(\.$id.$jurisdiction)
+                .first().wait())
+            XCTAssertNotNil(corporateMilkyWayPivot.$id.$galaxy.value)
+            XCTAssertNotNil(corporateMilkyWayPivot.$id.$jurisdiction.value)
+            XCTAssertEqual(corporateMilkyWayPivot.id!.galaxy.stars.count, 2)
         }
     }
 }

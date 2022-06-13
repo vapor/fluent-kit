@@ -42,12 +42,13 @@ public struct JurisdictionSeed: Migration {
     
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
         [
-            Jurisdiction(title: "Old"),
-            Jurisdiction(title: "Corporate"),
-            Jurisdiction(title: "Military"),
-            Jurisdiction(title: "None"),
-            Jurisdiction(title: "Q"),
+            "Old",
+            "Corporate",
+            "Military",
+            "None",
+            "Q",
         ]
+        .map { Jurisdiction(title: $0) }
         .create(on: database)
     }
     
