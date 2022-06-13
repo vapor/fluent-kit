@@ -68,6 +68,17 @@ extension EnumProperty: QueryableProperty {
     }
 }
 
+// MARK: Query-addressable
+
+extension EnumProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension EnumProperty: QueryAddressableProperty {
+    public var queryableProperty: EnumProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension EnumProperty: AnyDatabaseProperty {

@@ -110,6 +110,17 @@ extension TimestampProperty: AnyQueryableProperty {
 
 extension TimestampProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension TimestampProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension TimestampProperty: QueryAddressableProperty {
+    public var queryableProperty: TimestampProperty<Model, Format> { self }
+}
+
 // MARK: Database
 
 extension TimestampProperty: AnyDatabaseProperty {

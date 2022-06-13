@@ -43,7 +43,7 @@ extension AnyModel {
                 return idChild
             }
         }
-        fatalError("id property must be declared using @ID")
+        fatalError("id property must be declared using @ID or @CompositeID")
     }
 }
 

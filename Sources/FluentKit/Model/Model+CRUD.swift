@@ -1,6 +1,6 @@
 extension Model {
     public func save(on database: Database) -> EventLoopFuture<Void> {
-        if self._$id.exists {
+        if self.anyID.exists {
             return self.update(on: database)
         } else {
             return self.create(on: database)
@@ -14,22 +14,32 @@ extension Model {
     }
 
     private func _create(on database: Database) -> EventLoopFuture<Void> {
-        precondition(!self._$id.exists)
+        precondition(!self.anyID.exists)
         self.touchTimestamps(.create, .update)
-        self._$id.generate()
-        let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
-        Self.query(on: database)
-            .set(self.collectInput())
-            .action(.create)
-            .run { promise.succeed($0) }
-            .cascadeFailure(to: promise)
-        return promise.futureResult.flatMapThrowing { output in
-            var input = self.collectInput()
-            if case .default = self._$id.inputValue {
-                let idKey = Self()._$id.key
-                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+        if self.anyID is AnyQueryableProperty {
+            self.anyID.generate()
+            let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
+            Self.query(on: database)
+                .set(self.collectInput())
+                .action(.create)
+                .run { promise.succeed($0) }
+                .cascadeFailure(to: promise)
+            return promise.futureResult.flatMapThrowing { output in
+                var input = self.collectInput()
+                if case .default = self._$id.inputValue {
+                    let idKey = Self()._$id.key
+                    input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+                }
+                try self.output(from: SavedInput(input))
             }
-            try self.output(from: SavedInput(input))
+        } else {
+            return Self.query(on: database)
+                .set(self.collectInput())
+                .action(.create)
+                .run()
+                .flatMapThrowing {
+                    try self.output(from: SavedInput(self.collectInput()))
+                }
         }
     }
 
@@ -40,7 +50,7 @@ extension Model {
     }
 
     private func _update(on database: Database) throws -> EventLoopFuture<Void> {
-        precondition(self._$id.exists)
+        precondition(self.anyID.exists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
         }
@@ -48,7 +58,7 @@ extension Model {
         let input = self.collectInput()
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
-            .filter(\._$id == id)
+            .filter(id: id)
             .set(input)
             .update()
             .flatMapThrowing
@@ -73,12 +83,12 @@ extension Model {
     private func _delete(force: Bool = false, on database: Database) throws -> EventLoopFuture<Void> {
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
-            .filter(\._$id == id)
+            .filter(id: id)
             .delete(force: force)
             .map
         {
             if force || self.deletedTimestamp == nil {
-                self._$id.exists = false
+                self.anyID.exists = false
             }
         }
     }
@@ -94,18 +104,18 @@ extension Model {
             fatalError("no delete timestamp on this model")
         }
         timestamp.touch(date: nil)
-        precondition(self._$id.exists)
+        precondition(self.anyID.exists)
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
             .withDeleted()
-            .filter(\._$id == id)
+            .filter(id: id)
             .set(self.collectInput())
             .action(.update)
             .run()
             .flatMapThrowing
         {
             try self.output(from: SavedInput(self.collectInput()))
-            self._$id.exists = true
+            self.anyID.exists = true
         }
     }
 
@@ -127,11 +137,12 @@ extension Model {
 
 extension Collection where Element: FluentKit.Model {
     public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
-        guard self.count > 0 else {
+        guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
-
-        precondition(self.allSatisfy { $0._$id.exists })
+        
+        precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
+        precondition(self.allSatisfy { $0.anyID.exists })
 
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
@@ -151,11 +162,12 @@ extension Collection where Element: FluentKit.Model {
     }
 
     public func create(on database: Database) -> EventLoopFuture<Void> {
-        guard self.count > 0 else {
+        guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
         
-        precondition(self.allSatisfy { !$0._$id.exists })
+        precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
+        precondition(self.allSatisfy { !$0.anyID.exists })
         
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in

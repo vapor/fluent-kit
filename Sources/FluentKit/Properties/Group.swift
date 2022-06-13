@@ -146,7 +146,7 @@ extension GroupPropertyPath: FluentKit.Property
 // MARK: + Queryable
 
 extension GroupPropertyPath: AnyQueryableProperty
-    where Property: AnyQueryableProperty
+    where Property: QueryableProperty
 {
     public var path: [FieldKey] {
         let subPath = self.property.path
@@ -164,3 +164,29 @@ extension GroupPropertyPath: QueryableProperty
     }
 }
 
+// MARK: + QueryAddressable
+
+extension GroupPropertyPath: AnyQueryAddressableProperty
+    where Property: AnyQueryAddressableProperty
+{
+    public var anyQueryableProperty: AnyQueryableProperty {
+        self.property.anyQueryableProperty
+    }
+    
+    public var queryablePath: [FieldKey] {
+        let subPath = self.property.queryablePath
+        return [
+            .prefix(.prefix(self.key, .string("_")), subPath[0])
+        ] + subPath[1...]
+    }
+}
+
+extension GroupPropertyPath: QueryAddressableProperty
+    where Property: QueryAddressableProperty
+{
+    public typealias QueryablePropertyType = Property.QueryablePropertyType
+    
+    public var queryableProperty: QueryablePropertyType {
+        self.property.queryableProperty
+    }
+}

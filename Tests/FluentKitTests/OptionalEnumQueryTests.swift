@@ -4,6 +4,11 @@ import Foundation
 import XCTest
 
 final class OptionalEnumQueryTests: DbQueryTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+    
     func testInsertNonNull() throws {
         _ = try Thing(id: 1, fb: .fizz).create(on: db).wait()
         assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES ('fizz', $1)"#)

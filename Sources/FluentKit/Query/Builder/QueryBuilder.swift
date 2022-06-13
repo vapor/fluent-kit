@@ -35,11 +35,13 @@ public final class QueryBuilder<Model>
         self.includeDeleted = includeDeleted
         self.shouldForceDelete = shouldForceDelete
         // Pass through custom ID key for database if used.
-        let idKey = Model()._$id.key
-        switch idKey {
-        case .id: break
-        default:
-            self.query.customIDKey = idKey
+        if Model().anyID is AnyQueryableProperty {
+            switch Model()._$id.key {
+            case .id: break
+            case let other: self.query.customIDKey = other
+            }
+        } else {
+            self.query.customIDKey = .string("")
         }
     }
 

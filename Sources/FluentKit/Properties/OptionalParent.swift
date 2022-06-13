@@ -71,6 +71,17 @@ extension OptionalParentProperty: Property {
     public typealias Value = To?
 }
 
+// MARK: Query-addressable
+
+extension OptionalParentProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self.$id.anyQueryableProperty }
+    public var queryablePath: [FieldKey] { self.$id.queryablePath }
+}
+
+extension OptionalParentProperty: QueryAddressableProperty {
+    public var queryableProperty: OptionalFieldProperty<From, To.IDValue> { self.$id.queryableProperty }
+}
+
 // MARK: Database
 
 extension OptionalParentProperty: AnyDatabaseProperty {

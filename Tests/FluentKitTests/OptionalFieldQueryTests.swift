@@ -4,7 +4,11 @@ import Foundation
 import XCTest
 
 final class OptionalFieldQueryTests: DbQueryTestCase {
-    
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+        
     func testInsertNonNull() throws {
         _ = try Thing(id: 1, name: "Jared").create(on: db).wait()
         assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES ($1, $2)"#)

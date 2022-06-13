@@ -25,6 +25,7 @@ public final class FluentBenchmarker {
         try self.testChildren()
         try self.testCodable()
         try self.testChunk()
+        try self.testCompositeID()
         try self.testCRUD()
         try self.testEagerLoad()
         try self.testEnum()

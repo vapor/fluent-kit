@@ -40,6 +40,10 @@ public final class SchemaBuilder {
             name: name
         ))
     }
+    
+    public func compositeIdentifier(over fields: FieldKey...) -> Self {
+        self.constraint(.constraint(.compositeIdentifier(fields.map { .key($0) }), name: ""))
+    }
 
     public func constraint(_ constraint: DatabaseSchema.Constraint) -> Self {
         self.schema.createConstraints.append(constraint)
@@ -78,6 +82,29 @@ public final class SchemaBuilder {
                 foreignSchema,
                 space: foreignSpace,
                 [.key(foreignField)],
+                onDelete: onDelete,
+                onUpdate: onUpdate
+            ),
+            name: name
+        ))
+        return self
+    }
+
+    public func foreignKey(
+        _ fields: [FieldKey],
+        references foreignSchema: String,
+        inSpace foreignSpace: String? = nil,
+        _ foreignFields: [FieldKey],
+        onDelete: DatabaseSchema.ForeignKeyAction = .noAction,
+        onUpdate: DatabaseSchema.ForeignKeyAction = .noAction,
+        name: String? = nil
+    ) -> Self {
+        self.schema.createConstraints.append(.constraint(
+            .foreignKey(
+                fields.map { .key($0) },
+                foreignSchema,
+                space: foreignSpace,
+                foreignFields.map { .key($0) },
                 onDelete: onDelete,
                 onUpdate: onUpdate
             ),

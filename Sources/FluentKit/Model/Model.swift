@@ -16,7 +16,7 @@ extension Model {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database)
-            .filter(\._$id == id)
+            .filter(id: id)
             .first()
     }
 

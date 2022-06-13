@@ -79,6 +79,17 @@ extension OptionalFieldProperty: AnyQueryableProperty {
 
 extension OptionalFieldProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension OptionalFieldProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension OptionalFieldProperty: QueryAddressableProperty {
+    public var queryableProperty: OptionalFieldProperty<Model, WrappedValue> { self }
+}
+
 // MARK: Database
 
 extension OptionalFieldProperty: AnyDatabaseProperty {

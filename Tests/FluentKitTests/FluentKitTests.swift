@@ -6,6 +6,11 @@ import FluentSQL
 import XCTFluent
 
 final class FluentKitTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+    
     func testMigrationLogNames() throws {
         XCTAssertEqual(MigrationLog.path(for: \.$id), [.id])
         XCTAssertEqual(MigrationLog.path(for: \.$name), ["name"])
@@ -251,6 +256,20 @@ final class FluentKitTests: XCTestCase {
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
+        db.reset()
+
+         try db.schema("planets")
+             .field("galaxy_id", .int64)
+             .field("galaxy_name", .string)
+             .foreignKey(
+                 ["galaxy_id", "galaxy_name"],
+                 references: "galaxies", ["id", "name"],
+                 onUpdate: .cascade
+             )
+             .create()
+             .wait()
+         XCTAssertEqual(db.sqlSerializers.count, 1)
+         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, "galaxy_name" TEXT, CONSTRAINT "fk:planets.galaxy_id+planets.galaxy_name+planets.id+planets.name" FOREIGN KEY ("galaxy_id", "galaxy_name") REFERENCES "galaxies" ("id", "name") ON DELETE NO ACTION ON UPDATE CASCADE)"#)
     }
     
     func testIfNotExistsTableCreate() throws {
@@ -382,7 +401,7 @@ final class FluentKitTests: XCTestCase {
         }
     }
 
-    func testPlanel2FilterPlaceholder1() throws {
+    func testPlanet2FilterPlaceholder1() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -396,7 +415,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder2() throws {
+    func testPlanet2FilterPlaceholder2() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -410,7 +429,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder3() throws {
+    func testPlanet2FilterPlaceholder3() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -426,7 +445,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder4() throws {
+    func testPlanet2FilterPlaceholder4() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet2
             .query(on: db)
@@ -444,7 +463,7 @@ final class FluentKitTests: XCTestCase {
 
     func testLoggerOverride() throws {
         let db: Database = DummyDatabaseForTestSQLSerializer()
-        XCTAssertEqual(db.logger.logLevel, .info)
+        XCTAssertEqual(db.logger.logLevel, env("LOG_LEVEL").flatMap { Logger.Level(rawValue: $0) } ?? .info)
         var logger = db.logger
         logger.logLevel = .critical
         let new = db.logging(to: logger)
@@ -516,7 +535,6 @@ final class FluentKitTests: XCTestCase {
                 self.id = id
             }
         }
-
 
         let test = CallbackTestDatabase { query in
             switch query.input[0] {

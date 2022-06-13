@@ -142,6 +142,17 @@ extension IDProperty: AnyQueryableProperty {
 
 extension IDProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension IDProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension IDProperty: QueryAddressableProperty {
+    public var queryableProperty: IDProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension IDProperty: AnyDatabaseProperty {
@@ -176,7 +187,7 @@ extension IDProperty: AnyCodableProperty {
 
 extension IDProperty: AnyID { }
 
-protocol AnyID {
+protocol AnyID: AnyObject {
     func generate()
     var exists: Bool { get set }
     var cachedOutput: DatabaseOutput? { get set }

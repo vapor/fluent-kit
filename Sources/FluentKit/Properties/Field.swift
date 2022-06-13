@@ -80,6 +80,17 @@ extension FieldProperty: AnyQueryableProperty {
 
 extension FieldProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension FieldProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension FieldProperty: QueryAddressableProperty {
+    public var queryableProperty: FieldProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension FieldProperty: AnyDatabaseProperty {

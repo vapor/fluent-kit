@@ -108,6 +108,7 @@ public struct DatabaseSchema {
             onDelete: ForeignKeyAction,
             onUpdate: ForeignKeyAction
         )
+        case compositeIdentifier(_ fields: [FieldName])
         case custom(Any)
     }
 

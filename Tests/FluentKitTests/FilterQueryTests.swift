@@ -12,6 +12,11 @@ import Foundation
 import FluentSQL
 
 final class FilterQueryTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+    
     // MARK: Enum
     func test_enumEquals() throws {
         let db = DummyDatabaseForTestSQLSerializer()
