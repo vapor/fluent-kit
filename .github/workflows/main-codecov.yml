@@ -6,4 +6,4 @@ jobs:
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@reusable-workflows
     with:
       with_coverage: true
-      with_tsan: true
+      with_tsan: false

@@ -7,105 +7,112 @@ on:
 env:
   LOG_LEVEL: info
   SWIFT_DETERMINISTIC_HASHING: 1
+  POSTGRES_HOSTNAME: 'psql-a'
+  POSTGRES_HOSTNAME_A: 'psql-a'
+  POSTGRES_HOSTNAME_B: 'psql-b'
+  POSTGRES_DB: 'test_database'
+  POSTGRES_DB_A: 'test_database'
+  POSTGRES_DB_B: 'test_database'
+  POSTGRES_USER: 'test_username'
+  POSTGRES_USER_A: 'test_username'
+  POSTGRES_USER_B: 'test_username'
+  POSTGRES_PASSWORD: 'test_password'
+  POSTGRES_PASSWORD_A: 'test_password'
+  POSTGRES_PASSWORD_B: 'test_password'
+  MYSQL_HOSTNAME: 'mysql-a'
+  MYSQL_HOSTNAME_A: 'mysql-a'
+  MYSQL_HOSTNAME_B: 'mysql-b'
+  MYSQL_DATABASE: 'test_database'
+  MYSQL_DATABASE_A: 'test_database'
+  MYSQL_DATABASE_B: 'test_database'
+  MYSQL_USERNAME: 'test_username'
+  MYSQL_USERNAME_A: 'test_username'
+  MYSQL_USERNAME_B: 'test_username'
+  MYSQL_PASSWORD: 'test_password'
+  MYSQL_PASSWORD_A: 'test_password'
+  MYSQL_PASSWORD_B: 'test_password'
+  MONGO_HOSTNAME: 'mongo-a'
+  MONGO_HOSTNAME_A: 'mongo-a'
+  MONGO_HOSTNAME_B: 'mongo-b'
 
 jobs:
 
+  # Check for API breakage versus main
+  api-breakage:
+    runs-on: ubuntu-latest
+    container: swift:5.6-focal
+    steps:
+      - name: Check out package
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # https://github.com/actions/checkout/issues/766
+      - name: Mark the workspace as safe
+        run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
+      - name: Check for API breaking changes
+        run: swift package diagnose-api-breaking-changes origin/main
+
   linux-integration:
     runs-on: ubuntu-latest
+    container: swift:5.6-focal
     services:
       mysql-a:
-        image: mysql:latest
-        env: 
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-          MYSQL_USER: vapor_username
-          MYSQL_PASSWORD: vapor_password
-          MYSQL_DATABASE: vapor_database
+        image: mysql:8.0
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database }
       mysql-b:
-        image: mysql:latest
-        env: 
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-          MYSQL_USER: vapor_username
-          MYSQL_PASSWORD: vapor_password
-          MYSQL_DATABASE: vapor_database
-      postgres-a:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: vapor_username
-          POSTGRES_PASSWORD: vapor_password
-          POSTGRES_DB: vapor_database
-          POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-      postgres-b:
-        image: postgres:latest
-        env: 
-          POSTGRES_USER: vapor_username
-          POSTGRES_PASSWORD: vapor_password
-          POSTGRES_DB: vapor_database
-          POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        image: mysql:8.0
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database }
+      psql-a:
+        image: postgres:14
+        env: {
+            POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database,
+            POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        }
+      psql-b:
+        image: postgres:14
+        env: {
+            POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database,
+            POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        }
       mongo-a:
-        image: mongo:latest
+        image: mongo:5
       mongo-b:
-        image: mongo:latest
+        image: mongo:5
     strategy:
       fail-fast: false
       matrix:
-        swiftver:
-          - swift:5.4
-          - swift:5.5
-          - swift:5.6
-          - swiftlang/swift:nightly-main
-        swiftos:
-          - focal
         dependent:
           - fluent-sqlite-driver
           - fluent-postgres-driver
           - fluent-mysql-driver
           - fluent-mongo-driver
-    container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
+        include:
+          - { dependent: 'fluent-sqlite-driver', ref: 'ignore-empty-custom-id-key' }
+          - { dependent: 'fluent-postgres-driver', ref: 'ignore-empty-custom-id-key' }
+          - { dependent: 'fluent-mysql-driver', ref: 'ignore-empty-custom-id-key' }
+          - { dependent: 'fluent-mongo-driver', ref: 'composite-id-compat-fix' }
     steps:
-      - name: Install SQLite dependencies
+      - name: Install SQLite dependency
         run: apt-get -q update && apt-get -q install -y libsqlite3-dev
         if: ${{ contains(matrix.dependent, 'sqlite') }}
       - name: Check out package
         uses: actions/checkout@v3
         with:
-          path: package
+          path: fluent-kit
       - name: Check out dependent
         uses: actions/checkout@v3
         with:
           repository: vapor/${{ matrix.dependent }}
-          path: dependent
+          path: ${{ matrix.dependent }}
+          ref: ${{ matrix.ref }}
       - name: Use local package
-        run: swift package edit fluent-kit --path ../package
-        working-directory: dependent
-      - name: Run tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: dependent
-        env:
-          POSTGRES_HOSTNAME_A: postgres-a
-          POSTGRES_USER_A: vapor_username
-          POSTGRES_PASSWORD_A: vapor_password
-          POSTGRES_DB_A: vapor_database
-          POSTGRES_HOSTNAME_B: postgres-b
-          POSTGRES_USER_B: vapor_username
-          POSTGRES_PASSWORD_B: vapor_password
-          POSTGRES_DB_B: vapor_database
-          MYSQL_HOSTNAME_A: mysql-a
-          MYSQL_USERNAME_A: vapor_username
-          MYSQL_PASSWORD_A: vapor_password
-          MYSQL_DATABASE_A: vapor_database
-          MYSQL_HOSTNAME_B: mysql-b
-          MYSQL_USERNAME_B: vapor_username
-          MYSQL_PASSWORD_B: vapor_password
-          MYSQL_DATABASE_B: vapor_database
-          MONGO_HOSTNAME_A: mongo-a
-          MONGO_HOSTNAME_B: mongo-b
+        run: swift package --package-path ${{ matrix.dependent }} edit fluent-kit --path fluent-kit
+      - name: Run tests
+        run: swift test --package-path ${{ matrix.dependent }}
 
   unit-tests:
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@reusable-workflows
     with:
       with_coverage: true
-      with_tsan: true
+      with_tsan: false
       coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'
-      
