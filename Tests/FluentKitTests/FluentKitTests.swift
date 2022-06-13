@@ -70,6 +70,24 @@ final class FluentKitTests: XCTestCase {
         db.reset()
     }
 
+    func testGroupSorts() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try User.query(on: db).sort(\.$pet.$name).all { _ in }.wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_name" ASC"#), true)
+        db.reset()
+
+        _ = try User.query(on: db).sort(\.$pet.$toy.$name, .descending).all { _ in }.wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_name" DESC"#), true)
+        db.reset()
+
+        _ = try User.query(on: db).sort(\.$pet.$toy.$foo.$bar, .ascending).all { _ in }.wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_foo_bar" ASC"#), true)
+        db.reset()
+    }
+
     func testJoins() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).join(child: \Planet.$governor).all().wait()
