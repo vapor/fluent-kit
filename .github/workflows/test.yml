@@ -87,10 +87,10 @@ jobs:
           - fluent-mysql-driver
           - fluent-mongo-driver
         include:
-          - { dependent: 'fluent-sqlite-driver', ref: 'ignore-empty-custom-id-key' }
-          - { dependent: 'fluent-postgres-driver', ref: 'ignore-empty-custom-id-key' }
-          - { dependent: 'fluent-mysql-driver', ref: 'ignore-empty-custom-id-key' }
-          - { dependent: 'fluent-mongo-driver', ref: 'composite-id-compat-fix' }
+          - { dependent: 'fluent-sqlite-driver', ref: 'main' }
+          - { dependent: 'fluent-postgres-driver', ref: 'main' }
+          - { dependent: 'fluent-mysql-driver', ref: 'main' }
+          - { dependent: 'fluent-mongo-driver', ref: 'main' }
     steps:
       - name: Install SQLite dependency
         run: apt-get -q update && apt-get -q install -y libsqlite3-dev
