@@ -18,7 +18,10 @@
     <a href="https://github.com/vapor/fluent-kit/actions">
         <img src="https://github.com/vapor/fluent-kit/workflows/test/badge.svg" alt="Continuous Integration">
     </a>
+    <a href="https://codecov.io/gh/vapor/fluent-kit">
+        <img src="https://codecov.io/gh/vapor/fluent-kit/branch/main/graph/badge.svg?token=6slVbnp1mV" alt="Test Coverage">
+    </a>
     <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/swift-5.2-brightgreen.svg" alt="Swift 5.2">
+        <img src="http://img.shields.io/badge/swift-5.6-brightgreen.svg" alt="Swift 5.6">
     </a>
 </p>
