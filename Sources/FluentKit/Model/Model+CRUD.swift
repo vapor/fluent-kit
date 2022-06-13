@@ -37,6 +37,9 @@ extension Model {
                 .set(self.collectInput())
                 .action(.create)
                 .run()
+                .flatMapThrowing {
+                    try self.output(from: SavedInput(self.collectInput()))
+                }
         }
     }
 
