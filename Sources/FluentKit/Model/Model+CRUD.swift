@@ -1,6 +1,6 @@
 extension Model {
     public func save(on database: Database) -> EventLoopFuture<Void> {
-        if self.anyID.exists {
+        if self._$idExists {
             return self.update(on: database)
         } else {
             return self.create(on: database)
@@ -14,7 +14,7 @@ extension Model {
     }
 
     private func _create(on database: Database) -> EventLoopFuture<Void> {
-        precondition(!self.anyID.exists)
+        precondition(!self._$idExists)
         self.touchTimestamps(.create, .update)
         if self.anyID is AnyQueryableProperty {
             self.anyID.generate()
@@ -50,7 +50,7 @@ extension Model {
     }
 
     private func _update(on database: Database) throws -> EventLoopFuture<Void> {
-        precondition(self.anyID.exists)
+        precondition(self._$idExists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
         }
@@ -88,7 +88,7 @@ extension Model {
             .map
         {
             if force || self.deletedTimestamp == nil {
-                self.anyID.exists = false
+                self._$idExists = false
             }
         }
     }
@@ -104,7 +104,7 @@ extension Model {
             fatalError("no delete timestamp on this model")
         }
         timestamp.touch(date: nil)
-        precondition(self.anyID.exists)
+        precondition(self._$idExists)
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
             .withDeleted()
@@ -115,7 +115,7 @@ extension Model {
             .flatMapThrowing
         {
             try self.output(from: SavedInput(self.collectInput()))
-            self.anyID.exists = true
+            self._$idExists = true
         }
     }
 
@@ -142,7 +142,7 @@ extension Collection where Element: FluentKit.Model {
         }
         
         precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
-        precondition(self.allSatisfy { $0.anyID.exists })
+        precondition(self.allSatisfy { $0._$idExists })
 
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
@@ -156,7 +156,7 @@ extension Collection where Element: FluentKit.Model {
             guard force else { return }
             
             for model in self where model.deletedTimestamp == nil {
-                model._$id.exists = false
+                model._$idExists = false
             }
         }
     }
@@ -167,7 +167,7 @@ extension Collection where Element: FluentKit.Model {
         }
         
         precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
-        precondition(self.allSatisfy { !$0.anyID.exists })
+        precondition(self.allSatisfy { !$0._$idExists })
         
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
@@ -181,7 +181,7 @@ extension Collection where Element: FluentKit.Model {
                 .create()
         }.map {
             for model in self {
-                model._$id.exists = true
+                model._$idExists = true
             }
         }
     }
