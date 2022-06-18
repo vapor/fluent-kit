@@ -161,7 +161,12 @@ private struct ParentEagerLoader<From, To>: EagerLoader
                     $0.id == model[keyPath: self.relationKey].id
                 }).first else {
                     database.logger.debug("No parent '\(To.self)' with id '\(model[keyPath: self.relationKey].id)' was found in eager-load results.")
-                    throw FluentError.missingParent
+                    throw FluentError.missingParent(
+                        from: "\(From.self)",
+                        to: "\(To.self)",
+                        key: From.path(for: self.relationKey.appending(path: \.$id)).first!.description,
+                        id: "\(model[keyPath: self.relationKey].id)"
+                    )
                 }
                 model[keyPath: self.relationKey].value = parent
             }
