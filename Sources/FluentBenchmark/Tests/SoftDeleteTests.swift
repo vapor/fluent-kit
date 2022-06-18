@@ -1,3 +1,4 @@
+import XCTest
 extension FluentBenchmarker {
     public func testSoftDelete() throws {
         try self.testSoftDelete_model()
@@ -208,7 +209,13 @@ extension FluentBenchmarker {
             // this should throw an error now because one of the
             // parents is missing and the results cannot be loaded
             XCTAssertThrowsError(try Foo.query(on: self.database).with(\.$bar).all().wait()) { error in
-                XCTAssertEqual("\(error)", FluentError.missingParent.description)
+                guard case let .missingParent(from, to, key, id) = error as? FluentError else {
+                    return XCTFail("Expected FluentError.missingParent, but got \(error)")
+                }
+                XCTAssertEqual(from, "\(Foo.self)")
+                XCTAssertEqual(to, "\(Bar.self)")
+                XCTAssertEqual(key, "bar")
+                XCTAssertEqual(id, "\(bar1.id!)")
             }
         }
     }

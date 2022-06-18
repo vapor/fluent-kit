@@ -17,6 +17,34 @@ extension QueryBuilder {
             filter.value
         )
     }
+    
+    @discardableResult
+    public func filter(_ filter: ModelCompositeIDFilter<Model>) -> Self
+        where Model.IDValue: Fields
+    {
+        self.filter(Model.self, filter)
+    }
+    
+    @discardableResult
+    public func filter<Joined>(
+        _ schema: Joined.Type,
+        _ filter: ModelCompositeIDFilter<Joined>
+    ) -> Self
+        where Joined: Schema, Joined.IDValue: Fields
+    {
+        let relation: DatabaseQuery.Filter.Relation
+        switch filter.method {
+        case .equality(let inverse) where inverse == false: relation = .and
+        case .equality(let inverse) where inverse == true:  relation = .or
+        default: fatalError("unreachable")
+        }
+        
+        return self.group(relation) {
+            _ = filter.value.properties.map { $0 as! AnyQueryAddressableProperty }.filter { $0.anyQueryableProperty.queryableValue() != nil }.reduce($0) {
+                $0.filter(.extendedPath($1.queryablePath, schema: Joined.schema, space: Joined.space), filter.method, $1.anyQueryableProperty.queryableValue()!)
+            }
+        }
+    }
 }
 
 // MARK: Field.Value
@@ -55,6 +83,16 @@ public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: Field.Value) -> M
     where Model: Fields, Field: QueryableProperty
 {
     lhs <= Field.queryValue(rhs)
+}
+
+// MARK: CompositeID.Value
+
+public func == <Model, IDValue>(lhs: KeyPath<Model, CompositeIDProperty<Model, IDValue>>, rhs: Model.IDValue) -> ModelCompositeIDFilter<Model> {
+    .init(.equal, rhs)
+}
+
+public func != <Model, IDValue>(lhs: KeyPath<Model, CompositeIDProperty<Model, IDValue>>, rhs: Model.IDValue) -> ModelCompositeIDFilter<Model> {
+    .init(.notEqual, rhs)
 }
 
 // MARK: DatabaseQuery.Value
@@ -111,4 +149,19 @@ public struct ModelValueFilter<Model> where Model: Fields {
     let path: [FieldKey]
     let method: DatabaseQuery.Filter.Method
     let value: DatabaseQuery.Value
+}
+
+public struct ModelCompositeIDFilter<Model> where Model: FluentKit.Model, Model.IDValue: Fields {
+    public init(
+        _ method: DatabaseQuery.Filter.Method,
+        _ rhs: Model.IDValue
+    ) {
+        guard case .equality(_) = method else { preconditionFailure("Composite IDs may only be compared for equality or inequality.") }
+        
+        self.method = method
+        self.value = rhs
+    }
+    
+    let method: DatabaseQuery.Filter.Method
+    let value: Model.IDValue
 }
