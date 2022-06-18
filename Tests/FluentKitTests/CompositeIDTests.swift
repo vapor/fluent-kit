@@ -118,6 +118,19 @@ final class CompositeIDTests: XCTestCase {
         XCTAssertEqual(try db.sqlSerializers.xctAt(7).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE "composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(8).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE "composite+planet+tag"."planet_id" = $3 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $4)"#)
     }
+    
+    func testCompositeIDFilterByID() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let planetId = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+            tagId = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+        
+        _ = try CompositePlanetTag.query(on: db).filter(\.$id == CompositePlanetTag.IDValue.init(planetID: planetId, tagID: tagId)).all().wait()
+        _ = try CompositePlanetTag.query(on: db).filter(\.$id != CompositePlanetTag.IDValue.init(planetID: planetId, tagID: tagId)).all().wait()
+        
+        XCTAssertEqual(db.sqlSerializers.count, 2)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE ("composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE ("composite+planet+tag"."planet_id" <> $1 OR "composite+planet+tag"."tag_id" <> $2) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
+    }
 }
 
 public final class PlanetUsingCompositePivot: Model {
