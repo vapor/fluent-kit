@@ -19,12 +19,20 @@ public final class OptionalChildProperty<From, To>
 
     public var value: To??
 
-    public init(for parent: KeyPath<To, To.Parent<From>>) {
-        self.parentKey = .required(parent)
+    public convenience init(for parent: KeyPath<To, To.Parent<From>>) {
+        self.init(for: .required(parent))
     }
 
-    public init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
-        self.parentKey = .optional(optionalParent)
+    public convenience init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
+        self.init(for: .optional(optionalParent))
+    }
+    
+    private init(for parentKey: Key) {
+        guard !(From.IDValue.self is Fields.Type) /*From().anyId is AnyQueryAddressableProperty*/ else {
+            fatalError("Can not use @OptionalChild with a model whose ID is not addressable (this probably means '\(From.self)' uses `@CompositeID`).")
+        }
+
+        self.parentKey = parentKey
     }
 
     public var wrappedValue: To? {

@@ -29,6 +29,10 @@ public final class ParentProperty<From, To>
     public var value: To?
 
     public init(key: FieldKey) {
+        guard !(To.IDValue.self is Fields.Type) /*To().anyId is AnyQueryAddressableProperty*/ else {
+            fatalError("Can not use @Parent to target a model whose ID is not addressable (this probably means '\(To.self)' uses `@CompositeID`).")
+        }
+        
         self._id = .init(key: key)
     }
 
