@@ -5,6 +5,7 @@
 /// and execute the transaction functions on that connection and ensure the functions aren't called across
 /// different conenctions. You are also responsible for ensuring that you commit or rollback queries
 /// when you're ready
+/// You should not mix these functions and `Database.transaction(_:)`
 public protocol TransactionControlDatabase: Database {
     /// Start the transaction on the current connection. This is equivalent to an SQL `BEGIN`
     /// - Returns: future `Void` when the transaction has been started
