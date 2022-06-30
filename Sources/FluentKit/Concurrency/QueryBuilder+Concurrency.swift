@@ -216,6 +216,13 @@ public extension QueryBuilder {
     ) async throws -> Page<Model> {
         try await self.paginate(request).get()
     }
+    
+    func page(
+        withIndex page: Int,
+        size per: Int
+    ) async throws -> Page<Model> {
+        try await self.page(withIndex: page, size: per).get()
+    }
 }
 
 #endif
