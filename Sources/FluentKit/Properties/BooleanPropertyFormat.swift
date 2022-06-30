@@ -26,6 +26,10 @@ extension BooleanPropertyFormat where Self == DefaultBooleanPropertyFormat {
 }
 
 /// Represent a `Bool` as any integer type. Any value other than `0` or `1` is considered invalid.
+///
+/// - Note: This format is primarily useful when the underlying database's native boolean format is
+///   an integer of different width than the one that was used by the model - for example, a MySQL
+///   model with a `BIGINT` field instead of the default `TINYINT`.
 public struct IntegerBooleanPropertyFormat<T: FixedWidthInteger & Codable>: BooleanPropertyFormat {
     public init() {}
     

@@ -3,6 +3,45 @@ extension Fields {
         where Format: BooleanPropertyFormat
 }
 
+/// A Fluent model property which represents an optional boolean (true/false) value.
+///
+/// By default, `Bool` properties are stored in a database using the storage format
+/// defined by the database driver, which corresponds to using the `.bool` data type
+/// on the appropriate field in a migration. This property wrapper allows specifying
+/// an alternative storage format - such the strings "true" and "false" - which is
+/// automatically translated to and from a Swift `Bool` when loading and saving the
+/// owning model. This is expected to be most useful when working with existing
+/// database schemas.
+///
+/// Example:
+///
+///     final class MyModel: Model {
+///         let schema = "my_models"
+///
+///         @ID(key: .id) var id: UUID?
+///
+///         // When not `nil`, this field will be stored using the database's native boolean format.
+///         @OptionalField(key: "rawEnabled") var rawEnabled: Bool?
+///
+///         // When not `nil`, this field will be stored as a string, either "true" or "false".
+///         @OptionalBoolean(key: "enabled", format: .trueFalse) var enabled: Bool?
+///
+///         init() {}
+///     }
+///
+///     struct MyModelMigration: AsyncMigration {
+///         func prepare(on database: Database) async throws -> Void {
+///             try await database.schema(MyModel.schema)
+///                 .id()
+///                 .field("rawEnabled", .bool)
+///                 .field("enabled", .string)
+///                 .create()
+///         }
+///
+///         func revert(on database: Database) async throws -> Void { try await database.schema(MyModel.schema).delete() }
+///     }
+///
+/// - Note: See also ``BooleanProperty`` and ``BooleanPropertyFormat``.
 @propertyWrapper
 public final class OptionalBooleanProperty<Model, Format>
     where Model: FluentKit.Fields, Format: BooleanPropertyFormat
