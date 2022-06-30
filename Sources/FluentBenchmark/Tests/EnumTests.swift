@@ -1,4 +1,3 @@
-import Foundation
 extension FluentBenchmarker {
     public func testEnum() throws {
         try self.testEnum_basic()
