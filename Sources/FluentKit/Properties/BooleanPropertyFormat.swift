@@ -155,3 +155,37 @@ public struct TrueFalseBooleanPropertyFormat: BooleanPropertyFormat {
 extension BooleanPropertyFormat where Self == TrueFalseBooleanPropertyFormat {
     public static var trueFalse: Self { .init() }
 }
+
+/// This is a workaround for Swift 5.4's inability to correctly infer the format type
+/// using the `Self` constraints on the various static properties.
+#if swift(<5.5)
+public struct BooleanPropertyFormatFactory<Format: BooleanPropertyFormat> {
+    public var format: Format
+}
+
+extension BooleanPropertyFormatFactory {
+    public static var integer: BooleanPropertyFormatFactory<IntegerBooleanPropertyFormat<Int>> {
+        .init(format: .init())
+    }
+    
+    public static var oneZero: BooleanPropertyFormatFactory<OneZeroBooleanPropertyFormat> {
+        .init(format: .init())
+    }
+
+    public static var yn: BooleanPropertyFormatFactory<YNBooleanPropertyFormat> {
+        .init(format: .init())
+    }
+
+    public static var yesNo: BooleanPropertyFormatFactory<YesNoBooleanPropertyFormat> {
+        .init(format: .init())
+    }
+
+    public static var onOff: BooleanPropertyFormatFactory<OnOffBooleanPropertyFormat> {
+        .init(format: .init())
+    }
+
+    public static var trueFalse: BooleanPropertyFormatFactory<TrueFalseBooleanPropertyFormat> {
+        .init(format: .init())
+    }
+}
+#endif

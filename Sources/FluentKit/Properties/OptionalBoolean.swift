@@ -74,6 +74,16 @@ extension OptionalBooleanProperty where Format == DefaultBooleanPropertyFormat {
     }
 }
 
+/// This is a workaround for Swift 5.4's inability to correctly infer the format type
+/// using the `Self` constraints on the various static properties.
+#if swift(<5.5)
+extension OptionalBooleanProperty {
+    public convenience init(key: FieldKey, format factory: BooleanPropertyFormatFactory<Format>) {
+        self.init(key: key, format: factory.format)
+    }
+}
+#endif
+
 extension OptionalBooleanProperty: AnyProperty {}
 
 extension OptionalBooleanProperty: Property {
