@@ -71,6 +71,28 @@ extension BooleanPropertyFormat where Self == OneZeroBooleanPropertyFormat {
     public static var oneZero: Self { .init() }
 }
 
+/// Represent a `Bool` as the strings "N" and "Y". Parsing is case-insensitive. Serialization always stores uppercase.
+public struct YNBooleanPropertyFormat: BooleanPropertyFormat {
+    public init() {}
+    
+    public func parse(_ value: String) -> Bool? {
+        switch value.lowercased() {
+        case "n": return false
+        case "y": return true
+        default: return nil
+        }
+    }
+    
+    public func serialize(_ bool: Bool) -> String {
+        return bool ? "Y" : "N"
+    }
+}
+
+extension BooleanPropertyFormat where Self == YNBooleanPropertyFormat {
+    public static var yn: Self { .init() }
+}
+
+
 /// Represent a `Bool` as the strings "NO" and "YES". Parsing is case-insensitive. Serialization always stores uppercase.
 public struct YesNoBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
