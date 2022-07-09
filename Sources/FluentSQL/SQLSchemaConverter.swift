@@ -103,9 +103,9 @@ public struct SQLSchemaConverter {
         switch constraint {
         case .constraint(let algorithm):
             let name = self.constraintIdentifier(algorithm, table: table)
-            return SQLDropConstraint(name: SQLIdentifier(name))
+            return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: algorithm)
         case .name(let name):
-            return SQLDropConstraint(name: SQLIdentifier(name))
+            return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: .sql(raw: ""))
         case .custom(let any):
             return custom(any)
         }
@@ -268,9 +268,47 @@ public struct SQLSchemaConverter {
     }
 }
 
-/// SQL drop constraint expression.
+/// SQL drop constraint expression with awareness of foreign keys (for MySQL's broken sake).
+///
+/// - Warning: This is only public for the benefit of `FluentBenchmarks`. DO NOT USE THIS TYPE!
+public struct SQLDropTypedConstraint: SQLExpression {
+    public let name: SQLExpression
+    public let algorithm: DatabaseSchema.ConstraintAlgorithm
+    
+    public init(name: SQLExpression, algorithm: DatabaseSchema.ConstraintAlgorithm) {
+        self.name = name
+        self.algorithm = algorithm
+    }
+    
+    public func serialize(to serializer: inout SQLSerializer) {
+        serializer.statement {
+            if $0.dialect.name == "mysql" { // TODO: Add an SQLDialect setting for this branch
+                // MySQL 5.7 does not support the type-generic "DROP CONSTRAINT" syntax.
+                switch algorithm {
+                case .foreignKey(_, _, _, _, _, _):
+                    $0.append("FOREIGN KEY")
+                    $0.append($0.dialect.normalizeSQLConstraint(identifier: self.name))
+                case .unique(_):
+                    $0.append("KEY")
+                    $0.append($0.dialect.normalizeSQLConstraint(identifier: self.name))
+                // Ignore `.compositeIdentifier()`, that gets too complicated between databases
+                default:
+                    // Ideally we'd detect MySQL 8.0 and use `CONSTRAINT` here...
+                    $0.append("KEY")
+                    $0.append($0.dialect.normalizeSQLConstraint(identifier: self.name))
+                }
+            } else {
+                $0.append("CONSTRAINT")
+                $0.append($0.dialect.normalizeSQLConstraint(identifier: self.name))
+            }
+        }
+    }
+}
+
+/// Obsolete form of SQL drop constraint expression.
 ///
 ///     `CONSTRAINT/KEY <name>`
+@available(*, deprecated, message: "Use SQLDropTypedConstraint instead")
 public struct SQLDropConstraint: SQLExpression {
     public var name: SQLExpression
 
