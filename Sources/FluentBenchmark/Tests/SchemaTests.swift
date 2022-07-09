@@ -10,6 +10,7 @@ extension FluentBenchmarker {
         if self.database is SQLDatabase {
             try self.testSchema_customSqlConstraints()
             try self.testSchema_customSqlFields()
+            try self.testSchema_deleteConstraints()
         }
     }
 
@@ -98,7 +99,7 @@ extension FluentBenchmarker {
             if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
                 try self.database.schema("custom_constraints")
                     // Test raw SQL for dropping constraints:
-                    .deleteConstraint(.sql(embed: "\(SQLDropConstraint(name: SQLIdentifier("id_unq_1")))"))
+                    .deleteConstraint(.sql(embed: "\(SQLDropTypedConstraint(name: SQLIdentifier("id_unq_1"), algorithm: .sql(raw: "")))"))
                     .update().wait()
             }
         }
@@ -131,6 +132,32 @@ extension FluentBenchmarker {
                     
                     // Test raw SQL for field updates:
                     .updateField(.sql(embed: "\(SQLAlterColumnDefinitionType(column: .init("notid"), dataType: .text))"))
+                    
+                    .update().wait()
+            }
+        }
+    }
+    
+    private func testSchema_deleteConstraints() throws {
+        try self.runTest(#function, [
+            CreateCategories(),
+            DeleteTableMigration(name: "normal_constraints")
+        ]) {
+            try self.database.schema("normal_constraints")
+                .id()
+                
+                .field("catid", .uuid)
+                .foreignKey(["catid"], references: Category.schema, [.id], onDelete: .noAction, onUpdate: .noAction)
+                .unique(on: "catid")
+                
+                .create().wait()
+            
+            if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
+                try self.database.schema("normal_constraints")
+                    // Test `DROP FOREIGN KEY` (MySQL) or `DROP CONSTRAINT` (Postgres)
+                    .deleteConstraint(.constraint(.foreignKey([.key("catid")], Category.schema, [.key(.id)], onDelete: .noAction, onUpdate: .noAction)))
+                    // Test `DROP KEY` (MySQL) or `DROP CONSTRAINT` (Postgres)
+                    .deleteUnique(on: "catid")
                     
                     .update().wait()
             }
