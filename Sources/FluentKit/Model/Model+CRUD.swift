@@ -58,6 +58,7 @@ extension Model {
         let input = self.collectInput()
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
+            .withDeleted()
             .filter(id: id)
             .set(input)
             .update()
