@@ -246,13 +246,17 @@ private final class DatabaseMigrator {
     // MARK: Private
 
     private func prepare(_ migration: Migration, batch: Int) -> EventLoopFuture<Void> {
+        self.database.logger.info("[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
         return migration.prepare(on: self.database).flatMap {
+            self.database.logger.info("[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
             return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
         }
     }
 
     private func revert(_ migration: Migration) -> EventLoopFuture<Void> {
+        self.database.logger.info("[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
         return migration.revert(on: self.database).flatMap {
+            self.database.logger.info("[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
             return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
         }
     }
