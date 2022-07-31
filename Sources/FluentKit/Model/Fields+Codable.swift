@@ -6,12 +6,13 @@ extension Fields {
             do {
                 let decoder = ContainerDecoder(container: container, key: .string(label))
                 try property.decode(from: decoder)
+            } catch let decodingError as DecodingError {
+                throw decodingError
             } catch {
-                throw DecodingError.typeMismatch(
-                    type(of: property).anyValueType,
+                throw DecodingError.dataCorrupted(
                     .init(
                         codingPath: [ModelCodingKey.string(label)],
-                        debugDescription: "Could not decode property",
+                        debugDescription: "Could not decode property: \(property)",
                         underlyingError: error
                     )
                 )
@@ -66,6 +67,27 @@ enum ModelCodingKey: CodingKey {
     }
 }
 
+extension ModelCodingKey: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .string(let string):
+            return string.description
+        case .int(let int):
+            return int.description
+        }
+    }
+}
+
+extension ModelCodingKey: CustomDebugStringConvertible {
+    var debugDescription: String {
+        switch self {
+        case .string(let string):
+            return string.debugDescription
+        case .int(let int):
+            return int.description
+        }
+    }
+}
 
 private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
     let container: KeyedDecodingContainer<ModelCodingKey>
@@ -80,7 +102,15 @@ private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
     }
 
     func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
+        do {
+            return try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
+        } catch DecodingError.typeMismatch(let mismatchedType, let context) {
+            throw DecodingError.typeMismatch(mismatchedType, .init(
+                codingPath: context.codingPath + [self.key],
+                debugDescription: "Could not decode key",
+                underlyingError: context.underlyingError
+            ))
+        }
     }
 
     func unkeyedContainer() throws -> UnkeyedDecodingContainer {

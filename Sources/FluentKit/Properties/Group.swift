@@ -84,7 +84,7 @@ extension GroupProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        self.value = try .init(from: decoder)
+        self.value = try Value(from: decoder)
     }
 }
 
