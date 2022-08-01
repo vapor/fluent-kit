@@ -53,6 +53,10 @@ public extension SiblingsProperty {
     func detach(_ to: To, on database: Database) async throws {
         try await self.detach(to, on: database).get()
     }
+    
+    func detachAll(on database: Database) async throws {
+        try await self.detachAll(on: database).get()
+    }
 }
 
 #endif
