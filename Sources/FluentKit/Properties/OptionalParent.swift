@@ -156,18 +156,20 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let sets = Dictionary(grouping: models.filter{ $0[keyPath: self.relationKey].id != nil }, by: { $0[keyPath: self.relationKey].id! })
+        var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
-        return To.query(on: database).filter(\._$id ~~ Set(sets.keys)).all().flatMapThrowing {
+        return To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 })).all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
             for (parentId, models) in sets {
-                guard let parent = parents[parentId] else {
-                    database.logger.debug("No parent '\(To.self)' with id '\(parentId)' was found in eager-load results.")
-                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
+                guard let parent = parents[parentId!] else {
+                    database.logger.debug("No parent '\(To.self)' with id '\(parentId!)' was found in eager-load results.")
+                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId!)
                 }
                 models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
             }
+            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
         }
     }
 }
