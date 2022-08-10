@@ -111,8 +111,8 @@ extension ParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
+        let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
 }
 

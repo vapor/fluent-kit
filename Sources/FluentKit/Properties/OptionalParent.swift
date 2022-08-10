@@ -107,7 +107,7 @@ extension OptionalParentProperty: AnyDatabaseProperty {
 extension OptionalParentProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        if let parent = self.value {
+        if case .some(.some(let parent)) = self.value { // require truly non-nil so we don't mis-encode when value has been manually cleared
             try container.encode(parent)
         } else {
             try container.encode([
@@ -117,8 +117,8 @@ extension OptionalParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
+        let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
 }
 

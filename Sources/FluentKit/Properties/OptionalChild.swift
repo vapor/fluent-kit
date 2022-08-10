@@ -131,6 +131,10 @@ extension OptionalChildProperty: AnyCodableProperty {
     public func decode(from decoder: Decoder) throws {
         // don't decode
     }
+
+    public var skipPropertyCoding: Bool {
+        self.value == nil // Avoids leaving an empty JSON object lying around in some cases.
+    }
 }
 
 // MARK: Relation
