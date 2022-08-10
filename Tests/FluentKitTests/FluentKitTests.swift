@@ -474,7 +474,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class Foo: Model {
+        final class EFoo: Model {
             static let schema = "foos"
             @ID var id: UUID?
             @Enum(key: "bar") var bar: Bar
@@ -482,13 +482,13 @@ final class FluentKitTests: XCTestCase {
         }
 
         do {
-            let foo = try JSONDecoder().decode(Foo.self, from: Data("""
+            let foo = try JSONDecoder().decode(EFoo.self, from: Data("""
             {"bar": "baz"}
             """.utf8))
             XCTAssertEqual(foo.bar, .baz)
         }
         do {
-            _ = try JSONDecoder().decode(Foo.self, from: Data("""
+            _ = try JSONDecoder().decode(EFoo.self, from: Data("""
             {"bar": "qux"}
             """.utf8))
             XCTFail("should not have passed")
@@ -502,7 +502,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class Foo: Model {
+        final class OEFoo: Model {
             static let schema = "foos"
             @ID var id: UUID?
             @OptionalEnum(key: "bar") var bar: Bar?
@@ -510,13 +510,13 @@ final class FluentKitTests: XCTestCase {
         }
 
         do {
-            let foo = try JSONDecoder().decode(Foo.self, from: Data("""
+            let foo = try JSONDecoder().decode(OEFoo.self, from: Data("""
             {"bar": "baz"}
             """.utf8))
             XCTAssertEqual(foo.bar, .baz)
         }
         do {
-            _ = try JSONDecoder().decode(Foo.self, from: Data("""
+            _ = try JSONDecoder().decode(OEFoo.self, from: Data("""
             {"bar": "qux"}
             """.utf8))
             XCTFail("should not have passed")
@@ -529,8 +529,8 @@ final class FluentKitTests: XCTestCase {
     func testOptionalParentCoding() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         let prefoo = PreFoo(boo: true); try prefoo.create(on: db).wait()
-        let foo1 = Foo(preFoo: prefoo); try foo1.create(on: db).wait()
-        let foo2 = Foo(preFoo: nil); try foo2.create(on: db).wait()
+        let foo1 = AtFoo(preFoo: prefoo); try foo1.create(on: db).wait()
+        let foo2 = AtFoo(preFoo: nil); try foo2.create(on: db).wait()
         prefoo.$foos.fromId = prefoo.id//; prefoo.$foos.value = []
         
         let encoder = JSONEncoder()
@@ -540,10 +540,6 @@ final class FluentKitTests: XCTestCase {
         let prefooEncoded = try String(decoding: encoder.encode(prefoo), as: UTF8.self)
         let foo1Encoded = try String(decoding: encoder.encode(foo1), as: UTF8.self)
         let foo2Encoded = try String(decoding: encoder.encode(foo2), as: UTF8.self)
-        
-        print("prefooEncoded = \(prefooEncoded)\n")
-        print("foo1Encoded = \(foo1Encoded)\n")
-        print("foo2Encoded = \(foo2Encoded)\n")
         
         XCTAssertEqual(prefooEncoded, """
             {
@@ -573,8 +569,8 @@ final class FluentKitTests: XCTestCase {
         decoder.dateDecodingStrategy = .iso8601
         
         let decodedPrefoo = try decoder.decode(PreFoo.self, from: prefooEncoded.data(using: .utf8)!)
-        let decodedFoo1 = try decoder.decode(Foo.self, from: foo1Encoded.data(using: .utf8)!)
-        let decodedFoo2 = try decoder.decode(Foo.self, from: foo2Encoded.data(using: .utf8)!)
+        let decodedFoo1 = try decoder.decode(AtFoo.self, from: foo1Encoded.data(using: .utf8)!)
+        let decodedFoo2 = try decoder.decode(AtFoo.self, from: foo2Encoded.data(using: .utf8)!)
         
         XCTAssertEqual(decodedPrefoo.id, prefoo.id)
         XCTAssertEqual(decodedPrefoo.boo, prefoo.boo)
@@ -587,7 +583,7 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() throws {
-        final class Foo: Model {
+        final class DGOFoo: Model {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -612,7 +608,7 @@ final class FluentKitTests: XCTestCase {
                 TestOutput(["id": 0])
             ]
         }
-        let foo = Foo(id: 1)
+        let foo = DGOFoo(id: 1)
         try foo.create(on: test.db).wait()
         XCTAssertEqual(foo.id, 1)
     }
@@ -893,7 +889,7 @@ final class LotsOfFields: Model {
     var field20: String
 }
 
-final class Foo: Model {
+final class AtFoo: Model {
     static let schema = "foos"
     
     @ID(custom: .id) var id: Int?
@@ -918,8 +914,8 @@ final class PreFoo: Model {
     @ID(custom: .id) var id: Int?
     @Field(key: "boo") var boo: Bool
     
-    @Children(for: \Foo.$preFoo) var foos: [Foo]
-    @OptionalChild(for: \Foo.$preFoo) var afoo: Foo?
+    @Children(for: \AtFoo.$preFoo) var foos: [AtFoo]
+    @OptionalChild(for: \AtFoo.$preFoo) var afoo: AtFoo?
     @Siblings(through: MidFoo.self, from: \.$id.$prefoo, to: \.$id.$postfoo) var postfoos: [PostFoo]
     
     init() {}

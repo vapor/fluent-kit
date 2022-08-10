@@ -327,7 +327,7 @@ final class AsyncFluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() async throws {
-        final class Foo: Model {
+        final class DGOFoo: Model {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -353,7 +353,7 @@ final class AsyncFluentKitTests: XCTestCase {
                 TestOutput(["id": 0])
             ]
         }
-        let foo = Foo(id: 1)
+        let foo = DGOFoo(id: 1)
         try await foo.create(on: test.db)
         XCTAssertEqual(foo.id, 1)
     }
