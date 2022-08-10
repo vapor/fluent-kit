@@ -129,4 +129,3 @@ extension OptionalEnumProperty: AnyCodableProperty {
         }
     }
 }
-

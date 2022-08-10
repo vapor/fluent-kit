@@ -4,7 +4,7 @@ extension Fields {
         
         let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
         
-        for (key, property) in self.codableProperties where !property.skipPropertyCoding {
+        for (key, property) in self.codableProperties {
             do {
                 try property.decode(from: container.superDecoder(forKey: key))
             } catch {
@@ -20,7 +20,7 @@ extension Fields {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: MissingStdlibAPICodingKey.self)
         
-        for (key, property) in self.codableProperties where !property.skipPropertyCoding {
+        for (key, property) in self.codableProperties where !property.skipPropertyEncoding {
             do {
                 try property.encode(to: container.superEncoder(forKey: key))
             } catch {

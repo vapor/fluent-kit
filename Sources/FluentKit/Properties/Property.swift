@@ -67,18 +67,17 @@ public protocol AnyCodableProperty: AnyProperty {
     /// Decode an external representation and replace the property's current data with the result.
     func decode(from decoder: Decoder) throws
     
-    /// Return `true` to skip encoding and decoding of this property. Defaults to `false` unless
-    /// explicitly implemented.
+    /// Return `true` to skip encoding of this property. Defaults to `false` unless explicitly
+    /// implemented.
     ///
-    /// - Note: This is primarily used to work around some of the weird corners of `Codable`'s
-    ///   interaction with the equally weird corners of relation properties. You probably don't
-    ///   need to bother with this.
-    var skipPropertyCoding: Bool { get }
+    /// This is used by ``Fields`` to work around limitations of `Codable` in an efficient manner.
+    /// You probably don't need to bother with it.
+    var skipPropertyEncoding: Bool { get }
 }
 
 extension AnyCodableProperty {
-    /// Default implementation of ``AnyCodableProperty/skipPropertyCoding``.
-    public var skipPropertyCoding: Bool { false }
+    /// Default implementation of ``AnyCodableProperty/skipPropertyEncoding``.
+    public var skipPropertyEncoding: Bool { false }
 }
 
 /// The type-erased form of ``QueryableProperty`` (see below). ``AnyQueryableProperty``

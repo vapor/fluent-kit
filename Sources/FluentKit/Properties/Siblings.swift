@@ -299,7 +299,7 @@ extension SiblingsProperty: AnyCodableProperty {
         // don't decode
     }
 
-    public var skipPropertyCoding: Bool {
+    public var skipPropertyEncoding: Bool {
         self.value == nil // Avoids leaving an empty JSON object lying around in some cases.
     }
 }
