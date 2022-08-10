@@ -29,3 +29,27 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
         return self.description
     }
 }
+
+extension FluentError {
+    internal static func missingParentError<Child: Model, Parent: Model>(
+        _: Child.Type = Child.self, _: Parent.Type = Parent.self, keyPath: KeyPath<Child, Child.Parent<Parent>>, id: Parent.IDValue
+    ) -> Self {
+        .missingParent(
+            from: "\(Child.self)",
+            to: "\(Parent.self)",
+            key: Child.path(for: keyPath.appending(path: \.$id)).map(\.description).joined(separator: ".->"),
+            id: "\(id)"
+        )
+    }
+
+    internal static func missingParentError<Child: Model, Parent: Model>(
+        _: Child.Type = Child.self, _: Parent.Type = Parent.self, keyPath: KeyPath<Child, Child.OptionalParent<Parent>>, id: Parent.IDValue
+    ) -> Self {
+        .missingParent(
+            from: "\(Child.self)",
+            to: "\(Parent.self)",
+            key: Child.path(for: keyPath.appending(path: \.$id)).map(\.description).joined(separator: ".->"),
+            id: "\(id)"
+        )
+    }
+}

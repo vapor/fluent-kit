@@ -146,33 +146,22 @@ extension ParentProperty: EagerLoadable {
 }
 
 private struct ParentEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model
+    where From: FluentKit.Model, To: FluentKit.Model
 {
-    let relationKey: KeyPath<From, From.Parent<To>>
+    let relationKey: KeyPath<From, ParentProperty<From, To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let ids = models.map {
-            $0[keyPath: self.relationKey].id
-        }
+        let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
-        return To.query(on: database)
-            .filter(\._$id ~~ Set(ids))
-            .all()
-            .flatMapThrowing
-        {
-            for model in models {
-                guard let parent = $0.filter({
-                    $0.id == model[keyPath: self.relationKey].id
-                }).first else {
-                    database.logger.debug("No parent '\(To.self)' with id '\(model[keyPath: self.relationKey].id)' was found in eager-load results.")
-                    throw FluentError.missingParent(
-                        from: "\(From.self)",
-                        to: "\(To.self)",
-                        key: From.path(for: self.relationKey.appending(path: \.$id)).first!.description,
-                        id: "\(model[keyPath: self.relationKey].id)"
-                    )
+        return To.query(on: database).filter(\._$id ~~ Set(sets.keys)).all().flatMapThrowing {
+            let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
+
+            for (parentId, models) in sets {
+                guard let parent = parents[parentId] else {
+                    database.logger.debug("No parent '\(To.self)' with id '\(parentId)' was found in eager-load results.")
+                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
                 }
-                model[keyPath: self.relationKey].value = parent
+                models.forEach { $0[keyPath: self.relationKey].value = parent }
             }
         }
     }

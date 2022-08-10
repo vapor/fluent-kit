@@ -151,24 +151,22 @@ extension OptionalParentProperty: EagerLoadable {
 }
 
 private struct OptionalParentEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model
+    where From: FluentKit.Model, To: FluentKit.Model
 {
-    let relationKey: KeyPath<From, From.OptionalParent<To>>
+    let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let ids = models.compactMap {
-            $0[keyPath: self.relationKey].id
-        }
-        
-        return To.query(on: database)
-            .filter(\._$id ~~ Set(ids))
-            .all()
-            .map
-        {
-            for model in models {
-                model[keyPath: self.relationKey].value = .some($0.filter {
-                    $0.id == model[keyPath: self.relationKey].id
-                }.first)
+        let sets = Dictionary(grouping: models.filter{ $0[keyPath: self.relationKey].id != nil }, by: { $0[keyPath: self.relationKey].id! })
+
+        return To.query(on: database).filter(\._$id ~~ Set(sets.keys)).all().flatMapThrowing {
+            let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
+
+            for (parentId, models) in sets {
+                guard let parent = parents[parentId] else {
+                    database.logger.debug("No parent '\(To.self)' with id '\(parentId)' was found in eager-load results.")
+                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
+                }
+                models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
             }
         }
     }
