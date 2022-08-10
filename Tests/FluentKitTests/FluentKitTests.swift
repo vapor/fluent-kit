@@ -525,6 +525,66 @@ final class FluentKitTests: XCTestCase {
             XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
         }
     }
+    
+    func testOptionalParentCoding() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let prefoo = PreFoo(boo: true); try prefoo.create(on: db).wait()
+        let foo1 = Foo(preFoo: prefoo); try foo1.create(on: db).wait()
+        let foo2 = Foo(preFoo: nil); try foo2.create(on: db).wait()
+        prefoo.$foos.fromId = prefoo.id//; prefoo.$foos.value = []
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes, .prettyPrinted]
+        
+        let prefooEncoded = try String(decoding: encoder.encode(prefoo), as: UTF8.self)
+        let foo1Encoded = try String(decoding: encoder.encode(foo1), as: UTF8.self)
+        let foo2Encoded = try String(decoding: encoder.encode(foo2), as: UTF8.self)
+        
+        print("prefooEncoded = \(prefooEncoded)\n")
+        print("foo1Encoded = \(foo1Encoded)\n")
+        print("foo2Encoded = \(foo2Encoded)\n")
+        
+        XCTAssertEqual(prefooEncoded, """
+            {
+              "boo" : true,
+              "id" : \(prefoo.id!)
+            }
+            """)
+        XCTAssertEqual(foo1Encoded, """
+            {
+              "id" : \(foo1.id!),
+              "preFoo" : {
+                "boo" : true,
+                "id" : \(prefoo.id!)
+              }
+            }
+            """)
+        XCTAssertEqual(foo2Encoded, """
+            {
+              "id" : \(foo2.id!),
+              "preFoo" : {
+                "id" : null
+              }
+            }
+            """)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        let decodedPrefoo = try decoder.decode(PreFoo.self, from: prefooEncoded.data(using: .utf8)!)
+        let decodedFoo1 = try decoder.decode(Foo.self, from: foo1Encoded.data(using: .utf8)!)
+        let decodedFoo2 = try decoder.decode(Foo.self, from: foo2Encoded.data(using: .utf8)!)
+        
+        XCTAssertEqual(decodedPrefoo.id, prefoo.id)
+        XCTAssertEqual(decodedPrefoo.boo, prefoo.boo)
+        XCTAssertEqual(decodedFoo1.id, foo1.id)
+        XCTAssertEqual(decodedFoo1.$preFoo.id, foo1.$preFoo.id)
+        XCTAssert({ guard case .none = decodedFoo1.$preFoo.value else { return false }; return true }())
+        XCTAssertEqual(decodedFoo2.id, foo2.id)
+        XCTAssertEqual(decodedFoo2.$preFoo.id, foo2.$preFoo.id)
+        XCTAssert({ guard case .none = decodedFoo2.$preFoo.value else { return false }; return true }())
+    }
 
     func testDatabaseGeneratedIDOverride() throws {
         final class Foo: Model {
@@ -677,18 +737,18 @@ final class Toy: Fields {
     var type: ToyType
 
     @Group(key: "foo")
-    var foo: Foo
+    var foo: ToyFoo
 
     init() { }
 
-    init(name: String, type: ToyType, foo: Foo) {
+    init(name: String, type: ToyType, foo: ToyFoo) {
         self.name = name
         self.type = type
         self.foo = foo
     }
 }
 
-final class Foo: Fields {
+final class ToyFoo: Fields {
     @Field(key: "bar")
     var bar: Int
 
@@ -831,4 +891,57 @@ final class LotsOfFields: Model {
     
     @Field(key: "field20")
     var field20: String
+}
+
+final class Foo: Model {
+    static let schema = "foos"
+    
+    @ID(custom: .id) var id: Int?
+    @OptionalParent(key: "pre_foo_id") var preFoo: PreFoo?
+    
+    init() {}
+    init(id: Int? = nil, preFoo: PreFoo?) { self.id = id; self.$preFoo.id = preFoo?.id; self.$preFoo.value = preFoo }
+}
+
+final class PostFoo: Model {
+    static let schema = "postfoos"
+    
+    @ID(custom: .id) var id: Int?
+    
+    init() {}
+    init(id: Int? = nil) { self.id = id }
+}
+
+final class PreFoo: Model {
+    static let schema = "prefoos"
+    
+    @ID(custom: .id) var id: Int?
+    @Field(key: "boo") var boo: Bool
+    
+    @Children(for: \Foo.$preFoo) var foos: [Foo]
+    @OptionalChild(for: \Foo.$preFoo) var afoo: Foo?
+    @Siblings(through: MidFoo.self, from: \.$id.$prefoo, to: \.$id.$postfoo) var postfoos: [PostFoo]
+    
+    init() {}
+    init(id: Int? = nil, boo: Bool) { self.id = id; self.boo = boo }
+}
+
+final class MidFoo: Model {
+    static let schema = "midfoos"
+    
+    final class IDValue: Fields, Hashable {
+        @Parent(key: "prefoo_id") var prefoo: PreFoo
+        @Parent(key: "postfoo_id") var postfoo: PostFoo
+    
+        init() {}
+        init(prefooId: PreFoo.IDValue, postfooId: PostFoo.IDValue) { (self.$prefoo.id, self.$postfoo.id) = (prefooId, postfooId) }
+
+        static func == (lhs: IDValue, rhs: IDValue) -> Bool { lhs.$prefoo.id == rhs.$prefoo.id && lhs.$postfoo.id == rhs.$postfoo.id }
+        func hash(into hasher: inout Hasher) { hasher.combine(self.$prefoo.id); hasher.combine(self.$postfoo.id) }
+    }
+
+    @CompositeID var id: IDValue?
+
+    init() {}
+    init(prefooId: PreFoo.IDValue, postfooId: PostFoo.IDValue) { self.id = .init(prefooId: prefooId, postfooId: postfooId) }
 }
