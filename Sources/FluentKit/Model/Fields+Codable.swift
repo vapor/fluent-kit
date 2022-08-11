@@ -1,140 +1,67 @@
 extension Fields {
     public init(from decoder: Decoder) throws {
         self.init()
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.labeledProperties.forEach { label, property in
+        
+        let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        
+        for (key, property) in self.codableProperties {
+            let propDecoder = AirQuotesSafeSuperDecoder(container: container, key: key)
+            
             do {
-                let decoder = ContainerDecoder(container: container, key: .string(label))
-                try property.decode(from: decoder)
+                try property.decode(from: propDecoder)
             } catch {
-                throw DecodingError.typeMismatch(
-                    type(of: property).anyValueType,
-                    .init(
-                        codingPath: [ModelCodingKey.string(label)],
-                        debugDescription: "Could not decode property",
-                        underlyingError: error
-                    )
-                )
+                throw DecodingError.typeMismatch(type(of: property).anyValueType, .init(
+                    codingPath: container.codingPath + [key],
+                    debugDescription: "Could not decode property",
+                    underlyingError: error
+                ))
             }
         }
     }
 
     public func encode(to encoder: Encoder) throws {
-        let container = encoder.container(keyedBy: ModelCodingKey.self)
-        try self.labeledProperties.forEach { label, property in
+        var container = encoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        
+        for (key, property) in self.codableProperties where !property.skipPropertyEncoding {
             do {
-                let encoder = ContainerEncoder(container: container, key: .string(label))
-                try property.encode(to: encoder)
+                try property.encode(to: container.superEncoder(forKey: key))
             } catch {
-                throw EncodingError.invalidValue(
-                    property.anyValue ?? "null",
-                    .init(
-                        codingPath: [ModelCodingKey.string(label)],
-                        debugDescription: "Could not encode property",
-                        underlyingError: error
-                    )
-                )
+                throw EncodingError.invalidValue(property.anyValue ?? "null", .init(
+                    codingPath: container.codingPath + [key],
+                    debugDescription: "Could not encode property",
+                    underlyingError: error
+                ))
             }
         }
     }
 }
 
-enum ModelCodingKey: CodingKey {
-    case string(String)
-    case int(Int)
-
-    var stringValue: String {
-        switch self {
-        case .int(let int): return int.description
-        case .string(let string): return string
-        }
-    }
-
-    var intValue: Int? {
-        switch self {
-        case .int(let int): return int
-        case .string(let string): return Int(string)
-        }
-    }
-
-    init?(stringValue: String) {
-        self = .string(stringValue)
-    }
-
-    init?(intValue: Int) {
-        self = .int(intValue)
-    }
+/// A 100% conformance to ``Swift/CodingKey``, the standard library's version of a protocol
+/// whose reqirements are trapped in a looping crisis of personal identity.
+internal struct MissingStdlibAPICodingKey: CodingKey, Hashable {
+  internal let stringValue: String, intValue: Int?
+  internal init(stringValue: String) { (self.stringValue, self.intValue) = (stringValue, Int(stringValue)) }
+  internal init(intValue: Int) { (self.stringValue, self.intValue) = ("\(intValue)", intValue) }
+  internal var description: String { "GenericCodingKey(\"\(self.stringValue)\"\(self.intValue.map { ", int: \($0)" } ?? ""))" }
 }
 
+/// This type's only purpose is to compensate for the changed behavior of `.superDecoder(forKey:)`, which used
+/// to return a `Decoder` representing a `NULL` value when the key was not present, but since 5.5 on Linux (and
+/// possibly eventually on macOS as well) will throw a key not found error for missing keys. Therefore, this
+/// `Decoder` wraps the container from which the key is supposed to come and allows an additional level of
+/// descent into the decode before an error would be thrown.
+///
+/// It is really unfortunate to need this; it's no win for peformance, for one. It's just the least unpleasant
+/// alternative available as long as the overall semantics remain undisturbed.
+private struct AirQuotesSafeSuperDecoder<K: CodingKey>: Decoder, SingleValueDecodingContainer {
+    var codingPath: [CodingKey] { self.container.codingPath }
+    var userInfo: [CodingUserInfoKey: Any] { [:] }
+    let container: KeyedDecodingContainer<K>
+    let key: K
 
-private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
-    let container: KeyedDecodingContainer<ModelCodingKey>
-    let key: ModelCodingKey
-
-    var codingPath: [CodingKey] {
-        self.container.codingPath
-    }
-
-    var userInfo: [CodingUserInfoKey : Any] {
-        [:]
-    }
-
-    func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
-    }
-
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        try self.container.nestedUnkeyedContainer(forKey: self.key)
-    }
-
-    func singleValueContainer() throws -> SingleValueDecodingContainer {
-        self
-    }
-
-    func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-        try self.container.decode(T.self, forKey: self.key)
-    }
-
-    func decodeNil() -> Bool {
-        if self.container.contains(self.key) {
-            return try! self.container.decodeNil(forKey: self.key)
-        } else {
-            return true
-        }
-    }
-}
-
-private struct ContainerEncoder: Encoder, SingleValueEncodingContainer {
-    var container: KeyedEncodingContainer<ModelCodingKey>
-    let key: ModelCodingKey
-
-    var codingPath: [CodingKey] {
-        self.container.codingPath
-    }
-
-    var userInfo: [CodingUserInfoKey : Any] {
-        [:]
-    }
-
-    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
-        var container = self.container
-        return container.nestedContainer(keyedBy: Key.self, forKey: self.key)
-    }
-
-    func unkeyedContainer() -> UnkeyedEncodingContainer {
-        var container = self.container
-        return container.nestedUnkeyedContainer(forKey: self.key)
-    }
-
-    func singleValueContainer() -> SingleValueEncodingContainer {
-        self
-    }
-
-    mutating func encode<T>(_ value: T) throws where T : Encodable {
-        try self.container.encode(value, forKey: self.key)
-    }
-
-    mutating func encodeNil() throws {
-        try self.container.encodeNil(forKey: self.key)
-    }
+    func container<NK: CodingKey>(keyedBy: NK.Type) throws -> KeyedDecodingContainer<NK> { try self.container.nestedContainer(keyedBy: NK.self, forKey: self.key) }
+    func unkeyedContainer() throws -> UnkeyedDecodingContainer { try self.container.nestedUnkeyedContainer(forKey: self.key) }
+    func singleValueContainer() throws -> SingleValueDecodingContainer { self }
+    func decode<T: Decodable>(_: T.Type) throws -> T { try self.container.decode(T.self, forKey: self.key) }
+    func decodeNil() -> Bool { self.container.contains(self.key) ? try! self.container.decodeNil(forKey: self.key) : true }
 }

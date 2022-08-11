@@ -74,11 +74,13 @@ extension CompositeIDProperty: AnyDatabaseProperty {
 
 extension CompositeIDProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
-        try self.value!.encode(to: encoder)
+        var container = encoder.singleValueContainer()
+        try container.encode(self.value!)
     }
 
     public func decode(from decoder: Decoder) throws {
-        self.value = try .init(from: decoder)
+        let container = try decoder.singleValueContainer()
+        self.value = try container.decode(Value.self)
     }
 }
 

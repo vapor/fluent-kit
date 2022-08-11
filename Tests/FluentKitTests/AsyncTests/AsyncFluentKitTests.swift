@@ -266,7 +266,7 @@ final class AsyncFluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
 
-    func testPlanel2FilterPlaceholder1() async throws {
+    func testPlanet2FilterPlaceholder1() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -280,7 +280,7 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
-    func testPlanel2FilterPlaceholder2() async throws {
+    func testPlanet2FilterPlaceholder2() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -294,7 +294,7 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
-    func testPlanel2FilterPlaceholder3() async throws {
+    func testPlanet2FilterPlaceholder3() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -310,7 +310,7 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
-    func testPlanel2FilterPlaceholder4() async throws {
+    func testPlanet2FilterPlaceholder4() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -327,7 +327,7 @@ final class AsyncFluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() async throws {
-        final class Foo: Model {
+        final class DGOFoo: Model {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -353,7 +353,7 @@ final class AsyncFluentKitTests: XCTestCase {
                 TestOutput(["id": 0])
             ]
         }
-        let foo = Foo(id: 1)
+        let foo = DGOFoo(id: 1)
         try await foo.create(on: test.db)
         XCTAssertEqual(foo.id, 1)
     }

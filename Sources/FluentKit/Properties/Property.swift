@@ -57,9 +57,27 @@ public protocol AnyDatabaseProperty: AnyProperty {
 /// to encode and decode to and from representations other than storage in a
 /// database, and to act as a container if it contains any additional properties
 /// which also wish to participate. Just about every property type is codable.
+///
+/// - Warning: The various relation property types sometimes behave somewhat oddly
+///   when encoded and/or decoded.
 public protocol AnyCodableProperty: AnyProperty {
+    /// Encode the property's data to an external representation.
     func encode(to encoder: Encoder) throws
+    
+    /// Decode an external representation and replace the property's current data with the result.
     func decode(from decoder: Decoder) throws
+    
+    /// Return `true` to skip encoding of this property. Defaults to `false` unless explicitly
+    /// implemented.
+    ///
+    /// This is used by ``Fields`` to work around limitations of `Codable` in an efficient manner.
+    /// You probably don't need to bother with it.
+    var skipPropertyEncoding: Bool { get }
+}
+
+extension AnyCodableProperty {
+    /// Default implementation of ``AnyCodableProperty/skipPropertyEncoding``.
+    public var skipPropertyEncoding: Bool { false }
 }
 
 /// The type-erased form of ``QueryableProperty`` (see below). ``AnyQueryableProperty``

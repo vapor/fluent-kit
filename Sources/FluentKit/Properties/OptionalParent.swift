@@ -107,7 +107,7 @@ extension OptionalParentProperty: AnyDatabaseProperty {
 extension OptionalParentProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        if let parent = self.value {
+        if case .some(.some(let parent)) = self.value { // require truly non-nil so we don't mis-encode when value has been manually cleared
             try container.encode(parent)
         } else {
             try container.encode([
@@ -117,8 +117,8 @@ extension OptionalParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
+        let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
 }
 
@@ -151,25 +151,28 @@ extension OptionalParentProperty: EagerLoadable {
 }
 
 private struct OptionalParentEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model
+    where From: FluentKit.Model, To: FluentKit.Model
 {
-    let relationKey: KeyPath<From, From.OptionalParent<To>>
+    let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let ids = models.compactMap {
-            $0[keyPath: self.relationKey].id
-        }
-        
-        return To.query(on: database)
-            .filter(\._$id ~~ Set(ids))
-            .all()
-            .map
-        {
-            for model in models {
-                model[keyPath: self.relationKey].value = .some($0.filter {
-                    $0.id == model[keyPath: self.relationKey].id
-                }.first)
+        var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let nilParentModels = sets.removeValue(forKey: nil) ?? []
+
+        return To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 })).all().flatMapThrowing {
+            let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
+
+            for (parentId, models) in sets {
+                guard let parent = parents[parentId!] else {
+                    database.logger.debug(
+                        "Missing parent model in eager-load lookup results.",
+                        metadata: ["parent": .string("\(To.self)"), "id": .string("\(parentId!)")]
+                    )
+                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId!)
+                }
+                models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
             }
+            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
         }
     }
 }
