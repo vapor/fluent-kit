@@ -158,7 +158,10 @@ private struct ParentEagerLoader<From, To>: EagerLoader
 
             for (parentId, models) in sets {
                 guard let parent = parents[parentId] else {
-                    database.logger.debug("No parent '\(To.self)' with id '\(parentId)' was found in eager-load results.")
+                    database.logger.debug(
+                        "Missing parent model in eager-load lookup results.",
+                        metadata: ["parent": .string("\(To.self)"), "id": .string("\(parentId)")]
+                    )
                     throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
                 }
                 models.forEach { $0[keyPath: self.relationKey].value = parent }
