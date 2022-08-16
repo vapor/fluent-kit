@@ -68,10 +68,11 @@ extension GroupProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        self.value!.input(to: input.prefixed(by: self.prefix))
+        self.value?.input(to: input.prefixed(by: self.prefix))
     }
 
     public func output(from output: DatabaseOutput) throws {
+        if self.value == nil { self.value = .init() }
         try self.value!.output(from: output.prefixed(by: self.prefix))
     }
 }
@@ -80,11 +81,14 @@ extension GroupProperty: AnyDatabaseProperty {
 
 extension GroupProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
-        try self.value!.encode(to: encoder)
+        try self.value?.encode(to: encoder)
     }
 
     public func decode(from decoder: Decoder) throws {
-        self.value = try .init(from: decoder)
+        let container = try decoder.singleValueContainer()
+        
+        guard !container.decodeNil() else { return }
+        self.value = .some(try container.decode(Value.self))
     }
 }
 
