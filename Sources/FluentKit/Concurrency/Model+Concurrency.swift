@@ -1,7 +1,7 @@
 #if compiler(>=5.5) && canImport(_Concurrency)
 import NIOCore
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public extension Model {
     static func find(
         _ id: Self.IDValue?,
@@ -32,7 +32,7 @@ public extension Model {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public extension Collection where Element: FluentKit.Model {
     func delete(force: Bool = false, on database: Database) async throws {
         try await self.delete(force: force, on: database).get()

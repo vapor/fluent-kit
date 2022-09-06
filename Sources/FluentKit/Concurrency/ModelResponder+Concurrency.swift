@@ -1,7 +1,7 @@
 #if compiler(>=5.5) && canImport(_Concurrency)
 import NIOCore
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol AnyAsyncModelResponder: AnyModelResponder {
     func handle(
         _ event: ModelEvent,
@@ -10,7 +10,7 @@ public protocol AnyAsyncModelResponder: AnyModelResponder {
     ) async throws
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AnyAsyncModelResponder {
     func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database) -> EventLoopFuture<Void> {
         let promise = db.eventLoop.makePromise(of: Void.self)
@@ -21,7 +21,7 @@ extension AnyAsyncModelResponder {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AnyAsyncModelResponder {
     public func create(_ model: AnyModel, on db: Database) async throws {
         try await handle(.create, model, on: db)
@@ -44,7 +44,7 @@ extension AnyAsyncModelResponder {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal struct AsyncBasicModelResponder: AnyAsyncModelResponder {
     private let _handle: (ModelEvent, AnyModel, Database) async throws -> Void
 

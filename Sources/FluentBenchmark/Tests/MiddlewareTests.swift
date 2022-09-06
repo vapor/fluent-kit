@@ -4,7 +4,7 @@ extension FluentBenchmarker {
         try self.testMiddleware_methods()
         try self.testMiddleware_batchCreationFail()
         #if compiler(>=5.5) && canImport(_Concurrency)
-        if #available(macOS 12, iOS 15, watchOS 8, tvOS 15, *) {
+        if #available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *) {
             try self.testAsyncMiddleware_methods()
         }
         #endif
@@ -61,7 +61,7 @@ extension FluentBenchmarker {
     }
 
 #if compiler(>=5.5) && canImport(_Concurrency)
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+    @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
     public func testAsyncMiddleware_methods() throws {
         try self.runTest(#function, [
             UserMigration(),
@@ -174,7 +174,7 @@ private struct UserBatchMiddleware: ModelMiddleware {
 }
 
 #if compiler(>=5.5) && canImport(_Concurrency)
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 private struct AsyncUserMiddleware: AsyncModelMiddleware {
     func create(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
         model.name = "B"
