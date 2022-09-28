@@ -203,7 +203,7 @@ public final class SiblingsProperty<From, To, Through>
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .filter(self.to.appending(path: \.$id) ~~ toIDs)
-            .delete()
+            .all().flatMapEach(on: database.eventLoop) { $0.delete(on: database) }
     }
 
     /// Detach a single model by deleting the pivot.
@@ -222,7 +222,7 @@ public final class SiblingsProperty<From, To, Through>
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .filter(self.to.appending(path: \.$id) == toID)
-            .delete()
+            .all().flatMapEach(on: database.eventLoop) { $0.delete(on: database) }
     }
     
     /// Detach all models by deleting all pivots from this model.
@@ -233,7 +233,7 @@ public final class SiblingsProperty<From, To, Through>
         
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
-            .delete()
+            .all().flatMapEach(on: database.eventLoop) { $0.delete(on: database) }
     }
 
     // MARK: Query
