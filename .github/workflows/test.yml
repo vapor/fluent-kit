@@ -1,9 +1,10 @@
 name: test
 on:
-  pull_request:
+  pull_request: { branches: ['*'] }
+  push: { branches: ['main'] }
 
 env:
-  LOG_LEVEL: info
+  LOG_LEVEL: debug
   SWIFT_DETERMINISTIC_HASHING: 1
   POSTGRES_HOSTNAME: 'psql-a'
   POSTGRES_HOSTNAME_A: 'psql-a'
@@ -37,8 +38,9 @@ jobs:
 
   # Check for API breakage versus main
   api-breakage:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    container: swift:5.6-focal
+    container: swift:5.7-jammy
     steps:
       - name: Check out package
         uses: actions/checkout@v3
@@ -51,8 +53,9 @@ jobs:
         run: swift package diagnose-api-breaking-changes origin/main
 
   linux-integration:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    container: swift:5.6-focal
+    container: swift:5.7-jammy
     services:
       mysql-a:
         image: mysql:8.0
@@ -61,13 +64,13 @@ jobs:
         image: mysql:8.0
         env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database }
       psql-a:
-        image: postgres:14
+        image: postgres:15
         env: {
             POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database,
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
         }
       psql-b:
-        image: postgres:14
+        image: postgres:15
         env: {
             POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database,
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
@@ -108,6 +111,7 @@ jobs:
       - name: Run tests
         run: swift test --package-path ${{ matrix.dependent }}
 
+  # also serves as code coverage baseline update
   unit-tests:
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@reusable-workflows
     with:
