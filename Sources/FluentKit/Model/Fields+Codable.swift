@@ -25,7 +25,7 @@ extension Fields {
         for (key, property) in self.codableProperties where !property.skipPropertyEncoding {
             do {
                 try property.encode(to: container.superEncoder(forKey: key))
-            } catch {
+            } catch let error where error is EncodingError { // trapping all errors breaks value handling logic in database driver layers
                 throw EncodingError.invalidValue(property.anyValue ?? "null", .init(
                     codingPath: container.codingPath + [key],
                     debugDescription: "Could not encode property",
