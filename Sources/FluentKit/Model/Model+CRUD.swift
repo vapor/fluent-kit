@@ -141,7 +141,6 @@ extension Collection where Element: FluentKit.Model {
             return database.eventLoop.makeSucceededFuture(())
         }
         
-        precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
         precondition(self.allSatisfy { $0._$idExists })
 
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
@@ -150,7 +149,7 @@ extension Collection where Element: FluentKit.Model {
             }.delete(model, force: force, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .filter(\._$id ~~ self.map { $0.id! })
+                .filter(ids: self.map { $0.id! })
                 .delete(force: force)
         }.map {
             guard force else { return }
@@ -166,12 +165,13 @@ extension Collection where Element: FluentKit.Model {
             return database.eventLoop.makeSucceededFuture(())
         }
         
-        precondition(self.first!.anyID is AnyQueryableProperty, "Can not perform collection operations on models with composite IDs.")
         precondition(self.allSatisfy { !$0._$idExists })
         
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
-                model._$id.generate()
+                if model.anyID is AnyQueryableProperty {
+                    model._$id.generate()
+                }
                 model.touchTimestamps(.create, .update)
                 return db.eventLoop.makeSucceededFuture(())
             }.create(model, on: database)
