@@ -7,6 +7,7 @@ extension FluentBenchmarker {
         try self.testCompositeID_asPivot()
         try self.testCompositeID_eagerLoaders()
         try self.testCompositeID_arrayCreateAndDelete()
+        try self.testCompositeID_count()
     }
     
     private func testCompositeID_create() throws {
@@ -145,6 +146,21 @@ extension FluentBenchmarker {
 
             let milkyWayGalaxyRevolutions = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Milky Way").with(\.$jurisdictions).first().wait())
             XCTAssertEqual(milkyWayGalaxyRevolutions.jurisdictions.count, 0)
+        }
+    }
+    
+    private func testCompositeID_count() throws {
+        try self.runTest(#function, [
+            GalaxyMigration(),
+            JurisdictionMigration(),
+            GalacticJurisdictionMigration(),
+            GalaxySeed(),
+            JurisdictionSeed(),
+            GalacticJurisdictionSeed(),
+        ]) {
+            let pivotCount = try GalacticJurisdiction.query(on: self.database).count().wait()
+            
+            XCTAssertGreaterThan(pivotCount, 0)
         }
     }
 }
