@@ -1,5 +1,5 @@
 import Foundation
-import class NIOConcurrencyHelpers.Lock
+import struct NIOConcurrencyHelpers.NIOLock
 @_exported import class NIO.NIOThreadPool
 
 public struct DatabaseConfigurationFactory {
@@ -22,7 +22,7 @@ public final class Databases {
     private var drivers: [DatabaseID: DatabaseDriver]
 
     // Synchronize access across threads.
-    private var lock: Lock
+    private var lock: NIOLock
 
     public struct Middleware {
         let databases: Databases
