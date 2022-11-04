@@ -2,10 +2,12 @@ extension QueryBuilder {
     // MARK: Aggregate
 
     public func count() -> EventLoopFuture<Int> {
-        if let fieldsId = Model.init().anyID as? Fields {
-            return self.aggregate(.count, (fieldsId.properties.first! as! AnyQueryAddressableProperty).anyQueryableProperty.path)
-        } else {
+        if Model().anyID is AnyQueryableProperty {
             return self.count(\._$id)
+        } else if let fieldsIDType = Model.IDValue.self as? Fields.Type {
+            return self.aggregate(.count, (fieldsIDType.init().properties.first! as! AnyQueryAddressableProperty).anyQueryableProperty.path)
+        } else {
+            fatalError("Model '\(Model.self)' has neither @ID nor @CompositeID, this is not valid.")
         }
     }
 
