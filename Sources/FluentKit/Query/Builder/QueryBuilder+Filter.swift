@@ -16,6 +16,17 @@ extension QueryBuilder {
             return self.filter(\Model._$id == id)
         }
     }
+    
+    @discardableResult
+    internal func filter(ids: [Model.IDValue]) -> Self {
+        guard let firstId = ids.first else { return self.limit(0) }
+        if firstId is Fields {
+            assert(!(Model.init().anyID is AnyQueryableProperty), "Model's IDValue should not conform to Fields if it can be directly queried.")
+            return self.group(.or) { _ = ids.reduce($0) { $0.filter(id: $1) } }
+        } else {
+            return self.filter(\Model._$id ~~ ids)
+        }
+    }
 
     @discardableResult
     public func filter<Field>(

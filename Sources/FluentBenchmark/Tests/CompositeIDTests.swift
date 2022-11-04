@@ -6,6 +6,7 @@ extension FluentBenchmarker {
         try self.testCompositeID_update()
         try self.testCompositeID_asPivot()
         try self.testCompositeID_eagerLoaders()
+        try self.testCompositeID_arrayCreateAndDelete()
     }
     
     private func testCompositeID_create() throws {
@@ -119,6 +120,31 @@ extension FluentBenchmarker {
             XCTAssertNotNil(corporateMilkyWayPivot.$id.$galaxy.value)
             XCTAssertNotNil(corporateMilkyWayPivot.$id.$jurisdiction.value)
             XCTAssertEqual(corporateMilkyWayPivot.id!.galaxy.stars.count, 2)
+        }
+    }
+    
+    private func testCompositeID_arrayCreateAndDelete() throws {
+        try self.runTest(#function, [
+            GalaxyMigration(),
+            JurisdictionMigration(),
+            GalacticJurisdictionMigration(),
+            GalaxySeed(),
+            JurisdictionSeed(),
+        ]) {
+            let milkyWayGalaxy = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Milky Way").first().wait())
+            let allJurisdictions = try Jurisdiction.query(on: self.database).all().wait()
+            
+            assert(!allJurisdictions.isEmpty, "Test expects there to be at least one jurisdiction defined")
+            
+            try milkyWayGalaxy.$jurisdictions.attach(allJurisdictions, on: self.database) { $0.id!.rank = 1 }.wait() // `Siblings.attach(_:on:)` uses array create.
+            
+            let milkyWayGalaxyReloaded = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Milky Way").with(\.$jurisdictions).with(\.$jurisdictions.$pivots).first().wait())
+            XCTAssertEqual(milkyWayGalaxyReloaded.jurisdictions.count, allJurisdictions.count)
+            
+            try milkyWayGalaxyReloaded.$jurisdictions.pivots.delete(on: self.database).wait() // `Silbings.detach(_:on:)` does *not* use array delete, though, so do it ourselves.
+
+            let milkyWayGalaxyRevolutions = try XCTUnwrap(Galaxy.query(on: self.database).filter(\.$name == "Milky Way").with(\.$jurisdictions).first().wait())
+            XCTAssertEqual(milkyWayGalaxyRevolutions.jurisdictions.count, 0)
         }
     }
 }
