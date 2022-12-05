@@ -100,7 +100,7 @@ public final class Databases {
         on eventLoop: EventLoop,
         history: QueryHistory? = nil,
         pageSizeLimit: Int? = nil
-    ) -> Database? {
+    ) -> Database {
         self.lock.lock()
         defer { self.lock.unlock() }
         let id = id ?? self._requireDefaultID()

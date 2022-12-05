@@ -67,12 +67,12 @@ extension FluentBenchmarker {
                 databaseID.0,
                 logger: Logger(label: "codes.vapor.tests"),
                 on: self.databases.eventLoopGroup.next()
-            )!
+            )
             let database2 = self.databases.database(
                 databaseID.1,
                 logger: Logger(label: "codes.vapor.tests"),
                 on: self.databases.eventLoopGroup.next()
-            )!
+            )
 
             let migrations = Migrations()
 
@@ -131,7 +131,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, []) {
             let logger = Logger(label: "codes.vapor.tests")
             let databaseIds = Array(self.databases.ids()).prefix(2)
-            let databases = databaseIds.map { self.databases.database($0, logger: logger, on: self.databases.eventLoopGroup.next())! }
+            let databases = databaseIds.map { self.databases.database($0, logger: logger, on: self.databases.eventLoopGroup.next()) }
             let migrations = Migrations()
             
             migrations.add([GalaxyMigration(), StarMigration(), GalaxySeed()], to: databaseIds[0])
