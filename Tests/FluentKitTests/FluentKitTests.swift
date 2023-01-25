@@ -11,6 +11,39 @@ final class FluentKitTests: XCTestCase {
         XCTAssertTrue(isLoggingConfigured)
     }
     
+    /// This test is a deliberate code smell put in place to prevent an even worse one from
+    /// causing problems without at least some warning. Specifically, the output of
+    /// ``AnyModel//description`` is rather precise when it comes to labeling the input and
+    /// output dictionaries when they are present. Non-trivial effort was made to produce this
+    /// exact textual format. While it is never correct to rely on the output of a
+    /// ``description`` method (aside special cases like ``LosslessStringConvertible`` types),
+    /// this has been public API for ages; [Hyrum's Law](https://www.hyrumslaw.com) thus applies.
+    /// Since no part of Fluent or any of its drivers currently relies, or ever will rely, on
+    /// the format in question, it is desirable to enforce that it should never change, just in
+    /// case someone actually is relying on it for some hopefully very good reason.
+    func testAnyModelDescriptionFormatHasNotChanged() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+            @ID(key: .id) var id: UUID?
+            @Field(key: "name") var name: String
+            @Field(key: "num") var num: Int
+            init() {}
+        }
+        let model = Foo()
+        let modelEmptyDesc = model.description
+        (model.name, model.num) = ("Test", 42)
+        let modelInputDesc = model.description
+        try model.save(on: DummyDatabaseForTestSQLSerializer()).wait()
+        let modelOutputDesc = model.description
+        model.num += 1
+        let modelBothDesc = model.description
+        
+        XCTAssertEqual(modelEmptyDesc,  "Foo(:)")
+        XCTAssertEqual(modelInputDesc,  "Foo(input: [name: \"Test\", num: 42])")
+        XCTAssertEqual(modelOutputDesc, "Foo(output: [num: 42, name: \"Test\", id: \(model.id!)])")
+        XCTAssertEqual(modelBothDesc,   "Foo(output: [num: 42, name: \"Test\", id: \(model.id!)], input: [num: 43])")
+    }
+    
     func testMigrationLogNames() throws {
         XCTAssertEqual(MigrationLog.path(for: \.$id), [.id])
         XCTAssertEqual(MigrationLog.path(for: \.$name), ["name"])

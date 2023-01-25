@@ -6,18 +6,13 @@ extension AnyModel {
 
 extension AnyModel {
     public var description: String {
-        var info: [InfoKey: CustomStringConvertible] = [:]
-
         let input = self.collectInput()
-        if !input.isEmpty {
-            info["input"] = input
-        }
-
-        if let output = self.anyID.cachedOutput {
-            info["output"] = output
-        }
-
-        return "\(Self.self)(\(info.debugDescription.dropFirst().dropLast()))"
+        let info = [
+            "input": !input.isEmpty ? input.description : nil,
+            "output": self.anyID.cachedOutput?.description
+        ].compactMapValues({ $0 })
+        
+        return "\(Self.self)(\(info.isEmpty ? ":" : info.map { "\($0): \($1)" }.joined(separator: ", ")))"
     }
 
     // MARK: Joined
@@ -44,15 +39,5 @@ extension AnyModel {
             }
         }
         fatalError("id property must be declared using @ID or @CompositeID")
-    }
-}
-
-private struct InfoKey: ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
-    let value: String
-    var description: String {
-        return self.value
-    }
-    init(stringLiteral value: String) {
-        self.value = value
     }
 }
