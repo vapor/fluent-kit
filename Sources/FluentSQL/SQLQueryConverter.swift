@@ -385,9 +385,9 @@ private struct EncodableDatabaseInput: Encodable {
     let input: [FieldKey: DatabaseQuery.Value]
 
     func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: DatabaseKey.self)
+        var container = encoder.container(keyedBy: SomeCodingKey.self)
         for (key, value) in self.input {
-            try container.encode(EncodableDatabaseValue(value: value), forKey: DatabaseKey(key.description))
+            try container.encode(EncodableDatabaseValue(value: value), forKey: SomeCodingKey(stringValue: key.description))
         }
     }
 }
@@ -406,25 +406,6 @@ private struct EncodableDatabaseValue: Encodable {
         default:
             fatalError("Unsupported codable database value: \(self.value)")
         }
-    }
-}
-
-private struct DatabaseKey: CodingKey {
-    var stringValue: String
-    var intValue: Int? {
-        nil
-    }
-
-    init(_ string: String) {
-        self.stringValue = string
-    }
-
-    init?(stringValue: String) {
-        self.init(stringValue)
-    }
-
-    init?(intValue: Int) {
-        return nil
     }
 }
 
@@ -448,25 +429,5 @@ extension DatabaseQuery.Value {
         default:
             return false
         }
-    }
-}
-
-private struct StringCodingKey: CodingKey {
-    public var stringValue: String
-
-    public var intValue: Int? {
-        return Int(self.stringValue)
-    }
-
-    public init(_ string: String) {
-        self.stringValue = string
-    }
-
-    public init(stringValue: String) {
-        self.stringValue = stringValue
-    }
-
-    public init(intValue: Int) {
-        self.stringValue = intValue.description
     }
 }

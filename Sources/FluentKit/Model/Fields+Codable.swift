@@ -2,7 +2,7 @@ extension Fields {
     public init(from decoder: Decoder) throws {
         self.init()
         
-        let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        let container = try decoder.container(keyedBy: SomeCodingKey.self)
         
         for (key, property) in self.codableProperties {
             let propDecoder = AirQuotesSafeSuperDecoder(container: container, key: key)
@@ -20,7 +20,7 @@ extension Fields {
     }
 
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        var container = encoder.container(keyedBy: SomeCodingKey.self)
         
         for (key, property) in self.codableProperties where !property.skipPropertyEncoding {
             do {
@@ -34,15 +34,6 @@ extension Fields {
             }
         }
     }
-}
-
-/// A 100% conformance to ``Swift/CodingKey``, the standard library's version of a protocol
-/// whose reqirements are trapped in a looping crisis of personal identity.
-internal struct MissingStdlibAPICodingKey: CodingKey, Hashable {
-  internal let stringValue: String, intValue: Int?
-  internal init(stringValue: String) { (self.stringValue, self.intValue) = (stringValue, Int(stringValue)) }
-  internal init(intValue: Int) { (self.stringValue, self.intValue) = ("\(intValue)", intValue) }
-  internal var description: String { "GenericCodingKey(\"\(self.stringValue)\"\(self.intValue.map { ", int: \($0)" } ?? ""))" }
 }
 
 /// This type's only purpose is to compensate for the changed behavior of `.superDecoder(forKey:)`, which used
