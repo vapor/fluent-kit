@@ -174,33 +174,28 @@ public struct SQLQueryConverter {
         case .custom(let any):
             return custom(any)
         case .path(let path, let schema):
-            switch path.count {
-            case 1:
-                let field = SQLColumn(self.key(path[0]), table: schema)
-                return aliased ? SQLAlias(field, as: schema + "_" + self.key(path[0])) : field
-            case 2...:
-                let field = self.delegate.nestedFieldExpression(
-                    self.key(path[0]),
-                    path[1...].map(self.key)
-                )
-                return aliased ? SQLAlias(field, as: schema + "_" + self.key(path[0])) : field
-            default:
-                fatalError("Field path must not be empty.")
-            }
+            return self.fieldPath(path, schema: schema, aliased: aliased)
         case .extendedPath(let path, let schema, let space):
-            switch path.count {
-            case 1:
-                let field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
-                return aliased ? SQLAlias(field, as: (space.map { "\($0)_" } ?? "") + schema + "_" + self.key(path[0])) : field
-            case 2...:
-                let field = self.delegate.nestedFieldExpression(
-                    self.key(path[0]),
-                    path[1...].map(self.key)
-                )
-                return aliased ? SQLAlias(field, as: (space.map { "\($0)_" } ?? "") + schema + "_" + self.key(path[0])) : field
-            default:
-                fatalError("Field path must not be empty.")
-            }
+            return self.fieldPath(path, space: space, schema: schema, aliased: aliased)
+        }
+    }
+    
+    private func fieldPath(_ path: [FieldKey], space: String? = nil, schema: String, aliased: Bool) -> SQLExpression {
+        let field: SQLExpression
+        
+        switch path.count {
+        case 1:
+            field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
+        case 2...:
+            field = self.delegate.nestedFieldExpression(self.key(path[0]), path[1...].map(self.key))
+        default:
+            fatalError("Field path must not be empty.")
+        }
+        
+        if aliased {
+            return SQLAlias(field, as: [space, schema, self.key(path[0])].compactMap({ $0 }).joined(separator: "_"))
+        } else {
+            return field
         }
     }
     

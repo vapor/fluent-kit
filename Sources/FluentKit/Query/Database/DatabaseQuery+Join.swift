@@ -31,24 +31,18 @@ extension DatabaseQuery.Join: CustomStringConvertible {
     public var description: String {
         switch self {
         case .join(let schema, let alias, let method, let foreign, let local):
-            let schemaString: String
-            if let alias = alias {
-                schemaString = "\(schema) as \(alias)"
-            } else {
-                schemaString = "\(schema)"
-            }
-            return "\(schemaString) \(method) on \(foreign) == \(local)"
+            return "\(self.schemaDescription(schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
+
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            let schemaString: String
-            if let alias = alias {
-                schemaString = "\(space.map { "\($0)." } ?? "")\(schema) as \(alias)"
-            } else {
-                schemaString = "\(space.map { "\($0)." } ?? "")\(schema)"
-            }
-            return "\(schemaString) \(method) on \(foreign) == \(local)"
+            return "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
+
         case .custom(let custom):
             return "custom(\(custom))"
         }
+    }
+    
+    private func schemaDescription(space: String? = nil, schema: String, alias: String?) -> String {
+        [space, schema].compactMap({ $0 }).joined(separator: ".") + (alias.map { " as \($0)" } ?? "")
     }
 }
 

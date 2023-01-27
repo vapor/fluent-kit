@@ -222,7 +222,7 @@ public final class QueryBuilder<Model>
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
-                try model.output(from: output.schema((Model.space.map { "\($0)_" } ?? "") + Model.schema))
+                try model.output(from: output.qualifiedSchema(space: Model.space, Model.schema))
                 all.append(model)
                 return model
             }))

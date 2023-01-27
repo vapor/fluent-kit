@@ -12,4 +12,39 @@ extension DatabaseOutput {
     {
         try self.decode(key, as: T.self)
     }
+    
+    public func qualifiedSchema(space: String?, _ schema: String) -> DatabaseOutput {
+        self.schema([space, schema].compactMap({ $0 }).joined(separator: "_"))
+    }
 }
+
+extension DatabaseOutput {
+    public func cascading(to output: DatabaseOutput) -> DatabaseOutput {
+        return CombinedOutput(first: self, second: output)
+    }
+}
+
+private struct CombinedOutput: DatabaseOutput {
+    let first: DatabaseOutput, second: DatabaseOutput
+
+    func schema(_ schema: String) -> DatabaseOutput {
+        CombinedOutput(first: self.first.schema(schema), second: self.second.schema(schema))
+    }
+
+    func contains(_ key: FieldKey) -> Bool {
+        self.first.contains(key) || self.second.contains(key)
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        try self.first.contains(key) ? self.first.decodeNil(key) : self.second.decodeNil(key)
+    }
+
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T where T: Decodable {
+        try self.first.contains(key) ? self.first.decode(key, as: T.self) : self.second.decode(key, as: T.self)
+    }
+
+    var description: String {
+        self.first.description + " -> " + self.second.description
+    }
+}
+
