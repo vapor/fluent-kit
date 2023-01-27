@@ -25,13 +25,13 @@ extension DatabaseQuery {
                 return .order(inverse: true, equality: true)
             }
 
-            /// LHS is equal to RHS
+            /// LHS is equal/not equal to RHS
             case equality(inverse: Bool)
 
-            /// LHS is greater than RHS
+            /// LHS is greater/less than [or equal to] RHS
             case order(inverse: Bool, equality: Bool)
 
-            /// LHS exists in RHS
+            /// LHS exists in/doesn't exist in RHS
             case subset(inverse: Bool)
 
             public enum Contains {
@@ -40,7 +40,7 @@ extension DatabaseQuery {
                 case anywhere
             }
             
-            /// RHS exists in LHS
+            /// RHS is [anchored] substring/isn't [anchored] substring of LHS
             case contains(inverse: Bool, Contains)
 
             /// Custom method
@@ -65,10 +65,13 @@ extension DatabaseQuery.Filter: CustomStringConvertible {
         switch self {
         case .value(let field, let method, let value):
             return "\(field) \(method) \(value)"
+        
         case .field(let fieldA, let method, let fieldB):
             return "\(fieldA) \(method) \(fieldB)"
+        
         case .group(let filters, let relation):
-            return "\(relation) \(filters)"
+            return filters.map{ "(\($0.description))" }.joined(separator: " \(relation) ")
+        
         case .custom(let any):
             return "custom(\(any))"
         }
@@ -80,18 +83,37 @@ extension DatabaseQuery.Filter.Method: CustomStringConvertible {
         switch self {
         case .equality(let inverse):
             return inverse ? "!=" : "="
+
         case .order(let inverse, let equality):
             if equality {
                 return inverse ? "<=" : ">="
             } else {
                 return inverse ? "<" : ">"
             }
+
         case .subset(let inverse):
             return inverse ? "!~~" : "~~"
+
         case .contains(let inverse, let contains):
-            return (inverse ? "!" : "") + "\(contains)"
+            return inverse ? "!\(contains)" : "\(contains)"
+        
         case .custom(let any):
             return "custom(\(any))"
+        }
+    }
+}
+
+extension DatabaseQuery.Filter.Method.Contains: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .prefix:
+            return "startswith"
+        
+        case .suffix:
+            return "endswith"
+        
+        case .anywhere:
+            return "contains"
         }
     }
 }
