@@ -409,23 +409,14 @@ private struct EncodableDatabaseValue: Encodable {
     }
 }
 
-extension Encodable {
-    var isNil: Bool {
-        if let optional = self as? AnyOptionalType {
-            return optional.wrappedValue == nil
-        } else {
-            return false
-        }
-    }
-}
-
 extension DatabaseQuery.Value {
     var isNull: Bool {
         switch self {
         case .null:
             return true
         case .bind(let bind):
-            return bind.isNil
+            guard let optional = bind as? AnyOptionalType, case .some = optional.wrappedValue else { return false }
+            return true
         default:
             return false
         }
