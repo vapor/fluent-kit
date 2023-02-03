@@ -38,7 +38,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status ~~ [.done, .notDone]).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" IN ('done' , 'notDone')"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" IN ('done','notDone')"#)
         db.reset()
     }
 
@@ -46,7 +46,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status !~ [.done, .notDone]).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" NOT IN ('done' , 'notDone')"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" NOT IN ('done','notDone')"#)
         db.reset()
     }
 
