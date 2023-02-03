@@ -133,31 +133,28 @@ public struct SQLQueryConverter {
         switch join {
         case .custom(let any):
             return custom(any)
+
         case .join(let schema, let alias, let method, let foreign, let local):
-            let table: SQLExpression
-            if let alias = alias {
-                table = SQLAlias(SQLIdentifier(schema), as: SQLIdentifier(alias))
-            } else {
-                table = SQLIdentifier(schema)
-            }
-            return SQLJoin(
-                method: self.joinMethod(method),
-                table: table,
-                expression: SQLBinaryExpression(left: self.field(local), op: SQLBinaryOperator.equal, right: self.field(foreign))
-            )
+            return self.joinCondition(schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            let table: SQLExpression
-            if let alias = alias {
-                table = SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier(alias))
-            } else {
-                table = SQLQualifiedTable(schema, space: space)
-            }
-            return SQLJoin(
-                method: self.joinMethod(method),
-                table: table,
-                expression: SQLBinaryExpression(left: self.field(local), op: SQLBinaryOperator.equal, right: self.field(foreign))
-            )
+            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+
+        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         }
+    }
+    
+    private func joinCondition(
+        space: String? = nil, schema: String,
+        alias: String?,
+        method: DatabaseQuery.Join.Method,
+        filters: [DatabaseQuery.Filter]
+    ) -> SQLExpression {
+        let table: SQLExpression = alias.map { SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0)) } ??
+                                   SQLQualifiedTable(schema, space: space)
+        
+        return SQLJoin(method: self.joinMethod(method), table: table, expression: self.filters(filters) ?? SQLLiteral.boolean(true))
     }
     
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> SQLExpression {

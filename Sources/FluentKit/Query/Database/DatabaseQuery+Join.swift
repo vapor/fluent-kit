@@ -23,6 +23,14 @@ extension DatabaseQuery {
             local: Field
         )
         
+        case advancedJoin(
+            schema: String,
+            space: String?,
+            alias: String?,
+            Method,
+            filters: [Filter]
+        )
+        
         case custom(Any)
     }
 }
@@ -35,6 +43,9 @@ extension DatabaseQuery.Join: CustomStringConvertible {
 
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
             return "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
+
+        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+            return "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(filters)"
 
         case .custom(let custom):
             return "custom(\(custom))"
