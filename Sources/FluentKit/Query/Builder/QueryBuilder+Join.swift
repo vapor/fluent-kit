@@ -206,6 +206,17 @@ public struct ComplexJoinFilterGroup {
 
 extension QueryBuilder {
     @discardableResult
+    public func join<Foreign, Local>(
+        _ local: Local.Type,
+        _ foreign: Foreign.Type,
+        on filter: DatabaseQuery.Join
+    ) -> Self
+        where Local: Schema, Foreign: Schema
+    {
+        self.join(Foreign.self, on: filter)
+    }
+    
+    @discardableResult
     public func join<Foreign, Local, Value>(
         _ foreign: Foreign.Type,
         on filter: JoinFilter<Foreign, Local, Value>,
