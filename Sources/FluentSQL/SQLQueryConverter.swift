@@ -410,7 +410,7 @@ extension DatabaseQuery.Value {
         case .null:
             return true
         case .bind(let bind):
-            guard let optional = bind as? AnyOptionalType, case .some = optional.wrappedValue else { return false }
+            guard let optional = bind as? AnyOptionalType, case .none = optional.wrappedValue else { return false }
             return true
         default:
             return false
