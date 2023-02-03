@@ -116,8 +116,8 @@ extension Fields {
     internal var codableProperties: [SomeCodingKey: AnyCodableProperty] {
         return .init(uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
             guard let value = $1 as? AnyCodableProperty,
-                  let nameC = $0, nameC.pointee != 0, nameC.advanced(by: 1).pointee != 0,
-                  let name = String(utf8String: nameC.advanced(by: 1))
+                  let nameC = $0, nameC[0] != 0, nameC[1] != 0,
+                  let name = String(utf8String: nameC + 1)
             else {
                 return nil
             }
