@@ -12,7 +12,7 @@ extension QueryBuilder {
         where Joined: Schema
     {
         self.filter(
-            .extendedPath(filter.path, schema: Joined.schemaOrAlias, space: Joined.space),
+            .extendedPath(filter.path, schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased),
             filter.method,
             filter.value
         )
@@ -34,14 +34,14 @@ extension QueryBuilder {
     {
         let relation: DatabaseQuery.Filter.Relation
         switch filter.method {
-        case .equality(let inverse) where inverse == false: relation = .and
-        case .equality(let inverse) where inverse == true:  relation = .or
+        case .equality(false): relation = .and
+        case .equality(true):  relation = .or
         default: fatalError("unreachable")
         }
         
         return self.group(relation) {
             _ = filter.value.properties.map { $0 as! AnyQueryAddressableProperty }.filter { $0.anyQueryableProperty.queryableValue() != nil }.reduce($0) {
-                $0.filter(.extendedPath($1.queryablePath, schema: Joined.schema, space: Joined.space), filter.method, $1.anyQueryableProperty.queryableValue()!)
+                $0.filter(.extendedPath($1.queryablePath, schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased), filter.method, $1.anyQueryableProperty.queryableValue()!)
             }
         }
     }

@@ -10,4 +10,8 @@ extension Schema {
     public static var schemaOrAlias: String {
         self.alias ?? self.schema
     }
+    
+    static var spaceIfNotAliased: String? {
+        return self.alias == nil ? self.space : nil
+    }
 }
