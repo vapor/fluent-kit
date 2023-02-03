@@ -24,9 +24,9 @@ public func == <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .equal, rhs)
@@ -36,9 +36,9 @@ public func != <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .notEqual, rhs)
@@ -48,9 +48,9 @@ public func >= <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .greaterThanOrEqual, rhs)
@@ -60,9 +60,9 @@ public func > <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .greaterThan, rhs)
@@ -72,9 +72,9 @@ public func < <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .lessThan, rhs)

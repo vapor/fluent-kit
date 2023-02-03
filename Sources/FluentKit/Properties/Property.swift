@@ -164,6 +164,6 @@ public protocol AnyQueryAddressableProperty: AnyProperty {
 /// list of a ``Fields`` type being used as a composite ID value) fully generically and without
 /// special-casing or having to revisit the logic if additional property types come along.
 public protocol QueryAddressableProperty: AnyQueryAddressableProperty, Property {
-    associatedtype QueryablePropertyType: QueryableProperty where QueryablePropertyType.Model == Self.Model
+    associatedtype QueryablePropertyType: QueryableProperty
     var queryableProperty: QueryablePropertyType { get }
 }
