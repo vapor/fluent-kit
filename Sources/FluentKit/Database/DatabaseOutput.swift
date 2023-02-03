@@ -19,6 +19,14 @@ extension DatabaseOutput {
 }
 
 extension DatabaseOutput {
+    public func prefixed(by prefix: FieldKey) -> DatabaseOutput {
+        PrefixedDatabaseOutput(prefix: prefix, strategy: .none, base: self)
+    }
+    
+    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> DatabaseOutput {
+        PrefixedDatabaseOutput(prefix: prefix, strategy: stratgey, base: self)
+    }
+
     public func cascading(to output: DatabaseOutput) -> DatabaseOutput {
         return CombinedOutput(first: self, second: output)
     }
@@ -45,6 +53,31 @@ private struct CombinedOutput: DatabaseOutput {
 
     var description: String {
         self.first.description + " -> " + self.second.description
+    }
+}
+
+private struct PrefixedDatabaseOutput: DatabaseOutput {
+    let prefix: FieldKey, strategy: KeyPrefixingStrategy
+    let base: DatabaseOutput
+    
+    func schema(_ schema: String) -> DatabaseOutput {
+        PrefixedDatabaseOutput(prefix: self.prefix, strategy: self.strategy, base: self.base.schema(schema))
+    }
+    
+    func contains(_ key: FieldKey) -> Bool {
+        self.base.contains(self.strategy.apply(prefix: self.prefix, to: key))
+    }
+
+    func decodeNil(_ key: FieldKey) throws -> Bool {
+        try self.base.decodeNil(self.strategy.apply(prefix: self.prefix, to: key))
+    }
+
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T where T : Decodable {
+        try self.base.decode(self.strategy.apply(prefix: self.prefix, to: key), as: T.self)
+    }
+
+    var description: String {
+        "Prefix(\(self.prefix) by \(self.strategy), of: \(self.base.description))"
     }
 }
 
