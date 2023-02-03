@@ -8,6 +8,9 @@ extension FluentBenchmarker {
         try self.testCompositeID_eagerLoaders()
         try self.testCompositeID_arrayCreateAndDelete()
         try self.testCompositeID_count()
+        
+        // Embed this here instead of having to update all the Fluent drivers
+        try self.testCompositeParent()
     }
     
     private func testCompositeID_create() throws {
