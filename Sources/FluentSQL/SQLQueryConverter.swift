@@ -103,9 +103,9 @@ public struct SQLQueryConverter {
             return nil
         }
 
-        return SQLList(
-            items: filters.map(self.filter),
-            separator: SQLBinaryOperator.and
+        return SQLKit.SQLList(
+            filters.map(self.filter),
+            separator: " \(SQLBinaryOperator.and) " as SQLQueryString
         )
     }
 
@@ -286,9 +286,9 @@ public struct SQLQueryConverter {
             return custom(any)
         case .group(let filters, let relation):
             // <item> OR <item> OR <item>
-            let expression = SQLList(
-                items: filters.map(self.filter),
-                separator: self.relation(relation)
+            let expression = SQLKit.SQLList(
+                filters.map(self.filter),
+                separator: " \(self.relation(relation)) " as SQLQueryString
             )
             // ( <expr> )
             return SQLGroupExpression(expression)
@@ -318,7 +318,7 @@ public struct SQLQueryConverter {
         case .null:
             return SQLLiteral.null
         case .array(let values):
-            return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(",")))
+            return SQLGroupExpression(SQLKit.SQLList(values.map(self.value), separator: SQLRaw(",")))
         case .dictionary(let dictionary):
             return SQLBind(EncodableDatabaseInput(input: dictionary))
         case .default:
