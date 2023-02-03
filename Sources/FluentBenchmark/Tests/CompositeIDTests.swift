@@ -1,4 +1,6 @@
 import XCTest
+import SQLKit
+
 extension FluentBenchmarker {
     public func testCompositeID() throws {
         try self.testCompositeID_create()
@@ -10,7 +12,9 @@ extension FluentBenchmarker {
         try self.testCompositeID_count()
         
         // Embed this here instead of having to update all the Fluent drivers
-        try self.testCompositeParent()
+        if self.database is SQLDatabase {
+            try self.testCompositeParent()
+        }
     }
     
     private func testCompositeID_create() throws {

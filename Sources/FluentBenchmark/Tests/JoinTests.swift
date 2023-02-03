@@ -1,3 +1,5 @@
+import SQLKit
+
 extension FluentBenchmarker {
     public func testJoin() throws {
         try self.testJoin_basic()
@@ -211,6 +213,8 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
+            guard self.database is SQLDatabase else { return }
+            
             let planets = try Planet.query(on: self.database)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != \Planet.$name)
                 .all().wait()

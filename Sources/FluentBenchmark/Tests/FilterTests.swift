@@ -202,7 +202,7 @@ extension FluentBenchmarker {
             try Foo(bar: "baz", type: .baz, ownerID: bazOwner.requireID()).create(on: self.database).wait()
 
             let foos = try FooOwner.query(on: self.database)
-                .join(Foo.self, on: \Foo.$owner.$id == \FooOwner.$id)
+                .join(Foo.self, on: \FooOwner.$id == \Foo.$owner.$id)
                 .filter(Foo.self, \.$type == .foo)
                 .all()
                 .wait()
@@ -232,7 +232,7 @@ extension FluentBenchmarker {
             try Foo(bar: "baz", type: .baz, ownerID: bazOwner.requireID()).create(on: self.database).wait()
 
             let bars = try FooOwner.query(on: self.database)
-                .join(FooAlias.self, on: \FooAlias.$owner.$id == \FooOwner.$id)
+                .join(FooAlias.self, on: \FooOwner.$id == \FooAlias.$owner.$id)
                 .filter(FooAlias.self, \.$type == .bar)
                 .all()
                 .wait()
