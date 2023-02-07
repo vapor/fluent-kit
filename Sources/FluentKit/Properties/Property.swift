@@ -53,7 +53,7 @@ public protocol AnyDatabaseProperty: AnyProperty {
 }
 
 /// Marks a property as participating in the ``Fields`` protocol's (defaulted)
-/// implementation of ``Decodable`` and ``Encodable``. This allows the property
+/// implementation of `Decodable` and `Encodable`. This allows the property
 /// to encode and decode to and from representations other than storage in a
 /// database, and to act as a container if it contains any additional properties
 /// which also wish to participate. Just about every property type is codable.
@@ -76,7 +76,7 @@ public protocol AnyCodableProperty: AnyProperty {
 }
 
 extension AnyCodableProperty {
-    /// Default implementation of ``AnyCodableProperty/skipPropertyEncoding``.
+    /// Default implementation of ``AnyCodableProperty/skipPropertyEncoding-87r6k``.
     public var skipPropertyEncoding: Bool { false }
 }
 
@@ -121,7 +121,7 @@ public protocol QueryableProperty: AnyQueryableProperty, Property {
 
 extension AnyQueryableProperty where Self: QueryableProperty {
     /// By default, ``QueryableProperty``s uses ``QueryableProperty/queryValue(_:)-5df0n``
-    /// to provide its ``queryableValue()-4tkjo``. While it is not strictly required that
+    /// to provide its ``AnyQueryableProperty/queryableValue()-4tkjo``. While it is not strictly required that
     /// this be the case, providing an alternative implementation risks violating the
     /// "identical encoding for identical property types" rule (see
     /// ``QueryableProperty/queryValue(_:)-5df0n``).
@@ -131,9 +131,9 @@ extension AnyQueryableProperty where Self: QueryableProperty {
 }
 
 extension QueryableProperty {
-    /// Since ``Property/Value`` conforms to ``Swift/Codable``, the default encoding for
+    /// Since ``Property/Value`` conforms to `Codable`, the default encoding for
     /// any ``QueryableProperty``'s value is as a query placeholder and associated parameter
-    /// binding (bindings are sent to a database driver encoded via ``Swift/Encodable``).
+    /// binding (bindings are sent to a database driver encoded via `Encodable`).
     /// See ``DatabaseQuery/Value`` for more details on possible alternative encodings.
     public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
         .bind(value)
@@ -164,6 +164,6 @@ public protocol AnyQueryAddressableProperty: AnyProperty {
 /// list of a ``Fields`` type being used as a composite ID value) fully generically and without
 /// special-casing or having to revisit the logic if additional property types come along.
 public protocol QueryAddressableProperty: AnyQueryAddressableProperty, Property {
-    associatedtype QueryablePropertyType: QueryableProperty where QueryablePropertyType.Model == Self.Model
+    associatedtype QueryablePropertyType: QueryableProperty
     var queryableProperty: QueryablePropertyType { get }
 }

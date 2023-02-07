@@ -8,7 +8,7 @@ extension QueryBuilder {
             return self.group(.and) { query in
                 _ = fields.properties.map { $0 as! AnyQueryAddressableProperty }.reduce(query) { query, prop in
                     prop.anyQueryableProperty.queryableValue().map {
-                        query.filter(.extendedPath(prop.queryablePath, schema: Model.schema, space: Model.space), .equal, $0)
+                        query.filter(.extendedPath(prop.queryablePath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased), .equal, $0)
                     } ?? query
                 }
             }
@@ -39,7 +39,7 @@ extension QueryBuilder {
         self.filter(.extendedPath(
             Model.path(for: field),
             schema: Model.schemaOrAlias,
-            space: Model.space
+            space: Model.spaceIfNotAliased
         ), method, Field.queryValue(value))
     }
 
@@ -55,7 +55,7 @@ extension QueryBuilder {
         self.filter(.extendedPath(
             Joined.path(for: field),
             schema: Joined.schemaOrAlias,
-            space: Joined.space
+            space: Joined.spaceIfNotAliased
         ), method, Field.queryValue(value))
     }
 
@@ -93,7 +93,7 @@ extension QueryBuilder {
         where Value: Codable
     {
         self.filter(
-            .extendedPath(fieldPath, schema: Model.schema, space: Model.space),
+            .extendedPath(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
             .bind(value)
         )
@@ -115,9 +115,9 @@ extension QueryBuilder {
         _ rightPath: [FieldKey]
     ) -> Self {
         self.filter(
-            .extendedPath(leftPath, schema: Model.schema, space: Model.space),
+            .extendedPath(leftPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
-            .extendedPath(rightPath, schema: Model.schema, space: Model.space)
+            .extendedPath(rightPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
         )
     }
 

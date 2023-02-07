@@ -93,7 +93,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
         _ = try await Planet.query(on: db).join(siblings: \Planet.$tags).all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planets"."id" = "planet+tag"."planet_id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planet+tag"."planet_id" = "planets"."id""#), true)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "tags" ON "planet+tag"."tag_id" = "tags"."id""#), true)
         db.reset()
     }

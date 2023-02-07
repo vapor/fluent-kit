@@ -1,3 +1,5 @@
+import SQLKit
+
 extension FluentBenchmarker {
     public func testJoin() throws {
         try self.testJoin_basic()
@@ -6,6 +8,7 @@ extension FluentBenchmarker {
         try self.testJoin_fieldOrdering()
         try self.testJoin_aliasNesting()
         try self.testJoin_partialSelect()
+        try self.testJoin_complexCondition()
     }
 
     private func testJoin_basic() throws {
@@ -203,6 +206,20 @@ extension FluentBenchmarker {
                 }
 
             }
+        }
+    }
+    
+    private func testJoin_complexCondition() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            guard self.database is SQLDatabase else { return }
+            
+            let planets = try Planet.query(on: self.database)
+                .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != \Planet.$name)
+                .all().wait()
+            
+            XCTAssertFalse(planets.isEmpty)
         }
     }
 }

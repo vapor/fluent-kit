@@ -117,7 +117,7 @@ extension OptionalParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: MissingStdlibAPICodingKey.self)
+        let container = try decoder.container(keyedBy: SomeCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
 }

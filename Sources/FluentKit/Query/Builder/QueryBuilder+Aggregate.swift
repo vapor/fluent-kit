@@ -169,7 +169,7 @@ extension QueryBuilder {
         // Set custom action.
         copy.query.action = .aggregate(
             .field(
-                .extendedPath(path, schema: Model.schema, space: Model.space),
+                .extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
                 method
             )
         )

@@ -103,9 +103,9 @@ public struct SQLQueryConverter {
             return nil
         }
 
-        return SQLList(
-            items: filters.map(self.filter),
-            separator: SQLBinaryOperator.and
+        return SQLKit.SQLList(
+            filters.map(self.filter),
+            separator: " \(SQLBinaryOperator.and) " as SQLQueryString
         )
     }
 
@@ -133,31 +133,28 @@ public struct SQLQueryConverter {
         switch join {
         case .custom(let any):
             return custom(any)
+
         case .join(let schema, let alias, let method, let foreign, let local):
-            let table: SQLExpression
-            if let alias = alias {
-                table = SQLAlias(SQLIdentifier(schema), as: SQLIdentifier(alias))
-            } else {
-                table = SQLIdentifier(schema)
-            }
-            return SQLJoin(
-                method: self.joinMethod(method),
-                table: table,
-                expression: SQLBinaryExpression(left: self.field(local), op: SQLBinaryOperator.equal, right: self.field(foreign))
-            )
+            return self.joinCondition(schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            let table: SQLExpression
-            if let alias = alias {
-                table = SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier(alias))
-            } else {
-                table = SQLQualifiedTable(schema, space: space)
-            }
-            return SQLJoin(
-                method: self.joinMethod(method),
-                table: table,
-                expression: SQLBinaryExpression(left: self.field(local), op: SQLBinaryOperator.equal, right: self.field(foreign))
-            )
+            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+
+        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         }
+    }
+    
+    private func joinCondition(
+        space: String? = nil, schema: String,
+        alias: String?,
+        method: DatabaseQuery.Join.Method,
+        filters: [DatabaseQuery.Filter]
+    ) -> SQLExpression {
+        let table: SQLExpression = alias.map { SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0)) } ??
+                                   SQLQualifiedTable(schema, space: space)
+        
+        return SQLJoin(method: self.joinMethod(method), table: table, expression: self.filters(filters) ?? SQLLiteral.boolean(true))
     }
     
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> SQLExpression {
@@ -174,33 +171,28 @@ public struct SQLQueryConverter {
         case .custom(let any):
             return custom(any)
         case .path(let path, let schema):
-            switch path.count {
-            case 1:
-                let field = SQLColumn(self.key(path[0]), table: schema)
-                return aliased ? SQLAlias(field, as: schema + "_" + self.key(path[0])) : field
-            case 2...:
-                let field = self.delegate.nestedFieldExpression(
-                    self.key(path[0]),
-                    path[1...].map(self.key)
-                )
-                return aliased ? SQLAlias(field, as: schema + "_" + self.key(path[0])) : field
-            default:
-                fatalError("Field path must not be empty.")
-            }
+            return self.fieldPath(path, schema: schema, aliased: aliased)
         case .extendedPath(let path, let schema, let space):
-            switch path.count {
-            case 1:
-                let field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
-                return aliased ? SQLAlias(field, as: (space.map { "\($0)_" } ?? "") + schema + "_" + self.key(path[0])) : field
-            case 2...:
-                let field = self.delegate.nestedFieldExpression(
-                    self.key(path[0]),
-                    path[1...].map(self.key)
-                )
-                return aliased ? SQLAlias(field, as: (space.map { "\($0)_" } ?? "") + schema + "_" + self.key(path[0])) : field
-            default:
-                fatalError("Field path must not be empty.")
-            }
+            return self.fieldPath(path, space: space, schema: schema, aliased: aliased)
+        }
+    }
+    
+    private func fieldPath(_ path: [FieldKey], space: String? = nil, schema: String, aliased: Bool) -> SQLExpression {
+        let field: SQLExpression
+        
+        switch path.count {
+        case 1:
+            field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
+        case 2...:
+            field = self.delegate.nestedFieldExpression(self.key(path[0]), path[1...].map(self.key))
+        default:
+            fatalError("Field path must not be empty.")
+        }
+        
+        if aliased {
+            return SQLAlias(field, as: [space, schema, self.key(path[0])].compactMap({ $0 }).joined(separator: "_"))
+        } else {
+            return field
         }
     }
     
@@ -291,9 +283,9 @@ public struct SQLQueryConverter {
             return custom(any)
         case .group(let filters, let relation):
             // <item> OR <item> OR <item>
-            let expression = SQLList(
-                items: filters.map(self.filter),
-                separator: self.relation(relation)
+            let expression = SQLKit.SQLList(
+                filters.map(self.filter),
+                separator: " \(self.relation(relation)) " as SQLQueryString
             )
             // ( <expr> )
             return SQLGroupExpression(expression)
@@ -323,7 +315,7 @@ public struct SQLQueryConverter {
         case .null:
             return SQLLiteral.null
         case .array(let values):
-            return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(",")))
+            return SQLGroupExpression(SQLKit.SQLList(values.map(self.value), separator: SQLRaw(",")))
         case .dictionary(let dictionary):
             return SQLBind(EncodableDatabaseInput(input: dictionary))
         case .default:
@@ -385,9 +377,9 @@ private struct EncodableDatabaseInput: Encodable {
     let input: [FieldKey: DatabaseQuery.Value]
 
     func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: DatabaseKey.self)
+        var container = encoder.container(keyedBy: SomeCodingKey.self)
         for (key, value) in self.input {
-            try container.encode(EncodableDatabaseValue(value: value), forKey: DatabaseKey(key.description))
+            try container.encode(EncodableDatabaseValue(value: value), forKey: SomeCodingKey(stringValue: key.description))
         }
     }
 }
@@ -409,64 +401,16 @@ private struct EncodableDatabaseValue: Encodable {
     }
 }
 
-private struct DatabaseKey: CodingKey {
-    var stringValue: String
-    var intValue: Int? {
-        nil
-    }
-
-    init(_ string: String) {
-        self.stringValue = string
-    }
-
-    init?(stringValue: String) {
-        self.init(stringValue)
-    }
-
-    init?(intValue: Int) {
-        return nil
-    }
-}
-
-extension Encodable {
-    var isNil: Bool {
-        if let optional = self as? AnyOptionalType {
-            return optional.wrappedValue == nil
-        } else {
-            return false
-        }
-    }
-}
-
 extension DatabaseQuery.Value {
     var isNull: Bool {
         switch self {
         case .null:
             return true
         case .bind(let bind):
-            return bind.isNil
+            guard let optional = bind as? AnyOptionalType, case .none = optional.wrappedValue else { return false }
+            return true
         default:
             return false
         }
-    }
-}
-
-private struct StringCodingKey: CodingKey {
-    public var stringValue: String
-
-    public var intValue: Int? {
-        return Int(self.stringValue)
-    }
-
-    public init(_ string: String) {
-        self.stringValue = string
-    }
-
-    public init(stringValue: String) {
-        self.stringValue = stringValue
-    }
-
-    public init(intValue: Int) {
-        self.stringValue = intValue.description
     }
 }
