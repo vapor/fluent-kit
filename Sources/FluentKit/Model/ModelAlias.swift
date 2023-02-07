@@ -11,8 +11,8 @@
 /// Types conforming to this protocol can be used anywhere the original model's type
 /// may be referenced. The alias type will mirror the ``space`` and ``schema`` of the
 /// original model, and provide its name for the ``alias`` property, affecting the
-/// result of the ``schemaOrAlias`` accessor. This accessor is used anywhere that
-/// a schema name that has been aliased may appear in place of the original.
+/// result of the ``Schema/schemaOrAlias`` accessor. This accessor is used anywhere
+/// that a schema name that has been aliased may appear in place of the original.
 ///
 /// Example:
 ///
@@ -128,8 +128,8 @@ extension ModelAlias {
         self.model[keyPath: keyPath]
     }
 
-    /// A passthrough to ``Fields/properties``, as invoked on `self.model`. This is a deliberate shadowing
-    /// override of ``Fields/properties`` for the alias type itself, required to allow projected property
+    /// A passthrough to ``Fields/properties-7z9l1``, as invoked on `self.model`. This is a deliberate shadowing
+    /// override of ``Fields/properties-7z9l1`` for the alias type itself, required to allow projected property
     /// values (i.e. instances of ``AliasedField``) to correctly behave as the properties they provide
     /// automatic access to. Without this override, the "parent" implementation would always return an empty
     /// array, as the alias type does not itself make direct use of any of the property wrapper types.

@@ -1,6 +1,6 @@
-/// An implementation of ``CodingKey`` intended to represent arbitrary string and integer coding keys.
+/// An implementation of `CodingKey` intended to represent arbitrary string and integer coding keys.
 ///
-/// This structure is effectively an inverse complement of the ``CodingKeyRepresentable`` protocol.
+/// This structure is effectively an inverse complement of the `CodingKeyRepresentable` protocol.
 ///
 /// "_The standard library's version of a protocol whose requirements are trapped in an infinitely
 /// recursive personal identity crisis._" - Unknown

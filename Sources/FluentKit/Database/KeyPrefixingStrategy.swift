@@ -14,7 +14,7 @@ public enum KeyPrefixingStrategy: CustomStringConvertible {
     /// values must be consistent within a single execution context).
     case custom((_ prefix: FieldKey, _ idFieldKey: FieldKey) -> FieldKey)
     
-    /// See ``Swift/CustomStringConvertible/description``.
+    // See `CustomStringConvertible.description`.
     public var description: String {
         switch self {
         case .none:

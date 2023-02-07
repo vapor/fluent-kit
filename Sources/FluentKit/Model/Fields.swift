@@ -2,7 +2,7 @@
 /// name, type, and semantic information for individual properties corresponding to fields in a
 /// generic database storage system.
 ///
-/// ``Fields`` is usually only used directly when in conjunction with the ``@Group`` and ``@CompositeID``
+/// ``Fields`` is usually only used directly when in conjunction with the `@Group` and `@CompositeID`
 /// property types. The ``Schema`` and ``Model`` protocols build on ``Fields`` to provide additional
 /// capabilities and semantics.
 ///
@@ -13,6 +13,15 @@
 /// circumstances, such implementations will not be invoked in any event. They are only declared on
 /// the base protocol rather than solely in extensions because static dispatch improves performance.
 public protocol Fields: AnyObject, Codable {
+    /// Returns a fully generic list of every property on the given instance of the type which uses any of
+    /// the FluentKit property wrapper types (e.g. any wrapper conforming to ``AnyProperty``). This accessor
+    /// is not static because FluentKit depends upon access to the backing storage of the property wrappers,
+    /// which is specific to each instance.
+    ///
+    /// - Warning: This accessor triggers the use of reflection, which is at the time of this writing the
+    ///   most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
+    ///   carries the same cost; it is not possible to meaningfully cache the results. See
+    ///   `MirrorBypass.swift` for a considerable amount of very low-level detail.
     var properties: [AnyProperty] { get }
     
     init()
@@ -80,15 +89,7 @@ extension Fields {
 // MARK: Properties
 
 extension Fields {
-    /// Returns a fully generic list of every property on the given instance of the type which uses any of
-    /// the FluentKit property wrapper types (e.g. any wrapper conforming to ``AnyProperty``). This accessor
-    /// is not static because FluentKit depends upon access to the backing storage of the property wrappers,
-    /// which is specific to each instance.
-    ///
-    /// - Warning: This accessor triggers the use of reflection, which is at the time of this writing the
-    ///   most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
-    ///   carries the same cost; it is not possible to meaningfully cache the results. See
-    ///   `MirrorBypass.swift` for a considerable amount of very low-level detail.
+    /// Default implementation of ``Fields/properties-dup4``.
     public var properties: [AnyProperty] {
         return _FastChildSequence(subject: self).compactMap { $1 as? AnyProperty }
     }
