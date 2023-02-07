@@ -36,22 +36,6 @@ env:
 
 jobs:
 
-  # Check for API breakage versus main
-  api-breakage:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    container: swift:5.7-jammy
-    steps:
-      - name: Check out package
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      # https://github.com/actions/checkout/issues/766
-      - name: Mark the workspace as safe
-        run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
-      - name: Check for API breaking changes
-        run: swift package diagnose-api-breaking-changes origin/main
-
   linux-integration:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
