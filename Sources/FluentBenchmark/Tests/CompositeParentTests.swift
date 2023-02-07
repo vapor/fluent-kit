@@ -49,7 +49,7 @@ public final class CompositeIDChildModel: Model {
     @ID(custom: .id)
     public var id: Int?
     
-    @CompositeParent(prefix: "comp_id_model", prefixingStrategy: .snakeCase)
+    @CompositeParent(prefix: "comp_id_model", strategy: .snakeCase)
     public var compositeIdModel: CompositeIDModel
     
     public init() {}

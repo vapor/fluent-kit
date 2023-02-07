@@ -1,8 +1,70 @@
 extension Model {
+    /// A convenience alias for ``CompositeParentProperty``. It is strongly recommended that callers use this
+    /// alias rather than referencing ``CompositeParentProperty`` directly whenever possible.
     public typealias CompositeParent<To> = CompositeParentProperty<Self, To>
         where To: Model, To.IDValue: Fields
 }
 
+/// Declares a one-to-many relation between the referenced ("parent") model and the referencing ("child") model,
+/// where the parent model specifies its ID with ``CompositeIDProperty``.
+///
+/// ``CompositeParentProperty`` serves the same purpose for parent models which use `@CompositeID`
+/// that ``ParentProperty`` serves for parent models which use `@ID`.
+///
+/// Unfortunately, while the type of ID used by the child model makes no difference, limitations of Swift's
+/// generics syntax make it impractical to support both `@ID`-using and `@CompositeID`-using models as the parent
+/// model with a single property type. A similar limitation applies in the opposite direction for
+/// ``ChildrenProperty`` and ``OptionalChildProperty``.
+///
+/// - Note: At the time of this writing, there are no corresponding composite ID-supporting counterparts for
+///   ``OptionalParentProperty``, ``ChildrenProperty``, or ``OptionalChildProperty``. These counterparts wlll
+///   be added to Fluent in the near future.
+///
+/// Example:
+///
+/// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
+///   complex relationships.
+///
+/// ```
+/// final class TableMetadata: Model {
+///     static let schema = "table_metadata"
+///
+///     final class IDValue: Fields, Hashable {
+///         @Field(key: "table_schema") var schema: String
+///         @Field(key: "table_name")   var name: String
+///         init() {}
+///         static func ==(lhs: IDValue, rhs: IDValue) -> Bool { lhs.schema == rhs.schema && lhs.name == rhs.name }
+///         func hash(into hasher: inout Hasher) { hasher.combine(self.schema); hasher.combine(self.name) }
+///     }
+///
+///     @CompositeID var id: IDValue?
+///     // ...
+/// }
+///
+/// final class ForeignKeyMetadata: Model {
+///     static let schema = "foreign_key_metadata"
+///
+///     @ID(custom: "constraint_name") var id: String?
+///     @CompositeParent(prefix: "referencing") var referencingTable: TableMetadata
+///     @CompositeParent(prefix: "referenced") var referencedTable: TableMetadata
+///     // ...
+///
+///     struct CreateTableMigration: AsyncMigration {
+///         func prepare(on database: Database) async throws {
+///             try await database.schema(ForeignKeyMetadata.schema)
+///                 .field("constraint_name", .string, .required, .identifier(auto: false))
+///                 .field("referencing_table_schema", .string, .required)
+///                 .field("referencing_table_name", .string, .required)
+///                 .foreignKey(["referencing_table_schema", "referencing_table_name"], references: TableMetadata.schema, ["table_schema", "table_name"])
+///                 .field("referenced_table_schema", .string, .required)
+///                 .field("referenced_table_name", .string, .required)
+///                 .foreignKey(["referenced_table_schema", "referenced_table_name"], references: TableMetadata.schema, ["table_schema", "table_name"])
+///                 // ...
+///                 .create()
+///         }
+///     }
+/// }
+/// ```
 @propertyWrapper @dynamicMemberLookup
 public final class CompositeParentProperty<From, To>
     where From: Model, To: Model, To.IDValue: Fields
@@ -24,10 +86,10 @@ public final class CompositeParentProperty<From, To>
 
     public var projectedValue: CompositeParentProperty<From, To> { self }
 
-    public init(prefix: FieldKey, prefixingStrategy: KeyPrefixingStrategy = .snakeCase) {
+    public init(prefix: FieldKey, strategy: KeyPrefixingStrategy = .snakeCase) {
         self.id = .init()
         self.prefix = prefix
-        self.prefixingStrategy = prefixingStrategy
+        self.prefixingStrategy = strategy
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
