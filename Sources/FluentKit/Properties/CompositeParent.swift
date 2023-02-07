@@ -85,7 +85,13 @@ public final class CompositeParentProperty<From, To>
     }
 
     public var projectedValue: CompositeParentProperty<From, To> { self }
-
+    
+    /// Configure a ``CompositeParentProperty`` with a key prefix and prefix strategy.
+    ///
+    /// - Parameters:
+    ///   - prefix: A prefix to be applied to the key of each individual field of the referenced model's `IDValue`.
+    ///   - strategy: The strategy to use when applying prefixes to keys. ``KeyPrefixingStrategy/snakeCase`` is
+    ///     the default.
     public init(prefix: FieldKey, strategy: KeyPrefixingStrategy = .snakeCase) {
         self.id = .init()
         self.prefix = prefix

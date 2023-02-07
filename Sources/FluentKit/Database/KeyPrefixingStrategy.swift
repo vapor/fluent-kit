@@ -1,11 +1,12 @@
+/// A strategy describing how to apply a prefix to a ``FieldKey``.
 public enum KeyPrefixingStrategy: CustomStringConvertible {
-    /// The "do nothing" strategy - the prefix is applied to each key by simple concatenation
+    /// The "do nothing" strategy - the prefix is applied to each key by simple concatenation.
     case none
     
-    /// Each key has its first character capitalized and the prefix is applied to the result
+    /// Each key has its first character capitalized and the prefix is applied to the result.
     case camelCase
     
-    /// An underscore is placed between the prefix and each key. This strategy is the default.
+    /// An underscore is placed between the prefix and each key.
     case snakeCase
     
     /// A custom strategy - for each key, the closure is called with that key and the prefix with which the
