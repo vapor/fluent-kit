@@ -6,30 +6,35 @@ public struct Migrator {
     public let databaseFactory: (DatabaseID?) -> (Database)
     public let migrations: Migrations
     public let eventLoop: EventLoop
+    public let migrationLogLevel: Logger.Level
 
     public init(
         databases: Databases,
         migrations: Migrations,
         logger: Logger,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop,
+        migrationLogLevel: Logger.Level = .info
     ) {
         self.init(
             databaseFactory: {
                 databases.database($0, logger: logger, on: eventLoop)!
             },
             migrations: migrations,
-            on: eventLoop
+            on: eventLoop,
+            migrationLogLevel: migrationLogLevel
         )
     }
 
     public init(
         databaseFactory: @escaping (DatabaseID?) -> (Database),
         migrations: Migrations,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop,
+        migrationLogLevel: Logger.Level = .info
     ) {
         self.databaseFactory = databaseFactory
         self.migrations = migrations
         self.eventLoop = eventLoop
+        self.migrationLogLevel = migrationLogLevel
     }
     
     // MARK: Setup
@@ -104,12 +109,13 @@ public struct Migrator {
         }
     }
 
-
     private func migrators<Result>(
         _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
     ) -> EventLoopFuture<[Result]> {
-        return self.migrations.storage.map { handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1)) }
-            .flatten(on: self.eventLoop)
+        return self.migrations.storage.map {
+            handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLeveL: self.migrationLogLevel))
+        }
+        .flatten(on: self.eventLoop)
     }
 }
 
@@ -117,11 +123,13 @@ private final class DatabaseMigrator {
     let migrations: [Migration]
     let database: Database
     let id: DatabaseID?
+    let migrationLogLevel: Logger.Level
 
-    init(id: DatabaseID?, database: Database, migrations: [Migration]) {
+    init(id: DatabaseID?, database: Database, migrations: [Migration], migrationLogLeveL: Logger.Level) {
         self.migrations = migrations
         self.database = database
         self.id = id
+        self.migrationLogLevel = migrationLogLeveL
     }
 
     // MARK: Setup
@@ -246,17 +254,17 @@ private final class DatabaseMigrator {
     // MARK: Private
 
     private func prepare(_ migration: Migration, batch: Int) -> EventLoopFuture<Void> {
-        self.database.logger.info("[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
+        self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
         return migration.prepare(on: self.database).flatMap {
-            self.database.logger.info("[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
+            self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
             return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
         }
     }
 
     private func revert(_ migration: Migration) -> EventLoopFuture<Void> {
-        self.database.logger.info("[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
+        self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
         return migration.revert(on: self.database).flatMap {
-            self.database.logger.info("[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
+            self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
             return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
         }
     }
