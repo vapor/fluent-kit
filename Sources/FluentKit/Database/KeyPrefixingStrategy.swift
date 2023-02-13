@@ -42,7 +42,7 @@ public enum KeyPrefixingStrategy: CustomStringConvertible {
                 return .prefix(prefix, .string(key.description.withUppercasedFirstCharacter()))
 
             case .prefix(let originalPrefix, let originalSuffix):
-                return .prefix(.prefix(prefix, originalPrefix), originalSuffix)
+                return .prefix(self.apply(prefix: prefix, to: originalPrefix), originalSuffix)
             }
 
         case .snakeCase:
