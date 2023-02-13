@@ -2,7 +2,7 @@ import XCTest
 import SQLKit
 
 extension FluentBenchmarker {
-    public func testCompositeParent() throws {
+    public func testCompositeRelations() throws {
         try testCompositeParent_get()
         try testCompositeParent_eagerLoad()
     }

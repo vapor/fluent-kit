@@ -13,7 +13,7 @@ extension FluentBenchmarker {
         
         // Embed this here instead of having to update all the Fluent drivers
         if self.database is SQLDatabase {
-            try self.testCompositeParent()
+            try self.testCompositeRelations()
         }
     }
     
