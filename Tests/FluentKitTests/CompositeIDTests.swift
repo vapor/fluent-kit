@@ -131,6 +131,24 @@ final class CompositeIDTests: XCTestCase {
         XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE ("composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE ("composite+planet+tag"."planet_id" <> $1 OR "composite+planet+tag"."tag_id" <> $2) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
     }
+    
+    func testCompositeParentAndChildQuerying() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let systemId = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        
+        _ = try CompositeMoon(name: "", planetSolarSystemId: systemId, planetNormalizedOrdinal: 1).$orbitedPlanet.query(on: db).all().wait()
+        _ = try CompositePlanet(solarSystemId: systemId, normalizedOrdinal: 1).$moons.query(on: db).all().wait()
+        
+        XCTAssertEqual(db.sqlSerializers.count, 2)
+
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "composite+planet"."solar_system_id" AS "composite+planet_solar_system_id", "composite+planet"."normalized_ordinal" AS "composite+planet_normalized_ordinal", "composite+planet"."name" AS "composite+planet_name" FROM "composite+planet" WHERE ("composite+planet"."solar_system_id" = $1 AND "composite+planet"."normalized_ordinal" = $2)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).binds.xctAt(0) as? UUID, systemId)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).binds.xctAt(1) as? Int, 1)
+        
+        XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"SELECT "composite+moon"."id" AS "composite+moon_id", "composite+moon"."name" AS "composite+moon_name", "composite+moon"."planet_solar_system_id" AS "composite+moon_planet_solar_system_id", "composite+moon"."planet_normalized_ordinal" AS "composite+moon_planet_normalized_ordinal" FROM "composite+moon" WHERE ("composite+moon"."planet_solar_system_id" = $1 AND "composite+moon"."planet_normalized_ordinal" = $2)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(1).binds.xctAt(0) as? UUID, systemId)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(1).binds.xctAt(1) as? Int, 1)
+    }
 }
 
 final class PlanetUsingCompositePivot: Model {
@@ -191,5 +209,61 @@ struct CompositePlanetTagMigration: Migration {
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema).delete()
+    }
+}
+
+final class SolarSystem: Model {
+    static let schema = "solar_system"
+    
+    @ID(key: .id) var id: UUID?
+    @Field(key: "name") var name: String
+    @Children(for: \.$id.$solarSystem) var planets: [CompositePlanet]
+    
+    init() {}
+    init(id: IDValue? = nil, name: String) {
+        if let id = id { self.id = id }
+        self.name = name
+    }
+}
+
+final class CompositePlanet: Model {
+    static let schema = "composite+planet"
+    
+    // Note for the curious: "normalized ordinal" means "how many orbits from the center if a unique value was chosen for every planet despite overlapping or shared orbits"
+    final class IDValue: Fields, Hashable {
+        @Parent(key: "solar_system_id") var solarSystem: SolarSystem
+        @Field(key: "normalized_ordinal") var normalizedOrdinal: Int
+        
+        init() {}
+        init(solarSystemId: SolarSystem.IDValue, normalizedOrdinal: Int) {
+            (self.$solarSystem.id, self.normalizedOrdinal) = (solarSystemId, normalizedOrdinal)
+        }
+        static func ==(lhs: IDValue, rhs: IDValue) -> Bool { lhs.$solarSystem.id == rhs.$solarSystem.id && lhs.normalizedOrdinal == rhs.normalizedOrdinal }
+        func hash(into hasher: inout Hasher) { hasher.combine(self.$solarSystem.id); hasher.combine(self.normalizedOrdinal) }
+    }
+    
+    @CompositeID var id: IDValue?
+    @Field(key: "name") var name: String
+    @CompositeChildren(for: \.$orbitedPlanet) var moons: [CompositeMoon]
+    
+    init() {}
+    init(solarSystemId: SolarSystem.IDValue, normalizedOrdinal: Int) {
+        self.id = .init(solarSystemId: solarSystemId, normalizedOrdinal: normalizedOrdinal)
+        self.$moons.fromId = self.id
+    }
+}
+
+final class CompositeMoon: Model {
+    static let schema = "composite+moon"
+    
+    @ID(key: .id) var id: UUID?
+    @Field(key: "name") var name: String
+    @CompositeParent(prefix: "planet") var orbitedPlanet: CompositePlanet
+    
+    init() {}
+    init(id: UUID? = nil, name: String, planetSolarSystemId: SolarSystem.IDValue, planetNormalizedOrdinal: Int) {
+        if let id = id { self.id = id }
+        self.name = name
+        self.$orbitedPlanet.id = .init(solarSystemId: planetSolarSystemId, normalizedOrdinal: planetNormalizedOrdinal)
     }
 }
