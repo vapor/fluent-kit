@@ -24,7 +24,7 @@ extension AnyModel {
             fatalError("Can only access joined models using models fetched from database (from \(Self.self) to \(Joined.self)).")
         }
         let joined = Joined()
-        try joined.output(from: output.schema(Joined.schemaOrAlias))
+        try joined.output(from: output.qualifiedSchema(space: Joined.spaceIfNotAliased, Joined.schemaOrAlias))
         return joined
     }
 
