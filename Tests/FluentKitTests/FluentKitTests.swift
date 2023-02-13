@@ -741,6 +741,29 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.dropFirst(4).first?.sql, #"DELETE FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" <> $1"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(5).first?.sql, #"SELECT "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "stars" INNER JOIN "mirror_universe"."planets" ON "mirror_universe"."planets"."star_id" = "stars"."id" LIMIT 1"#)
     }
+
+    func testKeyPrefixingStrategies() throws {
+        XCTAssertEqual(KeyPrefixingStrategy.none.apply(prefix: "abc", to: "def").description, "abcdef")
+        XCTAssertEqual(KeyPrefixingStrategy.none.apply(prefix: "abc", to: .prefix("def", "ghi")).description, "abcdefghi")
+        XCTAssertEqual(KeyPrefixingStrategy.none.apply(prefix: .prefix("abc", "def"), to: "ghi").description, "abcdefghi")
+        
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc", to: "def").description, "abcDef")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc", to: .prefix("def", "ghi")).description, "abcDefghi")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: .prefix("abc", "def"), to: "ghi").description, "abcdefGhi")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "ABC", to: "DEF").description, "ABCDEF")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "ABC", to: "").description, "ABC")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "", to: "ABC").description, "ABC")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc", to: "_def").description, "abc_def")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc_", to: "def").description, "abc_Def")
+        
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc", to: "def").description, "abc_def")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc", to: .prefix("def", "ghi")).description, "abc_defghi")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: .prefix("abc", "def"), to: "ghi").description, "abcdef_ghi")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc_", to: "def").description, "abc__def")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc", to: "_def").description, "abc__def")
+        
+        XCTAssertEqual(KeyPrefixingStrategy.custom({ .prefix($0, .prefix("+", $1)) }).apply(prefix: "abc", to: "def").description, "abc+def")
+    }
     
     func testFieldsPropertiesPerformance() throws {
         measure {
