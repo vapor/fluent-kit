@@ -133,95 +133,51 @@ final class CompositeIDTests: XCTestCase {
     }
 }
 
-public final class PlanetUsingCompositePivot: Model {
-    public static let schema = Planet.schema
+final class PlanetUsingCompositePivot: Model {
+    static let schema = Planet.schema
     
-    @ID(key: .id)
-    public var id: UUID?
+    @ID(key: .id) var id: UUID?
+    @Field(key: "name") var name: String
+    @Parent(key: "star_id") var star: Star
+    @Children(for: \.$id.$planet) var planetTags: [CompositePlanetTag]
+    @Siblings(through: CompositePlanetTag.self, from: \.$id.$planet, to: \.$id.$tag) var tags: [Tag]
     
-    @Field(key: "name")
-    public var name: String
-
-    @Parent(key: "star_id")
-    public var star: Star
-
-    @Children(for: \.$id.$planet)
-    public var planetTags: [CompositePlanetTag]
-    
-    @Siblings(through: CompositePlanetTag.self, from: \.$id.$planet, to: \.$id.$tag)
-    public var tags: [Tag]
-    
-    public init() {}
-
-    public init(id: IDValue? = nil, name: String) {
-        self.id = id
-        self.name = name
-    }
-
-    public init(id: IDValue? = nil, name: String, starId: UUID) {
+    init() {}
+    init(id: IDValue? = nil, name: String) { (self.id, self.name) = (id, name) }
+    init(id: IDValue? = nil, name: String, starId: UUID) {
         self.id = id
         self.name = name
         self.$star.id = starId
     }
 }
 
-public final class CompositePlanetTag: Model {
-    public static let schema = "composite+planet+tag"
+final class CompositePlanetTag: Model {
+    static let schema = "composite+planet+tag"
     
-    public final class IDValue: Fields, Hashable {
-        @Parent(key: "planet_id")
-        public var planet: PlanetUsingCompositePivot
+    final class IDValue: Fields, Hashable {
+        @Parent(key: "planet_id") var planet: PlanetUsingCompositePivot
+        @Parent(key: "tag_id") var tag: Tag
         
-        @Parent(key: "tag_id")
-        public var tag: Tag
-        
-        public init() {}
-        
-        public init(planetID: PlanetUsingCompositePivot.IDValue, tagID: Tag.IDValue) {
-            self.$planet.id = planetID
-            self.$tag.id = tagID
-        }
-        
-        public convenience init(planet: PlanetUsingCompositePivot, tag: Tag) throws {
-            try self.init(planetID: planet.requireID(), tagID: tag.requireID())
-        }
-        
-        public static func == (lhs: IDValue, rhs: IDValue) -> Bool {
-            lhs.$planet.id == rhs.$planet.id && lhs.$tag.id == rhs.$tag.id
-        }
-        
-        public func hash(into hasher: inout Hasher) {
-            hasher.combine(self.$planet.id)
-            hasher.combine(self.$tag.id)
-        }
+        init() {}
+        init(planetID: PlanetUsingCompositePivot.IDValue, tagID: Tag.IDValue) { (self.$planet.id, self.$tag.id) = (planetID, tagID) }
+        static func == (lhs: IDValue, rhs: IDValue) -> Bool { lhs.$planet.id == rhs.$planet.id && lhs.$tag.id == rhs.$tag.id }
+        func hash(into hasher: inout Hasher) { hasher.combine(self.$planet.id); hasher.combine(self.$tag.id) }
     }
     
-    @CompositeID
-    public var id: IDValue?
-    
-    @Field(key: "notation")
-    public var notation: String
-    
-    @Timestamp(key: "createdAt", on: .create)
-    public var createdAt: Date?
+    @CompositeID var id: IDValue?
+    @Field(key: "notation") var notation: String
+    @Timestamp(key: "createdAt", on: .create) var createdAt: Date?
+    @Timestamp(key: "updatedAt", on: .update) var updatedAt: Date?
+    @Timestamp(key: "deletedAt", on: .delete) var deletedAt: Date?
 
-    @Timestamp(key: "updatedAt", on: .update)
-    public var updatedAt: Date?
-
-    @Timestamp(key: "deletedAt", on: .delete)
-    public var deletedAt: Date?
-
-    public init() {}
-
-    public init(planetID: PlanetUsingCompositePivot.IDValue, tagID: Tag.IDValue) {
-        self.id = .init(planetID: planetID, tagID: tagID)
-    }
+    init() {}
+    init(planetID: PlanetUsingCompositePivot.IDValue, tagID: Tag.IDValue) { self.id = .init(planetID: planetID, tagID: tagID) }
 }
 
-public struct CompositePlanetTagMigration: Migration {
-    public init() { }
+struct CompositePlanetTagMigration: Migration {
+    init() {}
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema)
             .field("planet_id", .uuid, .required, .references(PlanetUsingCompositePivot.schema, "id"))
             .field("tag_id", .uuid, .required, .references(Tag.schema, "id"))
@@ -233,7 +189,7 @@ public struct CompositePlanetTagMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema).delete()
     }
 }
