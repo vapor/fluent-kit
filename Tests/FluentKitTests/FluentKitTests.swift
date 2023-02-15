@@ -641,13 +641,11 @@ final class FluentKitTests: XCTestCase {
         let encoded = try encoder.encode(groupFoo)
         XCTAssertEqual(String(decoding: encoded, as: UTF8.self), #"{"group":{"string":"hi"},"id":"\#(groupFoo.id!.uuidString)"}"#)
         
-        // TODO: This currently causes a fatal error when the Codable conformance tries to encode the unset group members.
-        /*
         let missingGroupFoo = GroupFoo()
         missingGroupFoo.id = UUID()
+        missingGroupFoo.$group.value = nil
         let missingEncoded = try encoder.encode(missingGroupFoo)
-        XCTAssertEqual(String(decoding: missingEncoded, as: UTF8.self), #"{"id":"\#(groupFoo.id!.uuidString)"}"#)
-        */
+        XCTAssertEqual(String(decoding: missingEncoded, as: UTF8.self), #"{"id":"\#(missingGroupFoo.id!.uuidString)"}"#)
         
         let decoded = try decoder.decode(GroupFoo.self, from: encoded)
         XCTAssertEqual(decoded.id?.uuidString, groupFoo.id?.uuidString)
