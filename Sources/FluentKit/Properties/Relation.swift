@@ -58,3 +58,57 @@ extension RelationParentKey: CustomStringConvertible {
     }
 }
 
+/// A helper type used by ``CompositeChildrenProperty`` and ``CompositeOptionalChildProperty`` to generically
+/// track the keypath of the property of the child model that defines the parent-child relationship.
+///
+/// Unfortunately, the additional generic constraint requiring `From.IDValue` to conform to ``Fields`` for the
+/// purposes of ``CompositeChildrenProperty`` etc. makes it impractical to combine this and ``RelationParentKey``
+/// in a single helper type.
+///
+/// - Note: This type is public partly to allow FluentKit users to introspect model metadata, but mostly it's
+///   to maintain parity with ``RelationParentKey``, which was public in its original definition.
+public enum CompositeRelationParentKey<From, To>
+    where From: FluentKit.Model, To: FluentKit.Model, From.IDValue: Fields
+{
+    case required(KeyPath<To, To.CompositeParent<From>>)
+    case optional(KeyPath<To, To.CompositeOptionalParent<From>>)
+    
+    /// Use the stored key path to retrieve the appropriate parent ID from the given child model.
+    internal func referencedId(in model: To) -> From.IDValue? {
+        switch self {
+        case .required(let keypath): return model[keyPath: keypath].id
+        case .optional(let keypath): return model[keyPath: keypath].id
+        }
+    }
+    
+    /// Use the parent property specified by the key path to filter the given query builder by each of the
+    /// given parent IDs in turn. An empty ID list will apply no filters.
+    ///
+    /// Callers are responsible for providing an OR-grouping builder, which produces "any child model whose
+    /// parent has one of these IDs" behavior (combining the filter groups with `OR` is less efficient than
+    /// using the `IN` operator, but `IN`  doesn't work with composite values).
+    ///
+    /// See ``QueryFilterInput`` for additional implementation details.
+    internal func queryFilterIds<C>(_ ids: C, in builder: QueryBuilder<To>) -> QueryBuilder<To>
+        where C: Collection, C.Element == From.IDValue
+    {
+        guard !ids.isEmpty else { return builder }
+        switch self {
+        case .required(let keypath):
+            let prop = To()[keyPath: keypath]
+            return ids.reduce(builder) { b, id in b.group(.and) { prop.id = id; prop.input(to: QueryFilterInput(builder: $0)) } }
+        case .optional(let keypath):
+            let prop = To()[keyPath: keypath]
+            return ids.reduce(builder) { b, id in b.group(.and) { prop.id = id; prop.input(to: QueryFilterInput(builder: $0)) } }
+        }
+    }
+}
+
+extension CompositeRelationParentKey: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .required(let keypath): return To()[keyPath: keypath].prefix.description
+        case .optional(let keypath): return To()[keyPath: keypath].prefix.description
+        }
+    }
+}

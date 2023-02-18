@@ -1,22 +1,22 @@
 extension Model {
-    /// A convenience alias for ``CompositeChildrenProperty``. It is strongly recommended that callers use this
-    /// alias rather than referencing ``CompositeChildrenProperty`` directly whenever possible.
-    public typealias CompositeChildren<To> = CompositeChildrenProperty<Self, To>
+    /// A convenience alias for ``CompositeOptionalChildProperty``. It is strongly recommended that callers use this
+    /// alias rather than referencing ``CompositeOptionalChildProperty`` directly whenever possible.
+    public typealias CompositeOptionalChild<To> = CompositeOptionalChildProperty<Self, To>
         where To: FluentKit.Model, Self.IDValue: Fields
 }
 
-/// Declares a many-to-one relation between the referenced ("child") model and the referencing ("parent") model,
-/// where the parent model specifies its ID with ``CompositeIDProperty``.
+/// Declares an optional one-to-one relation between the referenced ("child") model and the referencing
+/// ("parent") model, where the parent model specifies its ID with ``CompositeIDProperty``.
 ///
-/// ``CompositeChildrenProperty`` serves the same purpose for child models with parents which use `@CompositeID`
-/// that ``ChildrenProperty`` serves for parent models which use `@ID`.
+/// ``CompositeOptionalChildProperty`` serves the same purpose for child models with parents which use
+/// `@CompositeID` that ``OptionalChildProperty`` serves for parent models which use `@ID`.
 ///
 /// Unfortunately, while the type of ID used by the child model makes no difference, limitations of Swift's
 /// generics syntax make it impractical to support both `@ID`-using and `@CompositeID`-using models as the parent
 /// model with a single property type.
 ///
-/// ``CompositeChildrenProperty`` cannot reference a ``ParentProperty`` or ``OptionalParentProperty``; use
-/// ``ChildrenProperty`` instead.
+/// ``CompositeOptionalChildProperty`` cannot reference a ``ParentProperty`` or ``OptionalParentProperty``; use
+/// ``OptionalChildProperty`` instead.
 ///
 /// Example:
 ///
@@ -36,50 +36,36 @@ extension Model {
 ///     }
 ///
 ///     @CompositeID var id: IDValue?
-///     @CompositeChildren(for: \.$referencedTable) var referencingForeignKeys: [ForeignKeyMetadata]
-///     @CompositeChildren(for: \.$nextCrossReferencedTable) var indirectReferencingForeignKeys: [ForeignKeyMetadata]
-///     // ...
-/// }
-///
-/// final class ForeignKeyMetadata: Model {
-///     static let schema = "foreign_key_metadata"
-///
-///     @ID(custom: "constraint_name") var id: String?
-///     @CompositeParent(prefix: "referenced") var referencedTable: TableMetadata
-///     @CompositeOptionalParent(prefix: "next_xref") var nextCrossReferencedTable: TableMetadata?
+///     @CompositeParent(prefix: "meta") var metaTable: TableMetadata
+///     @CompositeOptionalChild(for: \.$metaTable) var realizedTable: TableMetadata?
 ///     // ...
 ///
 ///     struct CreateTableMigration: AsyncMigration {
 ///         func prepare(on database: Database) async throws {
-///             try await database.schema(ForeignKeyMetadata.schema)
-///                 .field("constraint_name", .string, .required, .identifier(auto: false))
-///                 .field("referenced_table_schema", .string, .required)
-///                 .field("referenced_table_name", .string, .required)
-///                 .foreignKey(["referenced_table_schema", "referenced_table_name"], references: TableMetadata.schema, ["table_schema", "table_name"])
-///                 .field("next_xref_table_schema", .string)
-///                 .field("next_xref_table_name", .string)
-///                 .foreignKey(["next_xref_table_schema", "next_xref_table_name"], references: TableMetadata.schema, ["table_schema", "table_name"])
-///                 .constraint(.sql(.check(SQLBinaryExpression( // adds a check constraint to ensure that neither field is ever NULL when the other isn't
-///                     left: SQLBinaryExpression(left: SQLIdentifier("next_xref_table_schema"), .is, right: SQLLiteral.null),
-///                     .equal,
-///                     right: SQLBinaryExpression(left: SQLIdentifier("next_xref_table_name"), .is, right: SQLLiteral.null)
-///                 ))))
+///             try await database.schema(TableMetadata.schema)
+///                 .field("table_schema", .string, .required)
+///                 .field("table_name", .string, .required)
+///                 .compositeIdentifier(over: ["table_schema", "table_name"])
+///                 .field("meta_table_schema", .string, .required)
+///                 .field("meta_table_name", .string, .required)
+///                 .foreignKey(["meta_table_schema", "meta_table_name"], references: TableMetadata.schema, ["table_schema", "table_name"])
 ///                 // ...
 ///                 .create()
 ///         }
 ///     }
 /// }
 /// ```
+
 @propertyWrapper
-public final class CompositeChildrenProperty<From, To>
+public final class CompositeOptionalChildProperty<From, To>
     where From: Model, To: Model, From.IDValue: Fields
 {
     public typealias Key = CompositeRelationParentKey<From, To>
-        
+    
     public let parentKey: Key
     var idValue: From.IDValue?
 
-    public var value: [To]?
+    public var value: To??
 
     public init(for parentKey: KeyPath<To, To.CompositeParent<From>>) {
         self.parentKey = .required(parentKey)
@@ -89,19 +75,19 @@ public final class CompositeChildrenProperty<From, To>
         self.parentKey = .optional(parentKey)
     }
 
-    public var wrappedValue: [To] {
+    public var wrappedValue: To? {
         get {
             guard let value = self.value else {
-                fatalError("Children relation not eager loaded, use $ prefix to access: \(self.name)")
+                fatalError("Child relation not eager loaded, use $ prefix to access: \(self.name)")
             }
             return value
         }
         set {
-            fatalError("Children relation \(self.name) is get-only.")
+            fatalError("Child relation \(self.name) is get-only.")
         }
     }
 
-    public var projectedValue: CompositeChildrenProperty<From, To> { self }
+    public var projectedValue: CompositeOptionalChildProperty<From, To> { self }
     
     public var fromId: From.IDValue? {
         get { return self.idValue }
@@ -110,7 +96,7 @@ public final class CompositeChildrenProperty<From, To>
 
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
-            fatalError("Cannot query children relation \(self.name) from unsaved model.")
+            fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
 
         /// We route the value through an instance of the child model's parent property to ensure the
@@ -122,18 +108,18 @@ public final class CompositeChildrenProperty<From, To>
     }
 }
 
-extension CompositeChildrenProperty: CustomStringConvertible {
+extension CompositeOptionalChildProperty: CustomStringConvertible {
     public var description: String { self.name }
 }
 
-extension CompositeChildrenProperty: AnyProperty { }
+extension CompositeOptionalChildProperty: AnyProperty { }
 
-extension CompositeChildrenProperty: Property {
+extension CompositeOptionalChildProperty: Property {
     public typealias Model = From
-    public typealias Value = [To]
+    public typealias Value = To?
 }
 
-extension CompositeChildrenProperty: AnyDatabaseProperty {
+extension CompositeOptionalChildProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] { [] }
     public func input(to input: DatabaseInput) {}
     public func output(from output: DatabaseOutput) throws {
@@ -144,7 +130,7 @@ extension CompositeChildrenProperty: AnyDatabaseProperty {
     }
 }
 
-extension CompositeChildrenProperty: AnyCodableProperty {
+extension CompositeOptionalChildProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         if let value = self.value {
             var container = encoder.singleValueContainer()
@@ -155,32 +141,32 @@ extension CompositeChildrenProperty: AnyCodableProperty {
     public var skipPropertyEncoding: Bool { self.value == nil }
 }
 
-extension CompositeChildrenProperty: Relation {
-    public var name: String { "CompositeChildren<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: Database) -> EventLoopFuture<Void> { self.query(on: database).all().map { self.value = $0 } }
+extension CompositeOptionalChildProperty: Relation {
+    public var name: String { "CompositeOptionalChild<\(From.self), \(To.self)>(for: \(self.parentKey))" }
+    public func load(on database: Database) -> EventLoopFuture<Void> { self.query(on: database).first().map { self.value = $0 } }
 }
 
-extension CompositeChildrenProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder)
+extension CompositeOptionalChildProperty: EagerLoadable {
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = CompositeChildrenEagerLoader(relationKey: relationKey)
+        let loader = CompositeOptionalChildEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
 
 
-    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder)
+    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeOptionalChild<To>>, to builder: Builder)
         where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = ThroughCompositeChildrenEagerLoader(relationKey: through, loader: loader)
+        let loader = ThroughCompositeOptionalChildEagerLoader(relationKey: through, loader: loader)
         builder.add(loader: loader)
     }
 }
 
-private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
+private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, From.IDValue: Fields
 {
-    let relationKey: KeyPath<From, From.CompositeChildren<To>>
+    let relationKey: KeyPath<From, From.CompositeOptionalChild<To>>
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
@@ -195,19 +181,19 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
             
             for model in models {
-                model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!] ?? []
+                model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
             }
         }
     }
 }
 
-private struct ThroughCompositeChildrenEagerLoader<From, Through, Loader>: EagerLoader
+private struct ThroughCompositeOptionalChildEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, From.IDValue: Fields, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.CompositeChildren<Through>>
+    let relationKey: KeyPath<From, From.CompositeOptionalChild<Through>>
     let loader: Loader
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        return self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database)
+        return self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }
