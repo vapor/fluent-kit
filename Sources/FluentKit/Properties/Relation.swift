@@ -37,3 +37,24 @@ extension Relation {
     }
 }
     
+/// A helper type used by ``ChildrenProperty`` and ``OptionalChildProperty`` to generically track the keypath
+/// of the property of the child model that defines the parent-child relationship.
+///
+/// This type was extracted from its original definitions as a subtype of the property types. A typealias is
+/// provided on the property types to maintain public API compatibility.
+public enum RelationParentKey<From, To>
+    where From: FluentKit.Model, To: FluentKit.Model
+{
+    case required(KeyPath<To, To.Parent<From>>)
+    case optional(KeyPath<To, To.OptionalParent<From>>)
+}
+
+extension RelationParentKey: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .optional(let keypath): return To.path(for: keypath.appending(path: \.$id)).description
+        case .required(let keypath): return To.path(for: keypath.appending(path: \.$id)).description
+        }
+    }
+}
+
