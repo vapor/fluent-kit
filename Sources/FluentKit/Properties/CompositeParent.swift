@@ -155,14 +155,13 @@ extension CompositeParentProperty: AnyCodableProperty {
         if let value = self.value {
             try container.encode(value)
         } else {
-            try container.encode(self.id)
+            try container.encode(["id": self.id])
         }
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        
-        self.id = try container.decode(To.IDValue.self)
+        let container = try decoder.container(keyedBy: SomeCodingKey.self)
+        self.id = try container.decode(To.IDValue.self, forKey: .init(stringValue: "id"))
     }
 }
 
