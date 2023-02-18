@@ -89,6 +89,8 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
     let prefix: FieldKey
     let strategy: KeyPrefixingStrategy
     let base: Base
+    
+    var wantsUnmodifiedKeys: Bool { self.base.wantsUnmodifiedKeys }
 
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.base.set(value, at: self.strategy.apply(prefix: self.prefix, to: key))
@@ -127,10 +129,33 @@ internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Sche
     }
 
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
-        builder.filter(
+        self.builder.filter(
             .extendedPath([key], schema: InputModel.schemaOrAlias, space: InputModel.spaceIfNotAliased),
             .equal,
             value
         )
+    }
+}
+
+/// A ``DatabaseInput`` which passes all keys through to another ``DatabaseInput`` with
+/// ``DatabaseQuery/Value/null`` as the value, ignoring any value provided.
+///
+/// The ``DatabaseInput/wantsUnmodifiedKeys-1qajw`` flag is always set regardless of what the
+/// "base" input requested, as the use case for this input is to easily specify an explicitly
+/// nil composite relation.
+internal struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
+    let base: Base
+    var wantsUnmodifiedKeys: Bool { true }
+    
+    func set(_: DatabaseQuery.Value, at key: FieldKey) {
+        self.base.set(.null, at: key)
+    }
+}
+
+extension DatabaseInput {
+    /// Returns `self` wrapped with a ``NullValueOverrideInput``. This is here primarily so the actual
+    /// implementation be defined generically rather than using existentials.
+    internal func nullValueOveridden() -> DatabaseInput {
+        NullValueOverrideInput(base: self)
     }
 }
