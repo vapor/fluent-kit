@@ -130,8 +130,11 @@ extension Fields {
 // MARK: Has Changes
 
 extension Fields {
-    /// Indicates whether the model has fields that have been set, but the model
-    /// has not yet been saved to the database.
+    /// Returns `true` if a model has fields whose values have been explicitly set or modified
+    /// since the most recent load from and/or save to the database (if any).
+    ///
+    /// If `false` is returned, attempts to save changes to the database (or more precisely, to
+    /// send values to any given ``DatabaseInput``) will do nothing.
     public var hasChanges: Bool {
         let input = HasChangesInput()
         self.input(to: input)
@@ -139,6 +142,7 @@ extension Fields {
     }
 }
 
+/// Helper type for the implementation of ``Fields/hasChanges``.
 private final class HasChangesInput: DatabaseInput {
     var hasChanges: Bool = false
 
@@ -150,6 +154,8 @@ private final class HasChangesInput: DatabaseInput {
 // MARK: Collect Input
 
 extension Fields {
+    /// Returns a dictionary of field keys and associated values representing all "pending"
+    /// data - e.g. all fields (if any) which have been changed by something other than Fluent.
     internal func collectInput() -> [FieldKey: DatabaseQuery.Value] {
         let input = DictionaryInput()
         self.input(to: input)
@@ -157,6 +163,7 @@ extension Fields {
     }
 }
 
+/// Helper type for the implementation of `Fields.collectInput()`.
 private final class DictionaryInput: DatabaseInput {
     var storage: [FieldKey: DatabaseQuery.Value] = [:]
 

@@ -9,10 +9,7 @@ extension Model {
 public final class ChildrenProperty<From, To>
     where From: Model, To: Model
 {
-    public enum Key {
-        case required(KeyPath<To, To.Parent<From>>)
-        case optional(KeyPath<To, To.OptionalParent<From>>)
-    }
+    public typealias Key = RelationParentKey<From, To>
 
     public let parentKey: Key
     var idValue: From.IDValue?
@@ -162,17 +159,6 @@ extension ChildrenProperty: Relation {
     public func load(on database: Database) -> EventLoopFuture<Void> {
         self.query(on: database).all().map {
             self.value = $0
-        }
-    }
-}
-
-extension ChildrenProperty.Key: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .optional(let keyPath):
-            return To.path(for: keyPath.appending(path: \.$id)).description
-        case .required(let keyPath):
-            return To.path(for: keyPath.appending(path: \.$id)).description
         }
     }
 }

@@ -90,6 +90,8 @@ extension GroupProperty: AnyCodableProperty {
         guard !container.decodeNil() else { return }
         self.value = .some(try container.decode(Value.self))
     }
+    
+    public var skipPropertyEncoding: Bool { self.value == nil }
 }
 
 

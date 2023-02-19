@@ -63,4 +63,15 @@ extension FluentError {
             id: "\(id)"
         )
     }
+
+    internal static func missingParentError<Child: Model, Parent: Model>(
+        _: Child.Type = Child.self, _: Parent.Type = Parent.self, keyPath: KeyPath<Child, Child.CompositeOptionalParent<Parent>>, id: Parent.IDValue
+    ) -> Self where Parent.IDValue: Fields {
+        .missingParent(
+            from: "\(Child.self)",
+            to: "\(Parent.self)",
+            key: Child()[keyPath: keyPath].prefix.description,
+            id: "\(id)"
+        )
+    }
 }

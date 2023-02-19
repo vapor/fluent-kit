@@ -99,7 +99,9 @@ extension FieldProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let inputValue = self.inputValue {
+        if input.wantsUnmodifiedKeys {
+            input.set(self.inputValue ?? self.outputValue.map { .bind($0) } ?? .default, at: self.key)
+        } else if let inputValue = self.inputValue {
             input.set(inputValue, at: self.key)
         }
     }

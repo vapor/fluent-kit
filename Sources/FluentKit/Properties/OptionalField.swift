@@ -98,7 +98,9 @@ extension OptionalFieldProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let inputValue = self.inputValue {
+        if input.wantsUnmodifiedKeys {
+            input.set(self.inputValue ?? self.outputValue.map { $0.map { .bind($0) } ?? .null } ?? .default, at: self.key)
+        } else if let inputValue = self.inputValue {
             input.set(inputValue, at: self.key)
         }
     }

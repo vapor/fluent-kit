@@ -58,8 +58,13 @@ public protocol AnyDatabaseProperty: AnyProperty {
 /// database, and to act as a container if it contains any additional properties
 /// which also wish to participate. Just about every property type is codable.
 ///
-/// - Warning: The various relation property types sometimes behave somewhat oddly
+/// > Warning: The various relation property types sometimes behave somewhat oddly
 ///   when encoded and/or decoded.
+///
+/// > TODO: When corresponding parent and child properties on their respective models
+///   refer to each other, such as due to both relations being eager-loaded, both
+///   encoding and decoding will crash due to infinite recursion. At some point, look
+///   into a way to at least error out rather than crashing.
 public protocol AnyCodableProperty: AnyProperty {
     /// Encode the property's data to an external representation.
     func encode(to encoder: Encoder) throws

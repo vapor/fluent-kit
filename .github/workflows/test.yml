@@ -60,9 +60,9 @@ jobs:
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
         }
       mongo-a:
-        image: mongo:5
+        image: mongo:6
       mongo-b:
-        image: mongo:5
+        image: mongo:6
     strategy:
       fail-fast: false
       matrix:

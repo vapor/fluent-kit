@@ -16,10 +16,6 @@ extension Model {
 /// model with a single property type. A similar limitation applies in the opposite direction for
 /// ``ChildrenProperty`` and ``OptionalChildProperty``.
 ///
-/// - Note: At the time of this writing, there are no corresponding composite ID-supporting counterparts for
-///   ``OptionalParentProperty``, ``ChildrenProperty``, or ``OptionalChildProperty``. These counterparts wlll
-///   be added to Fluent in the near future.
-///
 /// Example:
 ///
 /// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
@@ -99,8 +95,7 @@ public final class CompositeParentProperty<From, To>
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
-        To.query(on: database)
-            .filter(id: self.id)
+        return To.query(on: database).group(.and) { self.id.input(to: QueryFilterInput(builder: $0)) }
     }
 
     public subscript<Nested>(dynamicMember keyPath: KeyPath<To.IDValue, Nested>) -> Nested
@@ -160,14 +155,13 @@ extension CompositeParentProperty: AnyCodableProperty {
         if let value = self.value {
             try container.encode(value)
         } else {
-            try container.encode(self.id)
+            try container.encode(["id": self.id])
         }
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        
-        self.id = try container.decode(To.IDValue.self)
+        let container = try decoder.container(keyedBy: SomeCodingKey.self)
+        self.id = try container.decode(To.IDValue.self, forKey: .init(stringValue: "id"))
     }
 }
 
@@ -195,7 +189,7 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
 
         return To.query(on: database)
             .group(.or) {
-                _ = sets.keys.map($0.filter(id:))
+                _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
             .all()
             .flatMapThrowing {
