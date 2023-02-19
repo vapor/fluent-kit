@@ -28,7 +28,7 @@ public protocol DatabaseInput {
     /// value with the new. Conforming types _can_ choose alternative semantics, but must take care
     /// that doing so is compatible with the expectations of callers.
     ///
-    /// - Note: As a rule, a key being set multiple times for a single input usually indicates or at
+    /// > Note: As a rule, a key being set multiple times for a single input usually indicates or at
     ///   least implies buggy behavior (such as a Model which specifies a particular key in more than
     ///   one of its properties). However, there are cases where doing so is useful; as such, no
     ///   attempt is made to diagnose multiple sets for the same key and the API must permit said
@@ -48,13 +48,13 @@ public protocol DatabaseInput {
     /// For the purposes of this flag, when the value is `true`, both unmodified _and unset_ properties
     /// should be included. The value of unset properties should be ``DatabaseQuery/Value/default``.
     ///
-    /// - Important: The value of this property _MUST NOT_ change during the instance's lifetime. It is
+    /// > Important: The value of this property _MUST NOT_ change during the instance's lifetime. It is
     ///   generally recommended - though not required - that it be a constant value. This is the case for
     ///   all ``DatabaseInput`` types in FluentKit at the time of this writing. It has been left as an
     ///   instance property rather than being declared `static` to avoid artificially limiting the
     ///   flexibility of conforming types.
     ///
-    /// - Warning: While all of FluentKit's built-in property wrapper types correctly honor this flag, if
+    /// > Warning: While all of FluentKit's built-in property wrapper types correctly honor this flag, if
     ///   there are any custom property types in use which do not defer to a builtin type as a backing
     ///   store (as ``IDProperty`` does, for example), that type's ``AnyDatabaseProperty`` conformance must
     ///   be updated accordingly.
@@ -111,7 +111,7 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 /// multiple filters is handled appropriately for their use case - most commonly by using the builder passed
 /// to a   ``QueryBuilder/group(_:_:)`` closure to create an instance of this type.
 ///
-/// - Tip: Applying a query filter via database input is especially useful as a means of providing generic
+/// > Tip: Applying a query filter via database input is especially useful as a means of providing generic
 ///   support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
 ///   as the input for a ``CompositeParentProperty`` filters the query according to the set of appropriately
 ///   prefixed field keys the property encapsulates.
