@@ -10,10 +10,8 @@ public extension OptionalChildProperty {
     }
 }
 
-/*
-public extension OptionalCompositeChildProperty {
+public extension CompositeOptionalChildProperty {
     func load(on database: Database) async throws {
         try await self.load(on: database).get()
     }
 }
-*/
