@@ -55,7 +55,6 @@ extension Model {
 ///     }
 /// }
 /// ```
-
 @propertyWrapper
 public final class CompositeOptionalChildProperty<From, To>
     where From: Model, To: Model, From.IDValue: Fields
