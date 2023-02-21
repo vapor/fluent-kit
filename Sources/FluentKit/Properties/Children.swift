@@ -175,6 +175,17 @@ extension ChildrenProperty: EagerLoadable {
         let loader = ChildrenEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
+    
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.Children<To>>,
+        filter: QueryBuilderFilterBlock<To>?,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = ChildrenEagerLoader(relationKey: relationKey, filter: filter)
+        builder.add(loader: loader)
+    }
 
 
     public static func eagerLoad<Loader, Builder>(
@@ -190,12 +201,14 @@ extension ChildrenProperty: EagerLoadable {
         let loader = ThroughChildrenEagerLoader(relationKey: through, loader: loader)
         builder.add(loader: loader)
     }
+    
 }
 
 private struct ChildrenEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
     let relationKey: KeyPath<From, From.Children<To>>
+    var filter: QueryBuilderFilterBlock<To>?
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
@@ -208,6 +221,7 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
+        filter?(builder)
         return builder.all().map {
             for model in models {
                 let id = model[keyPath: self.relationKey].idValue!

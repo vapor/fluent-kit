@@ -332,6 +332,17 @@ extension SiblingsProperty: EagerLoadable {
         let loader = SiblingsEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
+    
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
+        filter: QueryBuilderFilterBlock<To>?,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = SiblingsEagerLoader(relationKey: relationKey, filter: filter)
+        builder.add(loader: loader)
+    }
 
 
     public static func eagerLoad<Loader, Builder>(
@@ -354,15 +365,20 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
     where From: Model, Through: Model, To: Model
 {
     let relationKey: KeyPath<From, From.Siblings<To, Through>>
+    var filter: QueryBuilderFilterBlock<To>?
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
 
         let from = From()[keyPath: self.relationKey].from
         let to = From()[keyPath: self.relationKey].to
-        return To.query(on: database)
+        let query = To.query(on: database)
             .join(Through.self, on: \To._$id == to.appending(path: \.$id))
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
+        
+        filter?(query)
+        
+        return query
             .all()
             .flatMapThrowing
         {

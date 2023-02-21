@@ -160,6 +160,17 @@ extension OptionalChildProperty: EagerLoadable {
         let loader = OptionalChildEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
+    
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.OptionalChild<To>>,
+        filter: QueryBuilderFilterBlock<To>?,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = OptionalChildEagerLoader(relationKey: relationKey, filter: filter)
+        builder.add(loader: loader)
+    }
 
 
     public static func eagerLoad<Loader, Builder>(
@@ -181,6 +192,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
     let relationKey: KeyPath<From, From.OptionalChild<To>>
+    var filter: QueryBuilderFilterBlock<To>?
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.compactMap { $0.id! }
@@ -193,6 +205,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
+        filter?(builder)
         return builder.all().map {
             for model in models {
                 let id = model[keyPath: self.relationKey].idValue!

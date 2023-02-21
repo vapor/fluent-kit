@@ -12,26 +12,36 @@ public protocol EagerLoadBuilder {
         where Loader: EagerLoader, Loader.Model == Model
 }
 
+public typealias QueryBuilderFilterBlock<T: Model> = (QueryBuilder<T>) -> Void
 
 extension EagerLoadBuilder {
     // MARK: Eager Load
 
+//    @discardableResult
+//    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>) -> Self
+//        where Relation: EagerLoadable, Relation.From == Model
+//    {
+//        Relation.eagerLoad(relationKey, to: self)
+//        return self
+//    }
+    
     @discardableResult
-    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>) -> Self
-        where Relation: EagerLoadable, Relation.From == Model
+    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>, filter: QueryBuilderFilterBlock<Relation.To>? = nil) -> Self
+    where Relation: EagerLoadable, Relation.From == Model
     {
-        Relation.eagerLoad(relationKey, to: self)
+        Relation.eagerLoad(relationKey, filter: filter, to: self)
         return self
     }
 
     @discardableResult
     public func with<Relation>(
         _ throughKey: KeyPath<Model, Relation>,
+        filter: QueryBuilderFilterBlock<Relation.To>? = nil,
         _ nested: (NestedEagerLoadBuilder<Self, Relation>) -> ()
     ) -> Self
         where Relation: EagerLoadable, Relation.From == Model
     {
-        Relation.eagerLoad(throughKey, to: self)
+        Relation.eagerLoad(throughKey, filter: filter, to: self)
         let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)
         nested(builder)
         return self
