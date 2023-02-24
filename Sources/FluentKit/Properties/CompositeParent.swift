@@ -172,6 +172,12 @@ extension CompositeParentProperty: EagerLoadable {
         builder.add(loader: CompositeParentEagerLoader(relationKey: relationKey))
     }
 
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, filter: QueryBuilderFilterBlock<To>?, to builder: Builder)
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        builder.add(loader: CompositeParentEagerLoader(relationKey: relationKey, filter: filter))
+    }
+
     public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeParent<To>>, to builder: Builder)
         where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
     {
@@ -183,14 +189,18 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, To.IDValue: Fields
 {
     let relationKey: KeyPath<From, From.CompositeParent<To>>
+    var filter: QueryBuilderFilterBlock<To>?
     
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-
-        return To.query(on: database)
+        let query = To.query(on: database)
             .group(.or) {
                 _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
+        
+        filter?(query)
+
+        return query
             .all()
             .flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })

@@ -167,6 +167,13 @@ extension CompositeChildrenProperty: EagerLoadable {
         let loader = CompositeChildrenEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
+    
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeChildren<To>>, filter: QueryBuilderFilterBlock<To>?, to builder: Builder)
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = CompositeChildrenEagerLoader(relationKey: relationKey, filter: filter)
+        builder.add(loader: loader)
+    }
 
 
     public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder)
@@ -181,6 +188,7 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, From.IDValue: Fields
 {
     let relationKey: KeyPath<From, From.CompositeChildren<To>>
+    var filter: QueryBuilderFilterBlock<To>?
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
@@ -190,6 +198,8 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
+        
+        filter?(builder)
         
         return builder.all().map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })

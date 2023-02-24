@@ -26,26 +26,24 @@ extension EagerLoadBuilder {
 //    }
     
     @discardableResult
-    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>, filter: QueryBuilderFilterBlock<Relation.To>? = nil) -> Self
+    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>, _ filter: QueryBuilderFilterBlock<Relation.To>? = nil) -> Self
     where Relation: EagerLoadable, Relation.From == Model
     {
         Relation.eagerLoad(relationKey, filter: filter, to: self)
         return self
     }
 
-    @discardableResult
-    public func with<Relation>(
-        _ throughKey: KeyPath<Model, Relation>,
-        filter: QueryBuilderFilterBlock<Relation.To>? = nil,
-        _ nested: (NestedEagerLoadBuilder<Self, Relation>) -> ()
-    ) -> Self
-        where Relation: EagerLoadable, Relation.From == Model
-    {
-        Relation.eagerLoad(throughKey, filter: filter, to: self)
-        let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)
-        nested(builder)
-        return self
-    }
+//    @discardableResult
+//    public func with<Relation>(
+//        _ throughKey: KeyPath<Model, Relation>,
+//        _ nested: (NestedEagerLoadBuilder<Self, Relation>) -> ()
+//    ) -> Self
+//        where Relation: EagerLoadable, Relation.From == Model
+//    {
+//        let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)
+//        nested(builder)
+//        return self
+//    }
 }
 
 public struct NestedEagerLoadBuilder<Builder, Relation>: EagerLoadBuilder
