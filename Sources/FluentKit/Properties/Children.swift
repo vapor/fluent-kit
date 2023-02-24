@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public typealias Children<To> = ChildrenProperty<Self, To>
         where To: FluentKit.Model

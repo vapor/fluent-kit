@@ -1,3 +1,5 @@
+import NIOCore
+
 /// Protocol for describing a database that allows fine-grained control over transcactions
 /// when you need more control than provided by `Database.transaction(_:)`
 ///

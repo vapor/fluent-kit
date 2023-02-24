@@ -1,3 +1,6 @@
+import NIOCore
+import SQLKit
+
 extension Database {
     public func `enum`(_ name: String) -> EnumBuilder {
         .init(database: self, name: name)

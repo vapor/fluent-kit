@@ -1,3 +1,6 @@
+import NIOCore
+
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 public protocol AsyncModelMiddleware: AnyModelMiddleware {
     associatedtype Model: FluentKit.Model
     

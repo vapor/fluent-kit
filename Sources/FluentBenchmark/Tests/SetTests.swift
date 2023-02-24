@@ -1,3 +1,8 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testSet() throws {
         try self.testSet_multiple()

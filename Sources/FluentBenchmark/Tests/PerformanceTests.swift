@@ -1,3 +1,8 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testPerformance(decimalType: DatabaseSchema.DataType = .string) throws {
         try self.testPerformance_largeModel(decimalType: decimalType)

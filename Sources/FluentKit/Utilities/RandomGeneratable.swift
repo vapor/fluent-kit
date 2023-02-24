@@ -1,3 +1,5 @@
+import Foundation
+
 public protocol RandomGeneratable {
     static func generateRandom() -> Self
 }

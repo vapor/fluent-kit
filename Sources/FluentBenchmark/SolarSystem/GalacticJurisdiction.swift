@@ -1,5 +1,6 @@
 import FluentKit
 import Foundation
+import NIOCore
 
 public final class GalacticJurisdiction: Model {
     public static let schema = "galaxy_jurisdictions"

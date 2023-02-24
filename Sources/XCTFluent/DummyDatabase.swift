@@ -1,6 +1,7 @@
 import FluentKit
 import Foundation
 import NIOEmbedded
+import NIOCore
 
 public struct DummyDatabase: Database {
     public var context: DatabaseContext

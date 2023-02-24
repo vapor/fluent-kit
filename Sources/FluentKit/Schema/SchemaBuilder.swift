@@ -4,6 +4,8 @@ extension Database {
     }
 }
 
+import NIOCore
+
 public final class SchemaBuilder {
     let database: Database
     public var schema: DatabaseSchema

@@ -1,3 +1,5 @@
+import NIOCore
+
 extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
     ///

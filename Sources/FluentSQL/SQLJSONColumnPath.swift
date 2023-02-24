@@ -1,3 +1,6 @@
+import SQLKit
+import FluentKit
+
 public struct SQLJSONColumnPath: SQLExpression {
     public var column: String
     public var path: [String]

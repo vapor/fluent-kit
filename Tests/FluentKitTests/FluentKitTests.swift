@@ -1,9 +1,11 @@
+import Logging
 import FluentKit
 import FluentBenchmark
 import XCTest
 import Foundation
 import FluentSQL
 import XCTFluent
+import SQLKit
 
 final class FluentKitTests: XCTestCase {
     override class func setUp() {

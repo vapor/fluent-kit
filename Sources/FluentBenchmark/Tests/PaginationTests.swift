@@ -1,3 +1,6 @@
+import FluentKit
+import XCTest
+
 extension FluentBenchmarker {
     public func testPagination() throws {
         try self.runTest(#function, [

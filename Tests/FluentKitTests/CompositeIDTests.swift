@@ -4,6 +4,7 @@ import XCTest
 import Foundation
 import FluentSQL
 import XCTFluent
+import NIOCore
 
 extension Collection {
     func xctAt(_ idx: Self.Index, file: StaticString = #fileID, line: UInt = #line) throws -> Self.Element {

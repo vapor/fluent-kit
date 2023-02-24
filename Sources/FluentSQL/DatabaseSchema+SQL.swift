@@ -1,3 +1,6 @@
+import FluentKit
+import SQLKit
+
 extension DatabaseSchema.DataType {
     public static func sql(raw: String) -> Self {
         .sql(SQLRaw(raw))

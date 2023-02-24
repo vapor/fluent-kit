@@ -1,3 +1,6 @@
+import FluentKit
+import XCTest
+
 extension FluentBenchmarker {
     public func testRange() throws {
         try self.testRange_basic()

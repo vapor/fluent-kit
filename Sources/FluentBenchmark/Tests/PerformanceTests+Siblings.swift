@@ -1,5 +1,8 @@
 import XCTest
 import Dispatch
+import FluentKit
+import Foundation
+import NIOCore
 
 extension FluentBenchmarker {
     internal func testPerformance_siblings() throws {

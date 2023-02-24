@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public func save(on database: Database) -> EventLoopFuture<Void> {
         if self._$idExists {

@@ -1,3 +1,5 @@
+import NIOCore
+
 public protocol EagerLoader: AnyEagerLoader {
     associatedtype Model: FluentKit.Model
     func run(models: [Model], on database: Database) -> EventLoopFuture<Void>

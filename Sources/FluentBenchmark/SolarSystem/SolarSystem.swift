@@ -1,4 +1,6 @@
 import AsyncKit
+import FluentKit
+import NIOCore
 
 private let migrations: [Migration] = [
     GalaxyMigration(),

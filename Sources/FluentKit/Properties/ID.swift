@@ -1,3 +1,5 @@
+import Foundation
+
 extension Model {
     public typealias ID<Value> = IDProperty<Self, Value>
         where Value: Codable

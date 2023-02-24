@@ -1,3 +1,8 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testArray() throws {
         try self.testArray_basic()

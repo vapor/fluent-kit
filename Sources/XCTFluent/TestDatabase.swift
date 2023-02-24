@@ -1,5 +1,7 @@
 import FluentKit
 import NIOEmbedded
+import Logging
+import NIOCore
 
 /// Lets you mock the row results for each query.
 ///

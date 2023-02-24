@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
         where To: FluentKit.Model

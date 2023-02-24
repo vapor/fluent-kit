@@ -1,4 +1,5 @@
 import FluentKit
+import SQLKit
 
 public struct SQLQueryConverter {
     let delegate: SQLConverterDelegate

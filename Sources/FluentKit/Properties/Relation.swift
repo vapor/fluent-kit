@@ -1,3 +1,5 @@
+import NIOCore
+
 /// A protocol which designates a conforming type as representing a database relation of any kind. Intended
 /// for use only by FluentKit property wrappers.
 ///

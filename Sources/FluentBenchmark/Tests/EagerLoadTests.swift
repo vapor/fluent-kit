@@ -1,3 +1,9 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+import Logging
+
 extension FluentBenchmarker {
     public func testEagerLoad() throws {
         try self.testEagerLoad_nesting()

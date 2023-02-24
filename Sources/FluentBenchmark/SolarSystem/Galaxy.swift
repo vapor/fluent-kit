@@ -1,4 +1,7 @@
 import FluentKit
+import Foundation
+import NIOCore
+import XCTest
 
 public final class Galaxy: Model {
     public static let schema = "galaxies"

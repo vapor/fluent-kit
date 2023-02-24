@@ -1,3 +1,6 @@
+import NIOCore
+import Logging
+
 public protocol Database {
     var context: DatabaseContext { get }
     
