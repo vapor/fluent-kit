@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
         where To: Model

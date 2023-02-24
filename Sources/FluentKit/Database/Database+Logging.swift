@@ -1,3 +1,6 @@
+import NIOCore
+import Logging
+
 extension Database {
     public func logging(to logger: Logger) -> Database {
         LoggingOverrideDatabase(database: self, logger: logger)

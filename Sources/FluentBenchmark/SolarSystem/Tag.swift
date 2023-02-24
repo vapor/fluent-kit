@@ -1,4 +1,7 @@
 import FluentKit
+import Foundation
+import NIOCore
+import XCTest
 
 public final class Tag: Model {
     public static let schema = "tags"

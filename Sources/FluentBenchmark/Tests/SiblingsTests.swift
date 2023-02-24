@@ -1,3 +1,6 @@
+import XCTest
+import FluentKit
+
 extension FluentBenchmarker {
     public func testSiblings() throws {
         try self.testSiblings_attach()

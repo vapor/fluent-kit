@@ -1,3 +1,8 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testGroup() throws {
         try self.testGroup_flat()

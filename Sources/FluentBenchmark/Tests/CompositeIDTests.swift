@@ -1,3 +1,6 @@
+import FluentKit
+import Foundation
+import NIOCore
 import XCTest
 import SQLKit
 

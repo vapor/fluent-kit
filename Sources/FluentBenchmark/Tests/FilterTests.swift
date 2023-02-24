@@ -1,3 +1,7 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
 import FluentSQL
 
 extension FluentBenchmarker {

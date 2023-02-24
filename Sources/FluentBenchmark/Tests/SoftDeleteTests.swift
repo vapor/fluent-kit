@@ -1,4 +1,8 @@
+import FluentKit
+import Foundation
+import NIOCore
 import XCTest
+
 extension FluentBenchmarker {
     public func testSoftDelete() throws {
         try self.testSoftDelete_model()

@@ -1,6 +1,8 @@
 import Foundation
 import struct NIOConcurrencyHelpers.NIOLock
-@_exported import class NIO.NIOThreadPool
+import NIOCore
+import NIOPosix
+import Logging
 
 public struct DatabaseConfigurationFactory {
     public let make: () -> DatabaseConfiguration

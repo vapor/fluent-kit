@@ -1,3 +1,6 @@
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testChunk() throws {
         try self.testChunk_fetch()

@@ -1,3 +1,7 @@
+import NIOCore
+import XCTest
+import FluentKit
+
 extension FluentBenchmarker {
     public func testTransaction() throws {
         try self.testTransaction_basic()

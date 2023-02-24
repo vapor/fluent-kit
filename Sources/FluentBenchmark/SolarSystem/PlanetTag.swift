@@ -1,4 +1,7 @@
 import FluentKit
+import Foundation
+import NIOCore
+import XCTest
 
 public final class PlanetTag: Model {
     public static let schema = "planet+tag"

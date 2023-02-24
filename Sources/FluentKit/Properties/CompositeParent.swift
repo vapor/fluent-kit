@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     /// A convenience alias for ``CompositeParentProperty``. It is strongly recommended that callers use this
     /// alias rather than referencing ``CompositeParentProperty`` directly whenever possible.

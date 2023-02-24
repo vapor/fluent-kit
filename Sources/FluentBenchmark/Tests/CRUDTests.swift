@@ -1,3 +1,7 @@
+import FluentKit
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testCRUD() throws {
         try self.testCRUD_create()

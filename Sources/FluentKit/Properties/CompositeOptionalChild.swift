@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     /// A convenience alias for ``CompositeOptionalChildProperty``. It is strongly recommended that callers use this
     /// alias rather than referencing ``CompositeOptionalChildProperty`` directly whenever possible.

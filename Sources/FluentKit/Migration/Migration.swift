@@ -1,3 +1,5 @@
+import NIOCore
+
 /// Fluent's `Migration` can handle database migrations, which can include
 /// adding new table, changing existing tables or adding
 /// seed data. These actions are executed only once.

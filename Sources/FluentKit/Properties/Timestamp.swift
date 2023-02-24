@@ -1,3 +1,5 @@
+import Foundation
+
 extension Model {
     public typealias Timestamp<Format> = TimestampProperty<Self, Format>
         where Format: TimestampFormat

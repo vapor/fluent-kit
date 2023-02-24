@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
         where To: Model, Through: Model

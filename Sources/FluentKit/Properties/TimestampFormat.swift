@@ -1,6 +1,5 @@
-import class Foundation.ISO8601DateFormatter
-import class Foundation.DateFormatter
 import class NIO.ThreadSpecificVariable
+import Foundation
 
 // MARK: Format
 

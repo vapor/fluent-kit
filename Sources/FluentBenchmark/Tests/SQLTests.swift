@@ -1,4 +1,8 @@
-import FluentSQL
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+import SQLKit
 
 extension FluentBenchmarker {
     public func testSQL() throws {

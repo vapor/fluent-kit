@@ -1,3 +1,5 @@
+import NIOCore
+
 extension QueryBuilder {
     // MARK: Aggregate
 
