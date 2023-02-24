@@ -25,6 +25,7 @@ let package = Package(
             .product(name: "NIOCore", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .product(name: "AsyncKit", package: "async-kit"),
+            .product(name: "SQLKit", package: "sql-kit"),
         ]),
         .target(name: "FluentBenchmark", dependencies: [
             .target(name: "FluentKit"),
