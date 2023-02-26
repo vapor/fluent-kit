@@ -118,10 +118,10 @@ extension FluentBenchmarker {
     
     private func testCompositeParent_nestedInCompositeID() throws {
         try self.runTest(#function, [
-            CompositeParentTheFirst.ModelMigration(),
-            CompositeParentTheSecond.ModelMigration(),
             GalaxyMigration(),
             GalaxySeed(),
+            CompositeParentTheFirst.ModelMigration(),
+            CompositeParentTheSecond.ModelMigration(),
         ]) {
             let anyGalaxy = try XCTUnwrap(Galaxy.query(on: self.database).first().wait())
             
