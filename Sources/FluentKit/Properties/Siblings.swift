@@ -41,10 +41,8 @@ public final class SiblingsProperty<From, To, Through>
         from: KeyPath<Through, Through.Parent<From>>,
         to: KeyPath<Through, Through.Parent<To>>
     ) {
-        guard !(From.IDValue.self is Fields.Type) /*From().anyId is AnyQueryAddressableProperty*/,
-              !(To.IDValue.self is Fields.Type) /*To().anyId is AnyQueryAddressableProperty*/
-        else {
-            fatalError("Can not use @Siblings with models whose IDs are not addressable (this probably means '\(From.self)' and/or '\(To.self)' uses `@CompositeID`).")
+        guard !(From.IDValue.self is Fields.Type), !(To.IDValue.self is Fields.Type) else {
+            fatalError("Can not use @Siblings with models which have composite IDs.")
         }
 
         self.from = from

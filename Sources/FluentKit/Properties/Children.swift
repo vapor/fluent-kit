@@ -27,10 +27,6 @@ public final class ChildrenProperty<From, To>
     }
     
     private init(for parentKey: Key) {
-        guard !(From.IDValue.self is Fields.Type) /*From().anyId is AnyQueryAddressableProperty*/ else {
-            fatalError("Can not use @Children with a model whose ID is not addressable (this probably means '\(From.self)' uses `@CompositeID`).")
-        }
-
         self.parentKey = parentKey
     }
 
