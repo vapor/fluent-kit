@@ -6,6 +6,7 @@ extension FluentBenchmarker {
     public func testCompositeRelations() throws {
         try testCompositeParent_loading()
         try testCompositeChildren_loading()
+        try testCompositeParent_nestedInCompositeID()
     }
 
     private func testCompositeParent_loading() throws {
@@ -114,6 +115,35 @@ extension FluentBenchmarker {
             XCTAssertNil(parent6.$additionalLinkedCompositeIdChildModel.value??.id)
         }
     }
+    
+    private func testCompositeParent_nestedInCompositeID() throws {
+        try self.runTest(#function, [
+            CompositeParentTheFirst.ModelMigration(),
+            CompositeParentTheSecond.ModelMigration(),
+            GalaxyMigration(),
+            GalaxySeed(),
+        ]) {
+            let anyGalaxy = try XCTUnwrap(Galaxy.query(on: self.database).first().wait())
+            
+            let parentFirst = CompositeParentTheFirst(parentId: try anyGalaxy.requireID())
+            try parentFirst.create(on: self.database).wait()
+            
+            let parentSecond = CompositeParentTheSecond(parentId: try parentFirst.requireID())
+            try parentSecond.create(on: self.database).wait()
+            
+            XCTAssertEqual(try CompositeParentTheFirst.query(on: self.database).filter(\.$id == parentFirst.requireID()).count().wait(), 1)
+            
+            let parentFirstAgain = try XCTUnwrap(CompositeParentTheFirst.query(on: self.database).filter(\.$id.$parent.$id == anyGalaxy.requireID()).with(\.$id.$parent).with(\.$children).first().wait())
+            
+            XCTAssertEqual(parentFirstAgain.id?.$parent.value?.id, anyGalaxy.id)
+            XCTAssertEqual(parentFirstAgain.$children.value?.first?.id?.$parent.id, parentFirstAgain.id)
+            
+            try Galaxy.query(on: self.database).filter(\.$id == anyGalaxy.requireID()).delete(force: true).wait()
+            
+            XCTAssertEqual(try CompositeParentTheFirst.query(on: self.database).count().wait(), 0)
+            XCTAssertEqual(try CompositeParentTheSecond.query(on: self.database).count().wait(), 0)
+        }
+    }
 }
 
 final class CompositeIDParentModel: Model {
@@ -169,8 +199,6 @@ final class CompositeIDParentModel: Model {
     }
 
     struct ModelMigration: Migration {
-        init() {}
-        
         func prepare(on database: Database) -> EventLoopFuture<Void> {
             database.schema(CompositeIDParentModel.schema)
                 .field("name", .string, .required)
@@ -186,8 +214,6 @@ final class CompositeIDParentModel: Model {
     }
 
     struct ModelSeed: Migration {
-        init() {}
-        
         func prepare(on database: Database) -> EventLoopFuture<Void> {
             [
                 CompositeIDParentModel(name: "A", dimensions: 1),
@@ -237,8 +263,6 @@ final class CompositeIDChildModel: Model {
     }
     
     struct ModelMigration: Migration {
-        init() {}
-        
         func prepare(on database: Database) -> EventLoopFuture<Void> {
             database.schema(CompositeIDChildModel.schema)
                 .field(.id, .int, .required, .identifier(auto: (database as? SQLDatabase)?.dialect.name != "sqlite"))
@@ -279,8 +303,6 @@ final class CompositeIDChildModel: Model {
     }
     
     struct ModelSeed: Migration {
-        init() {}
-        
         func prepare(on database: Database) -> EventLoopFuture<Void> {
             [
                 CompositeIDChildModel(id: 1, parentId: .init(name: "A"), additionalParentId: nil,              linkedId: .init(name: "A"), additionalLinkedId: nil),
@@ -314,5 +336,102 @@ extension DatabaseSchema.Constraint {
             .equal,
             SQLGroupExpression(SQLBinaryExpression(SQLFunction.coalesce([SQLLiteral.null] + fields.dropFirst().map{$0}), .is, SQLLiteral.null))
         ))))
+    }
+}
+
+final class CompositeParentTheFirst: Model {
+    static let schema = "composite_parent_the_first"
+    
+    final class IDValue: Fields, Hashable {
+        @Parent(key: "parent_id")
+        var parent: Galaxy
+        
+        init() {}
+        
+        init(parentId: Galaxy.IDValue) {
+            self.$parent.id = parentId
+        }
+        
+        static func == (lhs: IDValue, rhs: IDValue) -> Bool {
+            lhs.$parent.id == rhs.$parent.id
+        }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(self.$parent.id)
+        }
+    }
+    
+    @CompositeID
+    var id: IDValue?
+    
+    @CompositeChildren(for: \.$id.$parent)
+    var children: [CompositeParentTheSecond]
+    
+    init() {}
+    
+    init(parentId: Galaxy.IDValue) {
+        self.id = .init(parentId: parentId)
+    }
+    
+    struct ModelMigration: Migration {
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(CompositeParentTheFirst.schema)
+                .field("parent_id", .uuid, .required)
+                .foreignKey("parent_id", references: Galaxy.schema, .id, onDelete: .cascade, onUpdate: .cascade)
+                .compositeIdentifier(over: "parent_id")
+                .create()
+        }
+        
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(CompositeParentTheFirst.schema)
+                .delete()
+        }
+    }
+}
+
+final class CompositeParentTheSecond: Model {
+    static let schema = "composite_parent_the_second"
+    
+    final class IDValue: Fields, Hashable {
+        @CompositeParent(prefix: "ref", strategy: .snakeCase)
+        var parent: CompositeParentTheFirst
+
+        init() {}
+
+        init(parentId: CompositeParentTheFirst.IDValue) {
+            self.$parent.id.$parent.id = parentId.$parent.id
+        }
+
+        static func == (lhs: IDValue, rhs: IDValue) -> Bool {
+            lhs.$parent.id == rhs.$parent.id
+        }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(self.$parent.id)
+        }
+    }
+    
+    @CompositeID
+    var id: IDValue?
+    
+    init() {}
+    
+    init(parentId: CompositeParentTheFirst.IDValue) {
+        self.id = .init(parentId: parentId)
+    }
+    
+    struct ModelMigration: Migration {
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(CompositeParentTheSecond.schema)
+                .field("ref_parent_id", .uuid, .required)
+                .foreignKey("ref_parent_id", references: CompositeParentTheFirst.schema, "parent_id", onDelete: .cascade, onUpdate: .cascade)
+                .compositeIdentifier(over: "ref_parent_id")
+                .create()
+        }
+        
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(CompositeParentTheSecond.schema)
+                .delete()
+        }
     }
 }
