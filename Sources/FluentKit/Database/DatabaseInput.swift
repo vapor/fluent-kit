@@ -104,12 +104,15 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 /// need not be the same as `BuilderModel` (the base model of the query builder). This permits filtering
 /// to be applied based on a joined model, and enables support for ``ModelAlias``.
 ///
+/// If ``QueryFilterInput/inverted`` is `true`, the added filters will use the ``DatabaseQuery/Filter/Method/notEqual``
+/// method instead.
+///
 /// The ``DatabaseInput/wantsUnmodifiedKeys-1qajw`` flag is enabled for this input type.
 ///
 /// The query builder is modified in-place. Callers may either retain their own reference to the builder or
 /// retrieve it from this structure when ready. It is the caller's responsibility to ensure that grouping of
 /// multiple filters is handled appropriately for their use case - most commonly by using the builder passed
-/// to a   ``QueryBuilder/group(_:_:)`` closure to create an instance of this type.
+/// to a  ``QueryBuilder/group(_:_:)`` closure to create an instance of this type.
 ///
 /// > Tip: Applying a query filter via database input is especially useful as a means of providing generic
 ///   support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
@@ -117,21 +120,23 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 ///   prefixed field keys the property encapsulates.
 internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Schema>: DatabaseInput {
     let builder: QueryBuilder<BuilderModel>
+    let inverted: Bool
     
     var wantsUnmodifiedKeys: Bool { true }
     
-    init(builder: QueryBuilder<BuilderModel>) where BuilderModel == InputModel {
-        self.init(BuilderModel.self, builder: builder)
+    init(builder: QueryBuilder<BuilderModel>, inverted: Bool = false) where BuilderModel == InputModel {
+        self.init(BuilderModel.self, builder: builder, inverted: inverted)
     }
     
-    init(_: InputModel.Type, builder: QueryBuilder<BuilderModel>) {
+    init(_: InputModel.Type, builder: QueryBuilder<BuilderModel>, inverted: Bool = false) {
         self.builder = builder
+        self.inverted = inverted
     }
 
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.builder.filter(
             .extendedPath([key], schema: InputModel.schemaOrAlias, space: InputModel.spaceIfNotAliased),
-            .equal,
+            self.inverted ? .notEqual : .equal,
             value
         )
     }

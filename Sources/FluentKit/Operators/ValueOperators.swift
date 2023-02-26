@@ -33,17 +33,14 @@ extension QueryBuilder {
         where Joined: Schema, Joined.IDValue: Fields
     {
         let relation: DatabaseQuery.Filter.Relation
+        let inverted: Bool
         switch filter.method {
-        case .equality(false): relation = .and
-        case .equality(true):  relation = .or
+        case .equality(false): (relation, inverted) = (.and, false)
+        case .equality(true):  (relation, inverted) = (.or, true)
         default: fatalError("unreachable")
         }
         
-        return self.group(relation) {
-            _ = filter.value.properties.map { $0 as! AnyQueryAddressableProperty }.filter { $0.anyQueryableProperty.queryableValue() != nil }.reduce($0) {
-                $0.filter(.extendedPath($1.queryablePath, schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased), filter.method, $1.anyQueryableProperty.queryableValue()!)
-            }
-        }
+        return self.group(relation) { filter.value.input(to: QueryFilterInput(builder: $0, inverted: inverted)) }
     }
 }
 

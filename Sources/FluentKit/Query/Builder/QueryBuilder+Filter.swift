@@ -4,14 +4,7 @@ extension QueryBuilder {
     @discardableResult
     internal func filter(id: Model.IDValue) -> Self {
         if let fields = id as? Fields {
-            assert(!(Model.init().anyID is AnyQueryableProperty), "Model's IDValue should not conform to Fields if it can be directly queried.")
-            return self.group(.and) { query in
-                _ = fields.properties.map { $0 as! AnyQueryAddressableProperty }.reduce(query) { query, prop in
-                    prop.anyQueryableProperty.queryableValue().map {
-                        query.filter(.extendedPath(prop.queryablePath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased), .equal, $0)
-                    } ?? query
-                }
-            }
+            return self.group(.and) { fields.input(to: QueryFilterInput(builder: $0)) }
         } else {
             return self.filter(\Model._$id == id)
         }
@@ -21,8 +14,7 @@ extension QueryBuilder {
     internal func filter(ids: [Model.IDValue]) -> Self {
         guard let firstId = ids.first else { return self.limit(0) }
         if firstId is Fields {
-            assert(!(Model.init().anyID is AnyQueryableProperty), "Model's IDValue should not conform to Fields if it can be directly queried.")
-            return self.group(.or) { _ = ids.reduce($0) { $0.filter(id: $1) } }
+            return self.group(.or) { q in ids.forEach { id in q.group(.and) { (id as! Fields).input(to: QueryFilterInput(builder: $0)) } } }
         } else {
             return self.filter(\Model._$id ~~ ids)
         }

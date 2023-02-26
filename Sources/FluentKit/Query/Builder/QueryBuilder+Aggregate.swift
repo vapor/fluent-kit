@@ -7,7 +7,7 @@ extension QueryBuilder {
         if Model().anyID is AnyQueryableProperty {
             return self.count(\._$id)
         } else if let fieldsIDType = Model.IDValue.self as? Fields.Type {
-            return self.aggregate(.count, (fieldsIDType.init().properties.first! as! AnyQueryAddressableProperty).anyQueryableProperty.path)
+            return self.aggregate(.count, fieldsIDType.keys.first!)
         } else {
             fatalError("Model '\(Model.self)' has neither @ID nor @CompositeID, this is not valid.")
         }
@@ -159,6 +159,18 @@ extension QueryBuilder {
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
+        self.aggregate(.field(
+            .extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+            method
+        ))
+    }
+    
+    public func aggregate<Result>(
+        _ aggregate: DatabaseQuery.Aggregate,
+        as type: Result.Type = Result.self
+    ) -> EventLoopFuture<Result>
+        where Result: Codable
+    {
         let copy = self.copy()
         // Remove all eager load requests otherwise we try to
         // read IDs from the aggreate reply when performing
@@ -169,12 +181,7 @@ extension QueryBuilder {
         copy.query.sorts = []
 
         // Set custom action.
-        copy.query.action = .aggregate(
-            .field(
-                .extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
-                method
-            )
-        )
+        copy.query.action = .aggregate(aggregate)
 
         let promise = self.database.eventLoop.makePromise(of: Result.self)
         copy.run { output in
