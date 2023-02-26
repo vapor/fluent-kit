@@ -30,8 +30,8 @@ public final class OptionalParentProperty<From, To>
     public var value: To??
 
     public init(key: FieldKey) {
-        guard !(To.IDValue.self is Fields.Type) /*To().anyId is AnyQueryAddressableProperty*/ else {
-            fatalError("Can not use @OptionalParent to target a model whose ID is not addressable (this probably means '\(To.self)' uses `@CompositeID`).")
+        guard !(To.IDValue.self is Fields.Type) else {
+            fatalError("Can not use @OptionalParent to target a model with composite ID; use @CompositeOptionalParent instead.")
         }
 
         self._id = .init(key: key)

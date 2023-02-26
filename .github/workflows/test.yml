@@ -77,9 +77,6 @@ jobs:
           - { dependent: 'fluent-mysql-driver', ref: 'main' }
           - { dependent: 'fluent-mongo-driver', ref: 'main' }
     steps:
-      - name: Install SQLite dependency
-        run: apt-get -q update && apt-get -q install -y libsqlite3-dev
-        if: ${{ contains(matrix.dependent, 'sqlite') }}
       - name: Check out package
         uses: actions/checkout@v3
         with:
