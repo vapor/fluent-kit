@@ -21,13 +21,6 @@ public final class CompositeIDProperty<Model, Value>
     }
 
     public init() {
-        guard Value.init().properties.allSatisfy({ $0 is AnyQueryAddressableProperty }) else {
-            fatalError("""
-                All elements of a composite model ID must represent exactly one actual column in the database.
-                
-                This error is most often caused by trying to use @Children, @Siblings, or @Group inside a @CompositeID.
-                """)
-        }
         self.value = .init()
         self.exists = false
         self.cachedOutput = nil
