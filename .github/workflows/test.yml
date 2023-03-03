@@ -1,4 +1,7 @@
 name: test
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request: { branches: ['*'] }
   push: { branches: ['main'] }
@@ -66,11 +69,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dependent:
-          - fluent-sqlite-driver
-          - fluent-postgres-driver
-          - fluent-mysql-driver
-          - fluent-mongo-driver
         include:
           - { dependent: 'fluent-sqlite-driver', ref: 'main' }
           - { dependent: 'fluent-postgres-driver', ref: 'main' }
@@ -97,5 +95,5 @@ jobs:
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@reusable-workflows
     with:
       with_coverage: true
-      with_tsan: false
+      with_tsan: true
       coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'

@@ -159,7 +159,7 @@ extension FluentBenchmarker {
         final class ChatParticipant: Model {
             static let schema = "chat_participants"
 
-            @ID(key: "id")
+            @ID(key: .id)
             var id: UUID?
 
             @Parent(key: "user_id")
@@ -169,7 +169,7 @@ extension FluentBenchmarker {
         final class User: Model {
             static let schema = "users"
 
-            @ID(key: "id")
+            @ID(key: .id)
             var id: UUID?
         }
 
