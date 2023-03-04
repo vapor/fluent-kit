@@ -137,7 +137,7 @@ private struct PersonMigration: Migration {
 private final class Expedition: Model {
     static let schema = "expeditions"
 
-    @ID(key: "id")
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "name")
@@ -191,7 +191,7 @@ private struct ExpeditionMigration: Migration {
 private final class ExpeditionOfficer: Model {
     static let schema = "expedition+officer"
 
-    @ID(key: "id")
+    @ID(key: .id)
     var id: UUID?
 
     @Parent(key: "expedition_id")
@@ -220,7 +220,7 @@ private struct ExpeditionOfficerMigration: Migration {
 private final class ExpeditionScientist: Model {
     static let schema = "expedition+scientist"
 
-    @ID(key: "id")
+    @ID(key: .id)
     var id: UUID?
 
     @Parent(key: "expedition_id")
@@ -250,7 +250,7 @@ private struct ExpeditionScientistMigration: Migration {
 private final class ExpeditionDoctor: Model {
     static let schema = "expedition+doctor"
 
-    @ID(key: "id")
+    @ID(key: .id)
     var id: UUID?
 
     @Parent(key: "expedition_id")

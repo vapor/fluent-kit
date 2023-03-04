@@ -1,10 +1,4 @@
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-import Darwin.C
-#elseif os(Linux) || os(FreeBSD) || os(Android)
-import Glibc
-#endif
-
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
 @_silgen_name("swift_reflectionMirror_normalizedType")
 internal func _getNormalizedType<T>(_: T, type: Any.Type) -> Any.Type
 
@@ -30,7 +24,7 @@ internal struct _FastChildIterator: IteratorProtocol {
         deinit { self.freeFunc(self.ptr) }
     }
     
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
     private let subject: AnyObject
     private let type: Any.Type
     private let childCount: Int
@@ -40,7 +34,7 @@ internal struct _FastChildIterator: IteratorProtocol {
 #endif
     private var lastNameBox: _CStringBox?
     
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
     fileprivate init(subject: AnyObject, type: Any.Type, childCount: Int) {
         self.subject = subject
         self.type = type
@@ -54,7 +48,7 @@ internal struct _FastChildIterator: IteratorProtocol {
 #endif
     
     init(subject: AnyObject) {
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
         let type = _getNormalizedType(subject, type: Swift.type(of: subject))
         self.init(
             subject: subject,
@@ -75,7 +69,7 @@ internal struct _FastChildIterator: IteratorProtocol {
     /// - Note: Ironically, in the fallback case that uses `Mirror` directly, preserving this semantic actually imposes
     ///   an _additional_ performance penalty.
     mutating func next() -> (name: UnsafePointer<CChar>?, child: Any)? {
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
         guard self.index < self.childCount else {
             self.lastNameBox = nil // ensure any lingering name gets freed
             return nil
@@ -94,9 +88,13 @@ internal struct _FastChildIterator: IteratorProtocol {
             return nil
         }
         if var label = child.label {
-            let nameC = calloc(label.utf8.count + 1, MemoryLayout<CChar>.size).bindMemory(to: CChar.self, capacity: label.utf8.count + 1)
-            label.withUTF8 { _ = memcpy(nameC, $0.baseAddress!, $0.count) }
-            self.lastNameBox = _CStringBox(ptr: UnsafePointer(nameC), freeFunc: { free($0.map { UnsafeMutableRawPointer(mutating: $0) }) })
+            let nameC = label.withUTF8 {
+                let buf = UnsafeMutableBufferPointer<CChar>.allocate(capacity: $0.count + 1)
+                buf.initialize(repeating: 0)
+                _ = $0.withMemoryRebound(to: CChar.self) { buf.update(fromContentsOf: $0) }
+                return buf.baseAddress!
+            }
+            self.lastNameBox = _CStringBox(ptr: UnsafePointer(nameC), freeFunc: { $0?.deallocate() })
             return (name: UnsafePointer(nameC), child: child.value)
         } else {
             self.lastNameBox = nil
@@ -107,7 +105,7 @@ internal struct _FastChildIterator: IteratorProtocol {
 }
 
 internal struct _FastChildSequence: Sequence {
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
     private let subject: AnyObject
     private let type: Any.Type
     private let childCount: Int
@@ -116,7 +114,7 @@ internal struct _FastChildSequence: Sequence {
 #endif
 
     init(subject: AnyObject) {
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
         self.subject = subject
         self.type = _getNormalizedType(subject, type: Swift.type(of: subject))
         self.childCount = _getChildCount(subject, type: self.type)
@@ -126,7 +124,7 @@ internal struct _FastChildSequence: Sequence {
     }
     
     func makeIterator() -> _FastChildIterator {
-#if compiler(<5.8) && compiler(>=5.2)
+#if compiler(<5.9)
         return _FastChildIterator(subject: self.subject, type: self.type, childCount: self.childCount)
 #else
         return _FastChildIterator(iterator: self.children.makeIterator())
