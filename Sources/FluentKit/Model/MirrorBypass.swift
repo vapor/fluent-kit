@@ -89,7 +89,7 @@ internal struct _FastChildIterator: IteratorProtocol {
         }
         if var label = child.label {
             let nameC = label.withUTF8 {
-                let buf = UnsafeMutableBufferPointer<CChar>.allocate(capacity: $0.count)
+                let buf = UnsafeMutableBufferPointer<CChar>.allocate(capacity: $0.count + 1)
                 buf.initialize(repeating: 0)
                 _ = $0.withMemoryRebound(to: CChar.self) { buf.update(fromContentsOf: $0) }
                 return buf.baseAddress!
