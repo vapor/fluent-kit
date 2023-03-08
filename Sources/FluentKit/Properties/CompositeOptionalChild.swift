@@ -148,10 +148,10 @@ extension CompositeOptionalChildProperty: Relation {
 }
 
 extension CompositeOptionalChildProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, withDeleted : Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = CompositeOptionalChildEagerLoader(relationKey: relationKey)
+        let loader = CompositeOptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -168,6 +168,7 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, From.IDValue: Fields
 {
     let relationKey: KeyPath<From, From.CompositeOptionalChild<To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
@@ -177,7 +178,9 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
-        
+        if (withDeleted) {
+            builder.withDeleted()
+        }
         return builder.all().map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
             

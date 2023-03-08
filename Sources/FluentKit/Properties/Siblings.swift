@@ -325,11 +325,12 @@ extension SiblingsProperty: Relation {
 extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
+        withDeleted : Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = SiblingsEagerLoader(relationKey: relationKey)
+        let loader = SiblingsEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -354,16 +355,20 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
     where From: Model, Through: Model, To: Model
 {
     let relationKey: KeyPath<From, From.Siblings<To, Through>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
 
         let from = From()[keyPath: self.relationKey].from
         let to = From()[keyPath: self.relationKey].to
-        return To.query(on: database)
+        let builder = To.query(on: database)
             .join(Through.self, on: \To._$id == to.appending(path: \.$id))
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
-            .all()
+        if (withDeleted) {
+            builder.withDeleted()
+        }
+        return builder.all()
             .flatMapThrowing
         {
             var map: [From.IDValue: [To]] = [:]

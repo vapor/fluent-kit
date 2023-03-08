@@ -21,6 +21,7 @@ public protocol EagerLoadable {
 
     static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
+        withDeleted : Bool,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From
 

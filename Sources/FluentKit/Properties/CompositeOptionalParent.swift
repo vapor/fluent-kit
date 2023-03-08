@@ -191,10 +191,10 @@ extension CompositeOptionalParentProperty: AnyCodableProperty {
 }
 
 extension CompositeOptionalParentProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalParent<To>>, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalParent<To>>, withDeleted : Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        builder.add(loader: CompositeOptionalParentEagerLoader(relationKey: relationKey))
+        builder.add(loader: CompositeOptionalParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted))
     }
 
     public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeOptionalParent<To>>, to builder: Builder)
@@ -208,14 +208,18 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, To.IDValue: Fields
 {
     let relationKey: KeyPath<From, From.CompositeOptionalParent<To>>
+    let withDeleted: Bool
     
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
-        return To.query(on: database)
+        let builder = To.query(on: database)
             .group(.or) { _ = sets.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }
-            .all().flatMapThrowing {
+        if (withDeleted) {
+            builder.withDeleted()
+        }
+        return builder.all().flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
                 for (parentId, models) in sets {
