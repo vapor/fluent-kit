@@ -81,7 +81,7 @@ public struct SQLQueryConverter {
         guard case .dictionary(let first) = query.input.first! else {
             fatalError("Unexpected query input: \(query.input)")
         }
-        let keys: [FieldKey] = Array(first.keys)
+        let keys: [FieldKey] = Array(first.keys).sorted { $0.description < $1.description }
         insert.columns = keys.map { key in
             SQLColumn(self.key(key))
         }
