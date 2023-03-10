@@ -49,7 +49,7 @@ final class CompositeIDTests: XCTestCase {
         try model.delete(force: true, on: db).wait()
 
         XCTAssertEqual(db.sqlSerializers.count, 6)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"INSERT INTO "composite+planet+tag" ("createdAt", "notation", "tag_id", "planet_id", "updatedAt") VALUES ($1, $2, $3, $4, $5)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "notation", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "notation" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(2).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "planet_id" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(3).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
@@ -112,8 +112,8 @@ final class CompositeIDTests: XCTestCase {
         XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id" FROM "planets" WHERE "planets"."id" = $1 LIMIT 1"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $2)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(2).sql, #"SELECT "tags"."id" AS "tags_id", "tags"."name" AS "tags_name", "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "tags" INNER JOIN "composite+planet+tag" ON "tags"."id" = "composite+planet+tag"."tag_id" WHERE "composite+planet+tag"."planet_id" = $1 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $2)"#)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(3).sql, #"INSERT INTO "composite+planet+tag" ("createdAt", "tag_id", "updatedAt", "planet_id") VALUES ($1, $2, $3, $4)"#)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(4).sql, #"INSERT INTO "composite+planet+tag" ("createdAt", "tag_id", "updatedAt", "planet_id") VALUES ($1, $2, $3, $4)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(3).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(4).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(5).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3) LIMIT 1"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(6).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3) LIMIT 1"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(7).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE "composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
@@ -192,18 +192,18 @@ final class CompositeIDTests: XCTestCase {
         moon4.$planetoid.id = nil
         try [moon1, moon2, moon3, moon4].forEach { try $0.update(on: db).wait() }
         
-        let firstMoonCols = #""planet_system_id", "id""#, fourVals = "$1, $2, $3, $4", sixVals = "\(fourVals), $5, $6"
+        let moonCols = #""id", "name", "planet_system_id", "planet_nrm_ord""#, fourVals = "$1, $2, $3, $4", sixVals = "\(fourVals), $5, $6"
         let expectedQueries: [(String, [Encodable])] = [
-            (#"INSERT INTO "composite+planet" ("system_id", "name", "nrm_ord") VALUES ($1, $2, $3)"#,                                                         [sysId, "A", 1]),
-            (#"INSERT INTO "composite+moon" (\#(firstMoonCols), "planet_nrm_ord", "name") VALUES (\#(fourVals))"#,                                            [sysId, moon1.id!, 1, "B"]),
-            (#"INSERT INTO "composite+moon" (\#(firstMoonCols), "progenitorSystem_id", "progenitorNrm_ord", "planet_nrm_ord", "name") VALUES (\#(sixVals))"#, [sysId, moon2.id!, sysId, 2, 1, "C"]),
-            (#"INSERT INTO "composite+moon" (\#(firstMoonCols), "planet_nrm_ord", "name") VALUES (\#(fourVals))"#,                                            [sysId, moon3.id!, 1, "D"]),
-            (#"INSERT INTO "composite+moon" (\#(firstMoonCols), "planetoid_nrm_ord", "planet_nrm_ord", "planetoid_system_id", "name") VALUES (\#(sixVals))"#, [sysId, moon4.id!, 3, 1, sysId, "E"]),
-            (#"UPDATE "composite+planet" SET "name" = $1 WHERE ("composite+planet"."system_id" = $2 AND "composite+planet"."nrm_ord" = $3)"#,                 ["AA", sysId, 1]),
-            (#"UPDATE "composite+moon" SET "planet_nrm_ord" = $1, "planet_system_id" = $2 WHERE "composite+moon"."id" = $3"#,                                 [2, sys2Id, moon1.id!]),
-            (#"UPDATE "composite+moon" SET "progenitorSystem_id" = NULL, "progenitorNrm_ord" = NULL WHERE "composite+moon"."id" = $1"#,                       [moon2.id!]),
-            (#"UPDATE "composite+moon" SET "planetoid_system_id" = $1, "planetoid_nrm_ord" = $2 WHERE "composite+moon"."id" = $3"#,                           [sys2Id, 3, moon3.id!]),
-            (#"UPDATE "composite+moon" SET "planetoid_system_id" = NULL, "planetoid_nrm_ord" = NULL WHERE "composite+moon"."id" = $1"#,                       [moon4.id!]),
+            (#"INSERT INTO "composite+planet" ("system_id", "nrm_ord", "name") VALUES ($1, $2, $3)"#,                                         [sysId, 1, "A"]),
+            (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(fourVals))"#,                                                           [moon1.id!, "B", sysId, 1]),
+            (#"INSERT INTO "composite+moon" (\#(moonCols), "progenitorSystem_id", "progenitorNrm_ord") VALUES (\#(sixVals))"#,                [moon2.id!, "C", sysId, 1, sysId, 2]),
+            (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(fourVals))"#,                                                           [moon3.id!, "D", sysId, 1]),
+            (#"INSERT INTO "composite+moon" (\#(moonCols), "planetoid_system_id", "planetoid_nrm_ord") VALUES (\#(sixVals))"#,                [moon4.id!, "E", sysId, 1, sysId, 3]),
+            (#"UPDATE "composite+planet" SET "name" = $1 WHERE ("composite+planet"."system_id" = $2 AND "composite+planet"."nrm_ord" = $3)"#, ["AA", sysId, 1]),
+            (#"UPDATE "composite+moon" SET "planet_nrm_ord" = $1, "planet_system_id" = $2 WHERE "composite+moon"."id" = $3"#,                 [2, sys2Id, moon1.id!]),
+            (#"UPDATE "composite+moon" SET "progenitorSystem_id" = NULL, "progenitorNrm_ord" = NULL WHERE "composite+moon"."id" = $1"#,       [moon2.id!]),
+            (#"UPDATE "composite+moon" SET "planetoid_system_id" = $1, "planetoid_nrm_ord" = $2 WHERE "composite+moon"."id" = $3"#,           [sys2Id, 3, moon3.id!]),
+            (#"UPDATE "composite+moon" SET "planetoid_system_id" = NULL, "planetoid_nrm_ord" = NULL WHERE "composite+moon"."id" = $1"#,       [moon4.id!]),
         ]
 
         XCTAssertEqual(db.sqlSerializers.count, expectedQueries.count)

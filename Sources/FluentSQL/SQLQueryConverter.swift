@@ -78,24 +78,37 @@ public struct SQLQueryConverter {
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
         var insert = SQLInsert(table: SQLQualifiedTable(query.schema, space: query.space))
-        guard case .dictionary(let first) = query.input.first! else {
+
+        // 1. Load the first set of inputs to the query, used as a basis to validate uniformity of all inputs.
+        guard let firstInput = query.input.first, case let .dictionary(firstValues) = firstInput else {
             fatalError("Unexpected query input: \(query.input)")
         }
-        let keys: [FieldKey] = Array(first.keys)
-        insert.columns = keys.map { key in
-            SQLColumn(self.key(key))
+        
+        // 2. Translate the list of fields from the query, which are given in a meaningful, deterministic order, into
+        //    column designators.
+        let keys = query.fields.map { field -> FieldKey in switch field {
+            case let .path(path, schema) where schema == query.schema: return path[0]
+            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space: return path[0]
+            default: fatalError("Can't insert into invalid field \(field)")
+        } }
+        
+        // 3. Filter the list of columns so that only those actually provided are specified to the insert query, since
+        //    often a query will insert only some of a model's fields while still listing all of them.
+        let usedKeys = keys.filter { firstValues.keys.contains($0) }
+        
+        // 4. Validate each set of inputs, making sure it provides exactly the keys as the first, and convert the sets
+        //    to their underlying SQL representations.
+        let dictionaries = query.input.map { input -> [FieldKey: SQLExpression] in
+            guard case let .dictionary(value) = input else { fatalError("Unexpected query input: \(input)") }
+            guard Set(value.keys).symmetricDifference(usedKeys).isEmpty else { fatalError("Non-uniform query input: \(query.input)") }
+            return value.mapValues(self.value(_:))
         }
-        insert.values = query.input.map { value in
-            guard case .dictionary(let nested) = value else {
-                fatalError("Unexpected query input: \(value)")
-            }
-            return keys.map { key in
-                guard let value = nested[key] else {
-                    fatalError("Non-uniform query input: \(query.input)")
-                }
-                return self.value(value)
-            }
-        }
+        
+        // 5. Provide the list of columns and the sets of inserted values to the actual query, always specifying in the
+        //    same order as the original field list.
+        insert.columns = usedKeys.map { SQLColumn(self.key($0)) }
+        insert.values = dictionaries.map { values in usedKeys.compactMap { values[$0] } }
+
         return insert
     }
     

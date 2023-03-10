@@ -11,26 +11,26 @@ final class OptionalFieldQueryTests: DbQueryTestCase {
         
     func testInsertNonNull() throws {
         _ = try Thing(id: 1, name: "Jared").create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES ($1, $2)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, $2)"#)
     }
     
     func testInsertNull() throws {
         _ = try Thing(id: 1, name: nil).create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES (NULL, $1)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, NULL)"#)
     }
     
     func testInsertAfterMutatingNullableField() throws {
         let thing = Thing(id: 1, name: nil)
         thing.name = "Jared"
         _ = try thing.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES ($1, $2)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, $2)"#)
         
         db.reset()
         
         let thing2 = Thing(id: 1, name: "Jared")
         thing2.name = nil
         _ = try thing2.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES (NULL, $1)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, NULL)"#)
     }
     
     func testSaveReplacingNonNull() throws {
@@ -60,19 +60,19 @@ final class OptionalFieldQueryTests: DbQueryTestCase {
     func testBulkInsertWithoutNulls() throws {
         let things = [Thing(id: 1, name: "Jared"), Thing(id: 2, name: "Bob")]
         _ = try things.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES ($1, $2), ($3, $4)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, $2), ($3, $4)"#)
     }
     
     func testBulkInsertWithOnlyNulls() throws {
         let things = [Thing(id: 1, name: nil), Thing(id: 2, name: nil)]
         _ = try things.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES (NULL, $1), (NULL, $2)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, NULL), ($2, NULL)"#)
     }
     
     func testBulkInsertWithMixedNulls() throws {
         let things = [Thing(id: 1, name: "Jared"), Thing(id: 2, name: nil)]
         _ = try things.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("name", "id") VALUES ($1, $2), (NULL, $3)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "name") VALUES ($1, $2), ($3, NULL)"#)
     }
 }
 
