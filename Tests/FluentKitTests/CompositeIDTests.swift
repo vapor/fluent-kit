@@ -50,8 +50,8 @@ final class CompositeIDTests: XCTestCase {
 
         XCTAssertEqual(db.sqlSerializers.count, 6)
         XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "notation", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5)"#)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "notation" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(2).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "planet_id" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"UPDATE "composite+planet+tag" SET "notation" = $1, "updatedAt" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(2).sql, #"UPDATE "composite+planet+tag" SET "planet_id" = $1, "updatedAt" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(3).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE ("composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4) AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(4).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = NULL WHERE ("composite+planet+tag"."planet_id" = $2 AND "composite+planet+tag"."tag_id" = $3)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(5).sql, #"DELETE FROM "composite+planet+tag" WHERE ("composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2)"#)
@@ -200,7 +200,7 @@ final class CompositeIDTests: XCTestCase {
             (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(fourVals))"#,                                                           [moon3.id!, "D", sysId, 1]),
             (#"INSERT INTO "composite+moon" (\#(moonCols), "planetoid_system_id", "planetoid_nrm_ord") VALUES (\#(sixVals))"#,                [moon4.id!, "E", sysId, 1, sysId, 3]),
             (#"UPDATE "composite+planet" SET "name" = $1 WHERE ("composite+planet"."system_id" = $2 AND "composite+planet"."nrm_ord" = $3)"#, ["AA", sysId, 1]),
-            (#"UPDATE "composite+moon" SET "planet_nrm_ord" = $1, "planet_system_id" = $2 WHERE "composite+moon"."id" = $3"#,                 [2, sys2Id, moon1.id!]),
+            (#"UPDATE "composite+moon" SET "planet_system_id" = $1, "planet_nrm_ord" = $2 WHERE "composite+moon"."id" = $3"#,                 [sys2Id, 2, moon1.id!]),
             (#"UPDATE "composite+moon" SET "progenitorSystem_id" = NULL, "progenitorNrm_ord" = NULL WHERE "composite+moon"."id" = $1"#,       [moon2.id!]),
             (#"UPDATE "composite+moon" SET "planetoid_system_id" = $1, "planetoid_nrm_ord" = $2 WHERE "composite+moon"."id" = $3"#,           [sys2Id, 3, moon3.id!]),
             (#"UPDATE "composite+moon" SET "planetoid_system_id" = NULL, "planetoid_nrm_ord" = NULL WHERE "composite+moon"."id" = $1"#,       [moon4.id!]),
