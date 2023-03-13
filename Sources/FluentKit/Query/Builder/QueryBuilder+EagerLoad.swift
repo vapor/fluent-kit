@@ -17,22 +17,23 @@ extension EagerLoadBuilder {
     // MARK: Eager Load
 
     @discardableResult
-    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>) -> Self
+    public func with<Relation>(_ relationKey: KeyPath<Model, Relation>, withDeleted: Bool = false) -> Self
         where Relation: EagerLoadable, Relation.From == Model
     {
-        Relation.eagerLoad(relationKey, to: self)
+        Relation.eagerLoad(relationKey, to: self, withDeleted: withDeleted)
         return self
     }
 
     @discardableResult
     public func with<Relation>(
         _ throughKey: KeyPath<Model, Relation>,
+        withDeleted: Bool = false,
         _ nested: (NestedEagerLoadBuilder<Self, Relation>) -> ()
     ) -> Self
         where Relation: EagerLoadable, Relation.From == Model
     {
-        Relation.eagerLoad(throughKey, to: self)
-        let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)
+        Relation.eagerLoad(throughKey, to: self, withDeleted: withDeleted)
+        let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey, withDeleted: withDeleted)
         nested(builder)
         return self
     }
@@ -46,15 +47,17 @@ public struct NestedEagerLoadBuilder<Builder, Relation>: EagerLoadBuilder
     public typealias Model = Relation.To
     let builder: Builder
     let relationKey: KeyPath<Relation.From, Relation>
+    let withDeleted: Bool
 
-    init(builder: Builder, _ relationKey: KeyPath<Relation.From, Relation>) {
+    init(builder: Builder, _ relationKey: KeyPath<Relation.From, Relation>, withDeleted: Bool) {
         self.builder = builder
         self.relationKey = relationKey
+        self.withDeleted = withDeleted
     }
 
     public func add<Loader>(loader: Loader)
         where Loader: EagerLoader, Loader.Model == Relation.To
     {
-        Relation.eagerLoad(loader, through: self.relationKey, to: self.builder)
+        Relation.eagerLoad(loader, through: self.relationKey, to: self.builder, withDeleted: withDeleted)
     }
 }

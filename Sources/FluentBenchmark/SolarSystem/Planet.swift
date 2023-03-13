@@ -60,7 +60,7 @@ public struct PlanetSeed: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        Star.query(on: database).all().flatMap { stars in
+        Star.query(on: database).withDeleted().all().flatMap { stars in
             .andAllSucceed(stars.map { star in
                 let planets: [Planet]
                 switch star.name {
@@ -78,6 +78,10 @@ public struct PlanetSeed: Migration {
                 case "Alpha Centauri":
                     planets = [
                         .init(name: "Proxima Centauri b")
+                    ]
+                case "SN 1604":
+                    planets = [
+                        .init(name: "Carida")
                     ]
                 default:
                     planets = []

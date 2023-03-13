@@ -2,6 +2,7 @@ import NIOCore
 
 public protocol EagerLoader: AnyEagerLoader {
     associatedtype Model: FluentKit.Model
+    var withDeleted: Bool { get }
     func run(models: [Model], on database: Database) -> EventLoopFuture<Void>
 }
 
@@ -21,13 +22,15 @@ public protocol EagerLoadable {
 
     static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     ) where Builder: EagerLoadBuilder, Builder.Model == From
 
     static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, Self>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     ) where Loader: EagerLoader,
         Builder: EagerLoadBuilder,
         Loader.Model == To,

@@ -168,16 +168,16 @@ extension CompositeParentProperty: AnyCodableProperty {
 }
 
 extension CompositeParentProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, to builder: Builder, withDeleted: Bool)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        builder.add(loader: CompositeParentEagerLoader(relationKey: relationKey))
+        builder.add(loader: CompositeParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted))
     }
 
-    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeParent<To>>, to builder: Builder)
+    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeParent<To>>, to builder: Builder, withDeleted: Bool)
         where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
     {
-        builder.add(loader: ThroughCompositeParentEagerLoader(relationKey: through, loader: loader))
+        builder.add(loader: ThroughCompositeParentEagerLoader(relationKey: through, loader: loader, withDeleted: withDeleted))
     }
 }
 
@@ -185,12 +185,18 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, To.IDValue: Fields
 {
     let relationKey: KeyPath<From, From.CompositeParent<To>>
+    let withDeleted: Bool
     
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
-        return To.query(on: database)
-            .group(.or) {
+        let builder = To.query(on: database)
+
+        if withDeleted {
+            builder.withDeleted()
+        }
+
+        return builder.group(.or) {
                 _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
             .all()
@@ -218,6 +224,7 @@ private struct ThroughCompositeParentEagerLoader<From, Through, Loader>: EagerLo
 {
     let relationKey: KeyPath<From, From.CompositeParent<Through>>
     let loader: Loader
+    let withDeleted: Bool
     
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         self.loader.run(models: models.map {

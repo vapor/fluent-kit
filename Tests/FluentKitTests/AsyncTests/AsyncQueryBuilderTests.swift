@@ -299,6 +299,6 @@ final class AsyncQueryBuilderTests: XCTestCase {
             .join(Star.self, on: \Star.$id == \Planet.$star.$id && \Star.$name != \Planet.$name)
             .all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "planets" INNER JOIN "stars" ON "stars"."id" = "planets"."star_id" AND "stars"."name" <> "planets"."name""#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."deletedAt" AS "stars_deletedAt", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "planets" INNER JOIN "stars" ON "stars"."id" = "planets"."star_id" AND "stars"."name" <> "planets"."name" WHERE ("stars"."deletedAt" IS NULL OR "stars"."deletedAt" > $1)"#)
     }
 }

@@ -11,6 +11,9 @@ public final class Star: Model {
 
     @Field(key: "name")
     public var name: String
+    
+    @Timestamp(key: "deletedAt", on: .delete)
+    var deletedAt: Date?
 
     @Parent(key: "galaxy_id")
     public var galaxy: Galaxy
@@ -31,6 +34,7 @@ public struct StarMigration: Migration {
         database.schema("stars")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
+            .field("deletedAt", .datetime)
             .field("galaxy_id", .uuid, .required, .references("galaxies", "id"))
             .create()
     }
@@ -47,20 +51,28 @@ public final class StarSeed: Migration {
         Galaxy.query(on: database).all().flatMap { galaxies in
             .andAllSucceed(galaxies.map { galaxy in
                 let stars: [Star]
+                let toDelete: [Star]
                 switch galaxy.name {
                 case "Milky Way":
-                    stars = [.init(name: "Sun"), .init(name: "Alpha Centauri")]
+                    let sn1604 = Star(name: "SN 1604")
+                    stars = [.init(name: "Sun"), .init(name: "Alpha Centauri"), sn1604]
+                    toDelete = [sn1604]
+                    
                 case "Andromeda":
                     stars = [.init(name: "Alpheratz")]
+                    toDelete = []
                 default:
                     stars = []
+                    toDelete = []
                 }
-                return galaxy.$stars.create(stars, on: database)
+                return galaxy.$stars.create(stars, on: database).flatMap {
+                    toDelete.map { $0.delete(on: database) }.flatten(on: database.eventLoop)
+                }
             }, on: database.eventLoop)
         }
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        Star.query(on: database).delete()
+        Star.query(on: database).delete(force: true)
     }
 }

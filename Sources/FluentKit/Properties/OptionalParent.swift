@@ -129,25 +129,27 @@ extension OptionalParentProperty: AnyCodableProperty {
 extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = OptionalParentEagerLoader(relationKey: relationKey)
+        let loader = OptionalParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, From.OptionalParent<To>>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     ) where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
         Builder.Model == From
     {
-        let loader = ThroughOptionalParentEagerLoader(relationKey: through, loader: loader)
+        let loader = ThroughOptionalParentEagerLoader(relationKey: through, loader: loader, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 }
@@ -156,12 +158,19 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     where From: FluentKit.Model, To: FluentKit.Model
 {
     let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
-        return To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 })).all().flatMapThrowing {
+        let builder = To.query(on: database)
+
+        if withDeleted {
+            builder.withDeleted()
+        }
+
+        return builder.filter(\._$id ~~ Set(sets.keys.compactMap { $0 })).all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
             for (parentId, models) in sets {
@@ -184,6 +193,7 @@ private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoa
 {
     let relationKey: KeyPath<From, From.OptionalParent<Through>>
     let loader: Loader
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let throughs = models.compactMap {

@@ -14,7 +14,7 @@ extension FluentBenchmarker {
             // whole table
             let count = try Planet.query(on: self.database)
                 .count().wait()
-            XCTAssertEqual(count, 9)
+            XCTAssertEqual(count, 10)
 
             // filtered w/ results
             let filteredCount = try Planet.query(on: self.database)

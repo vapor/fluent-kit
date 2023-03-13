@@ -125,7 +125,7 @@ extension FluentBenchmarker {
             let planets = try Planet.query(on: self.database)
                 .group(.or) { _ in }
                 .all().wait()
-            XCTAssertEqual(planets.count, 9)
+            XCTAssertEqual(planets.count, 10)
         }
     }
 

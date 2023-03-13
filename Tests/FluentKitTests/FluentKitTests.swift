@@ -739,7 +739,7 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "mirror_universe"."planets" ("id", "createdAt", "updatedAt", "name") VALUES ($1, $2, $3, $4)"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(3).first?.sql, #"UPDATE "mirror_universe"."planets" SET "updatedAt" = $1, "name" = $2, "id" = $3 WHERE "mirror_universe"."planets"."id" = $4 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $5)"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(4).first?.sql, #"DELETE FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" <> $1"#)
-        XCTAssertEqual(db.sqlSerializers.dropFirst(5).first?.sql, #"SELECT "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "stars" INNER JOIN "mirror_universe"."planets" ON "mirror_universe"."planets"."star_id" = "stars"."id" LIMIT 1"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(5).first?.sql, #"SELECT "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."deletedAt" AS "stars_deletedAt", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "stars" INNER JOIN "mirror_universe"."planets" ON "mirror_universe"."planets"."star_id" = "stars"."id" LIMIT 1"#)
     }
 
     func testKeyPrefixingStrategies() throws {

@@ -166,26 +166,27 @@ extension ChildrenProperty: Relation {
 extension ChildrenProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Children<To>>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = ChildrenEagerLoader(relationKey: relationKey)
+        let loader = ChildrenEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
-
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, From.Children<To>>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     ) where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
         Builder.Model == From
     {
-        let loader = ThroughChildrenEagerLoader(relationKey: through, loader: loader)
+        let loader = ThroughChildrenEagerLoader(relationKey: through, loader: loader, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 }
@@ -194,11 +195,17 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
     let relationKey: KeyPath<From, From.Children<To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
 
         let builder = To.query(on: database)
+
+        if withDeleted {
+            builder.withDeleted()
+        }
+
         let parentKey = From()[keyPath: self.relationKey].parentKey
         switch parentKey {
         case .optional(let optional):
@@ -227,6 +234,7 @@ private struct ThroughChildrenEagerLoader<From, Through, Loader>: EagerLoader
 {
     let relationKey: KeyPath<From, From.Children<Through>>
     let loader: Loader
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let throughs = models.flatMap {

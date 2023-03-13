@@ -8,7 +8,9 @@ extension FluentBenchmarker {
     public func testEagerLoad() throws {
         try self.testEagerLoad_nesting()
         try self.testEagerLoad_children()
+        try self.testEagerLoadWithDeleted_children()
         try self.testEagerLoad_parent()
+        try self.testEagerLoadWithDeleted_parent()
         try self.testEagerLoad_siblings()
         try self.testEagerLoad_parentJSON()
         try self.testEagerLoad_childrenJSON()
@@ -52,6 +54,37 @@ extension FluentBenchmarker {
                         galaxy.stars.contains { $0.name == "Alpheratz"},
                         false
                     )
+                    XCTAssertEqual(
+                        galaxy.stars.contains { $0.name == "SN 1604" },
+                        false)
+                default: break
+                }
+            }
+        }
+    }
+    
+    private func testEagerLoadWithDeleted_children() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let galaxies = try Galaxy.query(on: self.database)
+                .with(\.$stars, withDeleted: true)
+                .all().wait()
+
+            for galaxy in galaxies {
+                switch galaxy.name {
+                case "Milky Way":
+                    XCTAssertEqual(
+                        galaxy.stars.contains { $0.name == "Sun" },
+                        true
+                    )
+                    XCTAssertEqual(
+                        galaxy.stars.contains { $0.name == "Alpheratz"},
+                        false
+                    )
+                    XCTAssertEqual(
+                        galaxy.stars.contains { $0.name == "SN 1604" },
+                        true)
                 default: break
                 }
             }
@@ -63,6 +96,7 @@ extension FluentBenchmarker {
             SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
+                .filter(\.$name != "Carida") // eager loading will fail for planets with deleted stars
                 .with(\.$star)
                 .all().wait()
 
@@ -77,12 +111,35 @@ extension FluentBenchmarker {
             }
         }
     }
+    
+    private func testEagerLoadWithDeleted_parent() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            let planets = try Planet.query(on: self.database)
+                .with(\.$star, withDeleted: true)
+                .all().wait()
+
+            for planet in planets {
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(planet.star.name, "Sun")
+                case "Proxima Centauri b":
+                    XCTAssertEqual(planet.star.name, "Alpha Centauri")
+                case "Carida":
+                    XCTAssertEqual(planet.star.name, "SN 1604")
+                default: break
+                }
+            }
+        }
+    }
 
     private func testEagerLoad_siblings() throws {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
+                .filter(\.$name != "Carida") // eager loading will fail for planets with deleted stars
                 .with(\.$star)
                 .with(\.$tags)
                 .all().wait()
@@ -109,6 +166,7 @@ extension FluentBenchmarker {
             SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
+                .filter(\.$name != "Carida") // eager loading will fail for planets with deleted stars
                 .with(\.$star)
                 .all().wait()
             self.database.logger.debug(prettyJSON(planets))

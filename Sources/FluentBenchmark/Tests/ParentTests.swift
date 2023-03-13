@@ -30,6 +30,7 @@ extension FluentBenchmarker {
             SolarSystem()
         ]) {
             let planets = try Planet.query(on: self.database)
+                .filter(\.$name != "Carida") // eager loading will fail for planets with deleted stars
                 .all().wait()
 
             for planet in planets {

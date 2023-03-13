@@ -163,18 +163,18 @@ extension CompositeChildrenProperty: Relation {
 }
 
 extension CompositeChildrenProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder, withDeleted: Bool)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = CompositeChildrenEagerLoader(relationKey: relationKey)
+        let loader = CompositeChildrenEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
 
-    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder)
+    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeChildren<To>>, to builder: Builder, withDeleted: Bool)
         where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = ThroughCompositeChildrenEagerLoader(relationKey: through, loader: loader)
+        let loader = ThroughCompositeChildrenEagerLoader(relationKey: through, loader: loader, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 }
@@ -183,12 +183,17 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, From.IDValue: Fields
 {
     let relationKey: KeyPath<From, From.CompositeChildren<To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
         
+        if withDeleted {
+            builder.withDeleted()
+        }
+
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
@@ -208,6 +213,7 @@ private struct ThroughCompositeChildrenEagerLoader<From, Through, Loader>: Eager
 {
     let relationKey: KeyPath<From, From.CompositeChildren<Through>>
     let loader: Loader
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         return self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database)

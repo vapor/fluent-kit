@@ -123,11 +123,12 @@ extension ParentProperty: AnyCodableProperty {
 extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = ParentEagerLoader(relationKey: relationKey)
+        let loader = ParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -135,14 +136,15 @@ extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, From.Parent<To>>,
-        to builder: Builder
+        to builder: Builder,
+        withDeleted: Bool
     ) where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
         Builder.Model == From
     {
-        let loader = ThroughParentEagerLoader(relationKey: through, loader: loader)
+        let loader = ThroughParentEagerLoader(relationKey: through, loader: loader, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 }
@@ -151,11 +153,18 @@ private struct ParentEagerLoader<From, To>: EagerLoader
     where From: FluentKit.Model, To: FluentKit.Model
 {
     let relationKey: KeyPath<From, ParentProperty<From, To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
-        return To.query(on: database).filter(\._$id ~~ Set(sets.keys)).all().flatMapThrowing {
+        let builder = To.query(on: database)
+
+        if withDeleted {
+            builder.withDeleted()
+        }
+
+        return builder.filter(\._$id ~~ Set(sets.keys)).all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
             for (parentId, models) in sets {
@@ -177,6 +186,7 @@ private struct ThroughParentEagerLoader<From, Through, Loader>: EagerLoader
 {
     let relationKey: KeyPath<From, From.Parent<Through>>
     let loader: Loader
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let throughs = models.map {
