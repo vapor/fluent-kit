@@ -322,7 +322,7 @@ extension SiblingsProperty: Relation {
 
 // MARK: Eager Loadable
 
-extension SiblingsProperty: EagerLoadableWithDeleted {
+extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
         withDeleted : Bool,

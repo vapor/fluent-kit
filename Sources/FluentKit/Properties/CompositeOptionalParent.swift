@@ -190,7 +190,7 @@ extension CompositeOptionalParentProperty: AnyCodableProperty {
     }
 }
 
-extension CompositeOptionalParentProperty: EagerLoadableWithDeleted {
+extension CompositeOptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalParent<To>>, withDeleted : Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {

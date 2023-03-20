@@ -41,7 +41,7 @@ extension EagerLoadBuilder {
     public func with<Relation>(_ relationKey: KeyPath<Model, Relation>,
                                withDeleted : Bool
     ) -> Self
-        where Relation: EagerLoadableWithDeleted, Relation.From == Model
+        where Relation: EagerLoadable, Relation.From == Model
     {
         Relation.eagerLoad(relationKey, withDeleted : withDeleted, to: self)
         return self
@@ -53,7 +53,7 @@ extension EagerLoadBuilder {
         withDeleted : Bool,
         _ nested: (NestedEagerLoadBuilder<Self, Relation>) -> ()
     ) -> Self
-        where Relation: EagerLoadableWithDeleted, Relation.From == Model
+        where Relation: EagerLoadable, Relation.From == Model
     {
         Relation.eagerLoad(throughKey, withDeleted : withDeleted, to: self)
         let builder = NestedEagerLoadBuilder<Self, Relation>(builder: self, throughKey)

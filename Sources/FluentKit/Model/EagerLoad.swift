@@ -23,6 +23,12 @@ public protocol EagerLoadable {
         _ relationKey: KeyPath<From, Self>,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From
+    
+    static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        withDeleted : Bool,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From
 
     static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
@@ -34,20 +40,20 @@ public protocol EagerLoadable {
         Builder.Model == From
 }
 
-// Protocol used to prevent breaking change to public API for conforming types
-public protocol EagerLoadableWithDeleted : EagerLoadable {
-    static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, Self>,
-        withDeleted : Bool,
-        to builder: Builder
-    ) where Builder: EagerLoadBuilder, Builder.Model == From
-}
-
-extension EagerLoadableWithDeleted {
+extension EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From {
-        Self.eagerLoad(relationKey, withDeleted: false, to: builder)
+        return Self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    // Default non functional implementation for non breaking API change
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        withDeleted : Bool,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From {
+        return Self.eagerLoad(relationKey, to: builder)
     }
 }

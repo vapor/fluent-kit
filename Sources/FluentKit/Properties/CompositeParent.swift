@@ -167,7 +167,7 @@ extension CompositeParentProperty: AnyCodableProperty {
     }
 }
 
-extension CompositeParentProperty: EagerLoadableWithDeleted {
+extension CompositeParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, withDeleted : Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
