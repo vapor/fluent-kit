@@ -147,7 +147,7 @@ extension CompositeOptionalChildProperty: Relation {
     public func load(on database: Database) -> EventLoopFuture<Void> { self.query(on: database).first().map { self.value = $0 } }
 }
 
-extension CompositeOptionalChildProperty: EagerLoadable {
+extension CompositeOptionalChildProperty: EagerLoadableWithDeleted {
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, withDeleted : Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {

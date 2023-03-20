@@ -120,7 +120,7 @@ extension ParentProperty: AnyCodableProperty {
 
 // MARK: Eager Loadable
 
-extension ParentProperty: EagerLoadable {
+extension ParentProperty: EagerLoadableWithDeleted {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
         withDeleted : Bool,

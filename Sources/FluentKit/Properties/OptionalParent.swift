@@ -126,7 +126,7 @@ extension OptionalParentProperty: AnyCodableProperty {
 
 // MARK: Eager Loadable
 
-extension OptionalParentProperty: EagerLoadable {
+extension OptionalParentProperty: EagerLoadableWithDeleted {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
         withDeleted : Bool,

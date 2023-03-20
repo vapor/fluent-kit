@@ -148,7 +148,7 @@ extension OptionalChildProperty: Relation {
 
 // MARK: Eager Loadable
 
-extension OptionalChildProperty: EagerLoadable {
+extension OptionalChildProperty: EagerLoadableWithDeleted {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalChild<To>>,
         withDeleted : Bool,

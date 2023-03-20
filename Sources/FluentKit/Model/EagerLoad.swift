@@ -21,7 +21,6 @@ public protocol EagerLoadable {
 
     static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
-        withDeleted : Bool,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From
 
@@ -33,4 +32,22 @@ public protocol EagerLoadable {
         Builder: EagerLoadBuilder,
         Loader.Model == To,
         Builder.Model == From
+}
+
+// Protocol used to prevent breaking change to public API for conforming types
+public protocol EagerLoadableWithDeleted : EagerLoadable {
+    static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        withDeleted : Bool,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From
+}
+
+extension EagerLoadableWithDeleted {
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From {
+        Self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
 }

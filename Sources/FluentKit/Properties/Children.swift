@@ -163,7 +163,7 @@ extension ChildrenProperty: Relation {
 
 // MARK: Eager Loadable
 
-extension ChildrenProperty: EagerLoadable {
+extension ChildrenProperty: EagerLoadableWithDeleted {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Children<To>>,
         withDeleted : Bool,
