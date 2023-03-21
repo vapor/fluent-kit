@@ -221,6 +221,8 @@ extension FluentBenchmarker {
                 XCTAssertEqual(key, "bar")
                 XCTAssertEqual(id, "\(bar1.id!)")
             }
+            
+            XCTAssertNoThrow(try Foo.query(on: self.database).with(\.$bar, withDeleted: true).all().wait())
         }
     }
 }

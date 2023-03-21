@@ -8,8 +8,11 @@ extension FluentBenchmarker {
     public func testEagerLoad() throws {
         try self.testEagerLoad_nesting()
         try self.testEagerLoad_children()
+        try self.testEagerLoad_childrenDeleted()
         try self.testEagerLoad_parent()
+        try self.testEagerLoad_parentDeleted()
         try self.testEagerLoad_siblings()
+        try self.testEagerLoad_siblingsDeleted()
         try self.testEagerLoad_parentJSON()
         try self.testEagerLoad_childrenJSON()
         try self.testEagerLoad_emptyChildren()
@@ -57,6 +60,52 @@ extension FluentBenchmarker {
             }
         }
     }
+    
+    private func testEagerLoad_childrenDeleted() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try Planet.query(on: self.database).filter(\.$name == "Jupiter").delete().wait()
+            
+            var stars = try Star.query(on: self.database)
+                .with(\.$planets, withDeleted: true)
+                .all().wait()
+
+            for star in stars {
+                switch star.name {
+                case "Sun":
+                    XCTAssertEqual(
+                        star.planets.contains { $0.name == "Earth" },
+                        true
+                    )
+                    XCTAssertEqual(
+                        star.planets.contains { $0.name == "Jupiter" },
+                        true
+                    )
+                default: break
+                }
+            }
+            
+            stars = try Star.query(on: self.database)
+                .with(\.$planets)
+                .all().wait()
+
+            for star in stars {
+                switch star.name {
+                case "Sun":
+                    XCTAssertEqual(
+                        star.planets.contains { $0.name == "Earth" },
+                        true
+                    )
+                    XCTAssertEqual(
+                        star.planets.contains { $0.name == "Jupiter" },
+                        false
+                    )
+                default: break
+                }
+            }
+        }
+    }
 
     private func testEagerLoad_parent() throws {
         try self.runTest(#function, [
@@ -75,6 +124,32 @@ extension FluentBenchmarker {
                 default: break
                 }
             }
+        }
+    }
+    
+    private func testEagerLoad_parentDeleted() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try Star.query(on: self.database).filter(\.$name == "Sun").delete().wait()
+            
+            let planets = try Planet.query(on: self.database)
+                .with(\.$star, withDeleted: true)
+                .all().wait()
+
+            for planet in planets {
+                switch planet.name {
+                case "Earth":
+                    XCTAssertEqual(planet.star.name, "Sun")
+                default: break
+                }
+            }
+            
+            XCTAssertThrowsError(
+                try Planet.query(on: self.database)
+                    .with(\.$star)
+                    .all().wait()
+            )
         }
     }
 
@@ -99,6 +174,40 @@ extension FluentBenchmarker {
                     XCTAssertEqual(planet.star.name, "Sun")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
                 default: break
+                }
+            }
+        }
+    }
+    
+    private func testEagerLoad_siblingsDeleted() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try Planet.query(on: self.database).filter(\.$name == "Earth").delete().wait()
+            
+            var tags = try Tag.query(on: self.database)
+                .with(\.$planets, withDeleted: true)
+                .all().wait()
+
+            for tag in tags {
+                switch tag.name {
+                case "Inhabited":
+                    XCTAssertEqual(tag.planets.map { $0.name }.sorted(), ["Earth"])
+                default:
+                    break
+                }
+            }
+
+            tags = try Tag.query(on: self.database)
+                .with(\.$planets)
+                .all().wait()
+
+            for tag in tags {
+                switch tag.name {
+                case "Inhabited":
+                    XCTAssertEqual(tag.planets.map { $0.name }, [])
+                default:
+                    break
                 }
             }
         }
