@@ -77,7 +77,7 @@ extension FluentBenchmarker {
             XCTAssertThrowsError(try User.query(on: self.database)
                 .with(\.$bestFriend)
                 .all().wait()
-            ) {
+            ) { error in
                 guard case let .missingParent(from, to, key, _) = error as? FluentError else {
                     return XCTFail("Unexpected error \(error) thrown")
                 }

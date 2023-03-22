@@ -170,14 +170,14 @@ extension FluentBenchmarker {
                 .with(\.$planets, withDeleted: true)
                 .first().wait()
             )
-            XCTAssertEqual(Set(tag.planets.map(\.name)), ["Earth"])
+            XCTAssertEqual(Set(tag1.planets.map(\.name)), ["Earth"])
             
             let tag2 = try XCTUnwrap(Tag.query(on: self.database)
                 .filter(\.$name == "Inhabited")
                 .with(\.$planets)
                 .first().wait()
             )
-            XCTAssertEqual(Set(tag.planets.map(\.name)), [])
+            XCTAssertEqual(Set(tag2.planets.map(\.name)), [])
         }
     }
 
