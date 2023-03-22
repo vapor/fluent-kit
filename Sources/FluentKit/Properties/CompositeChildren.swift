@@ -163,7 +163,7 @@ extension CompositeChildrenProperty: Relation {
 }
 
 extension CompositeChildrenProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeChildren<To>>, withDeleted : Bool, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeChildren<To>>, withDeleted: Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
         let loader = CompositeChildrenEagerLoader(relationKey: relationKey, withDeleted: withDeleted)

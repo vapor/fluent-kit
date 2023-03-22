@@ -129,7 +129,7 @@ extension OptionalParentProperty: AnyCodableProperty {
 extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
-        withDeleted : Bool,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
@@ -164,7 +164,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
         let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 }))
-        if (withDeleted) {
+        if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all().flatMapThrowing {

@@ -26,7 +26,7 @@ public protocol EagerLoadable {
     
     static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
-        withDeleted : Bool,
+        withDeleted: Bool,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From
 
@@ -51,7 +51,7 @@ extension EagerLoadable {
     // Default non functional implementation for non breaking API change
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
-        withDeleted : Bool,
+        withDeleted: Bool,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From {
         return Self.eagerLoad(relationKey, to: builder)

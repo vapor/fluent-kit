@@ -168,7 +168,7 @@ extension CompositeParentProperty: AnyCodableProperty {
 }
 
 extension CompositeParentProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, withDeleted : Bool, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, withDeleted: Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
         builder.add(loader: CompositeParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted))
@@ -194,7 +194,7 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
             .group(.or) {
                 _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
-        if (withDeleted) {
+        if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all()

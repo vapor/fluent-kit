@@ -151,7 +151,7 @@ extension OptionalChildProperty: Relation {
 extension OptionalChildProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalChild<To>>,
-        withDeleted : Bool,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
@@ -193,7 +193,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
-        if (withDeleted) {
+        if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all().map {

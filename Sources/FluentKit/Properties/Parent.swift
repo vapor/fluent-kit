@@ -123,7 +123,7 @@ extension ParentProperty: AnyCodableProperty {
 extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
-        withDeleted : Bool,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
@@ -152,12 +152,12 @@ private struct ParentEagerLoader<From, To>: EagerLoader
     where From: FluentKit.Model, To: FluentKit.Model
 {
     let relationKey: KeyPath<From, ParentProperty<From, To>>
-    let withDeleted : Bool
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
-        if (withDeleted) {
+        if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all().flatMapThrowing {

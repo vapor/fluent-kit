@@ -67,43 +67,21 @@ extension FluentBenchmarker {
         ]) {
             try Planet.query(on: self.database).filter(\.$name == "Jupiter").delete().wait()
             
-            var stars = try Star.query(on: self.database)
+            let sun1 = try XCTUnwrap(Star.query(on: self.database)
+                .filter(\.$name == "Sun")
                 .with(\.$planets, withDeleted: true)
-                .all().wait()
-
-            for star in stars {
-                switch star.name {
-                case "Sun":
-                    XCTAssertEqual(
-                        star.planets.contains { $0.name == "Earth" },
-                        true
-                    )
-                    XCTAssertEqual(
-                        star.planets.contains { $0.name == "Jupiter" },
-                        true
-                    )
-                default: break
-                }
-            }
+                .first().wait()
+            )
+            XCTAssertTrue(sun1.planets.contains { $0.name == "Earth" })
+            XCTAssertTrue(sun1.planets.contains { $0.name == "Jupiter" })
             
-            stars = try Star.query(on: self.database)
+            let sun2 = try XCTUnwrap(Star.query(on: self.database)
+                .filter(\.$name == "Sun")
                 .with(\.$planets)
-                .all().wait()
-
-            for star in stars {
-                switch star.name {
-                case "Sun":
-                    XCTAssertEqual(
-                        star.planets.contains { $0.name == "Earth" },
-                        true
-                    )
-                    XCTAssertEqual(
-                        star.planets.contains { $0.name == "Jupiter" },
-                        false
-                    )
-                default: break
-                }
-            }
+                .first().wait()
+            )
+            XCTAssertTrue(sun2.planets.contains { $0.name == "Earth" })
+            XCTAssertFalse(sun2.planets.contains { $0.name == "Jupiter" })
         }
     }
 
@@ -133,23 +111,25 @@ extension FluentBenchmarker {
         ]) {
             try Star.query(on: self.database).filter(\.$name == "Sun").delete().wait()
             
-            let planets = try Planet.query(on: self.database)
+            let planet = try XCTUnwrap(Planet.query(on: self.database)
+                .filter(\.$name == "Earth")
                 .with(\.$star, withDeleted: true)
-                .all().wait()
-
-            for planet in planets {
-                switch planet.name {
-                case "Earth":
-                    XCTAssertEqual(planet.star.name, "Sun")
-                default: break
-                }
-            }
+                .first().wait()
+            )
+            XCTAssertEqual(planet.star.name, "Sun")
             
             XCTAssertThrowsError(
                 try Planet.query(on: self.database)
                     .with(\.$star)
                     .all().wait()
-            )
+            ) { error in
+                guard case let .missingParent(from, to, key, _) = error as? FluentError else {
+                    return XCTFail("Unexpected error \(error) thrown")
+                }
+                XCTAssertEqual(from, "Planet")
+                XCTAssertEqual(to, "Star")
+                XCTAssertEqual(key, "star_id")
+            }
         }
     }
 
@@ -185,31 +165,19 @@ extension FluentBenchmarker {
         ]) {
             try Planet.query(on: self.database).filter(\.$name == "Earth").delete().wait()
             
-            var tags = try Tag.query(on: self.database)
+            let tag1 = try XCTUnwrap(Tag.query(on: self.database)
+                .filter(\.$name == "Inhabited")
                 .with(\.$planets, withDeleted: true)
-                .all().wait()
-
-            for tag in tags {
-                switch tag.name {
-                case "Inhabited":
-                    XCTAssertEqual(tag.planets.map { $0.name }.sorted(), ["Earth"])
-                default:
-                    break
-                }
-            }
-
-            tags = try Tag.query(on: self.database)
+                .first().wait()
+            )
+            XCTAssertEqual(Set(tag.planets.map(\.name)), ["Earth"])
+            
+            let tag2 = try XCTUnwrap(Tag.query(on: self.database)
+                .filter(\.$name == "Inhabited")
                 .with(\.$planets)
-                .all().wait()
-
-            for tag in tags {
-                switch tag.name {
-                case "Inhabited":
-                    XCTAssertEqual(tag.planets.map { $0.name }, [])
-                default:
-                    break
-                }
-            }
+                .first().wait()
+            )
+            XCTAssertEqual(Set(tag.planets.map(\.name)), [])
         }
     }
 

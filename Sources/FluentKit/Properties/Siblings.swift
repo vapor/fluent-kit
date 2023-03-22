@@ -325,7 +325,7 @@ extension SiblingsProperty: Relation {
 extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
-        withDeleted : Bool,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
@@ -365,7 +365,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         let builder = To.query(on: database)
             .join(Through.self, on: \To._$id == to.appending(path: \.$id))
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
-        if (withDeleted) {
+        if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all()
