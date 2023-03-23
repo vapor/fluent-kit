@@ -8,8 +8,11 @@ extension FluentBenchmarker {
     public func testEagerLoad() throws {
         try self.testEagerLoad_nesting()
         try self.testEagerLoad_children()
+        try self.testEagerLoad_childrenDeleted()
         try self.testEagerLoad_parent()
+        try self.testEagerLoad_parentDeleted()
         try self.testEagerLoad_siblings()
+        try self.testEagerLoad_siblingsDeleted()
         try self.testEagerLoad_parentJSON()
         try self.testEagerLoad_childrenJSON()
         try self.testEagerLoad_emptyChildren()
@@ -57,6 +60,30 @@ extension FluentBenchmarker {
             }
         }
     }
+    
+    private func testEagerLoad_childrenDeleted() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try Planet.query(on: self.database).filter(\.$name == "Jupiter").delete().wait()
+            
+            let sun1 = try XCTUnwrap(Star.query(on: self.database)
+                .filter(\.$name == "Sun")
+                .with(\.$planets, withDeleted: true)
+                .first().wait()
+            )
+            XCTAssertTrue(sun1.planets.contains { $0.name == "Earth" })
+            XCTAssertTrue(sun1.planets.contains { $0.name == "Jupiter" })
+            
+            let sun2 = try XCTUnwrap(Star.query(on: self.database)
+                .filter(\.$name == "Sun")
+                .with(\.$planets)
+                .first().wait()
+            )
+            XCTAssertTrue(sun2.planets.contains { $0.name == "Earth" })
+            XCTAssertFalse(sun2.planets.contains { $0.name == "Jupiter" })
+        }
+    }
 
     private func testEagerLoad_parent() throws {
         try self.runTest(#function, [
@@ -74,6 +101,34 @@ extension FluentBenchmarker {
                     XCTAssertEqual(planet.star.name, "Alpha Centauri")
                 default: break
                 }
+            }
+        }
+    }
+    
+    private func testEagerLoad_parentDeleted() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try Star.query(on: self.database).filter(\.$name == "Sun").delete().wait()
+            
+            let planet = try XCTUnwrap(Planet.query(on: self.database)
+                .filter(\.$name == "Earth")
+                .with(\.$star, withDeleted: true)
+                .first().wait()
+            )
+            XCTAssertEqual(planet.star.name, "Sun")
+            
+            XCTAssertThrowsError(
+                try Planet.query(on: self.database)
+                    .with(\.$star)
+                    .all().wait()
+            ) { error in
+                guard case let .missingParent(from, to, key, _) = error as? FluentError else {
+                    return XCTFail("Unexpected error \(error) thrown")
+                }
+                XCTAssertEqual(from, "Planet")
+                XCTAssertEqual(to, "Star")
+                XCTAssertEqual(key, "star_id")
             }
         }
     }
@@ -101,6 +156,28 @@ extension FluentBenchmarker {
                 default: break
                 }
             }
+        }
+    }
+    
+    private func testEagerLoad_siblingsDeleted() throws {
+        try self.runTest(#function, [
+            SolarSystem()
+        ]) {
+            try Planet.query(on: self.database).filter(\.$name == "Earth").delete().wait()
+            
+            let tag1 = try XCTUnwrap(Tag.query(on: self.database)
+                .filter(\.$name == "Inhabited")
+                .with(\.$planets, withDeleted: true)
+                .first().wait()
+            )
+            XCTAssertEqual(Set(tag1.planets.map(\.name)), ["Earth"])
+            
+            let tag2 = try XCTUnwrap(Tag.query(on: self.database)
+                .filter(\.$name == "Inhabited")
+                .with(\.$planets)
+                .first().wait()
+            )
+            XCTAssertEqual(Set(tag2.planets.map(\.name)), [])
         }
     }
 

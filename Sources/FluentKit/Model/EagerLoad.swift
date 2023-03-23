@@ -23,6 +23,12 @@ public protocol EagerLoadable {
         _ relationKey: KeyPath<From, Self>,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From
+    
+    static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        withDeleted: Bool,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From
 
     static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
@@ -32,4 +38,14 @@ public protocol EagerLoadable {
         Builder: EagerLoadBuilder,
         Loader.Model == To,
         Builder.Model == From
+}
+
+extension EagerLoadable {
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, Self>,
+        withDeleted: Bool,
+        to builder: Builder
+    ) where Builder: EagerLoadBuilder, Builder.Model == From {
+        return Self.eagerLoad(relationKey, to: builder)
+    }
 }

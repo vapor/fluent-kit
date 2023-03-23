@@ -26,6 +26,9 @@ public final class Planet: Model {
 
     @Siblings(through: PlanetTag.self, from: \.$planet, to: \.$tag)
     public var tags: [Tag]
+    
+    @Timestamp(key: "deleted_at", on: .delete)
+    var deletedAt: Date?
 
     public init() { }
 
@@ -48,6 +51,7 @@ public struct PlanetMigration: Migration {
             .field("name", .string, .required)
             .field("star_id", .uuid, .required, .references("stars", "id"))
             .field("possible_star_id", .uuid, .references("stars", "id"))
+            .field("deleted_at", .datetime)
             .create()
     }
 
@@ -88,6 +92,6 @@ public struct PlanetSeed: Migration {
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        Planet.query(on: database).delete()
+        Planet.query(on: database).delete(force: true)
     }
 }

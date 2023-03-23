@@ -128,12 +128,23 @@ extension OptionalParentProperty: AnyCodableProperty {
 
 extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From,
+        OptionalParentProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = OptionalParentEagerLoader(relationKey: relationKey)
+        let loader = OptionalParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -156,12 +167,17 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     where From: FluentKit.Model, To: FluentKit.Model
 {
     let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
-        return To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 })).all().flatMapThrowing {
+        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 }))
+        if (self.withDeleted) {
+            builder.withDeleted()
+        }
+        return builder.all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
             for (parentId, models) in sets {

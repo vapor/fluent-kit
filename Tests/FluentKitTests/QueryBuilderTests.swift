@@ -191,7 +191,7 @@ final class QueryBuilderTests: XCTestCase {
                   on: .custom(#"LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sun'"#))
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "planets" LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sun'"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "planets" LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sun' WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1) AND ("stars"."deleted_at" IS NULL OR "stars"."deleted_at" > $2)"#)
     }
     
     func testComplexJoinOperators() throws {
@@ -201,6 +201,6 @@ final class QueryBuilderTests: XCTestCase {
             .join(Star.self, on: \Star.$id == \Planet.$star.$id && \Star.$name != \Planet.$name)
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id" FROM "planets" INNER JOIN "stars" ON "stars"."id" = "planets"."star_id" AND "stars"."name" <> "planets"."name""#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "planets" INNER JOIN "stars" ON "stars"."id" = "planets"."star_id" AND "stars"."name" <> "planets"."name" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1) AND ("stars"."deleted_at" IS NULL OR "stars"."deleted_at" > $2)"#)
     }
 }
