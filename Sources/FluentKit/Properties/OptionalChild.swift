@@ -150,6 +150,15 @@ extension OptionalChildProperty: Relation {
 
 extension OptionalChildProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, OptionalChildProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalChild<To>>,
         withDeleted: Bool,
         to builder: Builder

@@ -324,6 +324,15 @@ extension SiblingsProperty: Relation {
 
 extension SiblingsProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, SiblingsProperty<From, To, Through>>,
+        to builder: Builder
+    )
+    where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
         withDeleted: Bool,
         to builder: Builder

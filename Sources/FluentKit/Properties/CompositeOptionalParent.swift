@@ -191,6 +191,12 @@ extension CompositeOptionalParentProperty: AnyCodableProperty {
 }
 
 extension CompositeOptionalParentProperty: EagerLoadable {
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, CompositeOptionalParentProperty<From, To>>, to builder: Builder)
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalParent<To>>, withDeleted: Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {

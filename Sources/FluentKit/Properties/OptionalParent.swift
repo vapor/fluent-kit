@@ -128,6 +128,16 @@ extension OptionalParentProperty: AnyCodableProperty {
 
 extension OptionalParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From,
+        OptionalParentProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
         withDeleted: Bool,
         to builder: Builder

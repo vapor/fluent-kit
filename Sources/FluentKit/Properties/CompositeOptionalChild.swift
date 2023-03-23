@@ -148,6 +148,12 @@ extension CompositeOptionalChildProperty: Relation {
 }
 
 extension CompositeOptionalChildProperty: EagerLoadable {
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, CompositeOptionalChildProperty<From, To>>, to builder: Builder)
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, withDeleted: Bool, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {

@@ -122,6 +122,15 @@ extension ParentProperty: AnyCodableProperty {
 
 extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, ParentProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
         withDeleted: Bool,
         to builder: Builder

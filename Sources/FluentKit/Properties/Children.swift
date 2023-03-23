@@ -165,6 +165,15 @@ extension ChildrenProperty: Relation {
 
 extension ChildrenProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, ChildrenProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Children<To>>,
         withDeleted: Bool,
         to builder: Builder
