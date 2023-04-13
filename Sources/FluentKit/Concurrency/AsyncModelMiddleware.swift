@@ -1,6 +1,5 @@
 import NIOCore
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 public protocol AsyncModelMiddleware: AnyModelMiddleware {
     associatedtype Model: FluentKit.Model
     
@@ -11,7 +10,6 @@ public protocol AsyncModelMiddleware: AnyModelMiddleware {
     func restore(model: Model, on db: Database, next: AnyAsyncModelResponder) async throws
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension AsyncModelMiddleware {
     public func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database, chainingTo next: AnyModelResponder) -> EventLoopFuture<Void> {
         let promise = db.eventLoop.makePromise(of: Void.self)

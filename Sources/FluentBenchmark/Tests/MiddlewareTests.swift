@@ -8,11 +8,7 @@ extension FluentBenchmarker {
     public func testMiddleware() throws {
         try self.testMiddleware_methods()
         try self.testMiddleware_batchCreationFail()
-        #if compiler(>=5.5) && canImport(_Concurrency)
-        if #available(macOS 12, iOS 15, watchOS 8, tvOS 15, *) {
-            try self.testAsyncMiddleware_methods()
-        }
-        #endif
+        try self.testAsyncMiddleware_methods()
     }
     
     public func testMiddleware_methods() throws {
@@ -65,8 +61,6 @@ extension FluentBenchmarker {
         }
     }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     public func testAsyncMiddleware_methods() throws {
         try self.runTest(#function, [
             UserMigration(),
@@ -116,7 +110,6 @@ extension FluentBenchmarker {
             XCTAssertEqual(user.name, "G")
         }
     }
-#endif
     
     public func testMiddleware_batchCreationFail() throws {
         try self.runTest(#function, [
@@ -178,8 +171,6 @@ private struct UserBatchMiddleware: ModelMiddleware {
     }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 private struct AsyncUserMiddleware: AsyncModelMiddleware {
     func create(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
         model.name = "B"
@@ -216,7 +207,6 @@ private struct AsyncUserMiddleware: AsyncModelMiddleware {
         throw TestError(string: "didDelete")
     }
 }
-#endif
 
 private struct UserMiddleware: ModelMiddleware {
     func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
