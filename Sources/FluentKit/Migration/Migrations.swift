@@ -17,4 +17,13 @@ public final class Migrations {
     public func add(_ migrations: [Migration], to id: DatabaseID? = nil) {
         self.storage[id, default: []].append(contentsOf: migrations)
     }
+  
+    public func top(_ id: DatabaseID? = nil) -> String? {
+        return self.storage[id, default: []].last?.defaultName
+    }
+  
+    public func pop(_ id: DatabaseID? = nil) -> Migration? {
+        return self.storage[id, default: []].popLast()
+    }
+  
 }
