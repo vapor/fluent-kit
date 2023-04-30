@@ -1,6 +1,6 @@
 import Foundation
 
-public enum FluentError: Error, LocalizedError, CustomStringConvertible {
+public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
     case idRequired
     case invalidField(name: String, valueType: Any.Type, error: Error)
     case missingField(name: String)
@@ -19,9 +19,18 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible {
         case .missingParent(let model, let parent, let key, let id):
             return "parent missing: \(model).\(key): \(parent).\(id)"
         case .invalidField(let name, let valueType, let error):
-            return "invalid field: \(name) type: \(valueType) error: \(error)"
+            return "invalid field: \(name) type: \(valueType) error: \(String(describing: error))"
         case .noResults:
             return "Query returned no results"
+        }
+    }
+
+    public var debugDescription: String {
+        switch self {
+        case .idRequired, .missingField(_), .relationNotLoaded(_), .missingParent(_, _, _, _), .noResults:
+            return self.description
+        case .invalidField(let name, let valueType, let error):
+            return "invalid field: \(name) type: \(valueType) error: \(String(reflecting: error))"
         }
     }
 
