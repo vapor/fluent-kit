@@ -40,7 +40,7 @@ env:
 jobs:
 
   linux-integration:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:5.8-jammy
     services:
@@ -96,4 +96,5 @@ jobs:
     with:
       with_coverage: true
       with_tsan: true
+      with_removed_exports_check: false
       coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'

@@ -1,9 +1,9 @@
 import NIOCore
 
 /// Protocol for describing a database that allows fine-grained control over transcactions
-/// when you need more control than provided by `Database.transaction(_:)`
+/// when you need more control than provided by ``Database/transaction(_:)-1x3ds``
 ///
-/// ⚠️ **WARNING**: it is the developer's responsiblity to get hold of a `DatabaseConnection`,
+/// ⚠️ **WARNING**: it is the developer's responsiblity to get hold of a ``Database``,
 /// execute the transaction functions on that connection, and ensure that the functions aren't called across
 /// different conenctions. You are also responsible for ensuring that you commit or rollback queries
 /// when you're ready.

@@ -12,11 +12,12 @@ extension FluentBenchmarker {
     }
     
     public func testMiddleware_methods() throws {
+        self.databases.middleware.use(UserMiddleware())
+        defer { self.databases.middleware.clear() }
+
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.use(UserMiddleware())
-
             let user = User(name: "A")
             // create
             do {
@@ -62,11 +63,12 @@ extension FluentBenchmarker {
     }
 
     public func testAsyncMiddleware_methods() throws {
+        self.databases.middleware.use(AsyncUserMiddleware())
+        defer { self.databases.middleware.clear() }
+
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.use(AsyncUserMiddleware())
-
             let user = User(name: "A")
             // create
             do {
@@ -112,12 +114,13 @@ extension FluentBenchmarker {
     }
     
     public func testMiddleware_batchCreationFail() throws {
+        self.databases.middleware.clear()
+        self.databases.middleware.use(UserBatchMiddleware())
+        defer { self.databases.middleware.clear() }
+
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.clear()
-            self.databases.middleware.use(UserBatchMiddleware())
-
             let user = User(name: "A")
             let user2 = User(name: "B")
             let user3 = User(name: "C")

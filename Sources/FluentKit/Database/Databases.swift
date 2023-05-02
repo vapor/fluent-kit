@@ -25,7 +25,7 @@ public final class Databases {
 
     // Synchronize access across threads.
     private var lock: NIOLock
-
+    
     public struct Middleware {
         let databases: Databases
 
@@ -33,21 +33,21 @@ public final class Databases {
             _ middleware: AnyModelMiddleware,
             on id: DatabaseID? = nil
         ) {
-            self.databases.lock.lock()
-            defer { self.databases.lock.unlock() }
-            let id = id ?? self.databases._requireDefaultID()
-            var configuration = self.databases._requireConfiguration(for: id)
-            configuration.middleware.append(middleware)
-            self.databases.configurations[id] = configuration
+            self.databases.lock.withLockVoid {
+                let id = id ?? self.databases._requireDefaultID()
+                var configuration = self.databases._requireConfiguration(for: id)
+                configuration.middleware.append(middleware)
+                self.databases.configurations[id] = configuration
+            }
         }
         
         public func clear(on id: DatabaseID? = nil) {
-            self.databases.lock.lock()
-            defer { self.databases.lock.unlock() }
-            let id = id ?? self.databases._requireDefaultID()
-            var configuration = self.databases._requireConfiguration(for: id)
-            configuration.middleware.removeAll()
-            self.databases.configurations[id] = configuration
+            self.databases.lock.withLockVoid {
+                let id = id ?? self.databases._requireDefaultID()
+                var configuration = self.databases._requireConfiguration(for: id)
+                configuration.middleware.removeAll()
+                self.databases.configurations[id] = configuration
+            }
         }
     }
 
@@ -76,24 +76,24 @@ public final class Databases {
         as id: DatabaseID,
         isDefault: Bool? = nil
     ) {
-        self.lock.lock()
-        defer { self.lock.unlock() }
-        self.configurations[id] = driver
-        if isDefault == true || (self.defaultID == nil && isDefault != false) {
-            self.defaultID = id
+        self.lock.withLockVoid {
+            self.configurations[id] = driver
+            if isDefault == true || (self.defaultID == nil && isDefault != false) {
+                self.defaultID = id
+            }
         }
     }
 
     public func `default`(to id: DatabaseID) {
-        self.lock.lock()
-        defer { self.lock.unlock() }
-        self.defaultID = id
+        self.lock.withLockVoid {
+            self.defaultID = id
+        }
     }
     
     public func configuration(for id: DatabaseID? = nil) -> DatabaseConfiguration? {
-        self.lock.lock()
-        defer { self.lock.unlock() }
-        return self.configurations[id ?? self._requireDefaultID()]
+        self.lock.withLock {
+            self.configurations[id ?? self._requireDefaultID()]
+        }
     }
     
     public func database(
@@ -103,51 +103,51 @@ public final class Databases {
         history: QueryHistory? = nil,
         pageSizeLimit: Int? = nil
     ) -> Database? {
-        self.lock.lock()
-        defer { self.lock.unlock() }
-        let id = id ?? self._requireDefaultID()
-        var logger = logger
-        logger[metadataKey: "database-id"] = .string(id.string)
-        let configuration = self._requireConfiguration(for: id)
-        let context = DatabaseContext(
-            configuration: configuration,
-            logger: logger,
-            eventLoop: eventLoop,
-            history: history,
-            pageSizeLimit: pageSizeLimit
-        )
-        let driver: DatabaseDriver
-        if let existing = self.drivers[id] {
-            driver = existing
-        } else {
-            let new = configuration.makeDriver(for: self)
-            self.drivers[id] = new
-            driver = new
+        self.lock.withLock {
+            let id = id ?? self._requireDefaultID()
+            var logger = logger
+            logger[metadataKey: "database-id"] = .string(id.string)
+            let configuration = self._requireConfiguration(for: id)
+            let context = DatabaseContext(
+                configuration: configuration,
+                logger: logger,
+                eventLoop: eventLoop,
+                history: history,
+                pageSizeLimit: pageSizeLimit
+            )
+            let driver: DatabaseDriver
+            if let existing = self.drivers[id] {
+                driver = existing
+            } else {
+                let new = configuration.makeDriver(for: self)
+                self.drivers[id] = new
+                driver = new
+            }
+            return driver.makeDatabase(with: context)
         }
-        return driver.makeDatabase(with: context)
     }
 
     public func reinitialize(_ id: DatabaseID? = nil) {
-        self.lock.lock()
-        defer { self.lock.unlock() }
-        let id = id ?? self._requireDefaultID()
-        if let driver = self.drivers[id] {
-            self.drivers[id] = nil
-            driver.shutdown()
+        self.lock.withLockVoid {
+            let id = id ?? self._requireDefaultID()
+            if let driver = self.drivers[id] {
+                self.drivers[id] = nil
+                driver.shutdown()
+            }
         }
     }
 
     public func ids() -> Set<DatabaseID> {
-        return self.lock.withLock { Set(self.configurations.keys) }
+        self.lock.withLock { Set(self.configurations.keys) }
     }
 
     public func shutdown() {
-        self.lock.lock()
-        defer { self.lock.unlock() }
-        for driver in self.drivers.values {
-            driver.shutdown()
+        self.lock.withLockVoid {
+            for driver in self.drivers.values {
+                driver.shutdown()
+            }
+            self.drivers = [:]
         }
-        self.drivers = [:]
     }
 
     private func _requireConfiguration(for id: DatabaseID) -> DatabaseConfiguration {

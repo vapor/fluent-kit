@@ -136,8 +136,7 @@ private final class DatabaseMigrator {
 
     func setupIfNeeded() -> EventLoopFuture<Void> {
         return MigrationLog.migration.prepare(on: self.database)
-            .flatMap(self.preventUnstableNames)
-            .flatMap(self.fixPrereleaseMigrationNames)
+            .map(self.preventUnstableNames)
     }
 
     /// An unstable name is a name that is not the same every time migrations
@@ -145,67 +144,15 @@ private final class DatabaseMigrator {
     ///
     /// For example, the default name for `Migrations` in private contexts
     /// will include an identifier that can change from one execution to the next.
-    private func preventUnstableNames() -> EventLoopFuture<Void> {
-        for migration in self.migrations {
-            let migrationName = migration.name
-            guard migration.name == migration.defaultName else { continue }
-            guard migrationName.contains("$") else { continue }
-
-            if migrationName.contains("unknown context at") {
-                self.database.logger.critical("The migration at \(migrationName) is in a private context. Either explicitly give it a name by adding the `var name: String` property or make the migration `internal` or `public` instead of `private`.")
+    private func preventUnstableNames() {
+        for migration in self.migrations
+            where migration.name == migration.defaultName && migration.name.contains("$")
+        {
+            if migration.name.contains("unknown context at") {
+                self.database.logger.critical("The migration at \(migration.name) is in a private context. Either explicitly give it a name by adding the `var name: String` property or make the migration `internal` or `public` instead of `private`.")
                 fatalError("Private migrations not allowed")
             }
-            self.database.logger.error("The migration at \(migrationName) has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.")
-        }
-        return self.database.eventLoop.makeSucceededFuture(())
-    }
-
-    // This migration just exists to smooth the gap between
-    // how migrations were named between the first FluentKit 1
-    // alpha and the FluentKit 1.0.0 release.
-    // TODO: Remove in future version.
-    private func fixPrereleaseMigrationNames() -> EventLoopFuture<Void> {
-        // map from old style default names
-        // to new style default names
-        var migrationNameMap = [String: String]()
-
-        // a set of names that are manually
-        // chosen by migration author.
-        var nameOverrides = Set<String>()
-
-        for migration in self.migrations {
-            // if the migration does not override the default name
-            // then it is a candidate for a name change.
-            if migration.name == migration.defaultName {
-                let releaseCandidateDefaultName = "\(type(of: migration))"
-
-                migrationNameMap[releaseCandidateDefaultName] = migration.defaultName
-            } else {
-                nameOverrides.insert(migration.name)
-            }
-        }
-        // we must not rename anything that has an overridden
-        // name that happens to be the same as the old-style
-        // of default name.
-        for overriddenName in nameOverrides {
-            migrationNameMap.removeValue(forKey: overriddenName)
-        }
-
-        self.database.logger.debug("Checking for pre-release migration names.")
-        return MigrationLog.query(on: self.database).filter(\.$name ~~ migrationNameMap.keys).count().flatMap { count in
-            if count > 0 {
-                self.database.logger.info("Fixing pre-release migration names")
-                let queries = migrationNameMap.map { oldName, newName -> EventLoopFuture<Void> in
-                    self.database.logger.info("Renaming migration \(oldName) to \(newName)")
-                    return MigrationLog.query(on: self.database)
-                        .filter(\.$name == oldName)
-                        .set(\.$name, to: newName)
-                        .update()
-                }
-                return self.database.eventLoop.flatten(queries)
-            } else {
-                return self.database.eventLoop.makeSucceededFuture(())
-            }
+            self.database.logger.error("The migration at \(migration.name) has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.")
         }
     }
 

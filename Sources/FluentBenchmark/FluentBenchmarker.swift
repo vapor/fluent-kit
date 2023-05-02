@@ -4,17 +4,15 @@ import XCTest
 
 public final class FluentBenchmarker {
     public let databases: Databases
+    public var database: any Database
 
-    public var database: Database {
-        self.databases.database(
-            logger: .init(label: "codes.fluent.benchmarker"),
-            on: self.databases.eventLoopGroup.next()
-        )!
-    }
-    
     public init(databases: Databases) {
         precondition(databases.ids().count >= 2, "FluentBenchmarker Databases instance must have 2 or more registered databases")
         self.databases = databases
+        self.database = self.databases.database(
+            logger: .init(label: "codes.vapor.fluent.benchmarker"),
+            on: self.databases.eventLoopGroup.any()
+        )!
     }
 
     public func testAll() throws {
@@ -57,35 +55,60 @@ public final class FluentBenchmarker {
     internal func runTest(
         _ name: String, 
         _ migrations: [Migration], 
-        on database: Database? = nil,
         _ test: () throws -> ()
     ) throws {
-        self.log("Running \(name)...")
-        let database = database ?? self.database
-
-        // Prepare migrations.
-        for migration in migrations {
-            try migration.prepare(on: database).wait()
-        }
-
-        var e: Error?
-        do {
-            try test()
-        } catch {
-            e = error
-        }
-
-        // Revert migrations
-        for migration in migrations.reversed() {
-            try migration.revert(on: database).wait()
-        }
-
-        if let error = e {
-            throw error
-        }
+        try self.runTest(name, migrations, { _ in try test() })
     }
     
-    private func log(_ message: String) {
-        self.database.logger.notice("[FluentBenchmark] \(message)")
+    internal func runTest(
+        _ name: String,
+        _ migrations: [Migration],
+        _ test: (any Database) throws -> ()
+    ) throws {
+        // This re-initialization is required to make the middleware tests work thanks to ridiculous design flaws
+        self.database = self.databases.database(
+            logger: .init(label: "codes.vapor.fluent.benchmarker"),
+            on: self.databases.eventLoopGroup.any()
+        )!
+        try self.runTest(name, migrations, on: self.database, test)
+    }
+    
+    internal func runTest(
+        _ name: String,
+        _ migrations: [Migration],
+        on database: any Database,
+        _ test: (any Database) throws -> ()
+    ) throws {
+        database.logger.notice("Running \(name)...")
+
+        // Prepare migrations.
+        do {
+            for migration in migrations {
+                try migration.prepare(on: database).wait()
+            }
+        } catch {
+            database.logger.error("\(name): Error: \(String(reflecting: error))")
+            throw error
+        }
+        
+        let result = Result { try test(database) }
+
+        // Revert migrations
+        do {
+            for migration in migrations.reversed() {
+                try migration.revert(on: database).wait()
+            }
+        } catch {
+            // ignore revert errors if the test itself failed
+            guard case .failure(_) = result else {
+                database.logger.error("\(name): Error: \(String(reflecting: error))")
+                throw error
+            }
+        }
+        
+        if case .failure(let error) = result {
+            database.logger.error("\(name): Error: \(String(reflecting: error))")
+            throw error
+        }
     }
 }
