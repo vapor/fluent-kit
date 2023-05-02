@@ -1,19 +1,20 @@
 import NIOCore
 import Logging
+import SQLKit
 
 extension Database {
-    public func logging(to logger: Logger) -> Database {
+    public func logging(to logger: Logger) -> any Database {
         LoggingOverrideDatabase(database: self, logger: logger)
     }
 }
 
-private struct LoggingOverrideDatabase {
-    let database: Database
+private struct LoggingOverrideDatabase<D: Database> {
+    let database: D
     let logger: Logger
 }
 
 extension LoggingOverrideDatabase: Database {
-    var context: DatabaseContext { 
+    var context: DatabaseContext {
         .init(
             configuration: self.database.context.configuration,
             logger: self.logger,
@@ -53,4 +54,12 @@ extension LoggingOverrideDatabase: Database {
     func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.withConnection(closure)
     }
+}
+
+extension LoggingOverrideDatabase: SQLDatabase where D: SQLDatabase {
+    func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
+        self.database.execute(sql: query, onRow)
+    }
+    var dialect: SQLDialect { self.database.dialect }
+    var version: SQLDatabaseReportedVersion? { self.database.version }
 }
