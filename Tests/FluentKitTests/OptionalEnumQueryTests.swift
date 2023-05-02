@@ -11,12 +11,12 @@ final class OptionalEnumQueryTests: DbQueryTestCase {
     
     func testInsertNonNull() throws {
         _ = try Thing(id: 1, fb: .fizz).create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES ('fizz', $1)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, 'fizz')"#)
     }
     
     func testInsertNull() throws {
         _ = try Thing(id: 1, fb: nil).create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES (NULL, $1)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, NULL)"#)
     }
     
     func testBulkUpdateDoesntOverkill() throws {
@@ -30,12 +30,12 @@ final class OptionalEnumQueryTests: DbQueryTestCase {
         let thing = Thing(id: 1, fb: nil)
         thing.fb = .fizz
         _ = try thing.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES ('fizz', $1)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, 'fizz')"#)
         
         let thing2 = Thing(id: 1, fb: .buzz)
         thing2.fb = nil
         _ = try thing2.create(on: db).wait()
-        assertLastQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES (NULL, $1)"#)
+        assertLastQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, NULL)"#)
     }
     
     func testSaveReplacingNonNull() throws {
@@ -67,24 +67,24 @@ final class OptionalEnumQueryTests: DbQueryTestCase {
     func testBulkInsertWithoutNulls() throws {
         let things = [Thing(id: 1, fb: .fizz), Thing(id: 2, fb: .buzz)]
         _ = try things.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES ('fizz', $1), ('buzz', $2)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, 'fizz'), ($2, 'buzz')"#)
     }
     
     func testBulkInsertWithOnlyNulls() throws {
         let things = [Thing(id: 1, fb: nil), Thing(id: 2, fb: nil)]
         _ = try things.create(on: db).wait()
-        assertQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES (NULL, $1), (NULL, $2)"#)
+        assertQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, NULL), ($2, NULL)"#)
     }
     
     // @see https://github.com/vapor/fluent-kit/issues/396
     func testBulkInsertWithMixedNulls() throws {
         let things = [Thing(id: 1, fb: nil), Thing(id: 2, fb: .fizz)]
         _ = try things.create(on: db).wait()
-        assertLastQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES (NULL, $1), ('fizz', $2)"#)
+        assertLastQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, NULL), ($2, 'fizz')"#)
 
         let things2 = [Thing(id: 3, fb: .fizz), Thing(id: 4, fb: nil)]
         _ = try things2.create(on: db).wait()
-        assertLastQuery(db, #"INSERT INTO "things" ("fb", "id") VALUES ('fizz', $1), (NULL, $2)"#)
+        assertLastQuery(db, #"INSERT INTO "things" ("id", "fb") VALUES ($1, 'fizz'), ($2, NULL)"#)
     }
 }
 
