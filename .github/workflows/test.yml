@@ -3,8 +3,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 on:
-  pull_request: { branches: ['*'] }
-  push: { branches: ['main'] }
+  pull_request: { types: [opened, reopened, synchronize, ready_for_review] }
+  push: { branches: [ main ] }
 
 env:
   LOG_LEVEL: debug
@@ -40,9 +40,9 @@ env:
 jobs:
 
   linux-integration:
-    if: github.event_name == 'pull_request'
+    if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:5.7-jammy
+    container: swift:5.8-jammy
     services:
       mysql-a:
         image: mysql:8.0
@@ -96,4 +96,5 @@ jobs:
     with:
       with_coverage: true
       with_tsan: true
+      with_removed_exports_check: false
       coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'

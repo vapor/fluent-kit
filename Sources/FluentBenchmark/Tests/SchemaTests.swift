@@ -78,7 +78,7 @@ extension FluentBenchmarker {
             XCTAssertThrowsError(
                 try Star.query(on: self.database)
                     .filter(\.$name == "Sun")
-                    .delete().wait()
+                    .delete(force: true).wait()
             )
         }
     }

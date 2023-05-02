@@ -150,12 +150,22 @@ extension OptionalChildProperty: Relation {
 
 extension OptionalChildProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, OptionalChildProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalChild<To>>,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = OptionalChildEagerLoader(relationKey: relationKey)
+        let loader = OptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -179,6 +189,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
     let relationKey: KeyPath<From, From.OptionalChild<To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.compactMap { $0.id! }
@@ -190,6 +201,9 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
             builder.filter(optional.appending(path: \.$id) ~~ Set(ids))
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
+        }
+        if (self.withDeleted) {
+            builder.withDeleted()
         }
         return builder.all().map {
             for model in models {

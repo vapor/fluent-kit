@@ -158,7 +158,6 @@ extension BooleanPropertyFormat where Self == TrueFalseBooleanPropertyFormat {
 
 /// This is a workaround for Swift 5.4's inability to correctly infer the format type
 /// using the `Self` constraints on the various static properties.
-#if swift(<5.5)
 public struct BooleanPropertyFormatFactory<Format: BooleanPropertyFormat> {
     public var format: Format
 }
@@ -188,4 +187,3 @@ extension BooleanPropertyFormatFactory {
         .init(format: .init())
     }
 }
-#endif

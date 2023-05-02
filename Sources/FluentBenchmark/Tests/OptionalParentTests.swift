@@ -65,6 +65,26 @@ extension FluentBenchmarker {
                 .all().wait()
             XCTAssertEqual(users2.count, 1)
             XCTAssert(users2.first?.bestFriend == nil)
+            
+            // Test deleted OptionalParent
+            try User.query(on: self.database).filter(\.$name == "Swift").delete().wait()
+            
+            let users3 = try User.query(on: self.database)
+                .with(\.$bestFriend, withDeleted: true)
+                .all().wait()
+            XCTAssertEqual(users3.first?.bestFriend?.name, "Swift")
+            
+            XCTAssertThrowsError(try User.query(on: self.database)
+                .with(\.$bestFriend)
+                .all().wait()
+            ) { error in
+                guard case let .missingParent(from, to, key, _) = error as? FluentError else {
+                    return XCTFail("Unexpected error \(error) thrown")
+                }
+                XCTAssertEqual(from, "User")
+                XCTAssertEqual(to, "User")
+                XCTAssertEqual(key, "bf_id")
+            }
         }
     }
 }
@@ -93,6 +113,9 @@ private final class User: Model {
 
     @Children(for: \.$bestFriend)
     var friends: [User]
+    
+    @Timestamp(key: "deleted_at", on: .delete)
+    var deletedAt: Date?
 
     init() { }
 
@@ -111,6 +134,7 @@ private struct UserMigration: Migration {
             .field("name", .string, .required)
             .field("pet", .json, .required)
             .field("bf_id", .uuid)
+            .field("deleted_at", .datetime)
             .create()
     }
 

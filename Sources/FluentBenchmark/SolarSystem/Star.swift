@@ -17,6 +17,9 @@ public final class Star: Model {
 
     @Children(for: \.$star)
     public var planets: [Planet]
+    
+    @Timestamp(key: "deleted_at", on: .delete)
+    var deletedAt: Date?
 
     public init() { }
 
@@ -32,6 +35,7 @@ public struct StarMigration: Migration {
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("galaxy_id", .uuid, .required, .references("galaxies", "id"))
+            .field("deleted_at", .datetime)
             .create()
     }
 
@@ -61,6 +65,6 @@ public final class StarSeed: Migration {
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        Star.query(on: database).delete()
+        Star.query(on: database).delete(force: true)
     }
 }
