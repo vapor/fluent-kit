@@ -19,7 +19,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
         case .missingParent(let model, let parent, let key, let id):
             return "parent missing: \(model).\(key): \(parent).\(id)"
         case .invalidField(let name, let valueType, let error):
-            return "invalid field: \(name) type: \(valueType) error: \(String(describing: error))"
+            return "invalid field: '\(name)', type: \(valueType), error: \(String(describing: error))"
         case .noResults:
             return "Query returned no results"
         }
@@ -30,7 +30,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
         case .idRequired, .missingField(_), .relationNotLoaded(_), .missingParent(_, _, _, _), .noResults:
             return self.description
         case .invalidField(let name, let valueType, let error):
-            return "invalid field: \(name) type: \(valueType) error: \(String(reflecting: error))"
+            return "invalid field: '\(name)', type: \(valueType), error: \(String(reflecting: error))"
         }
     }
 
