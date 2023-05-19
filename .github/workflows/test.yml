@@ -96,5 +96,4 @@ jobs:
     with:
       with_coverage: true
       with_tsan: true
-      with_removed_exports_check: false
       coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'
