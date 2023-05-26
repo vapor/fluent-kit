@@ -1,6 +1,7 @@
 import Foundation
 import AsyncKit
 import Logging
+import NIOCore
 
 public struct Migrator {
     public let databaseFactory: (DatabaseID?) -> (Database)
