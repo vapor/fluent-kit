@@ -11,7 +11,7 @@
 @_documentation(visibility: internal) @_exported import protocol NIO.EventLoopGroup
 @_documentation(visibility: internal) @_exported import class NIO.NIOThreadPool
 
-#elseif !BUILDING_DOCC
+#else
 
 @_exported import struct Foundation.Date
 @_exported import struct Foundation.UUID
