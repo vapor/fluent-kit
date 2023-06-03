@@ -7,7 +7,7 @@ on:
   push: { branches: [ main ] }
 
 env:
-  LOG_LEVEL: debug
+  LOG_LEVEL: info
   SWIFT_DETERMINISTIC_HASHING: 1
   POSTGRES_HOSTNAME: 'psql-a'
   POSTGRES_HOSTNAME_A: 'psql-a'
