@@ -127,6 +127,7 @@ public final class SiblingsProperty<From, To, Through>
             let pivot = Through()
             pivot[keyPath: self.from].id = fromID
             pivot[keyPath: self.to].id = toID
+            pivot[keyPath: self.to].value = to
             edit(pivot)
             return pivot
         }.create(on: database)
@@ -180,6 +181,7 @@ public final class SiblingsProperty<From, To, Through>
         let pivot = Through()
         pivot[keyPath: self.from].id = fromID
         pivot[keyPath: self.to].id = toID
+        pivot[keyPath: self.to].value = to
         edit(pivot)
         return pivot.save(on: database)
     }

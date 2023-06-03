@@ -62,6 +62,23 @@ extension FluentBenchmarker {
                 XCTAssertEqual(tags.count, 2)
                 XCTAssertEqual(tags.map(\.name).sorted(), ["Inhabited", "Small Rocky"])
             }
+            
+            try earth.$tags.detachAll(on: self.database).wait()
+            
+            // check pivot provided to the edit closure has the "to" model when attaching
+            try earth.$tags.attach([inhabited, smallRocky], on: self.database) { pivot in
+                guard pivot.$tag.value != nil else {
+                    return XCTFail("planet tag pivot should have tag available during editing")
+                }
+                pivot.comments = "Tagged with name \(pivot.tag.name)"
+            }.wait()
+            
+            do {
+                let pivots = try earth.$tags.$pivots.get(reload: true, on: self.database).wait()
+                
+                XCTAssertEqual(pivots.count, 2)
+                XCTAssertEqual(pivots.compactMap(\.comments).sorted(), ["Tagged with name Inhabited", "Tagged with name Small Rocky"])
+            }
         }
     }
 
