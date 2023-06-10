@@ -16,13 +16,13 @@ public protocol AnyParentProperty : CustomStringConvertible,
     var id : To.IDValue { get set }
     var wrappedValue : To { get }
     var projectedValue : Self { get }
-    var value_type : To.Type { get }
+    var valueType : To.Type { get }
     
     init(key: FieldKey)
     func query(on database: Database) -> QueryBuilder<To>
 }
 public extension AnyParentProperty {
-    var value_type : To.Type {
+    var valueType : To.Type {
         return To.self
     }
     
