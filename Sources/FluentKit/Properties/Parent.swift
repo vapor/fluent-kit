@@ -7,14 +7,15 @@ extension Model {
 
 // MARK: Type
 
-public protocol AnyParentProperty {
-    associatedtype From : Model
-    associatedtype To : Model
-    
+public protocol AnyParentProperty : CustomStringConvertible,
+                                    AnyProperty, Property,
+                                    Relation,
+                                    AnyQueryAddressableProperty, QueryAddressableProperty, AnyDatabaseProperty, AnyCodableProperty,
+                                    EagerLoadable where Model == From, Value == To
+{
     var id : To.IDValue { get set }
     var wrappedValue : To { get }
     var projectedValue : Self { get }
-    var value : To? { get set }
     var value_type : To.Type { get }
     
     init(key: FieldKey)
@@ -24,7 +25,68 @@ public extension AnyParentProperty {
     var value_type : To.Type {
         return To.self
     }
+    
+    // MARK: CustomStringConvertible
+    var description : String {
+        self.name
+    }
+    
+    // MARK: Relation
+    func load(on database: Database) -> EventLoopFuture<Void> {
+        self.query(on: database).first().map {
+            self.value = $0
+        }
+    }
+    
+    // MARK: AnyCodableProperty
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        if let parent:To = self.value {
+            try container.encode(parent)
+        } else {
+            try container.encode([
+                "id": self.id
+            ])
+        }
+    }
+    
+    // MARK: Eager Loadable
+    static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, ParentProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.Parent<To>>,
+        withDeleted: Bool,
+        to builder: Builder
+    )
+        where Builder: EagerLoadBuilder, Builder.Model == From
+    {
+        let loader = ParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
+        builder.add(loader: loader)
+    }
+
+
+    static func eagerLoad<Loader, Builder>(
+        _ loader: Loader,
+        through: KeyPath<From, From.Parent<To>>,
+        to builder: Builder
+    ) where
+        Loader: EagerLoader,
+        Loader.Model == To,
+        Builder: EagerLoadBuilder,
+        Builder.Model == From
+    {
+        let loader = ThroughParentEagerLoader(relationKey: through, loader: loader)
+        builder.add(loader: loader)
+    }
 }
+
 
 @propertyWrapper
 public final class ParentProperty<From, To> : AnyParentProperty
@@ -63,33 +125,12 @@ public final class ParentProperty<From, To> : AnyParentProperty
     }
 }
 
-extension ParentProperty: CustomStringConvertible {
-    public var description: String {
-        self.name
-    }
-}
-
 // MARK: Relation
 
 extension ParentProperty: Relation {
     public var name: String {
         "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
-
-    public func load(on database: Database) -> EventLoopFuture<Void> {
-        self.query(on: database).first().map {
-            self.value = $0
-        }
-    }
-}
-
-// MARK: Property
-
-extension ParentProperty: AnyProperty { }
-
-extension ParentProperty: Property {
-    public typealias Model = From
-    public typealias Value = To
 }
 
 // MARK: Query-addressable
@@ -120,17 +161,6 @@ extension ParentProperty: AnyDatabaseProperty {
 }
 
 extension ParentProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        if let parent = self.value {
-            try container.encode(parent)
-        } else {
-            try container.encode([
-                "id": self.id
-            ])
-        }
-    }
-
     public func decode(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: SomeCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
@@ -138,43 +168,6 @@ extension ParentProperty: AnyCodableProperty {
 }
 
 // MARK: Eager Loadable
-
-extension ParentProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, ParentProperty<From, To>>,
-        to builder: Builder
-    )
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
-        self.eagerLoad(relationKey, withDeleted: false, to: builder)
-    }
-    
-    public static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, From.Parent<To>>,
-        withDeleted: Bool,
-        to builder: Builder
-    )
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
-        let loader = ParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
-        builder.add(loader: loader)
-    }
-
-
-    public static func eagerLoad<Loader, Builder>(
-        _ loader: Loader,
-        through: KeyPath<From, From.Parent<To>>,
-        to builder: Builder
-    ) where
-        Loader: EagerLoader,
-        Loader.Model == To,
-        Builder: EagerLoadBuilder,
-        Builder.Model == From
-    {
-        let loader = ThroughParentEagerLoader(relationKey: through, loader: loader)
-        builder.add(loader: loader)
-    }
-}
 
 private struct ParentEagerLoader<From, To>: EagerLoader
     where From: FluentKit.Model, To: FluentKit.Model
