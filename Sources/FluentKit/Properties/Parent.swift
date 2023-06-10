@@ -7,8 +7,27 @@ extension Model {
 
 // MARK: Type
 
+public protocol AnyParentProperty {
+    associatedtype From : Model
+    associatedtype To : Model
+    
+    var id : To.IDValue { get set }
+    var wrappedValue : To { get }
+    var projectedValue : Self { get }
+    var value : To? { get set }
+    var value_type : To.Type { get }
+    
+    init(key: FieldKey)
+    func query(on database: Database) -> QueryBuilder<To>
+}
+public extension AnyParentProperty {
+    var value_type : To.Type {
+        return To.self
+    }
+}
+
 @propertyWrapper
-public final class ParentProperty<From, To>
+public final class ParentProperty<From, To> : AnyParentProperty
     where From: Model, To: Model
 {
     @FieldProperty<From, To.IDValue>
