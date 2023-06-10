@@ -34,6 +34,12 @@ public final class OptionalEnumProperty<Model, WrappedValue>
     }
 }
 
+extension OptionalEnumProperty: CustomStringConvertible {
+    public var description: String {
+        "@\(Model.self).OptionalEnum<\(WrappedValue.self)>(key: \(self.field.key))"
+    }
+}
+
 // MARK: Property
 
 extension OptionalEnumProperty: AnyProperty { }

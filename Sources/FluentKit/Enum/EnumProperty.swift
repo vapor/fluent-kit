@@ -54,6 +54,12 @@ extension EnumProperty: Property {
     }
 }
 
+extension EnumProperty: CustomStringConvertible {
+    public var description: String {
+        "@\(Model.self).Enum<\(Value.self)>(key: \(self.field.key))"
+    }
+}
+
 // MARK: Queryable
 
 extension EnumProperty: AnyQueryableProperty {

@@ -31,6 +31,12 @@ public final class OptionalFieldProperty<Model, WrappedValue>
     }
 }
 
+extension OptionalFieldProperty: CustomStringConvertible {
+    public var description : String {
+        "@\(Model.self).OptionalField<\(WrappedValue.self)>(key: \(self.key))"
+    }
+}
+
 // MARK: Property
 
 extension OptionalFieldProperty: AnyProperty { }

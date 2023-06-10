@@ -1,5 +1,5 @@
 /// A conversion between `Bool` and an arbitrary alternative storage format, usually a string.
-public protocol BooleanPropertyFormat {
+public protocol BooleanPropertyFormat : CustomStringConvertible {
     associatedtype Value: Codable
 
     init()
@@ -23,6 +23,10 @@ public struct DefaultBooleanPropertyFormat: BooleanPropertyFormat {
 
 extension BooleanPropertyFormat where Self == DefaultBooleanPropertyFormat {
     public static var `default`: Self { .init() }
+    
+    public var description: String {
+        return "default"
+    }
 }
 
 /// Represent a `Bool` as any integer type. Any value other than `0` or `1` is considered invalid.
@@ -43,6 +47,10 @@ public struct IntegerBooleanPropertyFormat<T: FixedWidthInteger & Codable>: Bool
     
     public func serialize(_ bool: Bool) -> T {
         return .zero.advanced(by: bool ? 1 : 0)
+    }
+    
+    public var description: String {
+        return "integer"
     }
 }
 
@@ -69,6 +77,10 @@ public struct OneZeroBooleanPropertyFormat: BooleanPropertyFormat {
 
 extension BooleanPropertyFormat where Self == OneZeroBooleanPropertyFormat {
     public static var oneZero: Self { .init() }
+    
+    public var description: String {
+        return "oneZero"
+    }
 }
 
 /// Represent a `Bool` as the strings "N" and "Y". Parsing is case-insensitive. Serialization always stores uppercase.
@@ -90,6 +102,10 @@ public struct YNBooleanPropertyFormat: BooleanPropertyFormat {
 
 extension BooleanPropertyFormat where Self == YNBooleanPropertyFormat {
     public static var yn: Self { .init() }
+    
+    public var description: String {
+        return "yn"
+    }
 }
 
 
@@ -112,6 +128,10 @@ public struct YesNoBooleanPropertyFormat: BooleanPropertyFormat {
 
 extension BooleanPropertyFormat where Self == YesNoBooleanPropertyFormat {
     public static var yesNo: Self { .init() }
+    
+    public var description: String {
+        return "yesNo"
+    }
 }
 
 /// Represent a `Bool` as the strings "OFF" and "ON". Parsing is case-insensitive. Serialization always stores uppercase.
@@ -133,6 +153,10 @@ public struct OnOffBooleanPropertyFormat: BooleanPropertyFormat {
 
 extension BooleanPropertyFormat where Self == OnOffBooleanPropertyFormat {
     public static var onOff: Self { .init() }
+    
+    public var description: String {
+        return "onOff"
+    }
 }
 
 /// Represent a `Bool` as the strings "false" and "true". Parsing is case-insensitive. Serialization always stores lowercase.
@@ -154,6 +178,10 @@ public struct TrueFalseBooleanPropertyFormat: BooleanPropertyFormat {
 
 extension BooleanPropertyFormat where Self == TrueFalseBooleanPropertyFormat {
     public static var trueFalse: Self { .init() }
+    
+    public var description: String {
+        return "trueFalse"
+    }
 }
 
 /// This is a workaround for Swift 5.4's inability to correctly infer the format type

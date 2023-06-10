@@ -68,6 +68,12 @@ public final class OptionalBooleanProperty<Model, Format>
     }
 }
 
+extension OptionalBooleanProperty: CustomStringConvertible {
+    public var description : String {
+        "@\(Model.self).OptionalBoolean(key: \(self.$field.key), format: \(self.format))"
+    }
+}
+
 extension OptionalBooleanProperty where Format == DefaultBooleanPropertyFormat {
     public convenience init(key: FieldKey) {
         self.init(key: key, format: .default)

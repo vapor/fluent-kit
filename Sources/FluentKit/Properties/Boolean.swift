@@ -68,6 +68,12 @@ public final class BooleanProperty<Model, Format>
     }
 }
 
+extension BooleanProperty: CustomStringConvertible {
+    public var description : String {
+        "@\(Model.self).Boolean(key: \(self.$field.key), format: \(self.format))"
+    }
+}
+
 extension BooleanProperty where Format == DefaultBooleanPropertyFormat {
     public convenience init(key: FieldKey) {
         self.init(key: key, format: .default)
