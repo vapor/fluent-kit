@@ -1,5 +1,8 @@
-*                         @gwynne
-/.github/contributing.md  @gwynne @0xTim
-/LICENSE                  @gwynne @0xTim
-/README.md                @gwynne @0xTim
-/.spi.yml                 @gwynne @0xTim
+*                            @gwynne
+/.github/CONTRIBUTING.md     @gwynne @0xTim
+/.github/workflows/*.yml     @gwynne @0xTim
+/.github/workflows/test.yml  @gwynne
+/.spi.yml                    @gwynne @0xTim
+/.gitignore                  @gwynne @0xTim
+/LICENSE                     @gwynne @0xTim
+/README.md                   @gwynne @0xTim

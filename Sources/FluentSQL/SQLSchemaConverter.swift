@@ -8,6 +8,10 @@ public protocol SQLConverterDelegate {
 }
 
 extension SQLConverterDelegate {
+    public func nestedFieldExpression(_ column: String, _ path: [String]) -> SQLExpression {
+        SQLNestedSubpathExpression(column: column, path: path)
+    }
+    
     public func beforeConvert(_ schema: DatabaseSchema) -> DatabaseSchema {
         schema
     }
