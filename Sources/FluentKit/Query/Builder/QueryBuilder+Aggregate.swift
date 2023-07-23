@@ -25,48 +25,56 @@ extension QueryBuilder {
         self.aggregate(.count, key, as: Int.self)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: QueryableProperty, Field.Model == Model
     {
         self.aggregate(.sum, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.sum, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
         where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
     {
         self.aggregate(.sum, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
         where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         self.aggregate(.sum, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: QueryableProperty, Field.Model == Model
     {
         self.aggregate(.average, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
         where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         self.aggregate(.average, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
         where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
     {
         self.aggregate(.average, key)
     }
 
+    // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
         where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
@@ -124,7 +132,7 @@ extension QueryBuilder {
     public func aggregate<Field, Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ field: KeyPath<Model, Field>,
-        as type: Result.Type = Result.self
+        as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Field: QueryableProperty, Field.Model == Model, Result: Codable
     {
@@ -134,7 +142,7 @@ extension QueryBuilder {
     public func aggregate<Field, Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ field: KeyPath<Model, Field>,
-        as type: Result.Type = Result.self
+        as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Field: QueryableProperty, Field.Model == Model.IDValue, Result: Codable
     {
@@ -145,29 +153,32 @@ extension QueryBuilder {
     public func aggregate<Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ field: FieldKey,
-        as type: Result.Type = Result.self
+        as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
-        self.aggregate(method, [field])
+        self.aggregate(method, [field], as: Result.self)
     }
 
     public func aggregate<Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ path: [FieldKey],
-        as type: Result.Type = Result.self
+        as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
-        self.aggregate(.field(
-            .extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
-            method
-        ))
+        self.aggregate(
+            .field(
+                .extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+                method
+            ),
+            as: Result.self
+        )
     }
     
     public func aggregate<Result>(
         _ aggregate: DatabaseQuery.Aggregate,
-        as type: Result.Type = Result.self
+        as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
         where Result: Codable
     {
