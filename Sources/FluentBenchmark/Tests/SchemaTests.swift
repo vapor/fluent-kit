@@ -153,7 +153,9 @@ extension FluentBenchmarker {
                 
                 .field("catid", .uuid)
                 .foreignKey(["catid"], references: Category.schema, [.id], onDelete: .noAction, onUpdate: .noAction)
+                .foreignKey(["catid"], references: Category.schema, [.id], onDelete: .noAction, onUpdate: .noAction, name: "second_fkey")
                 .unique(on: "catid")
+                .unique(on: "id", name: "second_ukey")
                 
                 .create().wait()
             
@@ -161,8 +163,12 @@ extension FluentBenchmarker {
                 try self.database.schema("normal_constraints")
                     // Test `DROP FOREIGN KEY` (MySQL) or `DROP CONSTRAINT` (Postgres)
                     .deleteConstraint(.constraint(.foreignKey([.key("catid")], Category.schema, [.key(.id)], onDelete: .noAction, onUpdate: .noAction)))
+                    // Test name-based `DROP FOREIGN KEY` (MySQL)
+                    .deleteForeignKey(name: "second_fkey")
                     // Test `DROP KEY` (MySQL) or `DROP CONSTRAINT` (Postgres)
                     .deleteUnique(on: "catid")
+                    // Test name-based `DROP KEY` (MySQL) or `DROP CONSTRAINT` (Postgres)
+                    .deleteConstraint(name: "second_ukey")
                     
                     .update().wait()
             }

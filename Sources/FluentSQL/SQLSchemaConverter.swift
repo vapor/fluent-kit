@@ -1,5 +1,5 @@
 import SQLKit
-import FluentKit
+@_spi(FluentSQLSPI) import FluentKit
 
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> SQLExpression?
@@ -112,8 +112,11 @@ public struct SQLSchemaConverter {
             let name = self.constraintIdentifier(algorithm, table: table)
             return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: algorithm)
         case .name(let name):
-            return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: .sql(raw: ""))
+            return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: .custom(""))
         case .custom(let any):
+            if let fkeyExt = any as? DatabaseSchema.ConstraintDelete._ForeignKeyByNameExtension {
+                return SQLDropTypedConstraint(name: SQLIdentifier(fkeyExt.name), algorithm: .foreignKey([], "", [], onDelete: .noAction, onUpdate: .noAction))
+            }
             return custom(any)
         }
     }
