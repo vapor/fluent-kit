@@ -85,10 +85,12 @@ jobs:
           repository: vapor/${{ matrix.dependent }}
           path: ${{ matrix.dependent }}
           ref: ${{ matrix.ref }}
-      - name: Use local package
-        run: swift package --package-path ${{ matrix.dependent }} edit fluent-kit --path fluent-kit
-      - name: Run tests
-        run: swift test --package-path ${{ matrix.dependent }}
+      - name: Use local package and run tests
+        env:
+          DEPENDENT: ${{ matrix.dependent }}
+        run: |
+          swift package --package-path ${DEPENDENT} edit fluent-kit --path fluent-kit
+          swift test --package-path ${DEPENDENT}
 
   # also serves as code coverage baseline update
   unit-tests:

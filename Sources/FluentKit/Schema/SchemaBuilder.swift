@@ -60,16 +60,22 @@ public final class SchemaBuilder {
 
     @discardableResult
     public func deleteUnique(on fields: FieldKey...) -> Self {
-        self.schema.deleteConstraints.append(.constraint(
-            .unique(fields: fields.map { .key($0) })
-        ))
-        return self
+        self.deleteConstraint(.constraint(.unique(fields: fields.map { .key($0) })))
+    }
+
+    /// Delete a FOREIGN KEY constraint with the given name.
+    ///
+    /// This method allows correctly handling referential constraints with custom names when using MySQL 5.7
+    /// without being forced to also know the full definition of the constraint at the time of deletion. See
+    /// ``DatabaseSchema/ConstraintDelete/namedForeignKey(_:)`` for a more complete discussion.
+    @discardableResult
+    public func deleteForeignKey(name: String) -> Self {
+        self.deleteConstraint(.namedForeignKey(name))
     }
 
     @discardableResult
     public func deleteConstraint(name: String) -> Self {
-        self.schema.deleteConstraints.append(.name(name))
-        return self
+        self.deleteConstraint(.name(name))
     }
 
     @discardableResult
@@ -145,7 +151,7 @@ public final class SchemaBuilder {
 
     @discardableResult
     public func deleteField(_ name: FieldKey) -> Self {
-        return self.deleteField(.key(name))
+        self.deleteField(.key(name))
     }
 
     @discardableResult
