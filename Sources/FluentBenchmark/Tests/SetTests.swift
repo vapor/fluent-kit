@@ -102,7 +102,9 @@ private struct Test2Migration: FluentKit.Migration {
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("test").delete()
+        database.schema("test").delete().flatMap {
+            database.enum("foo").delete()
+        }
     }
 }
 
