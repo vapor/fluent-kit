@@ -98,6 +98,14 @@ extension FluentBenchmarker {
             XCTAssertEqual(fetched3?.bar, .baz)
             XCTAssertEqual(fetched3?.baz, .qux)
 
+            let fetched3Opt = try Foo
+                .query(on: self.database)
+                .filter(\.$baz ~~ [.baz, .qux])
+                .first()
+                .wait()
+            XCTAssertEqual(fetched3Opt?.bar, .baz)
+            XCTAssertEqual(fetched3Opt?.baz, .qux)
+
             // not in
             let foo4 = Foo(bar: .baz, baz: .qux)
             try foo4.save(on: self.database).wait()
@@ -109,6 +117,14 @@ extension FluentBenchmarker {
                 .wait()
             XCTAssertEqual(fetched4?.bar, .baz)
             XCTAssertEqual(fetched4?.baz, .qux)
+            
+            let fetched4Opt = try Foo
+                .query(on: self.database)
+                .filter(\.$baz !~ [.baz])
+                .first()
+                .wait()
+            XCTAssertEqual(fetched4Opt?.bar, .baz)
+            XCTAssertEqual(fetched4Opt?.baz, .qux)
             
             // is null
             let foo5 = Foo(bar: .baz, baz: nil)
