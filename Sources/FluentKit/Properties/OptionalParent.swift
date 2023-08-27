@@ -173,6 +173,12 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
         var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
+        if sets.isEmpty {
+            // Fetching "To" objects is unnecessary when no models have an id for "To".
+            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+            return database.eventLoop.makeSucceededVoidFuture()
+        }
+
         let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 }))
         if (self.withDeleted) {
             builder.withDeleted()
