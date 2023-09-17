@@ -114,12 +114,54 @@ final class CompositeIDTests: XCTestCase {
         XCTAssertEqual(try db.sqlSerializers.xctAt(2).sql, #"SELECT "tags"."id" AS "tags_id", "tags"."name" AS "tags_name", "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "tags" INNER JOIN "composite+planet+tag" ON "tags"."id" = "composite+planet+tag"."tag_id" WHERE "composite+planet+tag"."planet_id" = $1 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $2)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(3).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(4).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)"#)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(5).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3) LIMIT 1"#)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(6).sql, #"SELECT "composite+planet+tag"."planet_id" AS "composite+planet+tag_planet_id", "composite+planet+tag"."tag_id" AS "composite+planet+tag_tag_id", "composite+planet+tag"."notation" AS "composite+planet+tag_notation", "composite+planet+tag"."createdAt" AS "composite+planet+tag_createdAt", "composite+planet+tag"."updatedAt" AS "composite+planet+tag_updatedAt", "composite+planet+tag"."deletedAt" AS "composite+planet+tag_deletedAt" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3) LIMIT 1"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(5).sql, #"SELECT COUNT("composite+planet+tag"."planet_id") AS "aggregate" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(6).sql, #"SELECT COUNT("composite+planet+tag"."planet_id") AS "aggregate" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(7).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE "composite+planet+tag"."planet_id" = $3 AND "composite+planet+tag"."tag_id" = $4 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $5)"#)
         XCTAssertEqual(try db.sqlSerializers.xctAt(8).sql, #"UPDATE "composite+planet+tag" SET "updatedAt" = $1, "deletedAt" = $2 WHERE "composite+planet+tag"."planet_id" = $3 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $4)"#)
     }
     
+    func testSiblingAttachWithAsyncEditClosures() async throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+            
+        let model = CompositePlanetTag(
+            planetID: .init(uuidString: "00000000-0000-0000-0000-000000000000")!,
+            tagID: .init(uuidString: "11111111-1111-1111-1111-111111111111")!
+        )
+        let planet = PlanetUsingCompositePivot(id: model.$id.$planet.id, name: "Planet", starId: .init(uuidString: "22222222-2222-2222-2222-222222222222")!)
+        planet.$planetTags.fromId = planet.id!
+        planet.$tags.fromId = planet.id!
+        let tag = Tag(id: .init(uuidString: "33333333-3333-3333-3333-333333333333")!, name: "Tag")
+        
+        try await planet.$planetTags.create(model, on: db)
+        try await planet.$tags.attach([tag], on: db) { pivot in
+            _ = try await Planet.query(on: db).all() // just to make there be something async happening
+            pivot.notation = "notation"
+        }
+        try await planet.$tags.attach(tag, on: db) { pivot in
+            _ = try await Planet.query(on: db).all() // just to make there be something async happening
+            pivot.notation = "notation"
+        }
+        try await planet.$tags.attach(tag, method: .ifNotExists, on: db) { pivot in
+            _ = try await Planet.query(on: db).all() // just to make there be something async happening
+            pivot.notation = "notation"
+        }
+        
+        XCTAssertEqual(db.sqlSerializers.count, 6)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(1).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(2).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "notation", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(3).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(4).sql, #"INSERT INTO "composite+planet+tag" ("planet_id", "tag_id", "notation", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5)"#)
+        XCTAssertEqual(try db.sqlSerializers.xctAt(5).sql, #"SELECT COUNT("composite+planet+tag"."planet_id") AS "aggregate" FROM "composite+planet+tag" WHERE "composite+planet+tag"."planet_id" = $1 AND "composite+planet+tag"."tag_id" = $2 AND ("composite+planet+tag"."deletedAt" IS NULL OR "composite+planet+tag"."deletedAt" > $3)"#)
+        
+        planet.$tags.fromId = nil
+        XCTAssertThrowsError(try planet.$tags.attach(tag, on: db).wait()) {
+            guard case .owningModelIdRequired(_) = $0 as? SiblingsPropertyError else {
+                return XCTFail("Expected SiblingsPropertyError.owningModelIdRequired, but got \(String(reflecting: $0))")
+            }
+        }
+    }
+
     func testCompositeIDFilterByID() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         let planetId = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
