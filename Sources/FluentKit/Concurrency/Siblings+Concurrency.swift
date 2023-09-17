@@ -24,7 +24,7 @@ public extension SiblingsProperty {
     }
 
     /// Attach single model with plain edit closure.
-    func attach(_ to: To, on database: any Database, _ edit: @escaping (Through) -> ()) async throws {
+    func attach(_ to: To, on database: any Database, _ edit: @escaping (Through) -> () = { _ in }) async throws {
         try await self.attach(to, method: .always, on: database, edit)
     }
     
