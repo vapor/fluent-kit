@@ -1,6 +1,6 @@
 import Foundation
 
-public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
+public enum FluentError: Error, LocalizedError, CustomNSError, CustomStringConvertible, CustomDebugStringConvertible {
     case idRequired
     case invalidField(name: String, valueType: Any.Type, error: Error)
     case missingField(name: String)
@@ -8,6 +8,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
     case missingParent(from: String, to: String, key: String, id: String)
     case noResults
 
+    // `CustomStringConvertible` conformance.
     public var description: String {
         switch self {
         case .idRequired:
@@ -25,6 +26,7 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
         }
     }
 
+    // `CustomDebugStringConvertible` conformance.
     public var debugDescription: String {
         switch self {
         case .idRequired, .missingField(_), .relationNotLoaded(_), .missingParent(_, _, _, _), .noResults:
@@ -34,9 +36,38 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
         }
     }
 
+    // `LocalizedError` conformance.
     public var errorDescription: String? {
-        return self.description
+        self.description
     }
+
+    // `LocalizedError` conformance.
+    public var failureReason: String? {
+        self.description
+    }
+    
+    // `CustomNSError` conformance
+    public static var errorDomain: String {
+        "codes.vapor.FluentKit.FluentErrorDomain"
+    }
+    
+    // `CustomNSError` conformance
+    public var errorCode: Int {
+        switch self {
+        case .idRequired: return 1
+        case .invalidField: return 2
+        case .missingField: return 3
+        case .relationNotLoaded: return 4
+        case .missingParent: return 5
+        case .noResults: return 6
+        }
+    }
+    
+    // `CustomNSError` conformance
+    public var errorUserInfo: [String: Any] { [
+        NSLocalizedDescriptionKey: self.description,
+        NSLocalizedFailureReasonErrorKey: self.description,
+    ] }
 }
 
 extension FluentError {
@@ -83,4 +114,66 @@ extension FluentError {
             id: "\(id)"
         )
     }
+}
+
+/// An error describing a failure during an an operation on an ``SiblingsProperty``.
+///
+/// > Note: This should just be another case on ``FluentError``, not a separate error type, but at the time
+///   of this writing, non-frozen enums are still not available to non-stdlib packages, so to avoid source
+///   breakage we chose this as the least annoying of the several annoying workarounds.
+public enum SiblingsPropertyError: Error, LocalizedError, CustomNSError, CustomStringConvertible, CustomDebugStringConvertible {
+    /// An attempt was made to query, attach to, or detach from a siblings property whose owning model's ID
+    /// is not currently known (usually because that model has not yet been saved to the database).
+    ///
+    /// Includes the relation name of the siblings property.
+    case owningModelIdRequired(property: String)
+    
+    /// An attempt was made to attach, detach, or check attachment to a siblings property of a model whose
+    /// ID is not currently known (usually because that model has not yet been saved to the database).
+    ///
+    /// More explicitly, this case means that the model to be attached or detached (an instance of the "To"
+    /// model) is unsaved, whereas the above ``owningModelIdRequired`` case means that the model containing
+    /// the sublings property itself (an instead of the "From") model is unsaved.
+    ///
+    /// Includes the relation name of the siblings property.
+    case operandModelIdRequired(property: String)
+    
+    // `CustomStringConvertible` conformance.
+    public var description: String {
+        switch self {
+        case .owningModelIdRequired(property: let property):
+            return "siblings relation \(property) is missing owning model's ID (owner likely unsaved)"
+        case .operandModelIdRequired(property: let property):
+            return "operant model for siblings relation \(property) has no ID (attach/detach/etc. model likely unsaved)"
+        }
+    }
+    
+    // `CustomDebugStringConvertible` conformance.
+    public var debugDescription: String { self.description }
+    
+    // `LocalizedError` conformance.
+    public var errorDescription: String? { self.description }
+
+    // `LocalizedError` conformance.
+    public var failureReason: String? { self.description }
+
+    // `CustomNSError` conformance
+    public static var errorDomain: String {
+        // N.B.: Presents as FluentError, as far as the NSError machinery is concerned
+        "codes.vapor.FluentKit.FluentErrorDomain"
+    }
+    
+    // `CustomNSError` conformance
+    public var errorCode: Int {
+        switch self {
+        case .owningModelIdRequired: return 7
+        case .operandModelIdRequired: return 8
+        }
+    }
+    
+    // `CustomNSError` conformance
+    public var errorUserInfo: [String: Any] { [
+        NSLocalizedDescriptionKey: self.description,
+        NSLocalizedFailureReasonErrorKey: self.description,
+    ] }
 }
