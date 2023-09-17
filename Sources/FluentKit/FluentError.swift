@@ -1,6 +1,6 @@
 import Foundation
 
-public enum FluentError: Error, LocalizedError, CustomNSError, CustomStringConvertible, CustomDebugStringConvertible {
+public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
     case idRequired
     case invalidField(name: String, valueType: Any.Type, error: Error)
     case missingField(name: String)
@@ -45,29 +45,6 @@ public enum FluentError: Error, LocalizedError, CustomNSError, CustomStringConve
     public var failureReason: String? {
         self.description
     }
-    
-    // `CustomNSError` conformance
-    public static var errorDomain: String {
-        "codes.vapor.FluentKit.FluentErrorDomain"
-    }
-    
-    // `CustomNSError` conformance
-    public var errorCode: Int {
-        switch self {
-        case .idRequired: return 1
-        case .invalidField: return 2
-        case .missingField: return 3
-        case .relationNotLoaded: return 4
-        case .missingParent: return 5
-        case .noResults: return 6
-        }
-    }
-    
-    // `CustomNSError` conformance
-    public var errorUserInfo: [String: Any] { [
-        NSLocalizedDescriptionKey: self.description,
-        NSLocalizedFailureReasonErrorKey: self.description,
-    ] }
 }
 
 extension FluentError {
@@ -121,7 +98,7 @@ extension FluentError {
 /// > Note: This should just be another case on ``FluentError``, not a separate error type, but at the time
 ///   of this writing, non-frozen enums are still not available to non-stdlib packages, so to avoid source
 ///   breakage we chose this as the least annoying of the several annoying workarounds.
-public enum SiblingsPropertyError: Error, LocalizedError, CustomNSError, CustomStringConvertible, CustomDebugStringConvertible {
+public enum SiblingsPropertyError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
     /// An attempt was made to query, attach to, or detach from a siblings property whose owning model's ID
     /// is not currently known (usually because that model has not yet been saved to the database).
     ///
@@ -156,24 +133,4 @@ public enum SiblingsPropertyError: Error, LocalizedError, CustomNSError, CustomS
 
     // `LocalizedError` conformance.
     public var failureReason: String? { self.description }
-
-    // `CustomNSError` conformance
-    public static var errorDomain: String {
-        // N.B.: Presents as FluentError, as far as the NSError machinery is concerned
-        "codes.vapor.FluentKit.FluentErrorDomain"
-    }
-    
-    // `CustomNSError` conformance
-    public var errorCode: Int {
-        switch self {
-        case .owningModelIdRequired: return 7
-        case .operandModelIdRequired: return 8
-        }
-    }
-    
-    // `CustomNSError` conformance
-    public var errorUserInfo: [String: Any] { [
-        NSLocalizedDescriptionKey: self.description,
-        NSLocalizedFailureReasonErrorKey: self.description,
-    ] }
 }
