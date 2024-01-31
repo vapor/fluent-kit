@@ -2,7 +2,7 @@
 
 public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value == String
 {
@@ -11,7 +11,7 @@ public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped == String
@@ -21,7 +21,7 @@ public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value == String
 {
@@ -30,7 +30,7 @@ public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped == String
@@ -40,7 +40,7 @@ public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value == String
 {
@@ -49,7 +49,7 @@ public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped == String
@@ -59,7 +59,7 @@ public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value == String
 {
@@ -68,7 +68,7 @@ public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> Model
 
 public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped == String
@@ -78,7 +78,7 @@ public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> Model
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value == String
 {
@@ -87,7 +87,7 @@ public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped == String
@@ -97,7 +97,7 @@ public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelV
 
 public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value == String
 {
@@ -106,7 +106,7 @@ public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> Model
 
 public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped == String
@@ -118,7 +118,7 @@ public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: String) -> Model
 
 public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: CustomStringConvertible
 {
@@ -127,7 +127,7 @@ public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: CustomStringConvertible
@@ -137,7 +137,7 @@ public func ~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: CustomStringConvertible
 {
@@ -146,7 +146,7 @@ public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: CustomStringConvertible
@@ -156,7 +156,7 @@ public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: CustomStringConvertible
 {
@@ -165,7 +165,7 @@ public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: CustomStringConvertible
@@ -175,7 +175,7 @@ public func =~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: CustomStringConvertible
 {
@@ -184,7 +184,7 @@ public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Va
 
 public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: CustomStringConvertible
@@ -194,7 +194,7 @@ public func !~= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Va
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: CustomStringConvertible
 {
@@ -203,7 +203,7 @@ public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: CustomStringConvertible
@@ -213,7 +213,7 @@ public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
 
 public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: CustomStringConvertible
 {
@@ -222,7 +222,7 @@ public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Va
 
 public func !=~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
     where
-        Model: FluentKit.Model,
+        Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: CustomStringConvertible

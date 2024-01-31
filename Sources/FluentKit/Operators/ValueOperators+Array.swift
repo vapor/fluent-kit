@@ -1,7 +1,7 @@
 // MARK: Field.Value
 
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model,
+    where Model: FluentKit.Schema,
         Field: QueryableProperty,
         Values: Collection,
         Values.Element == Field.Value
@@ -10,7 +10,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 }
 
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model,
+    where Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: Codable,
@@ -21,7 +21,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 }
 
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model,
+    where Model: FluentKit.Schema,
         Field: QueryableProperty,
         Values: Collection,
         Values.Element == Field.Value
@@ -30,7 +30,7 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 }
 
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model,
+    where Model: FluentKit.Schema,
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: Codable,
@@ -43,13 +43,13 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 // MARK: DatabaseQuery.Value
 
 public func ~~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: QueryableProperty
+    where Model: FluentKit.Schema, Field: QueryableProperty
 {
     .init(lhs, .subset(inverse: false), rhs)
 }
 
 public func !~ <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Value) -> ModelValueFilter<Model>
-    where Model: FluentKit.Model, Field: QueryableProperty
+    where Model: FluentKit.Schema, Field: QueryableProperty
 {
     .init(lhs, .subset(inverse: true), rhs)
 }
