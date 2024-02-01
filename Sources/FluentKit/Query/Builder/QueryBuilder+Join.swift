@@ -76,7 +76,6 @@ extension QueryBuilder {
         self.query.joins.append(join)
         return self
     }
-
 }
 
 // MARK: Local == Foreign
@@ -139,19 +138,39 @@ public func != <Foreign, ForeignField, Local, LocalField>(
 
 // MARK: Filter && combinator
 
-/// a ==/!= b && c ==/!= d
+/// `a ==/!= b && c ==/!= d`
 public func && (lhs: ComplexJoinFilter, rhs: ComplexJoinFilter) -> ComplexJoinFilterGroup {
     .init(filters: [lhs, rhs])
 }
 
-/// (a == b && c != d) && e != f
+/// `a ==/!= b && c >/< 1`
+public func && <Model: Schema> (lhs: ComplexJoinFilter, rhs: ModelValueFilter<Model>) -> ComplexJoinFilterGroup {
+    .init(filters: [lhs, .init(rhs)])
+}
+
+/// `c >/< 1 && a ==/!= b`
+public func && <Model: Schema> (lhs: ModelValueFilter<Model>, rhs: ComplexJoinFilter) -> ComplexJoinFilterGroup {
+    .init(filters: [.init(lhs), rhs])
+}
+
+/// `(a == b && c != d) && e != f`
 public func && (lhs: ComplexJoinFilterGroup, rhs: ComplexJoinFilter) -> ComplexJoinFilterGroup {
     .init(filters: lhs.filters + [rhs])
 }
 
-// e != f && (a == b && c != d)
+/// `(a == b && c != d) && e < 1`
+public func && <Model: Schema>(lhs: ComplexJoinFilterGroup, rhs: ModelValueFilter<Model>) -> ComplexJoinFilterGroup {
+    .init(filters: lhs.filters + [.init(rhs)])
+}
+
+/// `e != f && (a == b && c != d)`
 public func && (lhs: ComplexJoinFilter, rhs: ComplexJoinFilterGroup) -> ComplexJoinFilterGroup {
     .init(filters: [lhs] + rhs.filters)
+}
+
+/// `e > 1 && (a == b && c != d)`
+public func && <Model: Schema>(lhs: ModelValueFilter<Model>, rhs: ComplexJoinFilterGroup) -> ComplexJoinFilterGroup {
+    .init(filters: [.init(lhs)] + rhs.filters)
 }
 
 // MARK: - Struct definitions
@@ -163,6 +182,14 @@ public struct ComplexJoinFilter {
     
     init(filter: DatabaseQuery.Filter) {
         self.filter = filter
+    }
+    
+    init<Model: Schema>(_ filter: ModelValueFilter<Model>) {
+        self.init(filter: .value(
+            .extendedPath(filter.path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+            filter.method,
+            filter.value
+        ))
     }
     
     init<Left, LField, Right, RField>(
