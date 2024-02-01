@@ -61,5 +61,5 @@ extension LoggingOverrideDatabase: SQLDatabase where D: SQLDatabase {
         self.database.execute(sql: query, onRow)
     }
     var dialect: SQLDialect { self.database.dialect }
-    var version: SQLDatabaseReportedVersion? { self.database.version }
+    var version: (any SQLDatabaseReportedVersion)? { self.database.version }
 }

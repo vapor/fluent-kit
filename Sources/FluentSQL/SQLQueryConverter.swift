@@ -382,9 +382,9 @@ private struct EncodableDatabaseInput: Encodable {
     let input: [FieldKey: DatabaseQuery.Value]
 
     func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: SomeCodingKey.self)
+        var container = encoder.container(keyedBy: FluentKit.SomeCodingKey.self)
         for (key, value) in self.input {
-            try container.encode(EncodableDatabaseValue(value: value), forKey: SomeCodingKey(stringValue: key.description))
+            try container.encode(EncodableDatabaseValue(value: value), forKey: FluentKit.SomeCodingKey(stringValue: key.description))
         }
     }
 }
