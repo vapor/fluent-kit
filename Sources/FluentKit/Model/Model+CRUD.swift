@@ -22,7 +22,7 @@ extension Model {
             self.anyID.generate()
             let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
             Self.query(on: database)
-                .set(self.collectInput())
+                .set(self.collectInput(withDefaultedValues: true))
                 .action(.create)
                 .run { promise.succeed($0) }
                 .cascadeFailure(to: promise)
@@ -36,7 +36,7 @@ extension Model {
             }
         } else {
             return Self.query(on: database)
-                .set(self.collectInput())
+                .set(self.collectInput(withDefaultedValues: true))
                 .action(.create)
                 .run()
                 .flatMapThrowing {
@@ -179,7 +179,7 @@ extension Collection where Element: FluentKit.Model {
             }.create(model, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .set(self.map { $0.collectInput() })
+                .set(self.map { $0.collectInput(withDefaultedValues: true) })
                 .create()
         }.map {
             for model in self {

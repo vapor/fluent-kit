@@ -156,8 +156,8 @@ private final class HasChangesInput: DatabaseInput {
 extension Fields {
     /// Returns a dictionary of field keys and associated values representing all "pending"
     /// data - e.g. all fields (if any) which have been changed by something other than Fluent.
-    internal func collectInput() -> [FieldKey: DatabaseQuery.Value] {
-        let input = DictionaryInput()
+    internal func collectInput(withDefaultedValues defaultedValues: Bool = false) -> [FieldKey: DatabaseQuery.Value] {
+        let input = DictionaryInput(wantsUnmodifiedKeys: defaultedValues)
         self.input(to: input)
         return input.storage
     }
@@ -166,6 +166,11 @@ extension Fields {
 /// Helper type for the implementation of `Fields.collectInput()`.
 private final class DictionaryInput: DatabaseInput {
     var storage: [FieldKey: DatabaseQuery.Value] = [:]
+    let wantsUnmodifiedKeys: Bool
+    
+    init(wantsUnmodifiedKeys: Bool = false) {
+        self.wantsUnmodifiedKeys = wantsUnmodifiedKeys
+    }
 
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.storage[key] = value
