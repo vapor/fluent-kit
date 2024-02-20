@@ -1,3 +1,6 @@
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testBatch() throws {
         try self.testBatch_create()

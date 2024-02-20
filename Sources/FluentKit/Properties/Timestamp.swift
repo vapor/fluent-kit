@@ -1,3 +1,5 @@
+import Foundation
+
 extension Model {
     public typealias Timestamp<Format> = TimestampProperty<Self, Format>
         where Format: TimestampFormat
@@ -30,7 +32,10 @@ public final class TimestampProperty<Model, Format>
 
     public var wrappedValue: Date? {
         get {
-            self.value ?? nil
+            switch self.value {
+                case .none, .some(.none): return nil
+                case .some(.some(let value)): return value
+            }
         }
         set {
             self.value = .some(newValue)
@@ -52,7 +57,7 @@ public final class TimestampProperty<Model, Format>
     }
 
     public func touch(date: Date?) {
-        self.value = date
+        self.wrappedValue = date
     }
 }
 
@@ -75,13 +80,23 @@ extension TimestampProperty: AnyProperty { }
 extension TimestampProperty: Property {
     public var value: Date?? {
         get {
-            self.$timestamp.value.flatMap {
-                .some($0.flatMap { self.format.parse($0) })
+            switch self.$timestamp.value {
+                case .some(.some(let timestamp)):
+                    return .some(self.format.parse(timestamp))
+                case .some(.none):
+                    return .some(.none)
+                case .none:
+                    return .none
             }
         }
         set {
-            self.$timestamp.value = newValue.flatMap {
-                .some($0.flatMap { self.format.serialize($0) })
+            switch newValue {
+                case .some(.some(let newValue)):
+                    self.$timestamp.value = .some(self.format.serialize(newValue))
+                case .some(.none):
+                    self.$timestamp.value = .some(.none)
+                case .none:
+                    self.$timestamp.value = .none
             }
         }
     }
@@ -96,6 +111,17 @@ extension TimestampProperty: AnyQueryableProperty {
 }
 
 extension TimestampProperty: QueryableProperty { }
+
+// MARK: Query-addressable
+
+extension TimestampProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension TimestampProperty: QueryAddressableProperty {
+    public var queryableProperty: TimestampProperty<Model, Format> { self }
+}
 
 // MARK: Database
 
@@ -118,7 +144,7 @@ extension TimestampProperty: AnyDatabaseProperty {
 extension TimestampProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(self.value)
+        try container.encode(self.wrappedValue)
     }
 
     public func decode(from decoder: Decoder) throws {
@@ -186,9 +212,10 @@ extension Schema {
         guard let timestamp = self.init().deletedTimestamp else {
             return
         }
-        let deletedAtField = DatabaseQuery.Field.path(
+        let deletedAtField = DatabaseQuery.Field.extendedPath(
             [timestamp.key],
-            schema: self.schemaOrAlias
+            schema: self.schemaOrAlias,
+            space: self.space
         )
         query.filters.append(.group([
             .value(deletedAtField, .equal, .null),

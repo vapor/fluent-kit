@@ -1,3 +1,6 @@
+import FluentKit
+import XCTest
+
 extension FluentBenchmarker {
     public func testAggregate(max: Bool = true) throws {
         try self.testAggregate_all(max: max)

@@ -1,3 +1,5 @@
+import NIOCore
+
 public protocol AnyModelResponder {
     func handle(
         _ event: ModelEvent,

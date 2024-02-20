@@ -1,14 +1,16 @@
-#if compiler(>=5.5) && canImport(_Concurrency)
-#if !os(Linux)
-@testable import FluentKit
-@testable import FluentBenchmark
+import FluentKit
+import FluentBenchmark
 import XCTest
 import Foundation
 import FluentSQL
 import XCTFluent
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 final class AsyncFluentKitTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+
     func testGalaxyPlanetSorts() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet.query(on: db).sort(\.$name, .descending).all()
@@ -51,6 +53,24 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
+    func testGroupSorts() async throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try await User.query(on: db).sort(\.$pet.$name).all { _ in }
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_name" ASC"#), true)
+        db.reset()
+
+        _ = try await User.query(on: db).sort(\.$pet.$toy.$name, .descending).all { _ in }
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_name" DESC"#), true)
+        db.reset()
+
+        _ = try await User.query(on: db).sort(\.$pet.$toy.$foo.$bar, .ascending).all { _ in }
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_foo_bar" ASC"#), true)
+        db.reset()
+    }
+
     func testJoins() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet.query(on: db).join(child: \Planet.$governor).all()
@@ -70,7 +90,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
         _ = try await Planet.query(on: db).join(siblings: \Planet.$tags).all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planets"."id" = "planet+tag"."planet_id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planet+tag"."planet_id" = "planets"."id""#), true)
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "tags" ON "planet+tag"."tag_id" = "tags"."id""#), true)
         db.reset()
     }
@@ -80,7 +100,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
         _ = try await Planet.query(on: db).all(\.$name)
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
     }
 
@@ -89,7 +109,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
         _ = try await Planet.query(on: db).unique().all(\.$name)
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
 
         _ = try await Planet.query(on: db).unique().all()
@@ -99,12 +119,12 @@ final class AsyncFluentKitTests: XCTestCase {
 
         _ = try await Planet.query(on: db).unique().count(\.$name)
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "aggregate" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
 
         _ = try await Planet.query(on: db).unique().sum(\.$id)
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "aggregate" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
     }
 
@@ -243,7 +263,7 @@ final class AsyncFluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 0)
     }
 
-    func testPlanel2FilterPlaceholder1() async throws {
+    func testPlanet2FilterPlaceholder1() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -257,7 +277,7 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
-    func testPlanel2FilterPlaceholder2() async throws {
+    func testPlanet2FilterPlaceholder2() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -271,7 +291,7 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
-    func testPlanel2FilterPlaceholder3() async throws {
+    func testPlanet2FilterPlaceholder3() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -287,7 +307,7 @@ final class AsyncFluentKitTests: XCTestCase {
         db.reset()
     }
 
-    func testPlanel2FilterPlaceholder4() async throws {
+    func testPlanet2FilterPlaceholder4() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet2
             .query(on: db)
@@ -304,7 +324,7 @@ final class AsyncFluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() async throws {
-        final class Foo: Model {
+        final class DGOFoo: Model {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -330,7 +350,7 @@ final class AsyncFluentKitTests: XCTestCase {
                 TestOutput(["id": 0])
             ]
         }
-        let foo = Foo(id: 1)
+        let foo = DGOFoo(id: 1)
         try await foo.create(on: test.db)
         XCTAssertEqual(foo.id, 1)
     }
@@ -348,5 +368,3 @@ final class AsyncFluentKitTests: XCTestCase {
             .paginate(pageRequest2)
     }
 }
-#endif
-#endif

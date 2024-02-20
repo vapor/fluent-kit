@@ -1,7 +1,5 @@
-#if compiler(>=5.5) && canImport(_Concurrency)
 import NIOCore
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 public extension QueryBuilder {
     // MARK: - Actions
     func create() async throws {
@@ -27,9 +25,7 @@ public extension QueryBuilder {
     }
     
     func all<Field>(_ key: KeyPath<Model, Field>) async throws -> [Field.Value]
-    where
-        Field: QueryableProperty,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
     {
         try await self.all(key).get()
     }
@@ -38,14 +34,11 @@ public extension QueryBuilder {
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
     ) async throws -> [Field.Value]
-    where
-        Joined: Schema,
-        Field: QueryableProperty,
-        Field.Model == Joined
+        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
         try await self.all(joined, field).get()
     }
-    
+
     func all() async throws -> [Model] {
         try await self.all().get()
     }
@@ -68,79 +61,121 @@ public extension QueryBuilder {
     }
     
     func count<Field>(_ key: KeyPath<Model, Field>) async throws  -> Int
-    where
-        Field: QueryableProperty,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
     {
         try await self.count(key).get()
     }
+
+    func count<Field>(_ key: KeyPath<Model, Field>) async throws  -> Int
+        where Field: QueryableProperty, Field.Model == Model.IDValue
+    {
+        try await self.count(key).get()
+    }
+
+    func sum<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        try await self.sum(key).get()
+    }
     
     func sum<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
-    where
-        Field: QueryableProperty,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         try await self.sum(key).get()
     }
     
     func sum<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
-    where
-        Field: QueryableProperty,
-        Field.Value: OptionalType,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        try await self.sum(key).get()
+    }
+    
+    func sum<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         try await self.sum(key).get()
     }
     
     func average<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
-    where
-        Field: QueryableProperty,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        try await self.average(key).get()
+    }
+    
+    func average<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         try await self.average(key).get()
     }
     
     func average<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
-    where
-        Field: QueryableProperty,
-        Field.Value: OptionalType,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        try await self.average(key).get()
+    }
+    
+    func average<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         try await self.average(key).get()
     }
     
     func min<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
-    where
-        Field: QueryableProperty,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        try await self.min(key).get()
+    }
+    
+    func min<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         try await self.min(key).get()
     }
     
     func min<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
-    where
-        Field: QueryableProperty,
-        Field.Value: OptionalType,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
+    {
+        try await self.min(key).get()
+    }
+    
+    func min<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
     {
         try await self.min(key).get()
     }
     
     func max<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
-    where
-        Field: QueryableProperty,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Model == Model
+    {
+        try await self.max(key).get()
+    }
+    
+    func max<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
+        where Field: QueryableProperty, Field.Model == Model.IDValue
     {
         try await self.max(key).get()
     }
     
     func max<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
-    where
-        Field: QueryableProperty,
-        Field.Value: OptionalType,
-        Field.Model == Model
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model
     {
         try await self.max(key).get()
+    }
+    
+    func max<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value
+        where Field: QueryableProperty, Field.Value: OptionalType, Field.Model == Model.IDValue
+    {
+        try await self.max(key).get()
+    }
+
+    func aggregate<Field, Result>(
+        _ method: DatabaseQuery.Aggregate.Method,
+        _ field: KeyPath<Model, Field>,
+        as type: Result.Type = Result.self
+    ) async throws -> Result
+        where Field: QueryableProperty, Field.Model == Model, Result: Codable
+    {
+        try await self.aggregate(method, field, as: type).get()
     }
     
     func aggregate<Field, Result>(
@@ -148,21 +183,17 @@ public extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as type: Result.Type = Result.self
     ) async throws -> Result
-    where
-        Field: QueryableProperty,
-        Field.Model == Model,
-        Result: Codable
+        where Field: QueryableProperty, Field.Model == Model.IDValue, Result: Codable
     {
         try await self.aggregate(method, field, as: type).get()
     }
-    
     
     func aggregate<Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ field: FieldKey,
         as type: Result.Type = Result.self
     ) async throws -> Result
-    where Result: Codable
+        where Result: Codable
     {
         try await self.aggregate(method, field, as: type).get()
     }
@@ -172,7 +203,7 @@ public extension QueryBuilder {
         _ path: [FieldKey],
         as type: Result.Type = Result.self
     ) async throws -> Result
-    where Result: Codable
+        where Result: Codable
     {
         try await self.aggregate(method, path, as: type).get()
     }
@@ -183,6 +214,11 @@ public extension QueryBuilder {
     ) async throws -> Page<Model> {
         try await self.paginate(request).get()
     }
+    
+    func page(
+        withIndex page: Int,
+        size per: Int
+    ) async throws -> Page<Model> {
+        try await self.page(withIndex: page, size: per).get()
+    }
 }
-
-#endif

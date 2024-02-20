@@ -1,4 +1,5 @@
 import SQLKit
+import FluentKit
 
 extension SQLQueryFetcher {
     public func first<Model>(decoding model: Model.Type) -> EventLoopFuture<Model?> 

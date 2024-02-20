@@ -1,21 +1,23 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
 
     public func testMiddleware() throws {
         try self.testMiddleware_methods()
         try self.testMiddleware_batchCreationFail()
-        #if compiler(>=5.5) && canImport(_Concurrency)
-        if #available(macOS 12, iOS 15, watchOS 8, tvOS 15, *) {
-            try self.testAsyncMiddleware_methods()
-        }
-        #endif
+        try self.testAsyncMiddleware_methods()
     }
     
     public func testMiddleware_methods() throws {
+        self.databases.middleware.use(UserMiddleware())
+        defer { self.databases.middleware.clear() }
+
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.use(UserMiddleware())
-
             let user = User(name: "A")
             // create
             do {
@@ -60,14 +62,13 @@ extension FluentBenchmarker {
         }
     }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-    @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
     public func testAsyncMiddleware_methods() throws {
+        self.databases.middleware.use(AsyncUserMiddleware())
+        defer { self.databases.middleware.clear() }
+
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.use(AsyncUserMiddleware())
-
             let user = User(name: "A")
             // create
             do {
@@ -111,15 +112,15 @@ extension FluentBenchmarker {
             XCTAssertEqual(user.name, "G")
         }
     }
-#endif
     
     public func testMiddleware_batchCreationFail() throws {
+        self.databases.middleware.clear()
+        self.databases.middleware.use(UserBatchMiddleware())
+        defer { self.databases.middleware.clear() }
+
         try self.runTest(#function, [
             UserMigration(),
         ]) {
-            self.databases.middleware.clear()
-            self.databases.middleware.use(UserBatchMiddleware())
-
             let user = User(name: "A")
             let user2 = User(name: "B")
             let user3 = User(name: "C")
@@ -173,8 +174,6 @@ private struct UserBatchMiddleware: ModelMiddleware {
     }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 private struct AsyncUserMiddleware: AsyncModelMiddleware {
     func create(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
         model.name = "B"
@@ -211,7 +210,6 @@ private struct AsyncUserMiddleware: AsyncModelMiddleware {
         throw TestError(string: "didDelete")
     }
 }
-#endif
 
 private struct UserMiddleware: ModelMiddleware {
     func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {

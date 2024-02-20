@@ -1,3 +1,5 @@
+import SQLKit
+
 func custom(_ any: Any) -> SQLExpression {
     if let sql = any as? SQLExpression {
         return sql

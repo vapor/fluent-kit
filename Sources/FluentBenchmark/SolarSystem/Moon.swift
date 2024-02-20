@@ -1,4 +1,6 @@
 import FluentKit
+import Foundation
+import NIOCore
 
 public final class Moon: Model {
     public static let schema = "moons"

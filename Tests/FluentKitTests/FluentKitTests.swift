@@ -1,11 +1,51 @@
-@testable import FluentKit
-@testable import FluentBenchmark
+import Logging
+import FluentKit
+import FluentBenchmark
 import XCTest
 import Foundation
 import FluentSQL
 import XCTFluent
+import SQLKit
 
 final class FluentKitTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+    
+    /// This test is a deliberate code smell put in place to prevent an even worse one from
+    /// causing problems without at least some warning. Specifically, the output of
+    /// ``AnyModel//description`` is rather precise when it comes to labeling the input and
+    /// output dictionaries when they are present. Non-trivial effort was made to produce this
+    /// exact textual format. While it is never correct to rely on the output of a
+    /// ``description`` method (aside special cases like ``LosslessStringConvertible`` types),
+    /// this has been public API for ages; [Hyrum's Law](https://www.hyrumslaw.com) thus applies.
+    /// Since no part of Fluent or any of its drivers currently relies, or ever will rely, on
+    /// the format in question, it is desirable to enforce that it should never change, just in
+    /// case someone actually is relying on it for some hopefully very good reason.
+    func testAnyModelDescriptionFormatHasNotChanged() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+            @ID(key: .id) var id: UUID?
+            @Field(key: "name") var name: String
+            @Field(key: "num") var num: Int
+            init() {}
+        }
+        let model = Foo()
+        let modelEmptyDesc = model.description
+        (model.name, model.num) = ("Test", 42)
+        let modelInputDesc = model.description
+        try model.save(on: DummyDatabaseForTestSQLSerializer()).wait()
+        let modelOutputDesc = model.description
+        model.num += 1
+        let modelBothDesc = model.description
+        
+        XCTAssertEqual(modelEmptyDesc,  "Foo(:)")
+        XCTAssertEqual(modelInputDesc,  "Foo(input: [name: \"Test\", num: 42])")
+        XCTAssertEqual(modelOutputDesc, "Foo(output: [num: 42, name: \"Test\", id: \(model.id!)])")
+        XCTAssertEqual(modelBothDesc,   "Foo(output: [num: 42, name: \"Test\", id: \(model.id!)], input: [num: 43])")
+    }
+    
     func testMigrationLogNames() throws {
         XCTAssertEqual(MigrationLog.path(for: \.$id), [.id])
         XCTAssertEqual(MigrationLog.path(for: \.$name), ["name"])
@@ -65,6 +105,24 @@ final class FluentKitTests: XCTestCase {
         db.reset()
     }
 
+    func testGroupSorts() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try User.query(on: db).sort(\.$pet.$name).all { _ in }.wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_name" ASC"#), true)
+        db.reset()
+
+        _ = try User.query(on: db).sort(\.$pet.$toy.$name, .descending).all { _ in }.wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_name" DESC"#), true)
+        db.reset()
+
+        _ = try User.query(on: db).sort(\.$pet.$toy.$foo.$bar, .ascending).all { _ in }.wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"ORDER BY "users"."pet_toy_foo_bar" ASC"#), true)
+        db.reset()
+    }
+
     func testJoins() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db).join(child: \Planet.$governor).all().wait()
@@ -89,7 +147,7 @@ final class FluentKitTests: XCTestCase {
 
         _ = try Planet.query(on: db).join(siblings: \Planet.$tags).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planets"."id" = "planet+tag"."planet_id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planet+tag"."planet_id" = "planets"."id""#), true, db.sqlSerializers.first?.sql ?? "")
         XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "tags" ON "planet+tag"."tag_id" = "tags"."id""#), true)
         db.reset()
     }
@@ -99,7 +157,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).all(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
     }
     
@@ -108,7 +166,7 @@ final class FluentKitTests: XCTestCase {
         
         _ = try Planet.query(on: db).unique().all(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
         
         _ = try Planet.query(on: db).unique().all().wait()
@@ -118,12 +176,12 @@ final class FluentKitTests: XCTestCase {
         
         _ = try? Planet.query(on: db).unique().count(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "aggregate" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT("planets"."name")) AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
         
         _ = try? Planet.query(on: db).unique().sum(\.$id).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "aggregate" FROM "planets""#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT("planets"."id")) AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
     }
 
@@ -233,6 +291,20 @@ final class FluentKitTests: XCTestCase {
             .wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, CONSTRAINT "fk:planets.galaxy_id+planets.id" FOREIGN KEY ("galaxy_id") REFERENCES "galaxies" ("id") ON DELETE RESTRICT ON UPDATE CASCADE)"#)
+        db.reset()
+
+         try db.schema("planets")
+             .field("galaxy_id", .int64)
+             .field("galaxy_name", .string)
+             .foreignKey(
+                 ["galaxy_id", "galaxy_name"],
+                 references: "galaxies", ["id", "name"],
+                 onUpdate: .cascade
+             )
+             .create()
+             .wait()
+         XCTAssertEqual(db.sqlSerializers.count, 1)
+         XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "planets"("galaxy_id" BIGINT, "galaxy_name" TEXT, CONSTRAINT "fk:planets.galaxy_id+planets.galaxy_name+planets.id+planets.name" FOREIGN KEY ("galaxy_id", "galaxy_name") REFERENCES "galaxies" ("id", "name") ON DELETE NO ACTION ON UPDATE CASCADE)"#)
     }
     
     func testIfNotExistsTableCreate() throws {
@@ -364,7 +436,7 @@ final class FluentKitTests: XCTestCase {
         }
     }
 
-    func testPlanel2FilterPlaceholder1() throws {
+    func testPlanet2FilterPlaceholder1() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -378,7 +450,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder2() throws {
+    func testPlanet2FilterPlaceholder2() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -392,7 +464,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder3() throws {
+    func testPlanet2FilterPlaceholder3() throws {
             let db = DummyDatabaseForTestSQLSerializer()
             _ = try Planet2
                 .query(on: db)
@@ -408,7 +480,7 @@ final class FluentKitTests: XCTestCase {
             db.reset()
         }
 
-    func testPlanel2FilterPlaceholder4() throws {
+    func testPlanet2FilterPlaceholder4() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet2
             .query(on: db)
@@ -426,7 +498,7 @@ final class FluentKitTests: XCTestCase {
 
     func testLoggerOverride() throws {
         let db: Database = DummyDatabaseForTestSQLSerializer()
-        XCTAssertEqual(db.logger.logLevel, .info)
+        XCTAssertEqual(db.logger.logLevel, env("LOG_LEVEL").flatMap { Logger.Level(rawValue: $0) } ?? .info)
         var logger = db.logger
         logger.logLevel = .critical
         let new = db.logging(to: logger)
@@ -437,7 +509,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class Foo: Model {
+        final class EFoo: Model {
             static let schema = "foos"
             @ID var id: UUID?
             @Enum(key: "bar") var bar: Bar
@@ -445,13 +517,13 @@ final class FluentKitTests: XCTestCase {
         }
 
         do {
-            let foo = try JSONDecoder().decode(Foo.self, from: Data("""
+            let foo = try JSONDecoder().decode(EFoo.self, from: Data("""
             {"bar": "baz"}
             """.utf8))
             XCTAssertEqual(foo.bar, .baz)
         }
         do {
-            _ = try JSONDecoder().decode(Foo.self, from: Data("""
+            _ = try JSONDecoder().decode(EFoo.self, from: Data("""
             {"bar": "qux"}
             """.utf8))
             XCTFail("should not have passed")
@@ -465,7 +537,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class Foo: Model {
+        final class OEFoo: Model {
             static let schema = "foos"
             @ID var id: UUID?
             @OptionalEnum(key: "bar") var bar: Bar?
@@ -473,13 +545,13 @@ final class FluentKitTests: XCTestCase {
         }
 
         do {
-            let foo = try JSONDecoder().decode(Foo.self, from: Data("""
+            let foo = try JSONDecoder().decode(OEFoo.self, from: Data("""
             {"bar": "baz"}
             """.utf8))
             XCTAssertEqual(foo.bar, .baz)
         }
         do {
-            _ = try JSONDecoder().decode(Foo.self, from: Data("""
+            _ = try JSONDecoder().decode(OEFoo.self, from: Data("""
             {"bar": "qux"}
             """.utf8))
             XCTFail("should not have passed")
@@ -488,9 +560,106 @@ final class FluentKitTests: XCTestCase {
             XCTAssertEqual(context.codingPath.map(\.stringValue), ["bar"])
         }
     }
+    
+    func testOptionalParentCoding() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let prefoo = PreFoo(boo: true); try prefoo.create(on: db).wait()
+        let foo1 = AtFoo(preFoo: prefoo); try foo1.create(on: db).wait()
+        let foo2 = AtFoo(preFoo: nil); try foo2.create(on: db).wait()
+        prefoo.$foos.fromId = prefoo.id//; prefoo.$foos.value = []
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes, .prettyPrinted]
+        
+        let prefooEncoded = try String(decoding: encoder.encode(prefoo), as: UTF8.self)
+        let foo1Encoded = try String(decoding: encoder.encode(foo1), as: UTF8.self)
+        let foo2Encoded = try String(decoding: encoder.encode(foo2), as: UTF8.self)
+        
+        XCTAssertEqual(prefooEncoded, """
+            {
+              "boo" : true,
+              "id" : \(prefoo.id!)
+            }
+            """)
+        XCTAssertEqual(foo1Encoded, """
+            {
+              "id" : \(foo1.id!),
+              "preFoo" : {
+                "boo" : true,
+                "id" : \(prefoo.id!)
+              }
+            }
+            """)
+        XCTAssertEqual(foo2Encoded, """
+            {
+              "id" : \(foo2.id!),
+              "preFoo" : {
+                "id" : null
+              }
+            }
+            """)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        let decodedPrefoo = try decoder.decode(PreFoo.self, from: prefooEncoded.data(using: .utf8)!)
+        let decodedFoo1 = try decoder.decode(AtFoo.self, from: foo1Encoded.data(using: .utf8)!)
+        let decodedFoo2 = try decoder.decode(AtFoo.self, from: foo2Encoded.data(using: .utf8)!)
+        
+        XCTAssertEqual(decodedPrefoo.id, prefoo.id)
+        XCTAssertEqual(decodedPrefoo.boo, prefoo.boo)
+        XCTAssertEqual(decodedFoo1.id, foo1.id)
+        XCTAssertEqual(decodedFoo1.$preFoo.id, foo1.$preFoo.id)
+        XCTAssert({ guard case .none = decodedFoo1.$preFoo.value else { return false }; return true }())
+        XCTAssertEqual(decodedFoo2.id, foo2.id)
+        XCTAssertEqual(decodedFoo2.$preFoo.id, foo2.$preFoo.id)
+        XCTAssert({ guard case .none = decodedFoo2.$preFoo.value else { return false }; return true }())
+    }
+    
+    func testGroupCoding() throws {
+        final class GroupedFoo: Fields {
+            @Field(key: "hello")
+            var string: String
+            
+            init() {}
+        }
+        
+        final class GroupFoo: Model {
+            static let schema = "group_foos"
+            
+            @ID(key: .id) var id: UUID?
+            @Group(key: "group") var group: GroupedFoo
+            
+            init() {}
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let decoder = JSONDecoder()
+        
+        let groupFoo = GroupFoo()
+        groupFoo.id = UUID()
+        groupFoo.group.string = "hi"
+        let encoded = try encoder.encode(groupFoo)
+        XCTAssertEqual(String(decoding: encoded, as: UTF8.self), #"{"group":{"string":"hi"},"id":"\#(groupFoo.id!.uuidString)"}"#)
+        
+        let missingGroupFoo = GroupFoo()
+        missingGroupFoo.id = UUID()
+        missingGroupFoo.$group.value = nil
+        let missingEncoded = try encoder.encode(missingGroupFoo)
+        XCTAssertEqual(String(decoding: missingEncoded, as: UTF8.self), #"{"id":"\#(missingGroupFoo.id!.uuidString)"}"#)
+        
+        let decoded = try decoder.decode(GroupFoo.self, from: encoded)
+        XCTAssertEqual(decoded.id?.uuidString, groupFoo.id?.uuidString)
+        XCTAssertEqual(decoded.group.string, groupFoo.group.string)
+        
+        let decodedMissing = try decoder.decode(GroupFoo.self, from: #"{"id":"\#(groupFoo.id!.uuidString)"}"#.data(using: .utf8)!)
+        XCTAssertEqual(decodedMissing.id?.uuidString, groupFoo.id?.uuidString)
+        XCTAssertNotNil(decodedMissing.$group.value)
+    }
 
     func testDatabaseGeneratedIDOverride() throws {
-        final class Foo: Model {
+        final class DGOFoo: Model {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -498,7 +667,6 @@ final class FluentKitTests: XCTestCase {
                 self.id = id
             }
         }
-
 
         let test = CallbackTestDatabase { query in
             switch query.input[0] {
@@ -516,7 +684,7 @@ final class FluentKitTests: XCTestCase {
                 TestOutput(["id": 0])
             ]
         }
-        let foo = Foo(id: 1)
+        let foo = DGOFoo(id: 1)
         try foo.create(on: test.db).wait()
         XCTAssertEqual(foo.id, 1)
     }
@@ -545,10 +713,86 @@ final class FluentKitTests: XCTestCase {
             .wait())
     }
     
+    func testModelsWithSpacesSpecified() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        try db.schema(AltPlanet.schema, space: AltPlanet.space)
+            .id()
+            .field("name", .string, .required)
+            .field("star_id", .uuid, .references(Star.schema, "id"), .required)
+            .field("possible_star_id", .uuid, .references(Star.schema, "id"))
+            .field("createdAt", .datetime)
+            .field("updatedAt", .datetime)
+            .field("deletedAt", .datetime, .sql(.default(SQLLiteral.null)))
+            .create()
+            .wait()
+        _ = try AltPlanet.query(on: db).filter(\.$name == "Earth").all().wait()
+        try AltPlanet(name: "Nemesis").create(on: db).wait()
+        let updateMe = AltPlanet(id: UUID(), name: "Vulcan")
+        updateMe.$id.exists = true
+        try updateMe.update(on: db).wait()
+        try AltPlanet.query(on: db).filter(\.$name != "Arret").delete(force: true).wait()
+        _ = try Star.query(on: db).join(AltPlanet.self, on: \AltPlanet.$star.$id == \Star.$id).fields(for: Star.self).withDeleted().first().wait()
+        
+        XCTAssertEqual(db.sqlSerializers.count, 6)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(0).first?.sql, #"CREATE TABLE "mirror_universe"."planets"("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "star_id" UUID REFERENCES "stars" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION NOT NULL, "possible_star_id" UUID REFERENCES "stars" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ DEFAULT NULL)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(1).first?.sql, #"SELECT "mirror_universe"."planets"."id" AS "mirror_universe_planets_id", "mirror_universe"."planets"."name" AS "mirror_universe_planets_name", "mirror_universe"."planets"."star_id" AS "mirror_universe_planets_star_id", "mirror_universe"."planets"."possible_star_id" AS "mirror_universe_planets_possible_star_id", "mirror_universe"."planets"."createdAt" AS "mirror_universe_planets_createdAt", "mirror_universe"."planets"."updatedAt" AS "mirror_universe_planets_updatedAt", "mirror_universe"."planets"."deletedAt" AS "mirror_universe_planets_deletedAt" FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" = $1 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $2)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "mirror_universe"."planets" ("id", "name", "star_id", "possible_star_id", "createdAt", "updatedAt", "deletedAt") VALUES ($1, $2, DEFAULT, DEFAULT, $3, $4, DEFAULT)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(3).first?.sql, #"UPDATE "mirror_universe"."planets" SET "id" = $1, "name" = $2, "updatedAt" = $3 WHERE "mirror_universe"."planets"."id" = $4 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $5)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(4).first?.sql, #"DELETE FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" <> $1"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(5).first?.sql, #"SELECT "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "stars" INNER JOIN "mirror_universe"."planets" ON "mirror_universe"."planets"."star_id" = "stars"."id" LIMIT 1"#)
+    }
+
+    func testKeyPrefixingStrategies() throws {
+        XCTAssertEqual(KeyPrefixingStrategy.none.apply(prefix: "abc", to: "def").description, "abcdef")
+        XCTAssertEqual(KeyPrefixingStrategy.none.apply(prefix: "abc", to: .prefix("def", "ghi")).description, "abcdefghi")
+        XCTAssertEqual(KeyPrefixingStrategy.none.apply(prefix: .prefix("abc", "def"), to: "ghi").description, "abcdefghi")
+        
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc", to: "def").description, "abcDef")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc", to: .prefix("def", "ghi")).description, "abcDefghi")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: .prefix("abc", "def"), to: "ghi").description, "abcdefGhi")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "ABC", to: "DEF").description, "ABCDEF")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "ABC", to: "").description, "ABC")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "", to: "ABC").description, "ABC")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc", to: "_def").description, "abc_def")
+        XCTAssertEqual(KeyPrefixingStrategy.camelCase.apply(prefix: "abc_", to: "def").description, "abc_Def")
+        
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc", to: "def").description, "abc_def")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc", to: .prefix("def", "ghi")).description, "abc_defghi")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: .prefix("abc", "def"), to: "ghi").description, "abcdef_ghi")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc_", to: "def").description, "abc__def")
+        XCTAssertEqual(KeyPrefixingStrategy.snakeCase.apply(prefix: "abc", to: "_def").description, "abc__def")
+        
+        XCTAssertEqual(KeyPrefixingStrategy.custom({ .prefix($0, .prefix("+", $1)) }).apply(prefix: "abc", to: "def").description, "abc+def")
+    }
+    
+    func testCreatingModelArraysWithUnsetOptionalProperties() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+            
+            @ID var id: UUID?
+            @OptionalField(key: "opt") var opt: String?
+            
+            init() {}
+            init(id: UUID? = nil, opt: String? = nil) { (self.id, self.opt) = (id, opt) }
+        }
+        
+        let foos = [
+            Foo(),
+            Foo(opt: nil),
+            Foo(opt: "foo"),
+        ]
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        try foos.create(on: db).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"INSERT INTO "foos" ("id", "opt") VALUES ($1, DEFAULT), ($2, NULL), ($3, $4)"#)
+    }
+    
     func testFieldsPropertiesPerformance() throws {
         measure {
-            for _ in 1 ... 10_000 {
-                XCTAssertEqual(LotsOfFields().properties.count, 21)
+            let model = LotsOfFields()
+            for _ in 1 ... 5_000 {
+                XCTAssertEqual(model.properties.count, 21)
             }
         }
     }
@@ -612,18 +856,18 @@ final class Toy: Fields {
     var type: ToyType
 
     @Group(key: "foo")
-    var foo: Foo
+    var foo: ToyFoo
 
     init() { }
 
-    init(name: String, type: ToyType, foo: Foo) {
+    init(name: String, type: ToyType, foo: ToyFoo) {
         self.name = name
         self.type = type
         self.foo = foo
     }
 }
 
-final class Foo: Fields {
+final class ToyFoo: Fields {
     @Field(key: "bar")
     var bar: Int
 
@@ -659,6 +903,45 @@ final class Planet2: Model {
         self.id = id
         self.name = name
         self.moonCount = moonCount
+    }
+}
+
+final class AltPlanet: Model {
+    public static let space: String? = "mirror_universe"
+    public static let schema = "planets"
+
+    @ID(key: .id)
+    public var id: UUID?
+
+    @Field(key: "name")
+    public var name: String
+
+    @Parent(key: "star_id")
+    public var star: Star
+
+    @OptionalParent(key: "possible_star_id")
+    public var possibleStar: Star?
+    
+    @Timestamp(key: "createdAt", on: .create)
+    public var createdAt: Date?
+
+    @Timestamp(key: "updatedAt", on: .update)
+    public var updatedAt: Date?
+
+    @Timestamp(key: "deletedAt", on: .delete)
+    public var deletedAt: Date?
+
+    public init() {}
+
+    public init(id: IDValue? = nil, name: String) {
+        self.id = id
+        self.name = name
+    }
+
+    public init(id: IDValue? = nil, name: String, starId: UUID) {
+        self.id = id
+        self.name = name
+        self.$star.id = starId
     }
 }
 
@@ -727,4 +1010,57 @@ final class LotsOfFields: Model {
     
     @Field(key: "field20")
     var field20: String
+}
+
+final class AtFoo: Model {
+    static let schema = "foos"
+    
+    @ID(custom: .id) var id: Int?
+    @OptionalParent(key: "pre_foo_id") var preFoo: PreFoo?
+    
+    init() {}
+    init(id: Int? = nil, preFoo: PreFoo?) { self.id = id; self.$preFoo.id = preFoo?.id; self.$preFoo.value = preFoo }
+}
+
+final class PostFoo: Model {
+    static let schema = "postfoos"
+    
+    @ID(custom: .id) var id: Int?
+    
+    init() {}
+    init(id: Int? = nil) { self.id = id }
+}
+
+final class PreFoo: Model {
+    static let schema = "prefoos"
+    
+    @ID(custom: .id) var id: Int?
+    @Field(key: "boo") var boo: Bool
+    
+    @Children(for: \AtFoo.$preFoo) var foos: [AtFoo]
+    @OptionalChild(for: \AtFoo.$preFoo) var afoo: AtFoo?
+    @Siblings(through: MidFoo.self, from: \.$id.$prefoo, to: \.$id.$postfoo) var postfoos: [PostFoo]
+    
+    init() {}
+    init(id: Int? = nil, boo: Bool) { self.id = id; self.boo = boo }
+}
+
+final class MidFoo: Model {
+    static let schema = "midfoos"
+    
+    final class IDValue: Fields, Hashable {
+        @Parent(key: "prefoo_id") var prefoo: PreFoo
+        @Parent(key: "postfoo_id") var postfoo: PostFoo
+    
+        init() {}
+        init(prefooId: PreFoo.IDValue, postfooId: PostFoo.IDValue) { (self.$prefoo.id, self.$postfoo.id) = (prefooId, postfooId) }
+
+        static func == (lhs: IDValue, rhs: IDValue) -> Bool { lhs.$prefoo.id == rhs.$prefoo.id && lhs.$postfoo.id == rhs.$postfoo.id }
+        func hash(into hasher: inout Hasher) { hasher.combine(self.$prefoo.id); hasher.combine(self.$postfoo.id) }
+    }
+
+    @CompositeID var id: IDValue?
+
+    init() {}
+    init(prefooId: PreFoo.IDValue, postfooId: PostFoo.IDValue) { self.id = .init(prefooId: prefooId, postfooId: postfooId) }
 }

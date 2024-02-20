@@ -2,9 +2,9 @@ extension QueryBuilder {
     @discardableResult
     public func filter(_ filter: ModelFieldFilter<Model, Model>) -> Self {
         self.filter(
-            .path(filter.lhsPath, schema: Model.schema),
+            .extendedPath(filter.lhsPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             filter.method,
-            .path(filter.rhsPath, schema: Model.schema)
+            .extendedPath(filter.rhsPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
         )
     }
 
@@ -13,9 +13,9 @@ extension QueryBuilder {
         where Left: Schema, Right: Schema
     {
         self.filter(
-            .path(filter.lhsPath, schema: Left.schemaOrAlias),
+            .extendedPath(filter.lhsPath, schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
             filter.method,
-            .path(filter.rhsPath, schema: Right.schemaOrAlias)
+            .extendedPath(filter.rhsPath, schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
         )
     }
 }
@@ -24,9 +24,9 @@ public func == <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .equal, rhs)
@@ -36,9 +36,9 @@ public func != <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .notEqual, rhs)
@@ -48,9 +48,9 @@ public func >= <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .greaterThanOrEqual, rhs)
@@ -60,9 +60,9 @@ public func > <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .greaterThan, rhs)
@@ -72,9 +72,9 @@ public func < <Left, Right, LeftField, RightField>(
     lhs: KeyPath<Left, LeftField>,
     rhs: KeyPath<Right, RightField>
 ) -> ModelFieldFilter<Left, Right>
-    where LeftField.Model == Left,
+    where Left: Schema,
         LeftField: QueryableProperty,
-        RightField.Model == Right,
+        Right: Schema,
         RightField: QueryableProperty
 {
     .init(lhs, .lessThan, rhs)
@@ -177,7 +177,7 @@ public func !=~ <Left, Right, LeftField, RightField>(
 }
 
 public struct ModelFieldFilter<Left, Right>
-    where Left: FluentKit.Model, Right: FluentKit.Model
+    where Left: FluentKit.Schema, Right: FluentKit.Schema
 {
     public init<LeftField, RightField>(
         _ lhs: KeyPath<Left, LeftField>,

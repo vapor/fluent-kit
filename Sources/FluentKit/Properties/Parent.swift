@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public typealias Parent<To> = ParentProperty<Self, To>
         where To: FluentKit.Model
@@ -15,11 +17,11 @@ public final class ParentProperty<From, To>
     public var wrappedValue: To {
         get {
             guard let value = self.value else {
-                fatalError("Parent relation not eager loaded, use $ prefix to access: \(name)")
+                fatalError("Parent relation not eager loaded, use $ prefix to access: \(self.name)")
             }
             return value
         }
-        set { fatalError("use $ prefix to access") }
+        set { fatalError("use $ prefix to access \(self.name)") }
     }
 
     public var projectedValue: ParentProperty<From, To> {
@@ -29,6 +31,10 @@ public final class ParentProperty<From, To>
     public var value: To?
 
     public init(key: FieldKey) {
+        guard !(To.IDValue.self is Fields.Type) else {
+            fatalError("Can not use @Parent to target a model with composite ID; use @CompositeParent instead.")
+        }
+        
         self._id = .init(key: key)
     }
 
@@ -67,6 +73,17 @@ extension ParentProperty: Property {
     public typealias Value = To
 }
 
+// MARK: Query-addressable
+
+extension ParentProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self.$id.anyQueryableProperty }
+    public var queryablePath: [FieldKey] { self.$id.queryablePath }
+}
+
+extension ParentProperty: QueryAddressableProperty {
+    public var queryableProperty: FieldProperty<From, To.IDValue> { self.$id.queryableProperty }
+}
+
 // MARK: Database
 
 extension ParentProperty: AnyDatabaseProperty {
@@ -96,8 +113,8 @@ extension ParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .string("id")))
+        let container = try decoder.container(keyedBy: SomeCodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
 }
 
@@ -105,12 +122,22 @@ extension ParentProperty: AnyCodableProperty {
 
 extension ParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, ParentProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = ParentEagerLoader(relationKey: relationKey)
+        let loader = ParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -131,28 +158,29 @@ extension ParentProperty: EagerLoadable {
 }
 
 private struct ParentEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model
+    where From: FluentKit.Model, To: FluentKit.Model
 {
-    let relationKey: KeyPath<From, From.Parent<To>>
+    let relationKey: KeyPath<From, ParentProperty<From, To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
-        let ids = models.map {
-            $0[keyPath: self.relationKey].id
+        let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
+        if (self.withDeleted) {
+            builder.withDeleted()
         }
+        return builder.all().flatMapThrowing {
+            let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-        return To.query(on: database)
-            .filter(\._$id ~~ Set(ids))
-            .all()
-            .flatMapThrowing
-        {
-            for model in models {
-                guard let parent = $0.filter({
-                    $0.id == model[keyPath: self.relationKey].id
-                }).first else {
-                    database.logger.debug("No parent '\(To.self)' with id '\(model[keyPath: self.relationKey].id)' was found in eager-load results.")
-                    throw FluentError.missingParent
+            for (parentId, models) in sets {
+                guard let parent = parents[parentId] else {
+                    database.logger.debug(
+                        "Missing parent model in eager-load lookup results.",
+                        metadata: ["parent": .string("\(To.self)"), "id": .string("\(parentId)")]
+                    )
+                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
                 }
-                model[keyPath: self.relationKey].value = parent
+                models.forEach { $0[keyPath: self.relationKey].value = parent }
             }
         }
     }

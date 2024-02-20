@@ -1,4 +1,4 @@
-import class NIOConcurrencyHelpers.Lock
+import struct NIOConcurrencyHelpers.NIOLock
 
 /// Holds the history of queries for a database
 public final class QueryHistory {
@@ -6,7 +6,7 @@ public final class QueryHistory {
     public var queries: [DatabaseQuery]
 
     /// Protects
-    private var lock: Lock
+    private var lock: NIOLock
 
     /// Create a new `QueryHistory` with no existing history
     public init() {

@@ -80,6 +80,17 @@ extension FieldProperty: AnyQueryableProperty {
 
 extension FieldProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension FieldProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension FieldProperty: QueryAddressableProperty {
+    public var queryableProperty: FieldProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension FieldProperty: AnyDatabaseProperty {
@@ -88,7 +99,9 @@ extension FieldProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let inputValue = self.inputValue {
+        if input.wantsUnmodifiedKeys {
+            input.set(self.inputValue ?? self.outputValue.map { .bind($0) } ?? .default, at: self.key)
+        } else if let inputValue = self.inputValue {
             input.set(inputValue, at: self.key)
         }
     }

@@ -1,3 +1,8 @@
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+
 extension FluentBenchmarker {
     public func testArray() throws {
         try self.testArray_basic()
@@ -142,7 +147,7 @@ private struct UserMigration: Migration {
 private final class FooSet: Model {
     static let schema = "foos"
 
-    @ID(key: "id")
+    @ID(key: .id)
     var id: UUID?
 
     @Field(key: "bar")

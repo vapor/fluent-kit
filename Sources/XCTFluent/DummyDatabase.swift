@@ -1,6 +1,7 @@
 import FluentKit
 import Foundation
 import NIOEmbedded
+import NIOCore
 
 public struct DummyDatabase: Database {
     public var context: DatabaseContext
@@ -96,6 +97,8 @@ public struct DummyRow: DatabaseOutput {
     {
         if T.self is UUID.Type {
             return UUID() as! T
+        } else if T.self is Int.Type, key == .aggregate {
+            return 1 as! T
         } else {
             return try T(from: DummyDecoder())
         }

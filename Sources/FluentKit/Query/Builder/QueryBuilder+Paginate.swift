@@ -1,3 +1,5 @@
+import NIOCore
+
 extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
     ///
@@ -9,13 +11,27 @@ extension QueryBuilder {
     public func paginate(
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
+        page(withIndex: request.page, size: request.per)
+    }
+    
+    /// Returns a single `Page` out of the complete result set.
+    ///
+    /// This method will first `count()` the result set, then request a subset of the results using `range()` and `all()`.
+    ///
+    /// - Parameters:
+    ///   - page: The index of the page.
+    ///   - per: The size of the page.
+    /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
+    public func page(
+        withIndex page: Int,
+        size per: Int) -> EventLoopFuture<Page<Model>> {
         let trimmedRequest: PageRequest = {
             guard let pageSizeLimit = database.context.pageSizeLimit else {
-                return .init(page: Swift.max(request.page, 1), per: Swift.max(request.per, 1))
+                return .init(page: Swift.max(page, 1), per: Swift.max(per, 1))
             }
             return .init(
-                page: Swift.max(request.page, 1),
-                per: Swift.max(Swift.min(request.per, pageSizeLimit), 1)
+                page: Swift.max(page, 1),
+                per: Swift.max(Swift.min(per, pageSizeLimit), 1)
             )
         }()
         let count = self.count()
@@ -75,6 +91,12 @@ public struct PageMetadata: Codable {
 
     /// Total number of items available.
     public let total: Int
+    
+    /// Computed total number of pages with `1` being the minimum.
+    public var pageCount: Int {
+        let count = Int((Double(self.total)/Double(self.per)).rounded(.up))
+        return count < 1 ? 1 : count
+    }
     
     /// Creates a new `PageMetadata` instance.
     ///

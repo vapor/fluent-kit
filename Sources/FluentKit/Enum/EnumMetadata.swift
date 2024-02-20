@@ -1,3 +1,6 @@
+import NIOCore
+import Foundation
+
 final class EnumMetadata: Model {
     static let schema = "_fluent_enums"
 

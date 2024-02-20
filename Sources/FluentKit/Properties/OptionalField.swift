@@ -47,7 +47,7 @@ extension OptionalFieldProperty: Property {
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 case .null:
-                    return nil
+                    return .some(.none)
                 default:
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
@@ -58,9 +58,10 @@ extension OptionalFieldProperty: Property {
             }
         }
         set {
-
             if let value = newValue {
-                self.inputValue = value.flatMap { .bind($0) } ?? .null
+                self.inputValue = value
+                    .flatMap { .bind($0) }
+                    ?? .null
             } else {
                 self.inputValue = nil
             }
@@ -78,6 +79,17 @@ extension OptionalFieldProperty: AnyQueryableProperty {
 
 extension OptionalFieldProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension OptionalFieldProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension OptionalFieldProperty: QueryAddressableProperty {
+    public var queryableProperty: OptionalFieldProperty<Model, WrappedValue> { self }
+}
+
 // MARK: Database
 
 extension OptionalFieldProperty: AnyDatabaseProperty {
@@ -86,7 +98,9 @@ extension OptionalFieldProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let inputValue = self.inputValue {
+        if input.wantsUnmodifiedKeys {
+            input.set(self.inputValue ?? self.outputValue.map { $0.map { .bind($0) } ?? .null } ?? .default, at: self.key)
+        } else if let inputValue = self.inputValue {
             input.set(inputValue, at: self.key)
         }
     }

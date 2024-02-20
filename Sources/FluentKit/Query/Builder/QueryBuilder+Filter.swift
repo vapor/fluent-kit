@@ -1,5 +1,24 @@
 extension QueryBuilder {
     // MARK: Filter
+    
+    @discardableResult
+    internal func filter(id: Model.IDValue) -> Self {
+        if let fields = id as? Fields {
+            return self.group(.and) { fields.input(to: QueryFilterInput(builder: $0)) }
+        } else {
+            return self.filter(\Model._$id == id)
+        }
+    }
+    
+    @discardableResult
+    internal func filter(ids: [Model.IDValue]) -> Self {
+        guard let firstId = ids.first else { return self.limit(0) }
+        if firstId is Fields {
+            return self.group(.or) { q in ids.forEach { id in q.group(.and) { (id as! Fields).input(to: QueryFilterInput(builder: $0)) } } }
+        } else {
+            return self.filter(\Model._$id ~~ ids)
+        }
+    }
 
     @discardableResult
     public func filter<Field>(
@@ -9,9 +28,10 @@ extension QueryBuilder {
     ) -> Self
         where Field: QueryableProperty, Field.Model == Model
     {
-        self.filter(.path(
+        self.filter(.extendedPath(
             Model.path(for: field),
-            schema: Model.schemaOrAlias
+            schema: Model.schemaOrAlias,
+            space: Model.spaceIfNotAliased
         ), method, Field.queryValue(value))
     }
 
@@ -24,9 +44,10 @@ extension QueryBuilder {
     ) -> Self
         where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
-        self.filter(.path(
+        self.filter(.extendedPath(
             Joined.path(for: field),
-            schema: Joined.schemaOrAlias
+            schema: Joined.schemaOrAlias,
+            space: Joined.spaceIfNotAliased
         ), method, Field.queryValue(value))
     }
 
@@ -64,7 +85,7 @@ extension QueryBuilder {
         where Value: Codable
     {
         self.filter(
-            .path(fieldPath, schema: Model.schema),
+            .extendedPath(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
             .bind(value)
         )
@@ -86,9 +107,9 @@ extension QueryBuilder {
         _ rightPath: [FieldKey]
     ) -> Self {
         self.filter(
-            .path(leftPath, schema: Model.schema),
+            .extendedPath(leftPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
-            .path(rightPath, schema: Model.schema)
+            .extendedPath(rightPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
         )
     }
 

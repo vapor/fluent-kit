@@ -1,3 +1,5 @@
+import NIOCore
+
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
         where To: FluentKit.Model
@@ -9,22 +11,23 @@ extension Model {
 public final class OptionalChildProperty<From, To>
     where From: Model, To: Model
 {
-    public enum Key {
-        case required(KeyPath<To, To.Parent<From>>)
-        case optional(KeyPath<To, To.OptionalParent<From>>)
-    }
+    public typealias Key = RelationParentKey<From, To>
 
     public let parentKey: Key
     var idValue: From.IDValue?
 
     public var value: To??
 
-    public init(for parent: KeyPath<To, To.Parent<From>>) {
-        self.parentKey = .required(parent)
+    public convenience init(for parent: KeyPath<To, To.Parent<From>>) {
+        self.init(for: .required(parent))
     }
 
-    public init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
-        self.parentKey = .optional(optionalParent)
+    public convenience init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
+        self.init(for: .optional(optionalParent))
+    }
+    
+    private init(for parentKey: Key) {
+        self.parentKey = parentKey
     }
 
     public var wrappedValue: To? {
@@ -35,7 +38,7 @@ public final class OptionalChildProperty<From, To>
             return value
         }
         set {
-            fatalError("Child relation is get-only.")
+            fatalError("Child relation  \(self.name) is get-only.")
         }
     }
 
@@ -44,12 +47,13 @@ public final class OptionalChildProperty<From, To>
     }
     
     public var fromId: From.IDValue? {
-        return self.idValue
+        get { return self.idValue }
+        set { self.idValue = newValue }
     }
 
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
-            fatalError("Cannot query child relation from unsaved model.")
+            fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
         let builder = To.query(on: database)
         switch self.parentKey {
@@ -63,7 +67,7 @@ public final class OptionalChildProperty<From, To>
 
     public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
-            fatalError("Cannot save child to unsaved model.")
+            fatalError("Cannot save child in \(self.name) to unsaved model in.")
         }
         switch self.parentKey {
         case .required(let keyPath):
@@ -122,6 +126,10 @@ extension OptionalChildProperty: AnyCodableProperty {
     public func decode(from decoder: Decoder) throws {
         // don't decode
     }
+
+    public var skipPropertyEncoding: Bool {
+        self.value == nil // Avoids leaving an empty JSON object lying around in some cases.
+    }
 }
 
 // MARK: Relation
@@ -138,27 +146,26 @@ extension OptionalChildProperty: Relation {
     }
 }
 
-extension OptionalChildProperty.Key: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .optional(let keyPath):
-            return To.path(for: keyPath.appending(path: \.$id)).description
-        case .required(let keyPath):
-            return To.path(for: keyPath.appending(path: \.$id)).description
-        }
-    }
-}
-
 // MARK: Eager Loadable
 
 extension OptionalChildProperty: EagerLoadable {
     public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, OptionalChildProperty<From, To>>,
+        to builder: Builder
+    )
+        where Builder : EagerLoadBuilder, From == Builder.Model
+    {
+        self.eagerLoad(relationKey, withDeleted: false, to: builder)
+    }
+    
+    public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalChild<To>>,
+        withDeleted: Bool,
         to builder: Builder
     )
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = OptionalChildEagerLoader(relationKey: relationKey)
+        let loader = OptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
@@ -182,6 +189,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
     let relationKey: KeyPath<From, From.OptionalChild<To>>
+    let withDeleted: Bool
 
     func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
         let ids = models.compactMap { $0.id! }
@@ -193,6 +201,9 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
             builder.filter(optional.appending(path: \.$id) ~~ Set(ids))
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
+        }
+        if (self.withDeleted) {
+            builder.withDeleted()
         }
         return builder.all().map {
             for model in models {

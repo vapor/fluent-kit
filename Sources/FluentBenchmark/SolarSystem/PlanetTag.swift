@@ -1,4 +1,7 @@
 import FluentKit
+import Foundation
+import NIOCore
+import XCTest
 
 public final class PlanetTag: Model {
     public static let schema = "planet+tag"
@@ -11,13 +14,17 @@ public final class PlanetTag: Model {
 
     @Parent(key: "tag_id")
     public var tag: Tag
+    
+    @OptionalField(key: "comments")
+    public var comments: String?
 
     public init() { }
 
-    public init(id: IDValue? = nil, planetID: Planet.IDValue, tagID: Tag.IDValue) {
+    public init(id: IDValue? = nil, planetID: Planet.IDValue, tagID: Tag.IDValue, comments: String? = nil) {
         self.id = id
         self.$planet.id = planetID
         self.$tag.id = tagID
+        self.comments = comments
     }
 }
 
@@ -25,15 +32,18 @@ public struct PlanetTagMigration: Migration {
     public init() { }
 
     public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("planet+tag")
-            .field("id", .uuid, .identifier(auto: false))
-            .field("planet_id", .uuid, .required, .references("planets", "id"))
-            .field("tag_id", .uuid, .required, .references("tags", "id"))
+        database.schema(PlanetTag.schema)
+            .id()
+            .field("planet_id", .uuid, .required)
+            .field("tag_id", .uuid, .required)
+            .field("comments", .string)
+            .foreignKey("planet_id", references: Planet.schema, .id)
+            .foreignKey("tag_id", references: Tag.schema, .id)
             .create()
     }
 
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("planet+tag").delete()
+        database.schema(PlanetTag.schema).delete()
     }
 }
 

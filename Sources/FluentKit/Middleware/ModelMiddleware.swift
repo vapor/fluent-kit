@@ -1,3 +1,5 @@
+import NIOCore
+
 public protocol AnyModelMiddleware {
     func handle(
         _ event: ModelEvent,

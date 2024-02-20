@@ -1,3 +1,6 @@
+import FluentKit
+import SQLKit
+
 extension DatabaseQuery.Value {
     public static func sql(raw: String) -> Self {
         .sql(SQLRaw(raw))
@@ -57,6 +60,20 @@ extension DatabaseQuery.Filter {
         _ right: SQLExpression
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
+    }
+
+    public static func sql(embed: SQLQueryString) -> Self {
+        .sql(embed)
+    }
+
+    public static func sql(_ expression: SQLExpression) -> Self {
+        .custom(expression)
+    }
+}
+
+extension DatabaseQuery.Join {
+    public static func sql(raw: String) -> Self {
+        .sql(SQLRaw(raw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {

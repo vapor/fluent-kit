@@ -1,137 +1,101 @@
 name: test
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
-  pull_request:
-  push: 
-    branches: 
-      - main
+  pull_request: { types: [opened, reopened, synchronize, ready_for_review] }
+  push: { branches: [ main ] }
+
 env:
   LOG_LEVEL: info
   SWIFT_DETERMINISTIC_HASHING: 1
+  POSTGRES_HOSTNAME: 'psql-a'
+  POSTGRES_HOSTNAME_A: 'psql-a'
+  POSTGRES_HOSTNAME_B: 'psql-b'
+  POSTGRES_DB: 'test_database'
+  POSTGRES_DB_A: 'test_database'
+  POSTGRES_DB_B: 'test_database'
+  POSTGRES_USER: 'test_username'
+  POSTGRES_USER_A: 'test_username'
+  POSTGRES_USER_B: 'test_username'
+  POSTGRES_PASSWORD: 'test_password'
+  POSTGRES_PASSWORD_A: 'test_password'
+  POSTGRES_PASSWORD_B: 'test_password'
+  MYSQL_HOSTNAME: 'mysql-a'
+  MYSQL_HOSTNAME_A: 'mysql-a'
+  MYSQL_HOSTNAME_B: 'mysql-b'
+  MYSQL_DATABASE: 'test_database'
+  MYSQL_DATABASE_A: 'test_database'
+  MYSQL_DATABASE_B: 'test_database'
+  MYSQL_USERNAME: 'test_username'
+  MYSQL_USERNAME_A: 'test_username'
+  MYSQL_USERNAME_B: 'test_username'
+  MYSQL_PASSWORD: 'test_password'
+  MYSQL_PASSWORD_A: 'test_password'
+  MYSQL_PASSWORD_B: 'test_password'
+  MONGO_HOSTNAME: 'mongo-a'
+  MONGO_HOSTNAME_A: 'mongo-a'
+  MONGO_HOSTNAME_B: 'mongo-b'
 
 jobs:
 
   linux-integration:
+    if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
+    container: swift:5.8-jammy
     services:
       mysql-a:
-        image: mysql:latest
-        env: 
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-          MYSQL_USER: vapor_username
-          MYSQL_PASSWORD: vapor_password
-          MYSQL_DATABASE: vapor_database
+        image: mysql:8.0
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database }
       mysql-b:
-        image: mysql:latest
-        env: 
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-          MYSQL_USER: vapor_username
-          MYSQL_PASSWORD: vapor_password
-          MYSQL_DATABASE: vapor_database
-      postgres-a:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: vapor_username
-          POSTGRES_PASSWORD: vapor_password
-          POSTGRES_DB: vapor_database
-      postgres-b:
-        image: postgres:latest
-        env: 
-          POSTGRES_USER: vapor_username
-          POSTGRES_PASSWORD: vapor_password
-          POSTGRES_DB: vapor_database
+        image: mysql:8.0
+        env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database }
+      psql-a:
+        image: postgres:15
+        env: {
+            POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database,
+            POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        }
+      psql-b:
+        image: postgres:15
+        env: {
+            POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database,
+            POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        }
       mongo-a:
-        image: mongo:latest
+        image: mongo:6
       mongo-b:
-        image: mongo:latest
+        image: mongo:6
     strategy:
       fail-fast: false
       matrix:
-        swiftver:
-          - swift:5.2
-          - swift:5.5
-        swiftos:
-          - focal
-        dependent:
-          - fluent-sqlite-driver
-          - fluent-postgres-driver
-          - fluent-mysql-driver
-          - fluent-mongo-driver
-    container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
+        include:
+          - { dependent: 'fluent-sqlite-driver', ref: 'main' }
+          - { dependent: 'fluent-postgres-driver', ref: 'main' }
+          - { dependent: 'fluent-mysql-driver', ref: 'main' }
+          - { dependent: 'fluent-mongo-driver', ref: 'main' }
     steps:
-      - name: Install SQLite dependencies
-        run: apt-get -q update && apt-get -q install -y libsqlite3-dev
-        if: ${{ contains(matrix.dependent, 'sqlite') }}
       - name: Check out package
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          path: package
+          path: fluent-kit
       - name: Check out dependent
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: vapor/${{ matrix.dependent }}
-          path: dependent
-      - name: Use local package
-        run: swift package edit fluent-kit --path ../package
-        working-directory: dependent
-      - name: Run tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-        working-directory: dependent
+          path: ${{ matrix.dependent }}
+          ref: ${{ matrix.ref }}
+      - name: Use local package and run tests
         env:
-          POSTGRES_HOSTNAME_A: postgres-a
-          POSTGRES_USERNAME_A: vapor_username
-          POSTGRES_PASSWORD_A: vapor_password
-          POSTGRES_DATABASE_A: vapor_database
-          POSTGRES_HOSTNAME_B: postgres-b
-          POSTGRES_USERNAME_B: vapor_username
-          POSTGRES_PASSWORD_B: vapor_password
-          POSTGRES_DATABASE_B: vapor_database
-          MYSQL_HOSTNAME_A: mysql-a
-          MYSQL_USERNAME_A: vapor_username
-          MYSQL_PASSWORD_A: vapor_password
-          MYSQL_DATABASE_A: vapor_database
-          MYSQL_HOSTNAME_B: mysql-b
-          MYSQL_USERNAME_B: vapor_username
-          MYSQL_PASSWORD_B: vapor_password
-          MYSQL_DATABASE_B: vapor_database
-          MONGO_HOSTNAME_A: mongo-a
-          MONGO_HOSTNAME_B: mongo-b
-
-  linux-unit:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        swiftver:
-          - swift:5.2
-          - swift:5.3
-          - swift:5.4
-          - swift:5.5
-          - swiftlang/swift:nightly-main
-        swiftos:
-          - focal
-    container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Run tests with Thread Sanitizer
-        run: swift test --enable-test-discovery --sanitize=thread
-
-  macos-unit:
-    strategy:
-      fail-fast: false
-      matrix:
-        xcode:
-          - latest
-          - latest-stable
-    runs-on: macos-11
-    steps:
-      - name: Select latest available Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with: 
-          xcode-version: ${{ matrix.xcode }}
-      - name: Check out package
-        uses: actions/checkout@v2
-      - name: Run tests with Thread Sanitizer
+          DEPENDENT: ${{ matrix.dependent }}
         run: |
-          swift test --sanitize=thread -Xlinker -rpath \
-                -Xlinker $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.5/macosx
+          swift package --package-path ${DEPENDENT} edit fluent-kit --path fluent-kit
+          swift test --package-path ${DEPENDENT}
+
+  # also serves as code coverage baseline update
+  unit-tests:
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@main
+    with:
+      with_coverage: true
+      with_tsan: true
+      coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'

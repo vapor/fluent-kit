@@ -19,7 +19,7 @@ public final class GroupProperty<Model, Value>
     public var wrappedValue: Value {
         get {
             guard let value = self.value else {
-                fatalError("Cannot access unitialized Group field.")
+                fatalError("Cannot access uninitialized Group field: \(self.description)")
             }
             return value
         }
@@ -68,10 +68,11 @@ extension GroupProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        self.value!.input(to: input.prefixed(by: self.prefix))
+        self.value?.input(to: input.prefixed(by: self.prefix))
     }
 
     public func output(from output: DatabaseOutput) throws {
+        if self.value == nil { self.value = .init() }
         try self.value!.output(from: output.prefixed(by: self.prefix))
     }
 }
@@ -80,12 +81,17 @@ extension GroupProperty: AnyDatabaseProperty {
 
 extension GroupProperty: AnyCodableProperty {
     public func encode(to encoder: Encoder) throws {
-        try self.value!.encode(to: encoder)
+        try self.value?.encode(to: encoder)
     }
 
     public func decode(from decoder: Decoder) throws {
-        self.value = try .init(from: decoder)
+        let container = try decoder.singleValueContainer()
+        
+        guard !container.decodeNil() else { return }
+        self.value = .some(try container.decode(Value.self))
     }
+    
+    public var skipPropertyEncoding: Bool { self.value == nil }
 }
 
 
@@ -146,7 +152,7 @@ extension GroupPropertyPath: FluentKit.Property
 // MARK: + Queryable
 
 extension GroupPropertyPath: AnyQueryableProperty
-    where Property: AnyQueryableProperty
+    where Property: QueryableProperty
 {
     public var path: [FieldKey] {
         let subPath = self.property.path
@@ -164,3 +170,29 @@ extension GroupPropertyPath: QueryableProperty
     }
 }
 
+// MARK: + QueryAddressable
+
+extension GroupPropertyPath: AnyQueryAddressableProperty
+    where Property: AnyQueryAddressableProperty
+{
+    public var anyQueryableProperty: AnyQueryableProperty {
+        self.property.anyQueryableProperty
+    }
+    
+    public var queryablePath: [FieldKey] {
+        let subPath = self.property.queryablePath
+        return [
+            .prefix(.prefix(self.key, .string("_")), subPath[0])
+        ] + subPath[1...]
+    }
+}
+
+extension GroupPropertyPath: QueryAddressableProperty
+    where Property: QueryAddressableProperty
+{
+    public typealias QueryablePropertyType = Property.QueryablePropertyType
+    
+    public var queryableProperty: QueryablePropertyType {
+        self.property.queryableProperty
+    }
+}

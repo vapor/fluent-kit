@@ -1,3 +1,5 @@
+import Foundation
+
 extension Model {
     public typealias ID<Value> = IDProperty<Self, Value>
         where Value: Codable
@@ -58,27 +60,32 @@ public final class IDProperty<Model, Value>
 
     /// Initializes an `ID` property with the key `.id` and type `UUID`.
     ///
-    /// If the property's type is not `UUID` or the key is not `.id`, the initializer will
-    /// fatal error. This allows Fluent to natively support databases like MongoDB.
-    ///
     /// Use the `.init(custom:generatedBy:)` initializer to specify a custom ID key or type.
-    public convenience init(key: FieldKey = .id) {
-        guard Value.self is UUID.Type else {
-            // Ensure the default @ID type is using UUID which
-            // is the only identifier type supported by all drivers.
-            fatalError("@ID requires UUID, use @ID(custom:) for \(Value.self).")
-        }
-        guard key == .id else {
-            // Ensure the default @ID is using the special .id key
-            // which is the only identifier key supported by all drivers.
-            //
-            // Additional identifying fields can be added using @Field
-            // with a unique constraint.
-            fatalError("@ID requires .id key, use @ID(custom:) for key '\(key)'.")
-        }
+    public convenience init() where Value == UUID {
         self.init(custom: .id, generatedBy: .random)
     }
+    
+    /// Helper type for compatibility initializer syntax. Do not use this type directly.
+    public enum _DefaultIDFieldKey: ExpressibleByStringLiteral {
+        case id
+        
+        @available(*, deprecated, message: "The `@ID(key: \"id\")` syntax is deprecated. Use `@ID` or `@ID()` instead.")
+        public init(stringLiteral value: String) {
+            guard value == "id" else {
+                fatalError("@ID() may not specify a key; use @ID(custom:) for '\(value)'.")
+            }
+            self = .id
+        }
+    }
+    
+    /// Compatibility syntax for initializing an `ID` property.
+    ///
+    /// This syntax is no longer recommended; use `@ID` instead.
+    public convenience init(key _: _DefaultIDFieldKey) where Value == UUID {
+        self.init()
+    }
 
+    /// Create an `ID` property with a specific key, value type, and optional value generator.
     public init(custom key: FieldKey, generatedBy generator: Generator? = nil) {
         self.field = .init(key: key)
         self.generator = generator ?? .default(for: Value.self)
@@ -91,7 +98,7 @@ public final class IDProperty<Model, Value>
         switch self.inputValue {
         case .none, .null:
             break
-        case .bind(let value) where value.isNil:
+        case .bind(let value) where (value as? AnyOptionalType).map({ $0.wrappedValue == nil }) ?? false:
             break
         default:
             return
@@ -142,6 +149,17 @@ extension IDProperty: AnyQueryableProperty {
 
 extension IDProperty: QueryableProperty { }
 
+// MARK: Query-addressable
+
+extension IDProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension IDProperty: QueryAddressableProperty {
+    public var queryableProperty: IDProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension IDProperty: AnyDatabaseProperty {
@@ -176,19 +194,8 @@ extension IDProperty: AnyCodableProperty {
 
 extension IDProperty: AnyID { }
 
-protocol AnyID {
+protocol AnyID: AnyObject {
     func generate()
     var exists: Bool { get set }
     var cachedOutput: DatabaseOutput? { get set }
-}
-
-
-private extension Encodable {
-    var isNil: Bool {
-        if let optional = self as? AnyOptionalType {
-            return optional.wrappedValue == nil
-        } else {
-            return false
-        }
-    }
 }

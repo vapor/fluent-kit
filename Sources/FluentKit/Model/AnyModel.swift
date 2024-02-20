@@ -6,18 +6,13 @@ extension AnyModel {
 
 extension AnyModel {
     public var description: String {
-        var info: [InfoKey: CustomStringConvertible] = [:]
-
         let input = self.collectInput()
-        if !input.isEmpty {
-            info["input"] = input
-        }
-
-        if let output = self.anyID.cachedOutput {
-            info["output"] = output
-        }
-
-        return "\(Self.self)(\(info.debugDescription.dropFirst().dropLast()))"
+        let info = [
+            "input": !input.isEmpty ? input.description : nil,
+            "output": self.anyID.cachedOutput?.description
+        ].compactMapValues({ $0 })
+        
+        return "\(Self.self)(\(info.isEmpty ? ":" : info.map { "\($0): \($1)" }.joined(separator: ", ")))"
     }
 
     // MARK: Joined
@@ -26,27 +21,25 @@ extension AnyModel {
         where Joined: Schema
     {
         guard let output = self.anyID.cachedOutput else {
-            fatalError("Can only access joined models using models fetched from database.")
+            fatalError("Can only access joined models using models fetched from database (from \(Self.self) to \(Joined.self)).")
         }
         let joined = Joined()
-        try joined.output(from: output.schema(Joined.schemaOrAlias))
+        try joined.output(from: output.qualifiedSchema(space: Joined.spaceIfNotAliased, Joined.schemaOrAlias))
         return joined
     }
 
     var anyID: AnyID {
-        guard let id = Mirror(reflecting: self).descendant("_id") as? AnyID else {
-            fatalError("id property must be declared using @ID")
+        for (nameC, child) in _FastChildSequence(subject: self) {
+            /// Match a property named `_id` which conforms to `AnyID`. `as?` is expensive, so check that last.
+            if nameC?[0] == 0x5f/* '_' */,
+               nameC?[1] == 0x69/* 'i' */,
+               nameC?[2] == 0x64/* 'd' */,
+               nameC?[3] == 0x00/* '\0' */,
+               let idChild = child as? AnyID
+            {
+                return idChild
+            }
         }
-        return id
-    }
-}
-
-private struct InfoKey: ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
-    let value: String
-    var description: String {
-        return self.value
-    }
-    init(stringLiteral value: String) {
-        self.value = value
+        fatalError("id property must be declared using @ID or @CompositeID")
     }
 }

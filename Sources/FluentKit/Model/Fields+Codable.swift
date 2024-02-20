@@ -1,140 +1,66 @@
 extension Fields {
     public init(from decoder: Decoder) throws {
         self.init()
-        let container = try decoder.container(keyedBy: ModelCodingKey.self)
-        try self.labeledProperties.forEach { label, property in
+        
+        let container = try decoder.container(keyedBy: SomeCodingKey.self)
+        
+        for (key, property) in self.codableProperties {
+#if swift(<5.7.1)
+            let propDecoder = WorkaroundSuperDecoder(container: container, key: key)
+#else
+            let propDecoder = try container.superDecoder(forKey: key)
+#endif
             do {
-                let decoder = ContainerDecoder(container: container, key: .string(label))
-                try property.decode(from: decoder)
+                try property.decode(from: propDecoder)
             } catch {
-                throw DecodingError.typeMismatch(
-                    type(of: property).anyValueType,
-                    .init(
-                        codingPath: [ModelCodingKey.string(label)],
-                        debugDescription: "Could not decode property",
-                        underlyingError: error
-                    )
-                )
+                throw DecodingError.typeMismatch(type(of: property).anyValueType, .init(
+                    codingPath: container.codingPath + [key],
+                    debugDescription: "Could not decode property",
+                    underlyingError: error
+                ))
             }
         }
     }
 
     public func encode(to encoder: Encoder) throws {
-        let container = encoder.container(keyedBy: ModelCodingKey.self)
-        try self.labeledProperties.forEach { label, property in
+        var container = encoder.container(keyedBy: SomeCodingKey.self)
+        
+        for (key, property) in self.codableProperties where !property.skipPropertyEncoding {
             do {
-                let encoder = ContainerEncoder(container: container, key: .string(label))
-                try property.encode(to: encoder)
-            } catch {
-                throw EncodingError.invalidValue(
-                    property.anyValue ?? "null",
-                    .init(
-                        codingPath: [ModelCodingKey.string(label)],
-                        debugDescription: "Could not encode property",
-                        underlyingError: error
-                    )
-                )
+                try property.encode(to: container.superEncoder(forKey: key))
+            } catch let error where error is EncodingError { // trapping all errors breaks value handling logic in database driver layers
+                throw EncodingError.invalidValue(property.anyValue ?? "null", .init(
+                    codingPath: container.codingPath + [key],
+                    debugDescription: "Could not encode property",
+                    underlyingError: error
+                ))
             }
         }
     }
 }
 
-enum ModelCodingKey: CodingKey {
-    case string(String)
-    case int(Int)
+#if swift(<5.7.1)
+/// This ``Decoder`` compensates for a bug in `KeyedDecodingContainerProtocol.superDecoder(forKey:)` on Linux
+/// which first appeared in Swift 5.5 and was fixed in Swift 5.7.1.
+///
+/// When a given key is not present in the input JSON, `.superDecoder(forKey:)` is expected to return a valid
+/// ``Decoder`` that will only decode a nil value. However, in affected versions of Swift, the method instead
+/// throws a ``DecodingError/keyNotFound``.
+///
+/// As a workaround, instead of calling `.superDecoder(forKey:)`, an instance of this type is created and
+/// provided with the decoding container; the apporiate decoding methods are intercepted to provide the
+/// desired semantics, with everything else being forwarded directly to the container. This has a minor but
+/// nonzero impact on performance, but was determined to be the best and cleanest option.
+private struct WorkaroundSuperDecoder<K: CodingKey>: Decoder, SingleValueDecodingContainer {
+    var codingPath: [CodingKey] { self.container.codingPath }
+    var userInfo: [CodingUserInfoKey: Any] { [:] }
+    let container: KeyedDecodingContainer<K>
+    let key: K
 
-    var stringValue: String {
-        switch self {
-        case .int(let int): return int.description
-        case .string(let string): return string
-        }
-    }
-
-    var intValue: Int? {
-        switch self {
-        case .int(let int): return int
-        case .string(let string): return Int(string)
-        }
-    }
-
-    init?(stringValue: String) {
-        self = .string(stringValue)
-    }
-
-    init?(intValue: Int) {
-        self = .int(intValue)
-    }
+    func container<NK: CodingKey>(keyedBy: NK.Type) throws -> KeyedDecodingContainer<NK> { try self.container.nestedContainer(keyedBy: NK.self, forKey: self.key) }
+    func unkeyedContainer() throws -> UnkeyedDecodingContainer { try self.container.nestedUnkeyedContainer(forKey: self.key) }
+    func singleValueContainer() throws -> SingleValueDecodingContainer { self }
+    func decode<T: Decodable>(_: T.Type) throws -> T { try self.container.decode(T.self, forKey: self.key) }
+    func decodeNil() -> Bool { self.container.contains(self.key) ? try! self.container.decodeNil(forKey: self.key) : true }
 }
-
-
-private struct ContainerDecoder: Decoder, SingleValueDecodingContainer {
-    let container: KeyedDecodingContainer<ModelCodingKey>
-    let key: ModelCodingKey
-
-    var codingPath: [CodingKey] {
-        self.container.codingPath
-    }
-
-    var userInfo: [CodingUserInfoKey : Any] {
-        [:]
-    }
-
-    func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        try self.container.nestedContainer(keyedBy: Key.self, forKey: self.key)
-    }
-
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        try self.container.nestedUnkeyedContainer(forKey: self.key)
-    }
-
-    func singleValueContainer() throws -> SingleValueDecodingContainer {
-        self
-    }
-
-    func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-        try self.container.decode(T.self, forKey: self.key)
-    }
-
-    func decodeNil() -> Bool {
-        if self.container.contains(self.key) {
-            return try! self.container.decodeNil(forKey: self.key)
-        } else {
-            return true
-        }
-    }
-}
-
-private struct ContainerEncoder: Encoder, SingleValueEncodingContainer {
-    var container: KeyedEncodingContainer<ModelCodingKey>
-    let key: ModelCodingKey
-
-    var codingPath: [CodingKey] {
-        self.container.codingPath
-    }
-
-    var userInfo: [CodingUserInfoKey : Any] {
-        [:]
-    }
-
-    func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
-        var container = self.container
-        return container.nestedContainer(keyedBy: Key.self, forKey: self.key)
-    }
-
-    func unkeyedContainer() -> UnkeyedEncodingContainer {
-        var container = self.container
-        return container.nestedUnkeyedContainer(forKey: self.key)
-    }
-
-    func singleValueContainer() -> SingleValueEncodingContainer {
-        self
-    }
-
-    mutating func encode<T>(_ value: T) throws where T : Encodable {
-        try self.container.encode(value, forKey: self.key)
-    }
-
-    mutating func encodeNil() throws {
-        try self.container.encodeNil(forKey: self.key)
-    }
-}
+#endif

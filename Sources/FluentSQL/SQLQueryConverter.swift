@@ -1,3 +1,6 @@
+import FluentKit
+import SQLKit
+
 public struct SQLQueryConverter {
     let delegate: SQLConverterDelegate
     public init(delegate: SQLConverterDelegate) {
@@ -20,22 +23,25 @@ public struct SQLQueryConverter {
     // MARK: Private
     
     private func delete(_ query: DatabaseQuery) -> SQLExpression {
-        var delete = SQLDelete(table: SQLIdentifier(query.schema))
+        var delete = SQLDelete(table: SQLQualifiedTable(query.schema, space: query.space))
         delete.predicate = self.filters(query.filters)
         return delete
     }
     
     private func update(_ query: DatabaseQuery) -> SQLExpression {
-        var update = SQLUpdate(table: SQLIdentifier(query.schema))
-        guard case .dictionary(let values) = query.input.first! else {
-            fatalError()
+        var update = SQLUpdate(table: SQLQualifiedTable(query.schema, space: query.space))
+        guard case .dictionary(let values) = query.input.first else {
+            fatalError("Missing query input generating update query")
         }
-        values.forEach { (key, value) in
-            update.values.append(SQLBinaryExpression(
-                left: SQLColumn(self.key(key)),
-                op: SQLBinaryOperator.equal,
-                right: self.value(value)
-            ))
+        update.values = query.fields.compactMap { field -> SQLExpression? in
+            let key: FieldKey
+            switch field {
+            case let .path(path, schema) where schema == query.schema: key = path[0]
+            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space: key = path[0]
+            default: return nil
+            }
+            guard let value = values[key] else { return nil }
+            return SQLColumnAssignment(setting: SQLColumn(self.key(key)), to: self.value(value))
         }
         update.predicate = self.filters(query.filters)
         return update
@@ -43,38 +49,11 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> SQLExpression {
         var select = SQLSelect()
-        select.tables.append(SQLIdentifier(query.schema))
+        select.tables.append(SQLQualifiedTable(query.schema, space: query.space))
         switch query.action {
         case .read:
             select.isDistinct = query.isUnique
-            select.columns = query.fields.map { field in
-                switch field {
-                case .custom(let any):
-                    return custom(any)
-                case .path(let path, let schema):
-                    let field: SQLExpression
-                    let key: FieldKey
-
-                    // determine field type based on count
-                    switch path.count {
-                    case 1:
-                        key = path[0]
-                        field = SQLColumn(self.key(key), table: schema)
-                    case 2...:
-                        key = path[0]
-                        field = self.delegate.nestedFieldExpression(
-                            self.key(key),
-                            path[1...].map(self.key)
-                        )
-                    default:
-                        fatalError("Field path must not be empty.")
-                    }
-                    return SQLAlias(
-                        field,
-                        as: SQLIdentifier(schema + "_" + self.key(key))
-                    )
-                }
-            }
+            select.columns = query.fields.map { field in self.field(field, aliased: true) }
         case .aggregate(let aggregate):
             select.columns = [self.aggregate(aggregate, isUnique: query.isUnique)]
         default: break
@@ -102,25 +81,38 @@ public struct SQLQueryConverter {
     }
     
     private func insert(_ query: DatabaseQuery) -> SQLExpression {
-        var insert = SQLInsert(table: SQLIdentifier(query.schema))
-        guard case .dictionary(let first) = query.input.first! else {
+        var insert = SQLInsert(table: SQLQualifiedTable(query.schema, space: query.space))
+
+        // 1. Load the first set of inputs to the query, used as a basis to validate uniformity of all inputs.
+        guard let firstInput = query.input.first, case let .dictionary(firstValues) = firstInput else {
             fatalError("Unexpected query input: \(query.input)")
         }
-        let keys: [FieldKey] = Array(first.keys)
-        insert.columns = keys.map { key in
-            SQLColumn(self.key(key))
+        
+        // 2. Translate the list of fields from the query, which are given in a meaningful, deterministic order, into
+        //    column designators.
+        let keys = query.fields.compactMap { field -> FieldKey? in switch field {
+            case let .path(path, schema) where schema == query.schema: return path[0]
+            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space: return path[0]
+            default: return nil
+        } }
+        
+        // 3. Filter the list of columns so that only those actually provided are specified to the insert query, since
+        //    often a query will insert only some of a model's fields while still listing all of them.
+        let usedKeys = keys.filter { firstValues.keys.contains($0) }
+        
+        // 4. Validate each set of inputs, making sure it provides exactly the keys as the first, and convert the sets
+        //    to their underlying SQL representations.
+        let dictionaries = query.input.map { input -> [FieldKey: SQLExpression] in
+            guard case let .dictionary(value) = input else { fatalError("Unexpected query input: \(input)") }
+            guard Set(value.keys).symmetricDifference(usedKeys).isEmpty else { fatalError("Non-uniform query input: \(query.input)") }
+            return value.mapValues(self.value(_:))
         }
-        insert.values = query.input.map { value in
-            guard case .dictionary(let nested) = value else {
-                fatalError("Unexpected query input: \(value)")
-            }
-            return keys.map { key in
-                guard let value = nested[key] else {
-                    fatalError("Non-uniform query input: \(query.input)")
-                }
-                return self.value(value)
-            }
-        }
+        
+        // 5. Provide the list of columns and the sets of inserted values to the actual query, always specifying in the
+        //    same order as the original field list.
+        insert.columns = usedKeys.map { SQLColumn(self.key($0)) }
+        insert.values = dictionaries.map { values in usedKeys.compactMap { values[$0] } }
+
         return insert
     }
     
@@ -129,9 +121,9 @@ public struct SQLQueryConverter {
             return nil
         }
 
-        return SQLList(
-            items: filters.map(self.filter),
-            separator: SQLBinaryOperator.and
+        return SQLKit.SQLList(
+            filters.map(self.filter),
+            separator: " \(SQLBinaryOperator.and) " as SQLQueryString
         )
     }
 
@@ -146,12 +138,9 @@ public struct SQLQueryConverter {
 
     private func direction(_ direction: DatabaseQuery.Sort.Direction) -> SQLExpression {
         switch direction {
-        case .ascending:
-            return SQLRaw("ASC")
-        case .descending:
-            return SQLRaw("DESC")
-        case .custom(let any):
-            return custom(any)
+        case .ascending: return SQLDirection.ascending
+        case .descending: return SQLDirection.descending
+        case .custom(let any): return custom(any)
         }
     }
     
@@ -159,23 +148,28 @@ public struct SQLQueryConverter {
         switch join {
         case .custom(let any):
             return custom(any)
+
         case .join(let schema, let alias, let method, let foreign, let local):
-            let table: SQLExpression
-            if let alias = alias {
-                table = SQLAlias(SQLIdentifier(schema), as: SQLIdentifier(alias))
-            } else {
-                table = SQLIdentifier(schema)
-            }
-            return SQLJoin(
-                method: self.joinMethod(method),
-                table: table,
-                expression: SQLBinaryExpression(
-                    left: self.field(local),
-                    op: SQLBinaryOperator.equal,
-                    right: self.field(foreign)
-                )
-            )
+            return self.joinCondition(schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+
+        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
+            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+
+        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         }
+    }
+    
+    private func joinCondition(
+        space: String? = nil, schema: String,
+        alias: String?,
+        method: DatabaseQuery.Join.Method,
+        filters: [DatabaseQuery.Filter]
+    ) -> SQLExpression {
+        let table: SQLExpression = alias.map { SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0)) } ??
+                                   SQLQualifiedTable(schema, space: space)
+        
+        return SQLJoin(method: self.joinMethod(method), table: table, expression: self.filters(filters) ?? SQLLiteral.boolean(true))
     }
     
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> SQLExpression {
@@ -186,26 +180,37 @@ public struct SQLQueryConverter {
             return custom(any)
         }
     }
-
-    private func field(_ field: DatabaseQuery.Field) -> SQLExpression {
+    
+    private func field(_ field: DatabaseQuery.Field, aliased: Bool = false) -> SQLExpression {
         switch field {
         case .custom(let any):
             return custom(any)
         case .path(let path, let schema):
-            switch path.count {
-            case 1:
-                return SQLColumn(self.key(path[0]), table: schema)
-            case 2...:
-                return self.delegate.nestedFieldExpression(
-                    self.key(path[0]),
-                    path[1...].map(self.key)
-                )
-            default:
-                fatalError("Field path must not be empty.")
-            }
+            return self.fieldPath(path, schema: schema, aliased: aliased)
+        case .extendedPath(let path, let schema, let space):
+            return self.fieldPath(path, space: space, schema: schema, aliased: aliased)
         }
     }
-
+    
+    private func fieldPath(_ path: [FieldKey], space: String? = nil, schema: String, aliased: Bool) -> SQLExpression {
+        let field: SQLExpression
+        
+        switch path.count {
+        case 1:
+            field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
+        case 2...:
+            field = self.delegate.nestedFieldExpression(self.key(path[0]), path[1...].map(self.key))
+        default:
+            fatalError("Field path must not be empty.")
+        }
+        
+        if aliased {
+            return SQLAlias(field, as: [space, schema, self.key(path[0])].compactMap({ $0 }).joined(separator: "_"))
+        } else {
+            return field
+        }
+    }
+    
     private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> SQLExpression {
         switch aggregate {
         case .custom(let any):
@@ -293,9 +298,9 @@ public struct SQLQueryConverter {
             return custom(any)
         case .group(let filters, let relation):
             // <item> OR <item> OR <item>
-            let expression = SQLList(
-                items: filters.map(self.filter),
-                separator: self.relation(relation)
+            let expression = SQLKit.SQLList(
+                filters.map(self.filter),
+                separator: " \(self.relation(relation)) " as SQLQueryString
             )
             // ( <expr> )
             return SQLGroupExpression(expression)
@@ -325,7 +330,7 @@ public struct SQLQueryConverter {
         case .null:
             return SQLLiteral.null
         case .array(let values):
-            return SQLGroupExpression(SQLList(items: values.map(self.value), separator: SQLRaw(",")))
+            return SQLGroupExpression(SQLKit.SQLList(values.map(self.value), separator: SQLRaw(",")))
         case .dictionary(let dictionary):
             return SQLBind(EncodableDatabaseInput(input: dictionary))
         case .default:
@@ -369,27 +374,17 @@ public struct SQLQueryConverter {
         }
     }
 
-    private func key(_ key: FieldKey) -> String {
-        switch key {
-        case .id:
-            return "id"
-        case .string(let name):
-            return name
-        case .aggregate:
-            return key.description
-        case .prefix(let prefix, let key):
-            return self.key(prefix) + self.key(key)
-        }
-    }
+    @inline(__always)
+    private func key(_ key: FieldKey) -> String { key.description }
 }
 
 private struct EncodableDatabaseInput: Encodable {
     let input: [FieldKey: DatabaseQuery.Value]
 
     func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: DatabaseKey.self)
+        var container = encoder.container(keyedBy: FluentKit.SomeCodingKey.self)
         for (key, value) in self.input {
-            try container.encode(EncodableDatabaseValue(value: value), forKey: DatabaseKey(key.description))
+            try container.encode(EncodableDatabaseValue(value: value), forKey: FluentKit.SomeCodingKey(stringValue: key.description))
         }
     }
 }
@@ -411,64 +406,16 @@ private struct EncodableDatabaseValue: Encodable {
     }
 }
 
-private struct DatabaseKey: CodingKey {
-    var stringValue: String
-    var intValue: Int? {
-        nil
-    }
-
-    init(_ string: String) {
-        self.stringValue = string
-    }
-
-    init?(stringValue: String) {
-        self.init(stringValue)
-    }
-
-    init?(intValue: Int) {
-        return nil
-    }
-}
-
-extension Encodable {
-    var isNil: Bool {
-        if let optional = self as? AnyOptionalType {
-            return optional.wrappedValue == nil
-        } else {
-            return false
-        }
-    }
-}
-
 extension DatabaseQuery.Value {
     var isNull: Bool {
         switch self {
         case .null:
             return true
         case .bind(let bind):
-            return bind.isNil
+            guard let optional = bind as? AnyOptionalType, case .none = optional.wrappedValue else { return false }
+            return true
         default:
             return false
         }
-    }
-}
-
-private struct StringCodingKey: CodingKey {
-    public var stringValue: String
-
-    public var intValue: Int? {
-        return Int(self.stringValue)
-    }
-
-    public init(_ string: String) {
-        self.stringValue = string
-    }
-
-    public init(stringValue: String) {
-        self.stringValue = stringValue
-    }
-
-    public init(intValue: Int) {
-        self.stringValue = intValue.description
     }
 }

@@ -5,19 +5,24 @@
 //  Created by Mathew Polzin on 3/8/20.
 //
 
-@testable import FluentKit
-@testable import FluentBenchmark
+import FluentKit
+import FluentBenchmark
 import XCTest
 import Foundation
 import FluentSQL
 
 final class FilterQueryTests: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        XCTAssertTrue(isLoggingConfigured)
+    }
+    
     // MARK: Enum
     func test_enumEquals() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status == .done).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" = 'done'"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."status" = 'done'"#)
         db.reset()
     }
 
@@ -25,7 +30,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status != .done).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" <> 'done'"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."status" <> 'done'"#)
         db.reset()
     }
 
@@ -33,7 +38,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status ~~ [.done, .notDone]).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" IN ('done' , 'notDone')"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."status" IN ('done','notDone')"#)
         db.reset()
     }
 
@@ -41,7 +46,40 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$status !~ [.done, .notDone]).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."status" NOT IN ('done' , 'notDone')"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."status" NOT IN ('done','notDone')"#)
+        db.reset()
+    }
+    
+    // MARK: OptionalEnum
+    func test_optionalEnumEquals() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Task.query(on: db).filter(\.$optionalStatus == .done).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."optional_status" = 'done'"#)
+        db.reset()
+    }
+
+    func test_optionalEnumNotEquals() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Task.query(on: db).filter(\.$optionalStatus != .done).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."optional_status" <> 'done'"#)
+        db.reset()
+    }
+
+    func test_optionalEnumIn() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Task.query(on: db).filter(\.$optionalStatus ~~ [.done, .notDone]).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."optional_status" IN ('done','notDone')"#)
+        db.reset()
+    }
+
+    func test_optionalEnumNotIn() throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        _ = try Task.query(on: db).filter(\.$optionalStatus !~ [.done, .notDone]).all().wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."optional_status" NOT IN ('done','notDone')"#)
         db.reset()
     }
 
@@ -50,7 +88,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description == "hello").all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" = $1"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."description" = $1"#)
         db.reset()
     }
 
@@ -58,7 +96,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description != "hello").all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" <> $1"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."description" <> $1"#)
         db.reset()
     }
 
@@ -66,7 +104,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description ~~ ["hello"]).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" IN ($1)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."description" IN ($1)"#)
         db.reset()
     }
 
@@ -74,7 +112,7 @@ final class FilterQueryTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Task.query(on: db).filter(\.$description !~ ["hello"]).all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status" FROM "tasks" WHERE "tasks"."description" NOT IN ($1)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "tasks"."id" AS "tasks_id", "tasks"."description" AS "tasks_description", "tasks"."status" AS "tasks_status", "tasks"."optional_status" AS "tasks_optional_status" FROM "tasks" WHERE "tasks"."description" NOT IN ($1)"#)
         db.reset()
     }
 }
@@ -94,12 +132,9 @@ final class Task: Model {
 
     @Enum(key: "status")
     var status: Diggity
+    
+    @OptionalEnum(key: "optional_status")
+    var optionalStatus: Diggity?
 
     init() {}
-
-    init(id: Int, status: Diggity, description: String) {
-        self.id = id
-        self.status = status
-        self.description = description
-    }
 }

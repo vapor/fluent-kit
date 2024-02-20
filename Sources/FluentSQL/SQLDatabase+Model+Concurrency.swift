@@ -1,8 +1,7 @@
-#if compiler(>=5.5) && canImport(_Concurrency)
 import NIOCore
 import SQLKit
+import FluentKit
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension SQLQueryFetcher {
     public func first<Model>(decoding model: Model.Type) async throws -> Model?
         where Model: FluentKit.Model
@@ -22,5 +21,3 @@ extension SQLQueryFetcher {
         }.get()
     }
 }
-
-#endif

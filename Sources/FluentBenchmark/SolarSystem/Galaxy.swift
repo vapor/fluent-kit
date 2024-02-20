@@ -1,4 +1,7 @@
 import FluentKit
+import Foundation
+import NIOCore
+import XCTest
 
 public final class Galaxy: Model {
     public static let schema = "galaxies"
@@ -11,6 +14,9 @@ public final class Galaxy: Model {
 
     @Children(for: \.$galaxy)
     public var stars: [Star]
+    
+    @Siblings(through: GalacticJurisdiction.self, from: \.$id.$galaxy, to: \.$id.$jurisdiction)
+    public var jurisdictions: [Jurisdiction]
 
     public init() { }
 

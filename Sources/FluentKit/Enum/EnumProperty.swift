@@ -68,6 +68,17 @@ extension EnumProperty: QueryableProperty {
     }
 }
 
+// MARK: Query-addressable
+
+extension EnumProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension EnumProperty: QueryAddressableProperty {
+    public var queryableProperty: EnumProperty<Model, Value> { self }
+}
+
 // MARK: Database
 
 extension EnumProperty: AnyDatabaseProperty {
@@ -76,8 +87,23 @@ extension EnumProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let value = self.value {
-            input.set(.enumCase(value.rawValue), at: self.field.key)
+        let value: DatabaseQuery.Value
+        if !input.wantsUnmodifiedKeys {
+            guard let ivalue = self.field.inputValue else { return }
+            value = ivalue
+        } else {
+            value = self.field.inputValue ?? .default
+        }
+
+        switch value {
+        case .bind(let bind as String):
+            input.set(.enumCase(bind), at: self.field.key)
+        case .enumCase(let string):
+            input.set(.enumCase(string), at: self.field.key)
+        case .default:
+            input.set(.default, at: self.field.key)
+        default:
+            fatalError("Unexpected input value type for '\(Model.self)'.'\(self.field.key)': \(value)")
         }
     }
 

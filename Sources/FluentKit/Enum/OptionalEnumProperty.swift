@@ -48,8 +48,13 @@ extension OptionalEnumProperty: Property {
             }
         }
         set {
-            self.field.value = newValue?.map {
-                $0.rawValue
+            switch newValue {
+            case .some(.some(let newValue)):
+                self.field.value = .some(.some(newValue.rawValue))
+            case .some(.none):
+                self.field.value = .some(.none)
+            case .none:
+                self.field.value = .none
             }
         }
     }
@@ -69,6 +74,17 @@ extension OptionalEnumProperty: QueryableProperty {
     }
 }
 
+// MARK: Query-addressable
+
+extension OptionalEnumProperty: AnyQueryAddressableProperty {
+    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var queryablePath: [FieldKey] { self.path }
+}
+
+extension OptionalEnumProperty: QueryAddressableProperty {
+    public var queryableProperty: OptionalEnumProperty<Model, WrappedValue> { self }
+}
+
 // MARK: Database
 
 extension OptionalEnumProperty: AnyDatabaseProperty {
@@ -77,8 +93,26 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: DatabaseInput) {
-        if let value = self.value {
-            input.set(value.map { .enumCase($0.rawValue) } ?? .null, at: self.field.key)
+        let value: DatabaseQuery.Value
+        if !input.wantsUnmodifiedKeys {
+            guard let ivalue = self.field.inputValue else { return }
+            value = ivalue
+        } else {
+            value = self.field.inputValue ?? .default
+        }
+
+
+        switch value {
+        case .bind(let bind as String):
+            input.set(.enumCase(bind), at: self.field.key)
+        case .enumCase(let string):
+            input.set(.enumCase(string), at: self.field.key)
+        case .null:
+            input.set(.null, at: self.field.key)
+        case .default:
+            input.set(.default, at: self.field.key)
+        default:
+            fatalError("Unexpected input value type for '\(Model.self)'.'\(self.field.key)': \(value)")
         }
     }
 
@@ -104,4 +138,3 @@ extension OptionalEnumProperty: AnyCodableProperty {
         }
     }
 }
-

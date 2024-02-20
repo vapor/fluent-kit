@@ -1,4 +1,6 @@
 import FluentSQL
+import XCTest
+import SQLKit
 
 extension FluentBenchmarker {
     public func testSort(sql: Bool = true) throws {

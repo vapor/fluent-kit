@@ -1,4 +1,8 @@
-import FluentSQL
+import FluentKit
+import Foundation
+import NIOCore
+import XCTest
+import SQLKit
 
 extension FluentBenchmarker {
     public func testModel() throws {
@@ -10,6 +14,10 @@ extension FluentBenchmarker {
         try self.testModel_jsonColumn()
         try self.testModel_hasChanges()
         try self.testModel_outputError()
+        if self.database is SQLDatabase {
+            // Broken in Mongo at this time
+            try self.testModel_useOfFieldsWithoutGroup()
+        }
     }
 
     private func testModel_uuid() throws {
@@ -163,11 +171,52 @@ extension FluentBenchmarker {
     }
 
     private func testModel_outputError() throws {
-        let foo = Foo()
-        do {
-            try foo.output(from: BadFooOutput())
-        } catch {
-            XCTAssert("\(error)".contains("id"))
+        try runTest(#function, []) {
+            let foo = Foo()
+            do {
+                try foo.output(from: BadFooOutput())
+            } catch {
+                XCTAssert("\(error)".contains("id"))
+            }
+        }
+    }
+    
+    private func testModel_useOfFieldsWithoutGroup() throws {
+        try runTest(#function, []) {
+            final class Contained: Fields {
+                @Field(key: "something") var something: String
+                @Field(key: "another") var another: Int
+                init() {}
+            }
+            final class Enclosure: Model {
+                static let schema = "enclosures"
+                @ID(custom: .id) var id: Int?
+                @Field(key: "primary") var primary: Contained
+                @Field(key: "additional") var additional: [Contained]
+                init() {}
+                
+                struct Migration: FluentKit.Migration {
+                    func prepare(on database: Database) -> EventLoopFuture<Void> {
+                        database.schema(Enclosure.schema)
+                            .field(.id, .int, .required, .identifier(auto: true))
+                            .field("primary", .json, .required)
+                            .field("additional", .array(of: .json), .required)
+                            .create()
+                    }
+                    func revert(on database: Database) -> EventLoopFuture<Void> { database.schema(Enclosure.schema).delete() }
+                }
+            }
+            
+            try Enclosure.Migration().prepare(on: self.database).wait()
+            
+            let enclosure = Enclosure()
+            enclosure.primary = .init()
+            enclosure.primary.something = ""
+            enclosure.primary.another = 0
+            enclosure.additional = []
+            try enclosure.save(on: self.database).wait()
+            
+            try! Enclosure.Migration().revert(on: self.database).wait()
         }
     }
 }
