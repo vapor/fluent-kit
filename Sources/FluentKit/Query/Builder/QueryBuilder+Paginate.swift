@@ -105,9 +105,9 @@ public struct PageMetadata: Codable {
     ///.  - per: Max items per page.
     ///.  - total: Total number of items available.
     public init(page: Int, per: Int, total: Int) {
-        self.page = page
-        self.per = per
-        self.total = total
+        self.page = page < 1 ? 1 : page
+        self.per = per < 1 ? 1 : per
+        self.total = total < 0 ? 0 : total
         
         // Find out how many items are left in the pagination object
         let remainingItems = total - (per * page)
