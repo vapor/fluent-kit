@@ -80,7 +80,7 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform check on.
     public func isAttached(to: To, on database: Database) -> EventLoopFuture<Bool> {
         guard let toID = to.id else {
-            fatalError("Cannot attach unsaved model.")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
         }
 
         return self.isAttached(toID: toID, on: database)
@@ -93,14 +93,14 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform the check on.
     public func isAttached(toID: To.IDValue, on database: Database) -> EventLoopFuture<Bool> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot check if siblings are attached to an unsaved model in \(self.name).")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
 
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .filter(self.to.appending(path: \.$id) == toID)
-            .first()
-            .map { $0 != nil }
+            .count()
+            .map { $0 > 0 }
     }
 
     // MARK: Operations
@@ -117,20 +117,24 @@ public final class SiblingsProperty<From, To, Through>
         _ edit: (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot attach siblings relation \(self.name) to unsaved model.")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
-
-        return tos.map { to -> Through in
+        
+        var pivots: [Through] = []
+        pivots.reserveCapacity(tos.count)
+        
+        for to in tos {
             guard let toID = to.id else {
-                fatalError("Cannot attach unsaved model to \(self.name).")
+                return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
             }
             let pivot = Through()
             pivot[keyPath: self.from].id = fromID
             pivot[keyPath: self.to].id = toID
             pivot[keyPath: self.to].value = to
             edit(pivot)
-            return pivot
-        }.create(on: database)
+            pivots.append(pivot)
+        }
+        return pivots.create(on: database)
     }
 
     /// Attach a single model by creating a pivot model and specifying the attachment method.
@@ -172,10 +176,10 @@ public final class SiblingsProperty<From, To, Through>
         _ edit: (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot attach siblings relation \(self.name) to unsaved model.")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
         guard let toID = to.id else {
-            fatalError("Cannot attach unsaved model \(self.name).")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
         }
 
         let pivot = Through()
@@ -193,13 +197,17 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform the attachment on.
     public func detach(_ tos: [To], on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot detach siblings relation \(self.name) to unsaved model.")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
-        let toIDs = tos.map { to -> To.IDValue in
+        
+        var toIDs: [To.IDValue] = []
+        toIDs.reserveCapacity(tos.count)
+        
+        for to in tos {
             guard let toID = to.id else {
-                fatalError("Cannot detach unsaved model \(self.name).")
+                return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
             }
-            return toID
+            toIDs.append(toID)
         }
 
         return Through.query(on: database)
@@ -215,10 +223,10 @@ public final class SiblingsProperty<From, To, Through>
     ///     - database: The database to perform the attachment on.
     public func detach(_ to: To, on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot detach siblings relation \(self.name) from unsaved model.")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
         guard let toID = to.id else {
-            fatalError("Cannot detach unsaved model \(self.name).")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
         }
 
         return Through.query(on: database)
@@ -230,7 +238,7 @@ public final class SiblingsProperty<From, To, Through>
     /// Detach all models by deleting all pivots from this model.
     public func detachAll(on database: Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
-            fatalError("Cannot detach siblings relation \(self.name) from unsaved model.")
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
         
         return Through.query(on: database)
@@ -243,6 +251,7 @@ public final class SiblingsProperty<From, To, Through>
     /// Returns a `QueryBuilder` that can be used to query the siblings.
     public func query(on database: Database) -> QueryBuilder<To> {
         guard let fromID = self.idValue else {
+            // TODO: Get rid of this fatalError() like we got rid of all the others.
             fatalError("Cannot query siblings relation \(self.name) from unsaved model.")
         }
 

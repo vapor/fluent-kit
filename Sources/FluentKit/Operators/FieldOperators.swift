@@ -177,7 +177,7 @@ public func !=~ <Left, Right, LeftField, RightField>(
 }
 
 public struct ModelFieldFilter<Left, Right>
-    where Left: FluentKit.Model, Right: FluentKit.Model
+    where Left: FluentKit.Schema, Right: FluentKit.Schema
 {
     public init<LeftField, RightField>(
         _ lhs: KeyPath<Left, LeftField>,

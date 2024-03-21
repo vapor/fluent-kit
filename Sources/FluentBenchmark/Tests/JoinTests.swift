@@ -224,6 +224,12 @@ extension FluentBenchmarker {
                 .all().wait()
             
             XCTAssertFalse(planets.isEmpty)
+            
+            let morePlanets = try Planet.query(on: self.database)
+                .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != "Sun")
+                .all().wait()
+            
+            XCTAssertEqual(morePlanets.count, 1)
         }
     }
 }

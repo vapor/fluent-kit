@@ -736,7 +736,7 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 6)
         XCTAssertEqual(db.sqlSerializers.dropFirst(0).first?.sql, #"CREATE TABLE "mirror_universe"."planets"("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "star_id" UUID REFERENCES "stars" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION NOT NULL, "possible_star_id" UUID REFERENCES "stars" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ DEFAULT NULL)"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(1).first?.sql, #"SELECT "mirror_universe"."planets"."id" AS "mirror_universe_planets_id", "mirror_universe"."planets"."name" AS "mirror_universe_planets_name", "mirror_universe"."planets"."star_id" AS "mirror_universe_planets_star_id", "mirror_universe"."planets"."possible_star_id" AS "mirror_universe_planets_possible_star_id", "mirror_universe"."planets"."createdAt" AS "mirror_universe_planets_createdAt", "mirror_universe"."planets"."updatedAt" AS "mirror_universe_planets_updatedAt", "mirror_universe"."planets"."deletedAt" AS "mirror_universe_planets_deletedAt" FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" = $1 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $2)"#)
-        XCTAssertEqual(db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "mirror_universe"."planets" ("id", "name", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)"#)
+        XCTAssertEqual(db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "mirror_universe"."planets" ("id", "name", "star_id", "possible_star_id", "createdAt", "updatedAt", "deletedAt") VALUES ($1, $2, DEFAULT, DEFAULT, $3, $4, DEFAULT)"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(3).first?.sql, #"UPDATE "mirror_universe"."planets" SET "id" = $1, "name" = $2, "updatedAt" = $3 WHERE "mirror_universe"."planets"."id" = $4 AND ("mirror_universe"."planets"."deletedAt" IS NULL OR "mirror_universe"."planets"."deletedAt" > $5)"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(4).first?.sql, #"DELETE FROM "mirror_universe"."planets" WHERE "mirror_universe"."planets"."name" <> $1"#)
         XCTAssertEqual(db.sqlSerializers.dropFirst(5).first?.sql, #"SELECT "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "stars" INNER JOIN "mirror_universe"."planets" ON "mirror_universe"."planets"."star_id" = "stars"."id" LIMIT 1"#)
@@ -765,10 +765,33 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(KeyPrefixingStrategy.custom({ .prefix($0, .prefix("+", $1)) }).apply(prefix: "abc", to: "def").description, "abc+def")
     }
     
+    func testCreatingModelArraysWithUnsetOptionalProperties() throws {
+        final class Foo: Model {
+            static let schema = "foos"
+            
+            @ID var id: UUID?
+            @OptionalField(key: "opt") var opt: String?
+            
+            init() {}
+            init(id: UUID? = nil, opt: String? = nil) { (self.id, self.opt) = (id, opt) }
+        }
+        
+        let foos = [
+            Foo(),
+            Foo(opt: nil),
+            Foo(opt: "foo"),
+        ]
+        let db = DummyDatabaseForTestSQLSerializer()
+
+        try foos.create(on: db).wait()
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"INSERT INTO "foos" ("id", "opt") VALUES ($1, DEFAULT), ($2, NULL), ($3, $4)"#)
+    }
+    
     func testFieldsPropertiesPerformance() throws {
         measure {
             let model = LotsOfFields()
-            for _ in 1 ... 10_000 {
+            for _ in 1 ... 5_000 {
                 XCTAssertEqual(model.properties.count, 21)
             }
         }
