@@ -796,6 +796,26 @@ final class FluentKitTests: XCTestCase {
             }
         }
     }
+    
+    func testPageMetadataFields() throws {
+        let met = PageMetadata(page: 2, per: 5, total: 17)
+        XCTAssertEqual(met.page, 2)
+        XCTAssertEqual(met.per, 5)
+        XCTAssertEqual(met.total, 17)
+        XCTAssertEqual(met.pageCount, 4)
+        XCTAssertEqual(met.hasNext, true)
+        XCTAssertEqual(met.hasPrevious, true)
+    }
+    
+    func testPageMetadataFieldsWithLowerBounds() throws {
+        let met = PageMetadata(page: 0, per: 0, total: -1)
+        XCTAssertEqual(met.page, 1)
+        XCTAssertEqual(met.per, 1)
+        XCTAssertEqual(met.total, 0)
+        XCTAssertEqual(met.pageCount, 1)
+        XCTAssertEqual(met.hasNext, false)
+        XCTAssertEqual(met.hasPrevious, false)
+    }
 }
 
 final class User: Model {

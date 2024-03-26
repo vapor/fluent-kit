@@ -77,6 +77,12 @@ extension Page: Decodable where T: Decodable {}
 
 /// Metadata for a given `Page`.
 public struct PageMetadata: Codable {
+    /// Indicates if there is a page after this one.
+    public let hasNext: Bool
+    
+    /// Indicates if there is a page before this one.
+    public let hasPrevious: Bool
+    
     /// Current page number. Starts at `1`.
     public let page: Int
 
@@ -99,9 +105,23 @@ public struct PageMetadata: Codable {
     ///.  - per: Max items per page.
     ///.  - total: Total number of items available.
     public init(page: Int, per: Int, total: Int) {
-        self.page = page
-        self.per = per
-        self.total = total
+        self.page = page < 1 ? 1 : page
+        self.per = per < 1 ? 1 : per
+        self.total = total < 0 ? 0 : total
+        
+        // Find out how many items are left in the pagination object
+        let remainingItems = total - (per * page)
+        if remainingItems <= 0 {
+            self.hasNext = false
+        } else {
+            self.hasNext = true
+        }
+        
+        if (page > 1) {
+            self.hasPrevious = true
+        } else {
+            self.hasPrevious = false
+        }
     }
 }
 
