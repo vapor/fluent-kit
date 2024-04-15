@@ -9,7 +9,7 @@ public protocol Relation {
     associatedtype RelatedValue
     var name: String { get }
     var value: RelatedValue? { get set }
-    func load(on database: Database) -> EventLoopFuture<Void>
+    func load(on database: any Database) -> EventLoopFuture<Void>
 }
 
 extension Relation {
@@ -25,7 +25,7 @@ extension Relation {
     ///     loaded value.
     ///   - database: The database to use if the value needs to be loaded.
     /// - Returns: The loaded value.
-    public func get(reload: Bool = false, on database: Database) -> EventLoopFuture<RelatedValue> {
+    public func get(reload: Bool = false, on database: any Database) -> EventLoopFuture<RelatedValue> {
         if let value = self.value, !reload {
             return database.eventLoop.makeSucceededFuture(value)
         } else {

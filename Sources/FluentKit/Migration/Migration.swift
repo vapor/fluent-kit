@@ -13,13 +13,13 @@ public protocol Migration {
     ///     - database: `Database` to run the migration on,
     /// - returns: An asynchronous `Void`.
     
-    func prepare(on database: Database) -> EventLoopFuture<Void>
+    func prepare(on database: any Database) -> EventLoopFuture<Void>
     
     /// Called when the changes from a migration are reverted.
     /// - Parameters:
     ///     - database: `Database` to revert the migration on.
     /// - returns: An asynchronous `Void`.
-    func revert(on database: Database) -> EventLoopFuture<Void>
+    func revert(on database: any Database) -> EventLoopFuture<Void>
 }
 
 extension Migration {

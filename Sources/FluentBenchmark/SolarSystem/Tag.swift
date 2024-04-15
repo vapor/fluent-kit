@@ -26,14 +26,14 @@ public final class Tag: Model {
 public struct TagMigration: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("tags")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("tags").delete()
     }
 }
@@ -41,7 +41,7 @@ public struct TagMigration: Migration {
 public final class TagSeed: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         .andAllSucceed([
             "Small Rocky", "Gas Giant", "Inhabited"
         ].map {
@@ -50,7 +50,7 @@ public final class TagSeed: Migration {
         }, on: database.eventLoop)
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Tag.query(on: database).delete()
     }
 }

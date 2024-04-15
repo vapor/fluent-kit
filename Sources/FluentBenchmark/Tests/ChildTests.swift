@@ -9,7 +9,7 @@ extension FluentBenchmarker {
     public func testChild() throws {
         try self.testChild_with()
         
-        guard let sql = self.database as? SQLDatabase else {
+        guard let sql = self.database as? any SQLDatabase else {
             return
         }
         try self.testChild_sqlIdInt(sql)
@@ -78,7 +78,7 @@ extension FluentBenchmarker {
         }
     }
     
-    private func testChild_sqlIdInt(_ sql: SQLDatabase) throws {
+    private func testChild_sqlIdInt(_ sql: any SQLDatabase) throws {
         try self.runTest(#function, [
             GameMigration(),
             PlayerMigration()
@@ -131,14 +131,14 @@ private final class Foo: Model {
 }
 
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Foo.schema)
             .field(.id, .uuid, .identifier(auto: false), .required)
             .field("name", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Foo.schema).delete()
     }
 }
@@ -165,7 +165,7 @@ private final class Bar: Model {
 }
 
 private struct BarMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Bar.schema)
             .field(.id, .uuid, .identifier(auto: false), .required)
             .field("bar", .int, .required)
@@ -174,7 +174,7 @@ private struct BarMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Bar.schema).delete()
     }
 }
@@ -201,7 +201,7 @@ private final class Baz: Model {
 }
 
 private struct BazMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Baz.schema)
             .field(.id, .uuid, .identifier(auto: false), .required)
             .field("baz", .double, .required)
@@ -209,7 +209,7 @@ private struct BazMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Baz.schema).delete()
     }
 }
@@ -239,14 +239,14 @@ private final class Game: Model {
 }
 
 private struct GameMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Game.schema)
             .field(.id, .int, .identifier(auto: true), .required)
             .field("title", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Game.schema).delete()
     }
 }
@@ -275,7 +275,7 @@ private final class Player: Model {
 }
 
 private struct PlayerMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Player.schema)
             .field(.id, .int, .identifier(auto: true), .required)
             .field("name", .string, .required)
@@ -284,7 +284,7 @@ private struct PlayerMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Player.schema).delete()
     }
 }

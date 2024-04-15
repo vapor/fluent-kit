@@ -30,7 +30,7 @@ public final class Governor: Model {
 }
 
 public struct GovernorMigration: Migration {
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Governor.schema)
             .field(.id, .uuid, .identifier(auto: false), .required)
             .field("name", .string, .required)
@@ -39,7 +39,7 @@ public struct GovernorMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Governor.schema).delete()
     }
 }
@@ -47,7 +47,7 @@ public struct GovernorMigration: Migration {
 public struct GovernorSeed: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         Planet.query(on: database).all().flatMap { planets in
             .andAllSucceed(planets.map { planet in
                 let governor: Governor?
@@ -64,7 +64,7 @@ public struct GovernorSeed: Migration {
         }
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Governor.query(on: database).delete()
     }
 }

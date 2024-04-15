@@ -128,7 +128,7 @@ private final class User: Model {
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -138,7 +138,7 @@ private struct UserMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }
@@ -147,7 +147,7 @@ private struct UserMigration: Migration {
 private struct UserSeed: Migration {
     init() { }
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat))
         let logan = User(name: "Logan", pet: .init(name: "Runa", type: .dog))
         return logan.save(on: database)
@@ -155,7 +155,7 @@ private struct UserSeed: Migration {
             .map { _ in }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
     case idRequired
-    case invalidField(name: String, valueType: Any.Type, error: Error)
+    case invalidField(name: String, valueType: Any.Type, error: any Error)
     case missingField(name: String)
     case relationNotLoaded(name: String)
     case missingParent(from: String, to: String, key: String, id: String)

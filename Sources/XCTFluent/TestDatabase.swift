@@ -43,13 +43,13 @@ import NIOCore
 ///     ])
 ///
 public final class ArrayTestDatabase: TestDatabase {
-    var results: [[DatabaseOutput]]
+    var results: [[any DatabaseOutput]]
 
     public init() {
         self.results = []
     }
 
-    public func append(_ result: [DatabaseOutput]) {
+    public func append(_ result: [any DatabaseOutput]) {
         self.results.append(result)
     }
 
@@ -59,7 +59,7 @@ public final class ArrayTestDatabase: TestDatabase {
         self.results.append(result.map { TestOutput($0) })
     }
 
-    public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: (any DatabaseOutput) -> ()) throws {
         guard !self.results.isEmpty else {
             throw TestDatabaseError.ranOutOfResults
         }
@@ -70,13 +70,13 @@ public final class ArrayTestDatabase: TestDatabase {
 }
 
 public final class CallbackTestDatabase: TestDatabase {
-    var callback: (DatabaseQuery) -> [DatabaseOutput]
+    var callback: (DatabaseQuery) -> [any DatabaseOutput]
 
-    public init(callback: @escaping (DatabaseQuery) -> [DatabaseOutput]) {
+    public init(callback: @escaping (DatabaseQuery) -> [any DatabaseOutput]) {
         self.callback = callback
     }
 
-    public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: (any DatabaseOutput) -> ()) throws {
         for output in self.callback(query) {
             onOutput(output)
         }
@@ -86,12 +86,12 @@ public final class CallbackTestDatabase: TestDatabase {
 public protocol TestDatabase {
     func execute(
         query: DatabaseQuery,
-        onOutput: (DatabaseOutput) -> ()
+        onOutput: (any DatabaseOutput) -> ()
     ) throws
 }
 
 extension TestDatabase {
-    public var db: Database {
+    public var db: any Database {
         self.database(context: .init(
             configuration: self.configuration,
             logger: Logger(label: "codes.vapor.fluent.test"),
@@ -99,7 +99,7 @@ extension TestDatabase {
         ))
     }
 
-    public func database(context: DatabaseContext) -> Database {
+    public func database(context: DatabaseContext) -> any Database {
         _TestDatabase(test: self, context: context)
     }
 }
@@ -108,12 +108,12 @@ private struct _TestDatabase: Database {
     var inTransaction: Bool {
         false
     }
-    let test: TestDatabase
+    let test: any TestDatabase
     var context: DatabaseContext
 
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (DatabaseOutput) -> ()
+        onOutput: @escaping (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
         guard context.eventLoop.inEventLoop else {
             return self.eventLoop.flatSubmit {
@@ -128,11 +128,11 @@ private struct _TestDatabase: Database {
         return self.eventLoop.makeSucceededFuture(())
     }
 
-    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
 
-    func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func withConnection<T>(_ closure: (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
 
@@ -146,25 +146,25 @@ private struct _TestDatabase: Database {
 }
 
 extension TestDatabase {
-    public var configuration: DatabaseConfiguration {
+    public var configuration: any DatabaseConfiguration {
         _TestConfiguration(test: self)
     }
 }
 
 
 private struct _TestConfiguration: DatabaseConfiguration {
-    let test: TestDatabase
-    var middleware: [AnyModelMiddleware] = []
+    let test: any TestDatabase
+    var middleware: [any AnyModelMiddleware] = []
 
-    func makeDriver(for databases: Databases) -> DatabaseDriver {
+    func makeDriver(for databases: Databases) -> any DatabaseDriver {
         _TestDriver(test: self.test)
     }
 }
 
 private struct _TestDriver: DatabaseDriver {
-    let test: TestDatabase
+    let test: any TestDatabase
 
-    func makeDatabase(with context: DatabaseContext) -> Database {
+    func makeDatabase(with context: DatabaseContext) -> any Database {
         self.test.database(context: context)
     }
 
@@ -178,7 +178,7 @@ public enum TestDatabaseError: Error {
 }
 
 public struct TestOutput: DatabaseOutput {
-    public func schema(_ schema: String) -> DatabaseOutput {
+    public func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 
@@ -196,7 +196,7 @@ public struct TestOutput: DatabaseOutput {
     }
 
 
-    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    public func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
 

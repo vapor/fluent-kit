@@ -146,14 +146,14 @@ extension FluentBenchmarker {
         }
 
         struct FooMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
+            func prepare(on database: any Database) -> EventLoopFuture<Void> {
                 database.schema("foos")
                     .id()
                     .field("bar", .uuid, .required)
                     .create()
             }
 
-            func revert(on database: Database) -> EventLoopFuture<Void> {
+            func revert(on database: any Database) -> EventLoopFuture<Void> {
                 database.schema("foos").delete()
             }
         }
@@ -171,14 +171,14 @@ extension FluentBenchmarker {
         }
 
         struct BarMigration: Migration {
-            func prepare(on database: Database) -> EventLoopFuture<Void> {
+            func prepare(on database: any Database) -> EventLoopFuture<Void> {
                 database.schema("bars")
                     .id()
                     .field("deleted_at", .datetime)
                     .create()
             }
 
-            func revert(on database: Database) -> EventLoopFuture<Void> {
+            func revert(on database: any Database) -> EventLoopFuture<Void> {
                 database.schema("bars").delete()
             }
         }
@@ -252,7 +252,7 @@ private final class Trash: Model {
 }
 
 private struct TrashMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("trash")
             .field("id", .uuid, .identifier(auto: false), .custom("UNIQUE"))
             .field("contents", .string, .required)
@@ -260,7 +260,7 @@ private struct TrashMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("trash").delete()
     }
 }

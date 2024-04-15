@@ -94,7 +94,7 @@ private final class Foo: Model {
 }
 
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .array(of: .int), .required)
@@ -103,7 +103,7 @@ private struct FooMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
@@ -132,14 +132,14 @@ private final class User: Model {
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field(.id, .uuid, .identifier(auto: false))
             .field("roles", .array(of: .string), .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }
@@ -162,14 +162,14 @@ private final class FooSet: Model {
 }
 
 private struct FooSetMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .array(of: .string), .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }

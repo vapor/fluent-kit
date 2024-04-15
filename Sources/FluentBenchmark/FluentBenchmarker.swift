@@ -54,7 +54,7 @@ public final class FluentBenchmarker {
 
     internal func runTest(
         _ name: String, 
-        _ migrations: [Migration], 
+        _ migrations: [any Migration], 
         _ test: () throws -> ()
     ) throws {
         try self.runTest(name, migrations, { _ in try test() })
@@ -62,7 +62,7 @@ public final class FluentBenchmarker {
     
     internal func runTest(
         _ name: String,
-        _ migrations: [Migration],
+        _ migrations: [any Migration],
         _ test: (any Database) throws -> ()
     ) throws {
         // This re-initialization is required to make the middleware tests work thanks to ridiculous design flaws
@@ -75,7 +75,7 @@ public final class FluentBenchmarker {
     
     internal func runTest(
         _ name: String,
-        _ migrations: [Migration],
+        _ migrations: [any Migration],
         on database: any Database,
         _ test: (any Database) throws -> ()
     ) throws {

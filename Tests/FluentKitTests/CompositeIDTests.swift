@@ -191,7 +191,7 @@ final class CompositeIDTests: XCTestCase {
         let allPlanetFields = #""composite+planet"."system_id" AS "composite+planet_system_id", "composite+planet"."nrm_ord" AS "composite+planet_nrm_ord", "composite+planet"."name" AS "composite+planet_name" FROM "composite+planet""#
         let allMoonFields = #""composite+moon"."id" AS "composite+moon_id", "composite+moon"."name" AS "composite+moon_name", "composite+moon"."planet_system_id" AS "composite+moon_planet_system_id", "composite+moon"."planet_nrm_ord" AS "composite+moon_planet_nrm_ord", "composite+moon"."progenitorSystem_id" AS "composite+moon_progenitorSystem_id", "composite+moon"."progenitorNrm_ord" AS "composite+moon_progenitorNrm_ord", "composite+moon"."planetoid_system_id" AS "composite+moon_planetoid_system_id", "composite+moon"."planetoid_nrm_ord" AS "composite+moon_planetoid_nrm_ord" FROM "composite+moon""#
         
-        let expectedQueries: [(String, [Encodable])] = [
+        let expectedQueries: [(String, [any Encodable])] = [
             (#"SELECT \#(allPlanetFields) WHERE ("composite+planet"."system_id" = $1 AND "composite+planet"."nrm_ord" = $2)"#,               [systemId, 1]),
             (#"SELECT \#(allPlanetFields) WHERE ("composite+planet"."system_id" = $1 AND "composite+planet"."nrm_ord" = $2)"#,               [systemId, 2]),
             (#"SELECT \#(allPlanetFields) WHERE ("composite+planet"."system_id" IS NULL AND "composite+planet"."nrm_ord" IS NULL)"#,         []),
@@ -237,7 +237,7 @@ final class CompositeIDTests: XCTestCase {
         let moonCols = #""id", "name", "planet_system_id", "planet_nrm_ord", "progenitorSystem_id", "progenitorNrm_ord", "planetoid_system_id", "planetoid_nrm_ord""#
         let fourVals = "$1, $2, $3, $4, NULL, NULL, NULL, NULL"
         let sixVals1 = "$1, $2, $3, $4, $5, $6, NULL, NULL", sixVals2 = "$1, $2, $3, $4, NULL, NULL, $5, $6"
-        let expectedQueries: [(String, [Encodable], UInt)] = [
+        let expectedQueries: [(String, [any Encodable], UInt)] = [
             (#"INSERT INTO "composite+planet" ("system_id", "nrm_ord", "name") VALUES ($1, $2, $3)"#,                                         [sysId, 1, "A"],                      #line),
             (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(fourVals))"#,                                                           [moon1.id!, "B", sysId, 1],           #line),
             (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(sixVals1))"#,                                                           [moon2.id!, "C", sysId, 1, sysId, 2], #line),
@@ -407,7 +407,7 @@ final class CompositePlanetTag: Model {
 struct CompositePlanetTagMigration: Migration {
     init() {}
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema)
             .field("planet_id", .uuid, .required, .references(PlanetUsingCompositePivot.schema, "id"))
             .field("tag_id", .uuid, .required, .references(Tag.schema, "id"))
@@ -419,7 +419,7 @@ struct CompositePlanetTagMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema).delete()
     }
 }

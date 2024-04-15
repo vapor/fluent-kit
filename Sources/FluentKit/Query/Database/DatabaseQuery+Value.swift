@@ -1,6 +1,6 @@
 extension DatabaseQuery {
     public enum Value {
-        case bind(Encodable)
+        case bind(any Encodable)
         case dictionary([FieldKey: Value])
         case array([Value])
         case null
@@ -14,7 +14,7 @@ extension DatabaseQuery.Value: CustomStringConvertible {
     public var description: String {
         switch self {
         case .bind(let encodable):
-            if let convertible = encodable as? CustomDebugStringConvertible {
+            if let convertible = encodable as? any CustomDebugStringConvertible {
                 return convertible.debugDescription
             } else {
                 return "\(encodable)"

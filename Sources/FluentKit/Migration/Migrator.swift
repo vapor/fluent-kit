@@ -4,16 +4,16 @@ import Logging
 import NIOCore
 
 public struct Migrator {
-    public let databaseFactory: (DatabaseID?) -> (Database)
+    public let databaseFactory: (DatabaseID?) -> (any Database)
     public let migrations: Migrations
-    public let eventLoop: EventLoop
+    public let eventLoop: any EventLoop
     public let migrationLogLevel: Logger.Level
 
     public init(
         databases: Databases,
         migrations: Migrations,
         logger: Logger,
-        on eventLoop: EventLoop,
+        on eventLoop: any EventLoop,
         migrationLogLevel: Logger.Level = .info
     ) {
         self.init(
@@ -27,9 +27,9 @@ public struct Migrator {
     }
 
     public init(
-        databaseFactory: @escaping (DatabaseID?) -> (Database),
+        databaseFactory: @escaping (DatabaseID?) -> (any Database),
         migrations: Migrations,
-        on eventLoop: EventLoop,
+        on eventLoop: any EventLoop,
         migrationLogLevel: Logger.Level = .info
     ) {
         self.databaseFactory = databaseFactory
@@ -66,7 +66,7 @@ public struct Migrator {
     
     // MARK: Preview
     
-    public func previewPrepareBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+    public func previewPrepareBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
         return self.migrators() { migrator in
             return migrator.previewPrepareBatch().and(value: migrator.id)
         }.map { items in
@@ -77,7 +77,7 @@ public struct Migrator {
         }
     }
     
-    public func previewRevertLastBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+    public func previewRevertLastBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
         return self.migrators() { migrator in
             return migrator.previewRevertLastBatch().and(value: migrator.id)
         }.map { items in
@@ -88,7 +88,7 @@ public struct Migrator {
         }
     }
     
-    public func previewRevertBatch() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+    public func previewRevertBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
         return self.migrators() { migrator in
             return migrator.previewPrepareBatch().and(value: migrator.id)
         }.map { items in
@@ -99,7 +99,7 @@ public struct Migrator {
         }
     }
     
-    public func previewRevertAllBatches() -> EventLoopFuture<[(Migration, DatabaseID?)]> {
+    public func previewRevertAllBatches() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
         return self.migrators() { migrator in
             return migrator.previewRevertAllBatches().and(value: migrator.id)
         }.map { items in
@@ -121,12 +121,12 @@ public struct Migrator {
 }
 
 private final class DatabaseMigrator {
-    let migrations: [Migration]
-    let database: Database
+    let migrations: [any Migration]
+    let database: any Database
     let id: DatabaseID?
     let migrationLogLevel: Logger.Level
 
-    init(id: DatabaseID?, database: Database, migrations: [Migration], migrationLogLeveL: Logger.Level) {
+    init(id: DatabaseID?, database: any Database, migrations: [any Migration], migrationLogLeveL: Logger.Level) {
         self.migrations = migrations
         self.database = database
         self.id = id
@@ -181,27 +181,27 @@ private final class DatabaseMigrator {
 
     // MARK: Preview
 
-    func previewPrepareBatch() -> EventLoopFuture<[Migration]> {
+    func previewPrepareBatch() -> EventLoopFuture<[any Migration]> {
         return self.unpreparedMigrations()
     }
 
-    func previewRevertLastBatch() -> EventLoopFuture<[Migration]> {
+    func previewRevertLastBatch() -> EventLoopFuture<[any Migration]> {
         return self.lastBatchNumber().flatMap { batch in
             return self.preparedMigrations(batch: batch)
         }
     }
 
-    func previewRevertBatch(number: Int) -> EventLoopFuture<[Migration]> {
+    func previewRevertBatch(number: Int) -> EventLoopFuture<[any Migration]> {
         return self.preparedMigrations(batch: number)
     }
 
-    func previewRevertAllBatches() -> EventLoopFuture<[Migration]> {
+    func previewRevertAllBatches() -> EventLoopFuture<[any Migration]> {
         return self.preparedMigrations()
     }
 
     // MARK: Private
 
-    private func prepare(_ migration: Migration, batch: Int) -> EventLoopFuture<Void> {
+    private func prepare(_ migration: any Migration, batch: Int) -> EventLoopFuture<Void> {
         self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
         return migration.prepare(on: self.database).flatMap {
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
@@ -212,7 +212,7 @@ private final class DatabaseMigrator {
         }
     }
 
-    private func revert(_ migration: Migration) -> EventLoopFuture<Void> {
+    private func revert(_ migration: any Migration) -> EventLoopFuture<Void> {
         self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
         return migration.revert(on: self.database).flatMap {
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
@@ -233,7 +233,7 @@ private final class DatabaseMigrator {
         }
     }
 
-    private func preparedMigrations() -> EventLoopFuture<[Migration]> {
+    private func preparedMigrations() -> EventLoopFuture<[any Migration]> {
         return MigrationLog.query(on: self.database).all().map { logs in
             return self.migrations.filter { migration in
                 return logs.contains(where: { $0.name == migration.name })
@@ -241,7 +241,7 @@ private final class DatabaseMigrator {
         }
     }
 
-    private func preparedMigrations(batch: Int) -> EventLoopFuture<[Migration]> {
+    private func preparedMigrations(batch: Int) -> EventLoopFuture<[any Migration]> {
         return MigrationLog.query(on: self.database).filter(\.$batch == batch).all().map { logs in
             return self.migrations.filter { migration in
                 return logs.contains(where: { $0.name == migration.name })
@@ -249,7 +249,7 @@ private final class DatabaseMigrator {
         }
     }
 
-    private func unpreparedMigrations() -> EventLoopFuture<[Migration]> {
+    private func unpreparedMigrations() -> EventLoopFuture<[any Migration]> {
         return MigrationLog.query(on: self.database).all().map { logs in
             return self.migrations.compactMap { migration in
                 if logs.contains(where: { $0.name == migration.name }) { return nil }

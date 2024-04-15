@@ -64,7 +64,7 @@ private final class Test: Model {
 }
 
 private struct TestMigration: FluentKit.Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("test")
             .field("id", .uuid, .identifier(auto: false))
             .field("int_value", .int)
@@ -72,7 +72,7 @@ private struct TestMigration: FluentKit.Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("test").delete()
     }
 }
@@ -92,7 +92,7 @@ private final class Test2: Model {
 }
 
 private struct Test2Migration: FluentKit.Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("foo").case("bar").case("baz").create().flatMap { foo in
             database.schema("test")
                 .id()
@@ -101,7 +101,7 @@ private struct Test2Migration: FluentKit.Migration {
         }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("test").delete().flatMap {
             database.enum("foo").delete()
         }

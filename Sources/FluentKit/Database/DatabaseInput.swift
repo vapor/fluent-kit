@@ -72,13 +72,13 @@ extension DatabaseInput {
 extension DatabaseInput {
     /// Return a ``DatabaseInput`` wrapping `self` so as to apply a given prefix to each field key
     /// before processing.
-    public func prefixed(by prefix: FieldKey) -> DatabaseInput {
+    public func prefixed(by prefix: FieldKey) -> any DatabaseInput {
         PrefixedDatabaseInput(prefix: prefix, strategy: .none, base: self)
     }
     
     /// Return a ``DatabaseInput`` wrapping `self` so as to apply a given prefix, according to a given
     /// ``KeyPrefixingStrategy``, to each field key before processing.
-    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> DatabaseInput {
+    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> any DatabaseInput {
         PrefixedDatabaseInput(prefix: prefix, strategy: stratgey, base: self)
     }
 }
@@ -160,7 +160,7 @@ internal struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
 extension DatabaseInput {
     /// Returns `self` wrapped with a ``NullValueOverrideInput``. This is here primarily so the actual
     /// implementation be defined generically rather than using existentials.
-    internal func nullValueOveridden() -> DatabaseInput {
+    internal func nullValueOveridden() -> any DatabaseInput {
         NullValueOverrideInput(base: self)
     }
 }

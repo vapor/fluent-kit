@@ -16,7 +16,7 @@ public extension QueryBuilder {
     
     // MARK: - Fetch
     
-    func chunk(max: Int, closure: @escaping ([Result<Model, Error>]) -> ()) async throws {
+    func chunk(max: Int, closure: @escaping ([Result<Model, any Error>]) -> ()) async throws {
         try await self.chunk(max: max, closure: closure).get()
     }
     
@@ -47,11 +47,11 @@ public extension QueryBuilder {
         try await self.run().get()
     }
     
-    func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) async throws {
+    func all(_ onOutput: @escaping (Result<Model, any Error>) -> ()) async throws {
         try await self.all(onOutput).get()
     }
     
-    func run(_ onOutput: @escaping (DatabaseOutput) -> ()) async throws {
+    func run(_ onOutput: @escaping (any DatabaseOutput) -> ()) async throws {
         try await self.run(onOutput).get()
     }
     

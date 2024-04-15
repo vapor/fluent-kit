@@ -22,12 +22,12 @@ public protocol Fields: AnyObject, Codable {
     ///   most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
     ///   carries the same cost; it is not possible to meaningfully cache the results. See
     ///   `MirrorBypass.swift` for a considerable amount of very low-level detail.
-    var properties: [AnyProperty] { get }
+    var properties: [any AnyProperty] { get }
     
     init()
     
-    func input(to input: DatabaseInput)
-    func output(from output: DatabaseOutput) throws
+    func input(to input: any DatabaseInput)
+    func output(from output: any DatabaseOutput) throws
 }
 
 // MARK: Path
@@ -67,7 +67,7 @@ extension Fields {
     /// - Note: It is trivial to construct ``DatabaseInput`` objects which do not in fact actually transfer
     ///   their contents to a database. FluentKit itself does this to implement a save/restore operation for
     ///   model state under certain conditions (see ``Model``).
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         for field in self.databaseProperties {
             field.input(to: input)
         }
@@ -79,7 +79,7 @@ extension Fields {
     ///
     /// - Note: It is trivial to construct ``DatabaseOutput`` objects which do not in fact actually represent
     ///   data from a database. FluentKit itself does this to help keep models up to date (see ``Model``).
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         for field in self.databaseProperties {
             try field.output(from: output)
         }
@@ -90,14 +90,14 @@ extension Fields {
 
 extension Fields {
     /// Default implementation of ``Fields/properties-dup4``.
-    public var properties: [AnyProperty] {
-        return _FastChildSequence(subject: self).compactMap { $1 as? AnyProperty }
+    public var properties: [any AnyProperty] {
+        return _FastChildSequence(subject: self).compactMap { $1 as? any AnyProperty }
     }
     
     /// A wrapper around ``properties`` which returns only the properties which have database keys and can be
     /// input to and output from a database (corresponding to the ``AnyDatabaseProperty`` protocol).
-    internal var databaseProperties: [AnyDatabaseProperty] {
-        self.properties.compactMap { $0 as? AnyDatabaseProperty }
+    internal var databaseProperties: [any AnyDatabaseProperty] {
+        self.properties.compactMap { $0 as? any AnyDatabaseProperty }
     }
 
     /// Returns all properties which can be serialized and deserialized independently of a database via the
@@ -114,9 +114,9 @@ extension Fields {
     ///
     /// - Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
     ///   performance penalties.
-    internal var codableProperties: [SomeCodingKey: AnyCodableProperty] {
+    internal var codableProperties: [SomeCodingKey: any AnyCodableProperty] {
         return .init(uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
-            guard let value = $1 as? AnyCodableProperty,
+            guard let value = $1 as? any AnyCodableProperty,
                   let nameC = $0, nameC[0] != 0, nameC[1] != 0,
                   let name = String(utf8String: nameC + 1)
             else {

@@ -6,13 +6,13 @@ public final class QueryBuilder<Model>
 {
     public var query: DatabaseQuery
 
-    public let database: Database
+    public let database: any Database
     internal var includeDeleted: Bool
     internal var shouldForceDelete: Bool
-    internal var models: [Schema.Type]
-    public var eagerLoaders: [AnyEagerLoader]
+    internal var models: [any Schema.Type]
+    public var eagerLoaders: [any AnyEagerLoader]
 
-    public convenience init(database: Database) {
+    public convenience init(database: any Database) {
         self.init(
             query: .init(schema: Model.schema, space: Model.space),
             database: database,
@@ -22,9 +22,9 @@ public final class QueryBuilder<Model>
 
     private init(
         query: DatabaseQuery,
-        database: Database,
-        models: [Schema.Type] = [],
-        eagerLoaders: [AnyEagerLoader] = [],
+        database: any Database,
+        models: [any Schema.Type] = [],
+        eagerLoaders: [any AnyEagerLoader] = [],
         includeDeleted: Bool = false,
         shouldForceDelete: Bool = false
     ) {
@@ -35,7 +35,7 @@ public final class QueryBuilder<Model>
         self.includeDeleted = includeDeleted
         self.shouldForceDelete = shouldForceDelete
         // Pass through custom ID key for database if used.
-        if Model().anyID is AnyQueryableProperty {
+        if Model().anyID is any AnyQueryableProperty {
             switch Model()._$id.key {
             case .id: break
             case let other: self.query.customIDKey = other
@@ -66,7 +66,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    internal func addFields(for model: (Schema & Fields).Type, to query: inout DatabaseQuery) {
+    internal func addFields(for model: any (Schema & Fields).Type, to query: inout DatabaseQuery) {
         query.fields += model.keys.map { path in
             .extendedPath([path], schema: model.schemaOrAlias, space: model.spaceIfNotAliased)
         }
@@ -146,8 +146,8 @@ public final class QueryBuilder<Model>
 
     // MARK: Fetch
 
-    public func chunk(max: Int, closure: @escaping ([Result<Model, Error>]) -> ()) -> EventLoopFuture<Void> {
-        var partial: [Result<Model, Error>] = []
+    public func chunk(max: Int, closure: @escaping ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
+        var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
         return self.all { row in
             partial.append(row)
@@ -203,7 +203,7 @@ public final class QueryBuilder<Model>
     }
 
     public func all() -> EventLoopFuture<[Model]> {
-        var models: [Result<Model, Error>] = []
+        var models: [Result<Model, any Error>] = []
         return self.all { model in
             models.append(model)
         }.flatMapThrowing {
@@ -216,7 +216,7 @@ public final class QueryBuilder<Model>
         return self.run { _ in }
     }
 
-    public func all(_ onOutput: @escaping (Result<Model, Error>) -> ()) -> EventLoopFuture<Void> {
+    public func all(_ onOutput: @escaping (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
         var all: [Model] = []
 
         let done = self.run { output in
@@ -251,7 +251,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    public func run(_ onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run(_ onOutput: @escaping (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query

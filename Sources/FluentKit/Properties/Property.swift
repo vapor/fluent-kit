@@ -48,8 +48,8 @@ extension AnyProperty where Self: Property {
 ///   effectively complete. They should not be considered actual "database" properties.
 public protocol AnyDatabaseProperty: AnyProperty {
     var keys: [FieldKey] { get }
-    func input(to input: DatabaseInput)
-    func output(from output: DatabaseOutput) throws
+    func input(to input: any DatabaseInput)
+    func output(from output: any DatabaseOutput) throws
 }
 
 /// Marks a property as participating in the ``Fields`` protocol's (defaulted)
@@ -67,10 +67,10 @@ public protocol AnyDatabaseProperty: AnyProperty {
 ///   into a way to at least error out rather than crashing.
 public protocol AnyCodableProperty: AnyProperty {
     /// Encode the property's data to an external representation.
-    func encode(to encoder: Encoder) throws
+    func encode(to encoder: any Encoder) throws
     
     /// Decode an external representation and replace the property's current data with the result.
-    func decode(from decoder: Decoder) throws
+    func decode(from decoder: any Decoder) throws
     
     /// Return `true` to skip encoding of this property. Defaults to `false` unless explicitly
     /// implemented.
@@ -151,7 +151,7 @@ extension QueryableProperty {
 /// property types whose `Value` is a derivative of or expansion upon an underlying queryable
 /// property. See the discussion of ``QueryAddressableProperty`` itself for additional details.
 public protocol AnyQueryAddressableProperty: AnyProperty {
-    var anyQueryableProperty: AnyQueryableProperty { get }
+    var anyQueryableProperty: any AnyQueryableProperty { get }
     var queryablePath: [FieldKey] { get }
 }
 

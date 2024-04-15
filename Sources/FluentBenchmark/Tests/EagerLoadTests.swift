@@ -312,7 +312,7 @@ private final class C: Model {
 }
 
 private struct ABCMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         .andAllSucceed([
             database.schema("a").id().field("b_id", .uuid).create(),
             database.schema("b").id().field("c_id", .uuid, .required).create(),
@@ -320,7 +320,7 @@ private struct ABCMigration: Migration {
         ], on: database.eventLoop)
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         .andAllSucceed([
             database.schema("a").delete(),
             database.schema("b").delete(),

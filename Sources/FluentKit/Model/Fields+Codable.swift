@@ -1,5 +1,5 @@
 extension Fields {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         self.init()
         
         let container = try decoder.container(keyedBy: SomeCodingKey.self)
@@ -22,7 +22,7 @@ extension Fields {
         }
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: SomeCodingKey.self)
         
         for (key, property) in self.codableProperties where !property.skipPropertyEncoding {

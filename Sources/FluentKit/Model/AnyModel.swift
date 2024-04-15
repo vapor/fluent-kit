@@ -28,14 +28,14 @@ extension AnyModel {
         return joined
     }
 
-    var anyID: AnyID {
+    var anyID: any AnyID {
         for (nameC, child) in _FastChildSequence(subject: self) {
             /// Match a property named `_id` which conforms to `AnyID`. `as?` is expensive, so check that last.
             if nameC?[0] == 0x5f/* '_' */,
                nameC?[1] == 0x69/* 'i' */,
                nameC?[2] == 0x64/* 'd' */,
                nameC?[3] == 0x00/* '\0' */,
-               let idChild = child as? AnyID
+               let idChild = child as? any AnyID
             {
                 return idChild
             }

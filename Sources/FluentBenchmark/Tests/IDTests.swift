@@ -89,13 +89,13 @@ private final class Foo: Model {
     }
 }
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .id()
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
@@ -114,13 +114,13 @@ private final class StringFoo: Model {
     }
 }
 private struct StringFooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field(.id, .string, .identifier(auto: false))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
@@ -139,13 +139,13 @@ private final class AutoincrementingFoo: Model {
     }
 }
 private struct AutoincrementingFooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field(.id, .int, .identifier(auto: true))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
@@ -165,13 +165,13 @@ private final class CustomAutoincrementingFoo: Model {
 }
 
 private struct CustomAutoincrementingFooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("bar", .int, .identifier(auto: true))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }

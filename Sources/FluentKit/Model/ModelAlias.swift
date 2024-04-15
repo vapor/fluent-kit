@@ -133,7 +133,7 @@ extension ModelAlias {
     /// values (i.e. instances of ``AliasedField``) to correctly behave as the properties they provide
     /// automatic access to. Without this override, the "parent" implementation would always return an empty
     /// array, as the alias type does not itself make direct use of any of the property wrapper types.
-    public var properties: [AnyProperty] { self.model.properties }
+    public var properties: [any AnyProperty] { self.model.properties }
 }
 
 /// Provides support for `@dynamicMemberLookup` to continue descending through arbitrary
@@ -185,7 +185,7 @@ extension AliasedField: QueryableProperty where Field: QueryableProperty {
 /// Conditionally forwarded ``AnyQueryAddressableProperty`` conformance for ``AliasedField``.
 extension AliasedField: AnyQueryAddressableProperty where Field: AnyQueryAddressableProperty {
     public var queryablePath: [FieldKey] { self.field.queryablePath }
-    public var anyQueryableProperty: AnyQueryableProperty { self.field.anyQueryableProperty }
+    public var anyQueryableProperty: any AnyQueryableProperty { self.field.anyQueryableProperty }
 }
 
 /// Conditionally forwarded ``QueryAddressableProperty`` conformance for ``AliasedField``.

@@ -82,7 +82,7 @@ extension OptionalFieldProperty: QueryableProperty { }
 // MARK: Query-addressable
 
 extension OptionalFieldProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -97,7 +97,7 @@ extension OptionalFieldProperty: AnyDatabaseProperty {
         [self.key]
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         if input.wantsUnmodifiedKeys {
             input.set(self.inputValue ?? self.outputValue.map { $0.map { .bind($0) } ?? .null } ?? .default, at: self.key)
         } else if let inputValue = self.inputValue {
@@ -105,7 +105,7 @@ extension OptionalFieldProperty: AnyDatabaseProperty {
         }
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
@@ -128,12 +128,12 @@ extension OptionalFieldProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension OptionalFieldProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
             self.value = nil

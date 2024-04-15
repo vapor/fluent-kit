@@ -497,7 +497,7 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testLoggerOverride() throws {
-        let db: Database = DummyDatabaseForTestSQLSerializer()
+        let db: any Database = DummyDatabaseForTestSQLSerializer()
         XCTAssertEqual(db.logger.logLevel, env("LOG_LEVEL").flatMap { Logger.Level(rawValue: $0) } ?? .info)
         var logger = db.logger
         logger.logLevel = .critical

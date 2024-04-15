@@ -15,7 +15,7 @@ extension FluentBenchmarker {
         try self.testCompositeID_count()
         
         // Embed this here instead of having to update all the Fluent drivers
-        if self.database is SQLDatabase {
+        if self.database is any SQLDatabase {
             try self.testCompositeRelations()
         }
     }
@@ -223,7 +223,7 @@ public final class CompositeIDModel: Model {
 public struct CompositeIDModelMigration: Migration {
     public init() {}
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(CompositeIDModel.schema)
             .field("name", .string, .required)
             .field("dimensions", .int, .required)
@@ -232,7 +232,7 @@ public struct CompositeIDModelMigration: Migration {
             .create()
     }
     
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(CompositeIDModel.schema)
             .delete()
     }
@@ -241,7 +241,7 @@ public struct CompositeIDModelMigration: Migration {
 public struct CompositeIDModelSeed: Migration {
     public init() {}
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         [
             CompositeIDModel(name: "A", dimensions: 1, additionalInfo: nil),
             CompositeIDModel(name: "A", dimensions: 2, additionalInfo: nil),
@@ -249,7 +249,7 @@ public struct CompositeIDModelSeed: Migration {
         ].map { $0.create(on: database) }.flatten(on: database.eventLoop)
     }
     
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         CompositeIDModel.query(on: database).delete()
     }
 }

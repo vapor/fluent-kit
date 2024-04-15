@@ -119,7 +119,7 @@ public struct PageRequest: Decodable {
     }
 
     /// `Decodable` conformance.
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.page = try container.decodeIfPresent(Int.self, forKey: .page) ?? 1
         self.per = try container.decodeIfPresent(Int.self, forKey: .per) ?? 10
