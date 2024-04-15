@@ -83,7 +83,7 @@ final class CompositeIDTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         try CompositePlanetTagMigration().prepare(on: db).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "composite+planet+tag"("planet_id" UUID NOT NULL REFERENCES "planets" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "tag_id" UUID NOT NULL REFERENCES "tags" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "notation" TEXT NOT NULL, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ, PRIMARY KEY ("planet_id", "tag_id"))"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "composite+planet+tag" ("planet_id" UUID NOT NULL REFERENCES "planets" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "tag_id" UUID NOT NULL REFERENCES "tags" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "notation" TEXT NOT NULL, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ, PRIMARY KEY ("planet_id", "tag_id"))"#)
     }
     
     func testCompositeIDRelations() throws {
