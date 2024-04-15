@@ -5,23 +5,23 @@ import NIOPosix
 import Logging
 
 public struct DatabaseConfigurationFactory {
-    public let make: () -> DatabaseConfiguration
+    public let make: () -> any DatabaseConfiguration
 
-    public init(make: @escaping () -> DatabaseConfiguration) {
+    public init(make: @escaping () -> any DatabaseConfiguration) {
         self.make = make
     }
 }
 
 public final class Databases {
-    public let eventLoopGroup: EventLoopGroup
+    public let eventLoopGroup: any EventLoopGroup
     public let threadPool: NIOThreadPool
 
-    private var configurations: [DatabaseID: DatabaseConfiguration]
+    private var configurations: [DatabaseID: any DatabaseConfiguration]
     private var defaultID: DatabaseID?
 
     // Currently running database drivers.
     // Access to this variable must be synchronized.
-    private var drivers: [DatabaseID: DatabaseDriver]
+    private var drivers: [DatabaseID: any DatabaseDriver]
 
     // Synchronize access across threads.
     private var lock: NIOLock
@@ -30,7 +30,7 @@ public final class Databases {
         let databases: Databases
 
         public func use(
-            _ middleware: AnyModelMiddleware,
+            _ middleware: any AnyModelMiddleware,
             on id: DatabaseID? = nil
         ) {
             self.databases.lock.withLockVoid {
@@ -55,7 +55,7 @@ public final class Databases {
         .init(databases: self)
     }
     
-    public init(threadPool: NIOThreadPool, on eventLoopGroup: EventLoopGroup) {
+    public init(threadPool: NIOThreadPool, on eventLoopGroup: any EventLoopGroup) {
         self.eventLoopGroup = eventLoopGroup
         self.threadPool = threadPool
         self.configurations = [:]
@@ -72,7 +72,7 @@ public final class Databases {
     }
     
     public func use(
-        _ driver: DatabaseConfiguration,
+        _ driver: any DatabaseConfiguration,
         as id: DatabaseID,
         isDefault: Bool? = nil
     ) {
@@ -90,7 +90,7 @@ public final class Databases {
         }
     }
     
-    public func configuration(for id: DatabaseID? = nil) -> DatabaseConfiguration? {
+    public func configuration(for id: DatabaseID? = nil) -> (any DatabaseConfiguration)? {
         self.lock.withLock {
             self.configurations[id ?? self._requireDefaultID()]
         }
@@ -99,10 +99,10 @@ public final class Databases {
     public func database(
         _ id: DatabaseID? = nil,
         logger: Logger,
-        on eventLoop: EventLoop,
+        on eventLoop: any EventLoop,
         history: QueryHistory? = nil,
         pageSizeLimit: Int? = nil
-    ) -> Database? {
+    ) -> (any Database)? {
         self.lock.withLock {
             let id = id ?? self._requireDefaultID()
             var logger = logger
@@ -115,7 +115,7 @@ public final class Databases {
                 history: history,
                 pageSizeLimit: pageSizeLimit
             )
-            let driver: DatabaseDriver
+            let driver: any DatabaseDriver
             if let existing = self.drivers[id] {
                 driver = existing
             } else {
@@ -150,7 +150,7 @@ public final class Databases {
         }
     }
 
-    private func _requireConfiguration(for id: DatabaseID) -> DatabaseConfiguration {
+    private func _requireConfiguration(for id: DatabaseID) -> any DatabaseConfiguration {
         guard let configuration = self.configurations[id] else {
             fatalError("No datatabase configuration registered for \(id).")
         }

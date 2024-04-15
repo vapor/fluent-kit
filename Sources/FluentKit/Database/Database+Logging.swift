@@ -25,7 +25,7 @@ extension LoggingOverrideDatabase: Database {
     
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (DatabaseOutput) -> ()
+        onOutput: @escaping (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
         self.database.execute(query: query, onOutput: onOutput)
     }
@@ -47,19 +47,19 @@ extension LoggingOverrideDatabase: Database {
         self.database.inTransaction
     }
 
-    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.transaction(closure)
     }
     
-    func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func withConnection<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.withConnection(closure)
     }
 }
 
 extension LoggingOverrideDatabase: SQLDatabase where D: SQLDatabase {
-    func execute(sql query: SQLExpression, _ onRow: @escaping (SQLRow) -> ()) -> EventLoopFuture<Void> {
+    func execute(sql query: any SQLExpression, _ onRow: @escaping (any SQLRow) -> ()) -> EventLoopFuture<Void> {
         self.database.execute(sql: query, onRow)
     }
-    var dialect: SQLDialect { self.database.dialect }
+    var dialect: any SQLDialect { self.database.dialect }
     var version: (any SQLDatabaseReportedVersion)? { self.database.version }
 }

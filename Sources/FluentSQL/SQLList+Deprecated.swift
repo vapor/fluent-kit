@@ -28,13 +28,13 @@ import SQLKit
 ///   public. Convert code using these extensions to invoke the original ``SQLKit/SQLList`` directly.
 extension SQLKit.SQLList {
     @available(*, deprecated, message: "Use `expressions` instead.")
-    public var items: [SQLExpression] {
+    public var items: [any SQLExpression] {
         get { self.expressions }
         set { self.expressions = newValue }
     }
     
     @available(*, deprecated, message: "Use `init(_:separator:)` and include whitespace in the separator as needed instead.")
-    public init(items: [SQLExpression], separator: SQLExpression) {
+    public init(items: [any SQLExpression], separator: any SQLExpression) {
         self.init(items, separator: " \(separator) " as SQLQueryString)
     }
 }

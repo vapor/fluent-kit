@@ -101,7 +101,7 @@ public final class CompositeOptionalParentProperty<From, To>
         self.prefixingStrategy = strategy
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         return To.query(on: database).group(.and) {
             self.id?.input(to: QueryFilterInput(builder: $0)) ?? To.IDValue().input(to: QueryFilterInput(builder: $0).nullValueOveridden())
         }
@@ -125,7 +125,7 @@ extension CompositeOptionalParentProperty: Relation {
         "CompositeOptionalParent<\(From.self), \(To.self)>(prefix: \(self.prefix), strategy: \(self.prefixingStrategy))"
     }
     
-    public func load(on database: Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database)
             .first()
             .map {
@@ -148,7 +148,7 @@ extension CompositeOptionalParentProperty: AnyDatabaseProperty {
         }
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         let prefixedInput = input.prefixed(by: self.prefix, using: self.prefixingStrategy)
         let id: To.IDValue?
         
@@ -159,7 +159,7 @@ extension CompositeOptionalParentProperty: AnyDatabaseProperty {
         id?.input(to: prefixedInput) ?? To.IDValue().input(to: prefixedInput.nullValueOveridden())
     }
     
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         if self.keys.reduce(true, { $0 && output.contains($1) }) {
             self.inputId = nil
             if try self.keys.reduce(true, { try $0 && output.decodeNil($1) }) {
@@ -174,7 +174,7 @@ extension CompositeOptionalParentProperty: AnyDatabaseProperty {
 }
 
 extension CompositeOptionalParentProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         
         if case .some(.some(let value)) = self.value {
@@ -184,7 +184,7 @@ extension CompositeOptionalParentProperty: AnyCodableProperty {
         }
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: SomeCodingKey.self)
         self.id = try container.decode(To.IDValue?.self, forKey: .init(stringValue: "id"))
     }
@@ -216,7 +216,7 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.CompositeOptionalParent<To>>
     let withDeleted: Bool
     
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
@@ -249,7 +249,7 @@ private struct ThroughCompositeOptionalParentEagerLoader<From, Through, Loader>:
     let relationKey: KeyPath<From, From.CompositeOptionalParent<Through>>
     let loader: Loader
     
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

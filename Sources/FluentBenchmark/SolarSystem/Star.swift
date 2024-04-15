@@ -30,7 +30,7 @@ public final class Star: Model {
 }
 
 public struct StarMigration: Migration {
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("stars")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -39,7 +39,7 @@ public struct StarMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("stars").delete()
     }
 }
@@ -47,7 +47,7 @@ public struct StarMigration: Migration {
 public final class StarSeed: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         Galaxy.query(on: database).all().flatMap { galaxies in
             .andAllSucceed(galaxies.map { galaxy in
                 let stars: [Star]
@@ -64,7 +64,7 @@ public final class StarSeed: Migration {
         }
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Star.query(on: database).delete(force: true)
     }
 }

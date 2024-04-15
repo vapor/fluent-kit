@@ -7,14 +7,14 @@ extension DatabaseSchema.DataType {
     }
 
     public static func sql(_ dataType: SQLDataType) -> Self {
-        .sql(dataType as SQLExpression)
+        .sql(dataType as any SQLExpression)
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -25,14 +25,14 @@ extension DatabaseSchema.Constraint {
     }
 
     public static func sql(_ constraint: SQLTableConstraintAlgorithm) -> Self {
-        .sql(constraint as SQLExpression)
+        .sql(constraint as any SQLExpression)
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -46,7 +46,7 @@ extension DatabaseSchema.ConstraintAlgorithm {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
     .custom(expression)
     }
 }
@@ -57,14 +57,14 @@ extension DatabaseSchema.FieldConstraint {
     }
 
     public static func sql(_ constraint: SQLColumnConstraintAlgorithm) -> Self {
-        .sql(constraint as SQLExpression)
+        .sql(constraint as any SQLExpression)
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -78,7 +78,7 @@ extension DatabaseSchema.FieldDefinition {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -92,7 +92,7 @@ extension DatabaseSchema.FieldUpdate {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -106,7 +106,7 @@ extension DatabaseSchema.FieldName {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -120,7 +120,7 @@ extension DatabaseSchema.ConstraintDelete {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }

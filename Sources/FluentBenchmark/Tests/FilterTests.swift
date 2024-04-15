@@ -283,7 +283,7 @@ private final class FooAlias: ModelAlias {
 }
 
 private struct FooEnumMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("foo_type")
             .case("foo")
             .case("bar")
@@ -292,26 +292,26 @@ private struct FooEnumMigration: Migration {
             .transform(to: ())
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("foo_type").delete()
     }
 }
 
 private struct FooOwnerMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foo_owners")
             .id()
             .field("name", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foo_owners").delete()
     }
 }
 
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("foo_type").read().flatMap { fooType in
             database.schema("foos")
                 .id()
@@ -322,7 +322,7 @@ private struct FooMigration: Migration {
         }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }

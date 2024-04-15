@@ -4,7 +4,7 @@ import Foundation
 final class EnumMetadata: Model {
     static let schema = "_fluent_enums"
 
-    static var migration: Migration {
+    static var migration: any Migration {
         return EnumMetadataMigration()
     }
 
@@ -27,7 +27,7 @@ final class EnumMetadata: Model {
 }
 
 private struct EnumMetadataMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("_fluent_enums")
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -37,7 +37,7 @@ private struct EnumMetadataMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("_fluent_enums").delete()
     }
 }

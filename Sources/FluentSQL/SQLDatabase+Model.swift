@@ -32,13 +32,13 @@ extension SQLRow {
 }
 
 internal struct SQLDatabaseOutput: DatabaseOutput {
-    let sql: SQLRow
+    let sql: any SQLRow
 
     var description: String {
         "\(self.sql)"
     }
 
-    func schema(_ schema: String) -> DatabaseOutput {
+    func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 

@@ -10,8 +10,8 @@ extension FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {
-            var fetched64: [Result<Galaxy, Error>] = []
-            var fetched2047: [Result<Galaxy, Error>] = []
+            var fetched64: [Result<Galaxy, any Error>] = []
+            var fetched2047: [Result<Galaxy, any Error>] = []
 
             let saves = (1...512).map { i -> EventLoopFuture<Void> in
                 return Galaxy(name: "Milky Way \(i)")

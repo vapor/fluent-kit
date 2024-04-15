@@ -8,10 +8,10 @@ extension Database {
 }
 
 public final class EnumBuilder {
-    let database: Database
+    let database: any Database
     public var `enum`: DatabaseEnum
 
-    init(database: Database, name: String) {
+    init(database: any Database, name: String) {
         self.database = database
         self.enum = .init(name: name)
     }

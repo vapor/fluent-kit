@@ -11,7 +11,7 @@ public final class CompositeIDProperty<Model, Value>
 {
     public var value: Value?
     public var exists: Bool
-    var cachedOutput: DatabaseOutput?
+    var cachedOutput: (any DatabaseOutput)?
 
     public var projectedValue: CompositeIDProperty<Model, Value> { self }
     
@@ -52,11 +52,11 @@ extension CompositeIDProperty: AnyDatabaseProperty {
         Value.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.value!.input(to: input)
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         self.exists = true
         self.cachedOutput = output
         try self.value!.output(from: output)
@@ -66,12 +66,12 @@ extension CompositeIDProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension CompositeIDProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.value)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.value = try container.decode(Value?.self)
     }

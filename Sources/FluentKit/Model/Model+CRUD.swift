@@ -2,7 +2,7 @@ import NIOCore
 import protocol SQLKit.SQLDatabase
 
 extension Model {
-    public func save(on database: Database) -> EventLoopFuture<Void> {
+    public func save(on database: any Database) -> EventLoopFuture<Void> {
         if self._$idExists {
             return self.update(on: database)
         } else {
@@ -10,20 +10,20 @@ extension Model {
         }
     }
 
-    public func create(on database: Database) -> EventLoopFuture<Void> {
+    public func create(on database: any Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             try model.handle(event, on: db)
         }.handle(.create, self, on: database)
     }
 
-    private func _create(on database: Database) -> EventLoopFuture<Void> {
+    private func _create(on database: any Database) -> EventLoopFuture<Void> {
         precondition(!self._$idExists)
         self.touchTimestamps(.create, .update)
-        if self.anyID is AnyQueryableProperty {
+        if self.anyID is any AnyQueryableProperty {
             self.anyID.generate()
-            let promise = database.eventLoop.makePromise(of: DatabaseOutput.self)
+            let promise = database.eventLoop.makePromise(of: (any DatabaseOutput).self)
             Self.query(on: database)
-                .set(self.collectInput(withDefaultedValues: database is SQLDatabase))
+                .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
                 .action(.create)
                 .run { promise.succeed($0) }
                 .cascadeFailure(to: promise)
@@ -37,7 +37,7 @@ extension Model {
             }
         } else {
             return Self.query(on: database)
-                .set(self.collectInput(withDefaultedValues: database is SQLDatabase))
+                .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
                 .action(.create)
                 .run()
                 .flatMapThrowing {
@@ -46,13 +46,13 @@ extension Model {
         }
     }
 
-    public func update(on database: Database) -> EventLoopFuture<Void> {
+    public func update(on database: any Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             try model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
 
-    private func _update(on database: Database) throws -> EventLoopFuture<Void> {
+    private func _update(on database: any Database) throws -> EventLoopFuture<Void> {
         precondition(self._$idExists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
@@ -70,7 +70,7 @@ extension Model {
         }
     }
 
-    public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
+    public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
         if !force, let timestamp = self.deletedTimestamp {
             timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
@@ -83,7 +83,7 @@ extension Model {
         }
     }
 
-    private func _delete(force: Bool = false, on database: Database) throws -> EventLoopFuture<Void> {
+    private func _delete(force: Bool = false, on database: any Database) throws -> EventLoopFuture<Void> {
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
             .filter(id: id)
@@ -96,13 +96,13 @@ extension Model {
         }
     }
 
-    public func restore(on database: Database) -> EventLoopFuture<Void> {
+    public func restore(on database: any Database) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             try model.handle(event, on: db)
         }.handle(.restore, self, on: database)
     }
 
-    private func _restore(on database: Database) throws -> EventLoopFuture<Void> {
+    private func _restore(on database: any Database) throws -> EventLoopFuture<Void> {
         guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
             fatalError("no delete timestamp on this model")
         }
@@ -122,7 +122,7 @@ extension Model {
         }
     }
 
-    private func handle(_ event: ModelEvent, on db: Database) throws -> EventLoopFuture<Void> {
+    private func handle(_ event: ModelEvent, on db: any Database) throws -> EventLoopFuture<Void> {
         switch event {
         case .create:
             return _create(on: db)
@@ -139,7 +139,7 @@ extension Model {
 }
 
 extension Collection where Element: FluentKit.Model {
-    public func delete(force: Bool = false, on database: Database) -> EventLoopFuture<Void> {
+    public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
@@ -163,7 +163,7 @@ extension Collection where Element: FluentKit.Model {
         }
     }
 
-    public func create(on database: Database) -> EventLoopFuture<Void> {
+    public func create(on database: any Database) -> EventLoopFuture<Void> {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
@@ -172,7 +172,7 @@ extension Collection where Element: FluentKit.Model {
         
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
-                if model.anyID is AnyQueryableProperty {
+                if model.anyID is any AnyQueryableProperty {
                     model._$id.generate()
                 }
                 model.touchTimestamps(.create, .update)
@@ -180,7 +180,7 @@ extension Collection where Element: FluentKit.Model {
             }.create(model, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .set(self.map { $0.collectInput(withDefaultedValues: database is SQLDatabase) })
+                .set(self.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
                 .create()
         }.map {
             for model in self {
@@ -206,7 +206,7 @@ private struct SavedInput: DatabaseOutput {
         self.input = input
     }
 
-    func schema(_ schema: String) -> DatabaseOutput {
+    func schema(_ schema: String) -> any DatabaseOutput {
         return self
     }
     
@@ -214,7 +214,7 @@ private struct SavedInput: DatabaseOutput {
         self.input[key] != nil
     }
 
-    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         guard let data = self.input[key] else {
             throw FluentError.missingField(name: key.description)
         }

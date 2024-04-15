@@ -6,13 +6,13 @@ public protocol Model: AnyModel {
 }
 
 extension Model {
-    public static func query(on database: Database) -> QueryBuilder<Self> {
+    public static func query(on database: any Database) -> QueryBuilder<Self> {
         .init(database: database)
     }
 
     public static func find(
         _ id: Self.IDValue?,
-        on database: Database
+        on database: any Database
     ) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)

@@ -110,7 +110,7 @@ public final class CompositeChildrenProperty<From, To>
         set { self.idValue = newValue }
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query children relation \(self.name) from unsaved model.")
         }
@@ -137,8 +137,8 @@ extension CompositeChildrenProperty: Property {
 
 extension CompositeChildrenProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] { [] }
-    public func input(to input: DatabaseInput) {}
-    public func output(from output: DatabaseOutput) throws {
+    public func input(to input: any DatabaseInput) {}
+    public func output(from output: any DatabaseOutput) throws {
         if From.IDValue.keys.reduce(true, { $0 && output.contains($1) }) { // don't output unless all keys are present
             self.idValue = From.IDValue()
             try self.idValue!.output(from: output)
@@ -147,19 +147,19 @@ extension CompositeChildrenProperty: AnyDatabaseProperty {
 }
 
 extension CompositeChildrenProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         if let value = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(value)
         }
     }
-    public func decode(from decoder: Decoder) throws {}
+    public func decode(from decoder: any Decoder) throws {}
     public var skipPropertyEncoding: Bool { self.value == nil }
 }
 
 extension CompositeChildrenProperty: Relation {
     public var name: String { "CompositeChildren<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: Database) -> EventLoopFuture<Void> { self.query(on: database).all().map { self.value = $0 } }
+    public func load(on database: any Database) -> EventLoopFuture<Void> { self.query(on: database).all().map { self.value = $0 } }
 }
 
 extension CompositeChildrenProperty: EagerLoadable {
@@ -191,7 +191,7 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.CompositeChildren<To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -216,7 +216,7 @@ private struct ThroughCompositeChildrenEagerLoader<From, Through, Loader>: Eager
     let relationKey: KeyPath<From, From.CompositeChildren<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         return self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

@@ -31,7 +31,7 @@ public final class PlanetTag: Model {
 public struct PlanetTagMigration: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(PlanetTag.schema)
             .id()
             .field("planet_id", .uuid, .required)
@@ -42,7 +42,7 @@ public struct PlanetTagMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(PlanetTag.schema).delete()
     }
 }
@@ -50,7 +50,7 @@ public struct PlanetTagMigration: Migration {
 public struct PlanetTagSeed: Migration {
     public init() { }
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let planets = Planet.query(on: database).all()
         let tags = Tag.query(on: database).all()
         return planets.and(tags).flatMap { (planets, tags) in
@@ -75,7 +75,7 @@ public struct PlanetTagSeed: Migration {
         }
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         PlanetTag.query(on: database).delete()
     }
 }

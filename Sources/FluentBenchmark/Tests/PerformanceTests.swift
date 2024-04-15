@@ -98,7 +98,7 @@ private final class Foo: Model {
 private struct FooMigration: Migration {
     let decimalType: DatabaseSchema.DataType
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .int, .required)
@@ -116,7 +116,7 @@ private struct FooMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }

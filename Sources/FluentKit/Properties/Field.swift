@@ -83,7 +83,7 @@ extension FieldProperty: QueryableProperty { }
 // MARK: Query-addressable
 
 extension FieldProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -98,7 +98,7 @@ extension FieldProperty: AnyDatabaseProperty {
         [self.key]
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         if input.wantsUnmodifiedKeys {
             input.set(self.inputValue ?? self.outputValue.map { .bind($0) } ?? .default, at: self.key)
         } else if let inputValue = self.inputValue {
@@ -106,7 +106,7 @@ extension FieldProperty: AnyDatabaseProperty {
         }
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         if output.contains(self.key) {
             self.inputValue = nil
             do {
@@ -125,15 +125,15 @@ extension FieldProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension FieldProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
 
-        if let valueType = Value.self as? AnyOptionalType.Type {
+        if let valueType = Value.self as? any AnyOptionalType.Type {
             // Hacks for supporting optionals in @Field.
             // Using @OptionalField is preferred moving forward.
             if container.decodeNil() {

@@ -31,14 +31,14 @@ public final class ParentProperty<From, To>
     public var value: To?
 
     public init(key: FieldKey) {
-        guard !(To.IDValue.self is Fields.Type) else {
+        guard !(To.IDValue.self is any Fields.Type) else {
             fatalError("Can not use @Parent to target a model with composite ID; use @CompositeParent instead.")
         }
         
         self._id = .init(key: key)
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         return To.query(on: database)
             .filter(\._$id == self.id)
     }
@@ -57,7 +57,7 @@ extension ParentProperty: Relation {
         "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
-    public func load(on database: Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database).first().map {
             self.value = $0
         }
@@ -76,7 +76,7 @@ extension ParentProperty: Property {
 // MARK: Query-addressable
 
 extension ParentProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self.$id.anyQueryableProperty }
+    public var anyQueryableProperty: any AnyQueryableProperty { self.$id.anyQueryableProperty }
     public var queryablePath: [FieldKey] { self.$id.queryablePath }
 }
 
@@ -91,17 +91,17 @@ extension ParentProperty: AnyDatabaseProperty {
         self.$id.keys
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.$id.input(to: input)
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         try self.$id.output(from: output)
     }
 }
 
 extension ParentProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         if let parent = self.value {
             try container.encode(parent)
@@ -112,7 +112,7 @@ extension ParentProperty: AnyCodableProperty {
         }
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: SomeCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
@@ -163,7 +163,7 @@ private struct ParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, ParentProperty<From, To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
         if (self.withDeleted) {
@@ -192,7 +192,7 @@ private struct ThroughParentEagerLoader<From, Through, Loader>: EagerLoader
     let relationKey: KeyPath<From, From.Parent<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let throughs = models.map {
             $0[keyPath: self.relationKey].value!
         }

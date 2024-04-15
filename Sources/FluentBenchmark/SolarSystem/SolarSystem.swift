@@ -2,7 +2,7 @@ import AsyncKit
 import FluentKit
 import NIOCore
 
-private let migrations: [Migration] = [
+private let migrations: [any Migration] = [
     GalaxyMigration(),
     StarMigration(),
     PlanetMigration(),
@@ -12,7 +12,7 @@ private let migrations: [Migration] = [
     PlanetTagMigration(),
 ]
 
-private let seeds: [Migration] = [
+private let seeds: [any Migration] = [
     GalaxySeed(),
     StarSeed(),
     PlanetSeed(),
@@ -28,8 +28,8 @@ public struct SolarSystem: Migration {
         self.seed = seed
     }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
-        let all: [Migration]
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
+        let all: [any Migration]
         if self.seed {
             all = migrations + seeds
         } else {
@@ -39,8 +39,8 @@ public struct SolarSystem: Migration {
         return all.sequencedFlatMapEach(on: database.eventLoop) { $0.prepare(on: database) }
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
-        let all: [Migration]
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
+        let all: [any Migration]
         if self.seed {
             all = migrations + seeds
         } else {

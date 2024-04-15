@@ -6,13 +6,13 @@ import SQLKit
 
 extension FluentBenchmarker {
     public func testSQL() throws {
-        guard let sql = self.database as? SQLDatabase else {
+        guard let sql = self.database as? any SQLDatabase else {
             return
         }
         try self.testSQL_rawDecode(sql)
     }
 
-    private func testSQL_rawDecode(_ sql: SQLDatabase) throws {
+    private func testSQL_rawDecode(_ sql: any SQLDatabase) throws {
         try self.runTest(#function, [
             UserMigration()
         ]) {
@@ -92,7 +92,7 @@ private final class User: Model {
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .id()
             .field("first_name", .string, .required)
@@ -101,7 +101,7 @@ private struct UserMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }

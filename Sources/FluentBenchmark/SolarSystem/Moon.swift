@@ -38,7 +38,7 @@ public final class Moon: Model {
 public struct MoonMigration: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -48,7 +48,7 @@ public struct MoonMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("moons").delete()
     }
 }
@@ -56,7 +56,7 @@ public struct MoonMigration: Migration {
 public final class MoonSeed: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         Planet.query(on: database).all().flatMap { planets in
             .andAllSucceed(planets.map { planet in
                 let moons: [Moon]
@@ -92,7 +92,7 @@ public final class MoonSeed: Migration {
         }
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Moon.query(on: database).delete()
     }
 }

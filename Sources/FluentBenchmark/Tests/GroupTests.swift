@@ -162,7 +162,7 @@ private final class FlatMoon: Model {
 
 
 private struct FlatMoonMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -173,7 +173,7 @@ private struct FlatMoonMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("moons").delete()
     }
 }
@@ -182,7 +182,7 @@ private struct FlatMoonMigration: Migration {
 private struct FlatMoonSeed: Migration {
     init() { }
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let moon = FlatMoon(
             name: "Moon",
             planet: .init(
@@ -210,7 +210,7 @@ private struct FlatMoonSeed: Migration {
             .map { _ in }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.eventLoop.makeSucceededFuture(())
     }
 }

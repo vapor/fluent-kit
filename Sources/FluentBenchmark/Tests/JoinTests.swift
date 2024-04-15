@@ -217,7 +217,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            guard self.database is SQLDatabase else { return }
+            guard self.database is any SQLDatabase else { return }
             
             let planets = try Planet.query(on: self.database)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != \Planet.$name)
@@ -258,14 +258,14 @@ private final class Team: Model {
 }
 
 private struct TeamMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("teams")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("teams").delete()
     }
 }
@@ -296,7 +296,7 @@ private final class Match: Model {
 }
 
 struct MatchMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("matches")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -305,13 +305,13 @@ struct MatchMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("matches").delete()
     }
 }
 
 private struct TeamMatchSeed: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let a = Team(name: "a")
         let b = Team(name: "b")
         let c = Team(name: "c")
@@ -328,7 +328,7 @@ private struct TeamMatchSeed: Migration {
 
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         Match.query(on: database).delete().flatMap {
             Team.query(on: database).delete()
         }
@@ -363,7 +363,7 @@ private final class School: Model {
 }
 
 private struct SchoolMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("schools")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -372,13 +372,13 @@ private struct SchoolMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("schools").delete()
     }
 }
 
 private struct SchoolSeed: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let amsterdam = self.add(
             [
                 (name: "schoolA1", pupils: 500),
@@ -402,7 +402,7 @@ private struct SchoolSeed: Migration {
         return .andAllSucceed([amsterdam, newYork], on: database.eventLoop)
     }
 
-    private func add(_ schools: [(name: String, pupils: Int)], to city: String, on database: Database) -> EventLoopFuture<Void> {
+    private func add(_ schools: [(name: String, pupils: Int)], to city: String, on database: any Database) -> EventLoopFuture<Void> {
         return City.query(on: database)
             .filter(\.$name == city)
             .first()
@@ -418,7 +418,7 @@ private struct SchoolSeed: Migration {
             }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }
@@ -448,7 +448,7 @@ private final class City: Model {
 }
 
 private struct CityMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("cities")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -456,7 +456,7 @@ private struct CityMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("cities").delete()
     }
 }
@@ -464,7 +464,7 @@ private struct CityMigration: Migration {
 private struct CitySeed: Migration {
     init() { }
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let saves = [
             City(name: "Amsterdam", averagePupils: 300),
             City(name: "New York", averagePupils: 400)
@@ -474,7 +474,7 @@ private struct CitySeed: Migration {
         return .andAllSucceed(saves, on: database.eventLoop)
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

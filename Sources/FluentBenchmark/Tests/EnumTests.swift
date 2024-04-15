@@ -333,7 +333,7 @@ private final class Foo: Model {
 
 
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("bar")
             .case("baz")
             .case("qux")
@@ -348,7 +348,7 @@ private struct FooMigration: Migration {
         }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete().flatMap {
             database.enum("bar").delete()
         }
@@ -356,7 +356,7 @@ private struct FooMigration: Migration {
 }
 
 private struct BarAddQuzAndQuzzMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("bar")
             .case("quz")
             .case("quzz")
@@ -370,7 +370,7 @@ private struct BarAddQuzAndQuzzMigration: Migration {
         }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("bar")
             .deleteCase("quuz")
             .update()
@@ -408,14 +408,14 @@ private final class Pet: Model {
 
 
 private struct PetMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("pets")
             .field("id", .uuid, .identifier(auto: false))
             .field("type", .uint8, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("pets").delete()
     }
 }
@@ -472,7 +472,7 @@ private final class RawFlags: Model {
 }
 
 private struct FlagsMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Flags.schema)
             .field(.id, .uuid, .identifier(auto: false), .required)
             .field("inquired", .bool, .required)
@@ -484,7 +484,7 @@ private struct FlagsMigration: Migration {
             .create()
     }
     
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Flags.schema)
             .delete()
     }

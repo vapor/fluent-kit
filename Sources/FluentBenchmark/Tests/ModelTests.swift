@@ -14,7 +14,7 @@ extension FluentBenchmarker {
         try self.testModel_jsonColumn()
         try self.testModel_hasChanges()
         try self.testModel_outputError()
-        if self.database is SQLDatabase {
+        if self.database is any SQLDatabase {
             // Broken in Mongo at this time
             try self.testModel_useOfFieldsWithoutGroup()
         }
@@ -134,7 +134,7 @@ extension FluentBenchmarker {
             let fetched = try Bar.find(bar.id, on: self.database).wait()
             XCTAssertEqual(fetched?.baz.quux, "test")
 
-            if self.database is SQLDatabase {
+            if self.database is any SQLDatabase {
                 let bars = try Bar.query(on: self.database)
                     .filter(.sql(json: "baz", "quux"), .equal, .bind("test"))
                     .all()
@@ -196,14 +196,14 @@ extension FluentBenchmarker {
                 init() {}
                 
                 struct Migration: FluentKit.Migration {
-                    func prepare(on database: Database) -> EventLoopFuture<Void> {
+                    func prepare(on database: any Database) -> EventLoopFuture<Void> {
                         database.schema(Enclosure.schema)
                             .field(.id, .int, .required, .identifier(auto: true))
                             .field("primary", .json, .required)
                             .field("additional", .array(of: .json), .required)
                             .create()
                     }
-                    func revert(on database: Database) -> EventLoopFuture<Void> { database.schema(Enclosure.schema).delete() }
+                    func revert(on database: any Database) -> EventLoopFuture<Void> { database.schema(Enclosure.schema).delete() }
                 }
             }
             
@@ -222,11 +222,11 @@ extension FluentBenchmarker {
 }
 
 struct BadFooOutput: DatabaseOutput {
-    func schema(_ schema: String) -> DatabaseOutput {
+    func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 
-    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
 
@@ -271,14 +271,14 @@ private final class Foo: Model {
 }
 
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .string)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("foos").delete()
     }
 }
@@ -300,14 +300,14 @@ private final class User: Model {
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }
@@ -329,14 +329,14 @@ private final class Todo: Model {
 }
 
 private struct TodoMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("todos")
             .field("id", .uuid, .identifier(auto: false))
             .field("title", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("todos").delete()
     }
 }
@@ -363,14 +363,14 @@ private final class Bar: Model {
 }
 
 private struct BarMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("bars")
             .field("id", .uuid, .identifier(auto: false))
             .field("baz", .json, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("bars").delete()
     }
 }

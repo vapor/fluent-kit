@@ -178,7 +178,7 @@ private final class Person: Model {
 }
 
 private struct PersonMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("people")
             .field("id", .uuid, .identifier(auto: false))
             .field("first_name", .string, .required)
@@ -186,7 +186,7 @@ private struct PersonMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("people").delete()
     }
 }
@@ -231,7 +231,7 @@ private final class Expedition: Model {
 }
 
 private struct ExpeditionMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expeditions")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -240,7 +240,7 @@ private struct ExpeditionMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expeditions").delete()
     }
 }
@@ -261,7 +261,7 @@ private final class ExpeditionOfficer: Model {
 }
 
 private struct ExpeditionOfficerMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expedition+officer")
             .field("id", .uuid, .identifier(auto: false))
             .field("expedition_id", .uuid, .required, .references("expeditions", "id"))
@@ -269,7 +269,7 @@ private struct ExpeditionOfficerMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expedition+officer").delete()
     }
 }
@@ -290,7 +290,7 @@ private final class ExpeditionScientist: Model {
 }
 
 private struct ExpeditionScientistMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expedition+scientist")
             .field("id", .uuid, .identifier(auto: false))
             .field("expedition_id", .uuid, .required, .references("expeditions", "id"))
@@ -298,7 +298,7 @@ private struct ExpeditionScientistMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expedition+scientist").delete()
     }
 }
@@ -325,7 +325,7 @@ private final class ExpeditionDoctor: Model {
 }
 
 private struct ExpeditionDoctorMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expedition+doctor")
             .field("id", .uuid, .identifier(auto: false))
             .field("expedition_id", .uuid, .required, .references("expeditions", "id"))
@@ -333,7 +333,7 @@ private struct ExpeditionDoctorMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("expedition+doctor").delete()
     }
 }

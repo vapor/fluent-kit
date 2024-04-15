@@ -30,14 +30,14 @@ public final class OptionalParentProperty<From, To>
     public var value: To??
 
     public init(key: FieldKey) {
-        guard !(To.IDValue.self is Fields.Type) else {
+        guard !(To.IDValue.self is any Fields.Type) else {
             fatalError("Can not use @OptionalParent to target a model with composite ID; use @CompositeOptionalParent instead.")
         }
 
         self._id = .init(key: key)
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         let builder = To.query(on: database)
         if let id = self.id {
             builder.filter(\._$id == id)
@@ -61,7 +61,7 @@ extension OptionalParentProperty: Relation {
         "OptionalParent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
-    public func load(on database: Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database).first().map {
             self.value = $0
         }
@@ -80,7 +80,7 @@ extension OptionalParentProperty: Property {
 // MARK: Query-addressable
 
 extension OptionalParentProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self.$id.anyQueryableProperty }
+    public var anyQueryableProperty: any AnyQueryableProperty { self.$id.anyQueryableProperty }
     public var queryablePath: [FieldKey] { self.$id.queryablePath }
 }
 
@@ -95,11 +95,11 @@ extension OptionalParentProperty: AnyDatabaseProperty {
         self.$id.keys
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.$id.input(to: input)
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         try self.$id.output(from: output)
     }
 }
@@ -107,7 +107,7 @@ extension OptionalParentProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension OptionalParentProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         if case .some(.some(let parent)) = self.value { // require truly non-nil so we don't mis-encode when value has been manually cleared
             try container.encode(parent)
@@ -118,7 +118,7 @@ extension OptionalParentProperty: AnyCodableProperty {
         }
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: SomeCodingKey.self)
         try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
     }
@@ -169,7 +169,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = sets.removeValue(forKey: nil) ?? []
 
@@ -207,7 +207,7 @@ private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoa
     let relationKey: KeyPath<From, From.OptionalParent<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let throughs = models.compactMap {
             $0[keyPath: self.relationKey].value!
         }

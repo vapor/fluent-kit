@@ -29,14 +29,14 @@ public final class Galaxy: Model {
 public struct GalaxyMigration: Migration {
     public init() {}
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("galaxies")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("galaxies").delete()
     }
 }
@@ -44,7 +44,7 @@ public struct GalaxyMigration: Migration {
 public struct GalaxySeed: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         .andAllSucceed([
             "Andromeda",
             "Milky Way",
@@ -56,7 +56,7 @@ public struct GalaxySeed: Migration {
         }, on: database.eventLoop)
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Galaxy.query(on: database).delete()
     }
 }

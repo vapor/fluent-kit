@@ -104,7 +104,7 @@ private struct GalaxyJSON: Codable {
     var id: UUID
     var name: String
 
-    init(from decoder: Decoder) throws {
+    init(from decoder: any Decoder) throws {
         let keyed = try decoder.container(keyedBy: GalaxyKey.self)
         self.id = try keyed.decode(UUID.self, forKey: "id")
         self.name = try keyed.decode(String.self, forKey: "name")

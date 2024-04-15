@@ -26,7 +26,7 @@ public final class Jurisdiction: Model {
 public struct JurisdictionMigration: Migration {
     public init() {}
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Jurisdiction.schema)
             .field(.id, .uuid, .identifier(auto: false), .required)
             .field("title", .string, .required)
@@ -34,7 +34,7 @@ public struct JurisdictionMigration: Migration {
             .create()
     }
     
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Jurisdiction.schema)
             .delete()
     }
@@ -43,7 +43,7 @@ public struct JurisdictionMigration: Migration {
 public struct JurisdictionSeed: Migration {
     public init() {}
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         [
             "Old",
             "Corporate",
@@ -55,7 +55,7 @@ public struct JurisdictionSeed: Migration {
         .create(on: database)
     }
     
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Jurisdiction.query(on: database)
             .delete()
     }

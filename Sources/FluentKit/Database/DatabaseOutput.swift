@@ -1,5 +1,5 @@
 public protocol DatabaseOutput: CustomStringConvertible {
-    func schema(_ schema: String) -> DatabaseOutput
+    func schema(_ schema: String) -> any DatabaseOutput
     func contains(_ key: FieldKey) -> Bool
     func decodeNil(_ key: FieldKey) throws -> Bool
     func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
@@ -13,29 +13,29 @@ extension DatabaseOutput {
         try self.decode(key, as: T.self)
     }
     
-    public func qualifiedSchema(space: String?, _ schema: String) -> DatabaseOutput {
+    public func qualifiedSchema(space: String?, _ schema: String) -> any DatabaseOutput {
         self.schema([space, schema].compactMap({ $0 }).joined(separator: "_"))
     }
 }
 
 extension DatabaseOutput {
-    public func prefixed(by prefix: FieldKey) -> DatabaseOutput {
+    public func prefixed(by prefix: FieldKey) -> any DatabaseOutput {
         PrefixedDatabaseOutput(prefix: prefix, strategy: .none, base: self)
     }
     
-    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> DatabaseOutput {
+    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> any DatabaseOutput {
         PrefixedDatabaseOutput(prefix: prefix, strategy: stratgey, base: self)
     }
 
-    public func cascading(to output: DatabaseOutput) -> DatabaseOutput {
+    public func cascading(to output: any DatabaseOutput) -> any DatabaseOutput {
         return CombinedOutput(first: self, second: output)
     }
 }
 
 private struct CombinedOutput: DatabaseOutput {
-    let first: DatabaseOutput, second: DatabaseOutput
+    let first: any DatabaseOutput, second: any DatabaseOutput
 
-    func schema(_ schema: String) -> DatabaseOutput {
+    func schema(_ schema: String) -> any DatabaseOutput {
         CombinedOutput(first: self.first.schema(schema), second: self.second.schema(schema))
     }
 
@@ -58,9 +58,9 @@ private struct CombinedOutput: DatabaseOutput {
 
 private struct PrefixedDatabaseOutput: DatabaseOutput {
     let prefix: FieldKey, strategy: KeyPrefixingStrategy
-    let base: DatabaseOutput
+    let base: any DatabaseOutput
     
-    func schema(_ schema: String) -> DatabaseOutput {
+    func schema(_ schema: String) -> any DatabaseOutput {
         PrefixedDatabaseOutput(prefix: self.prefix, strategy: self.strategy, base: self.base.schema(schema))
     }
     

@@ -51,7 +51,7 @@ public final class GalacticJurisdiction: Model {
 public struct GalacticJurisdictionMigration: Migration {
     public init() {}
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(GalacticJurisdiction.schema)
             .field("galaxy_id", .uuid, .required, .references(Galaxy.schema, .id, onDelete: .cascade, onUpdate: .cascade))
             .field("jurisdiction_id", .uuid, .required, .references(Jurisdiction.schema, .id, onDelete: .cascade, onUpdate: .cascade))
@@ -60,7 +60,7 @@ public struct GalacticJurisdictionMigration: Migration {
             .create()
     }
     
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(GalacticJurisdiction.schema)
             .delete()
     }
@@ -69,7 +69,7 @@ public struct GalacticJurisdictionMigration: Migration {
 public struct GalacticJurisdictionSeed: Migration {
     public init() {}
     
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.eventLoop.flatSubmit {
             Galaxy.query(on: database).all().and(
             Jurisdiction.query(on: database).all())
@@ -94,7 +94,7 @@ public struct GalacticJurisdictionSeed: Migration {
         }
     }
     
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         GalacticJurisdiction.query(on: database).delete()
     }
 }

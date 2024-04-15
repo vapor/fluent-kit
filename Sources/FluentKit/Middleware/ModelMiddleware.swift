@@ -3,24 +3,24 @@ import NIOCore
 public protocol AnyModelMiddleware {
     func handle(
         _ event: ModelEvent,
-        _ model: AnyModel,
-        on db: Database,
-        chainingTo next: AnyModelResponder
+        _ model: any AnyModel,
+        on db: any Database,
+        chainingTo next: any AnyModelResponder
     ) -> EventLoopFuture<Void>
 }
 
 public protocol ModelMiddleware: AnyModelMiddleware {
     associatedtype Model: FluentKit.Model
     
-    func create(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func update(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
-    func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void>
+    func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
+    func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
+    func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
+    func softDelete(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
+    func restore(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
 }
 
 extension ModelMiddleware {
-    public func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database, chainingTo next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database, chainingTo next: any AnyModelResponder) -> EventLoopFuture<Void> {
         guard let modelType = model as? Model else {
             return next.handle(event, model, on: db)
         }
@@ -39,36 +39,36 @@ extension ModelMiddleware {
         }
     }
     
-    public func create(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         return next.create(model, on: db)
     }
     
-    public func update(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         return next.update(model, on: db)
     }
     
-    public func delete(model: Model, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         return next.delete(model, force: force, on: db)
     }
     
-    public func softDelete(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func softDelete(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         return next.softDelete(model, on: db)
     }
     
-    public func restore(model: Model, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func restore(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         return next.restore(model, on: db)
     }
 }
 
 extension AnyModelMiddleware {
-    func makeResponder(chainingTo responder: AnyModelResponder) -> AnyModelResponder {
+    func makeResponder(chainingTo responder: any AnyModelResponder) -> any AnyModelResponder {
         return ModelMiddlewareResponder(middleware: self, responder: responder)
     }
 }
 
-extension Array where Element == AnyModelMiddleware {
-    internal func chainingTo<Model>(_ type: Model.Type, closure: @escaping (ModelEvent, Model, Database) throws -> EventLoopFuture<Void>) -> AnyModelResponder where Model: FluentKit.Model {
-        var responder: AnyModelResponder = BasicModelResponder(handle: closure)
+extension Array where Element == any AnyModelMiddleware {
+    internal func chainingTo<Model>(_ type: Model.Type, closure: @escaping (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>) -> any AnyModelResponder where Model: FluentKit.Model {
+        var responder: any AnyModelResponder = BasicModelResponder(handle: closure)
         for middleware in reversed() {
             responder = middleware.makeResponder(chainingTo: responder)
         }
@@ -77,10 +77,10 @@ extension Array where Element == AnyModelMiddleware {
 }
 
 private struct ModelMiddlewareResponder: AnyModelResponder {
-    var middleware: AnyModelMiddleware
-    var responder: AnyModelResponder
+    var middleware: any AnyModelMiddleware
+    var responder: any AnyModelResponder
     
-    func handle(_ event: ModelEvent, _ model: AnyModel, on db: Database) -> EventLoopFuture<Void> {
+    func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
         return self.middleware.handle(event, model, on: db, chainingTo: responder)
     }
 }

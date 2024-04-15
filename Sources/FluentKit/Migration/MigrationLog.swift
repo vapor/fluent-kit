@@ -5,7 +5,7 @@ import Foundation
 public final class MigrationLog: Model {
     public static let schema = "_fluent_migrations"
 
-    public static var migration: Migration {
+    public static var migration: any Migration {
         return MigrationLogMigration()
     }
 
@@ -36,7 +36,7 @@ public final class MigrationLog: Model {
 }
 
 private struct MigrationLogMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("_fluent_migrations")
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -48,7 +48,7 @@ private struct MigrationLogMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("_fluent_migrations").delete()
     }
 }

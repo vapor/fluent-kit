@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 import PackageDescription
 
 let package = Package(
@@ -23,6 +23,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "FluentKit", dependencies: [
+            .product(name: "NIO", package: "swift-nio"),
             .product(name: "NIOCore", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .product(name: "AsyncKit", package: "async-kit"),

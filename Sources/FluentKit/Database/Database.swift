@@ -6,7 +6,7 @@ public protocol Database {
     
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (DatabaseOutput) -> ()
+        onOutput: @escaping (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void>
 
     func execute(
@@ -19,9 +19,9 @@ public protocol Database {
 
     var inTransaction: Bool { get }
 
-    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
-    func withConnection<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func withConnection<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 extension Database {
@@ -33,7 +33,7 @@ extension Database {
 }
 
 extension Database {
-    public var configuration: DatabaseConfiguration {
+    public var configuration: any DatabaseConfiguration {
         self.context.configuration
     }
     
@@ -41,7 +41,7 @@ extension Database {
         self.context.logger
     }
     
-    public var eventLoop: EventLoop {
+    public var eventLoop: any EventLoop {
         self.context.eventLoop
     }
 
@@ -55,26 +55,26 @@ extension Database {
 }
 
 public protocol DatabaseDriver {
-    func makeDatabase(with context: DatabaseContext) -> Database
+    func makeDatabase(with context: DatabaseContext) -> any Database
     func shutdown()
 }
 
 public protocol DatabaseConfiguration {
-    var middleware: [AnyModelMiddleware] { get set }
-    func makeDriver(for databases: Databases) -> DatabaseDriver
+    var middleware: [any AnyModelMiddleware] { get set }
+    func makeDriver(for databases: Databases) -> any DatabaseDriver
 }
 
 public struct DatabaseContext {
-    public let configuration: DatabaseConfiguration
+    public let configuration: any DatabaseConfiguration
     public let logger: Logger
-    public let eventLoop: EventLoop
+    public let eventLoop: any EventLoop
     public let history: QueryHistory?
     public let pageSizeLimit: Int?
     
     public init(
-        configuration: DatabaseConfiguration,
+        configuration: any DatabaseConfiguration,
         logger: Logger,
-        eventLoop: EventLoop,
+        eventLoop: any EventLoop,
         history: QueryHistory? = nil,
         pageSizeLimit: Int? = nil
     ) {

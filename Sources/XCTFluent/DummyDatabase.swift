@@ -18,18 +18,18 @@ public struct DummyDatabase: Database {
         false
     }
     
-    public func execute(query: DatabaseQuery, onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, onOutput: @escaping (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         for _ in 0..<Int.random(in: 1..<42) {
             onOutput(DummyRow())
         }
         return self.eventLoop.makeSucceededFuture(())
     }
 
-    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    public func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
     
-    public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    public func withConnection<T>(_ closure: (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
     
@@ -43,27 +43,27 @@ public struct DummyDatabase: Database {
 }
 
 public struct DummyDatabaseConfiguration: DatabaseConfiguration {
-    public var middleware: [AnyModelMiddleware]
+    public var middleware: [any AnyModelMiddleware]
 
-    public func makeDriver(for databases: Databases) -> DatabaseDriver {
+    public func makeDriver(for databases: Databases) -> any DatabaseDriver {
         DummyDatabaseDriver(on: databases.eventLoopGroup)
     }
 }
 
 public final class DummyDatabaseDriver: DatabaseDriver {
-    public let eventLoopGroup: EventLoopGroup
+    public let eventLoopGroup: any EventLoopGroup
     var didShutdown: Bool
     
-    public var fieldDecoder: Decoder {
+    public var fieldDecoder: any Decoder {
         return DummyDecoder()
     }
 
-    public init(on eventLoopGroup: EventLoopGroup) {
+    public init(on eventLoopGroup: any EventLoopGroup) {
         self.eventLoopGroup = eventLoopGroup
         self.didShutdown = false
     }
     
-    public func makeDatabase(with context: DatabaseContext) -> Database {
+    public func makeDatabase(with context: DatabaseContext) -> any Database {
         DummyDatabase(context: context)
     }
 
@@ -80,11 +80,11 @@ public final class DummyDatabaseDriver: DatabaseDriver {
 public struct DummyRow: DatabaseOutput {
     public init() { }
 
-    public func schema(_ schema: String) -> DatabaseOutput {
+    public func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 
-    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    public func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
 
@@ -114,11 +114,11 @@ public struct DummyRow: DatabaseOutput {
 }
 
 private struct DummyDecoder: Decoder {
-    var codingPath: [CodingKey] {
+    var codingPath: [any CodingKey] {
         return []
     }
     
-    var userInfo: [CodingUserInfoKey : Any] {
+    var userInfo: [CodingUserInfoKey: Any] {
         return [:]
     }
     
@@ -129,7 +129,7 @@ private struct DummyDecoder: Decoder {
     struct KeyedDecoder<Key>: KeyedDecodingContainerProtocol
         where Key: CodingKey
     {
-        var codingPath: [CodingKey] {
+        var codingPath: [any CodingKey] {
             return []
         }
         var allKeys: [Key] {
@@ -160,21 +160,21 @@ private struct DummyDecoder: Decoder {
             return KeyedDecodingContainer<NestedKey>(KeyedDecoder<NestedKey>())
         }
         
-        func nestedUnkeyedContainer(forKey key: Key) throws -> UnkeyedDecodingContainer {
+        func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer {
             return UnkeyedDecoder()
         }
         
-        func superDecoder() throws -> Decoder {
+        func superDecoder() throws -> any Decoder {
             return DummyDecoder()
         }
         
-        func superDecoder(forKey key: Key) throws -> Decoder {
+        func superDecoder(forKey key: Key) throws -> any Decoder {
             return DummyDecoder()
         }
     }
     
     struct UnkeyedDecoder: UnkeyedDecodingContainer {
-        var codingPath: [CodingKey]
+        var codingPath: [any CodingKey]
         var count: Int?
         var isAtEnd: Bool {
             guard let count = self.count else {
@@ -202,17 +202,17 @@ private struct DummyDecoder: Decoder {
             return KeyedDecodingContainer<NestedKey>(KeyedDecoder())
         }
         
-        mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
+        mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer {
             return UnkeyedDecoder()
         }
         
-        mutating func superDecoder() throws -> Decoder {
+        mutating func superDecoder() throws -> any Decoder {
             return DummyDecoder()
         }
     }
     
     struct SingleValueDecoder: SingleValueDecodingContainer {
-        var codingPath: [CodingKey] {
+        var codingPath: [any CodingKey] {
             return []
         }
         
@@ -291,11 +291,11 @@ private struct DummyDecoder: Decoder {
         return .init(KeyedDecoder())
     }
     
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+    func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
         return UnkeyedDecoder()
     }
     
-    func singleValueContainer() throws -> SingleValueDecodingContainer {
+    func singleValueContainer() throws -> any SingleValueDecodingContainer {
         return SingleValueDecoder()
     }
 }

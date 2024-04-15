@@ -10,7 +10,7 @@ extension DatabaseQuery.Value {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -28,7 +28,7 @@ extension DatabaseQuery.Field {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -41,7 +41,7 @@ extension DatabaseQuery.Filter {
     public static func sql(
         _ left: SQLIdentifier,
         _ op: SQLBinaryOperator,
-        _ right: Encodable
+        _ right: any Encodable
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: SQLBind(right)))
     }
@@ -55,9 +55,9 @@ extension DatabaseQuery.Filter {
     }
 
     public static func sql(
-        _ left: SQLExpression,
-        _ op: SQLExpression,
-        _ right: SQLExpression
+        _ left: any SQLExpression,
+        _ op: any SQLExpression,
+        _ right: any SQLExpression
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
     }
@@ -66,7 +66,7 @@ extension DatabaseQuery.Filter {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -80,7 +80,7 @@ extension DatabaseQuery.Join {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -93,7 +93,7 @@ extension DatabaseQuery.Sort {
     public static func sql(
         _ left: SQLIdentifier,
         _ op: SQLBinaryOperator,
-        _ right: Encodable
+        _ right: any Encodable
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: SQLBind(right)))
     }
@@ -107,9 +107,9 @@ extension DatabaseQuery.Sort {
     }
 
     public static func sql(
-        _ left: SQLExpression,
-        _ op: SQLExpression,
-        _ right: SQLExpression
+        _ left: any SQLExpression,
+        _ op: any SQLExpression,
+        _ right: any SQLExpression
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
     }
@@ -118,7 +118,7 @@ extension DatabaseQuery.Sort {
         .sql(embed)
     }
 
-    public static func sql(_ expression: SQLExpression) -> Self {
+    public static func sql(_ expression: any SQLExpression) -> Self {
         .custom(expression)
     }
 }
