@@ -56,4 +56,3 @@ internal struct SQLDatabaseOutput: DatabaseOutput {
         try self.sql.decode(column: key.description, as: T.self)
     }
 }
-

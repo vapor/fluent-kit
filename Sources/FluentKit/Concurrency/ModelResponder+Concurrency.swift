@@ -10,11 +10,9 @@ public protocol AnyAsyncModelResponder: AnyModelResponder {
 
 extension AnyAsyncModelResponder {
     func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
-        let promise = db.eventLoop.makePromise(of: Void.self)
-        promise.completeWithTask {
+        db.eventLoop.makeFutureWithTask {
             try await self.handle(event, model, on: db)
         }
-        return promise.futureResult
     }
 }
 

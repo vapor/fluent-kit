@@ -148,7 +148,7 @@ extension Collection where Element: FluentKit.Model {
 
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
-                return db.eventLoop.makeSucceededFuture(())
+                db.eventLoop.makeSucceededFuture(())
             }.delete(model, force: force, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
