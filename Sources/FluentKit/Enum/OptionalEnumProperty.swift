@@ -1,6 +1,6 @@
 extension Fields {
     public typealias OptionalEnum<Value> = OptionalEnumProperty<Self, Value>
-        where Value: Codable,
+        where Value: Codable & Sendable,
             Value: RawRepresentable,
             Value.RawValue == String
 }
@@ -10,7 +10,7 @@ extension Fields {
 @propertyWrapper
 public final class OptionalEnumProperty<Model, WrappedValue>
     where Model: FluentKit.Fields,
-        WrappedValue: Codable,
+        WrappedValue: Codable & Sendable,
         WrappedValue: RawRepresentable,
         WrappedValue.RawValue == String
 {

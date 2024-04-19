@@ -71,7 +71,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
-        where Value: Codable
+        where Value: Codable & Sendable
     {
         self.filter([fieldName], method, value)
     }
@@ -82,7 +82,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
-        where Value: Codable
+        where Value: Codable & Sendable
     {
         self.filter(
             .extendedPath(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),

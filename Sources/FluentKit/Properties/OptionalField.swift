@@ -1,13 +1,13 @@
 extension Fields {
     public typealias OptionalField<Value> = OptionalFieldProperty<Self, Value>
-        where Value: Codable
+        where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class OptionalFieldProperty<Model, WrappedValue>
-    where Model: FluentKit.Fields, WrappedValue: Codable
+    where Model: FluentKit.Fields, WrappedValue: Codable & Sendable
 {
     public let key: FieldKey
     var outputValue: WrappedValue??

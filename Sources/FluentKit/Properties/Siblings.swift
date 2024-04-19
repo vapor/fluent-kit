@@ -148,7 +148,7 @@ public final class SiblingsProperty<From, To, Through>
         _ to: To,
         method: AttachMethod,
         on database: any Database,
-        _ edit: @escaping (Through) -> () = { _ in }
+        _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         switch method {
         case .always:
@@ -173,7 +173,7 @@ public final class SiblingsProperty<From, To, Through>
     public func attach(
         _ to: To,
         on database: any Database,
-        _ edit: (Through) -> () = { _ in }
+        _ edit: @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))

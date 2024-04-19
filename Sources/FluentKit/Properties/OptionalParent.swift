@@ -170,8 +170,9 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let nilParentModels = sets.removeValue(forKey: nil) ?? []
+        var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let nilParentModels = _sets.removeValue(forKey: nil) ?? []
+        let sets = _sets
 
         if sets.isEmpty {
             // Fetching "To" objects is unnecessary when no models have an id for "To".

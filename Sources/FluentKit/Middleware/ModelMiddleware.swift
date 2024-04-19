@@ -67,7 +67,10 @@ extension AnyModelMiddleware {
 }
 
 extension Array where Element == any AnyModelMiddleware {
-    internal func chainingTo<Model>(_ type: Model.Type, closure: @escaping (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>) -> any AnyModelResponder where Model: FluentKit.Model {
+    internal func chainingTo<Model>(
+        _ type: Model.Type,
+        closure: @escaping @Sendable (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>
+    ) -> any AnyModelResponder where Model: FluentKit.Model {
         var responder: any AnyModelResponder = BasicModelResponder(handle: closure)
         for middleware in reversed() {
             responder = middleware.makeResponder(chainingTo: responder)

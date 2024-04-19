@@ -13,7 +13,7 @@ public enum KeyPrefixingStrategy: CustomStringConvertible {
     /// wrapper was initialized, and must return the field key to actually use. The closure must be "pure"
     /// (i.e. for any given pair of inputs it must always return the same result, in the same way that hash
     /// values must be consistent within a single execution context).
-    case custom((_ prefix: FieldKey, _ idFieldKey: FieldKey) -> FieldKey)
+    case custom(@Sendable (_ prefix: FieldKey, _ idFieldKey: FieldKey) -> FieldKey)
     
     // See `CustomStringConvertible.description`.
     public var description: String {

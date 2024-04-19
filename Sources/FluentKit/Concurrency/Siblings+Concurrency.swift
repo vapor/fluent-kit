@@ -19,19 +19,19 @@ public extension SiblingsProperty {
     // MARK: Operations
     
     /// Attach multiple models with plain edit closure.
-    func attach(_ tos: [To], on database: any Database, _ edit: (Through) -> () = { _ in }) async throws {
+    func attach(_ tos: [To], on database: any Database, _ edit: @Sendable (Through) -> () = { _ in }) async throws {
         try await self.attach(tos, on: database, edit).get()
     }
 
     /// Attach single model with plain edit closure.
-    func attach(_ to: To, on database: any Database, _ edit: @escaping (Through) -> () = { _ in }) async throws {
+    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
         try await self.attach(to, method: .always, on: database, edit)
     }
     
     /// Attach single model by specific method with plain edit closure.
     func attach(
         _ to: To, method: AttachMethod, on database: any Database,
-        _ edit: @escaping (Through) -> () = { _ in }
+        _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) async throws {
         try await self.attach(to, method: method, on: database, edit).get()
     }

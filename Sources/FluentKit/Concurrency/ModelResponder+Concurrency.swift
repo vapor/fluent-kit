@@ -39,13 +39,13 @@ extension AnyAsyncModelResponder {
 }
 
 internal struct AsyncBasicModelResponder: AnyAsyncModelResponder {
-    private let _handle: (ModelEvent, any AnyModel, any Database) async throws -> Void
+    private let _handle: @Sendable (ModelEvent, any AnyModel, any Database) async throws -> Void
 
     internal func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) async throws {
         return try await _handle(event, model, db)
     }
 
-    init(handle: @escaping (ModelEvent, any AnyModel, any Database) async throws -> Void) {
+    init(handle: @escaping @Sendable (ModelEvent, any AnyModel, any Database) async throws -> Void) {
         self._handle = handle
     }
 }

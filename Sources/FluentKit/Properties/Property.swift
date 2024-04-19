@@ -17,7 +17,7 @@ public protocol AnyProperty: AnyObject {
 /// many-to-many relation.
 public protocol Property: AnyProperty {
     associatedtype Model: Fields
-    associatedtype Value: Codable
+    associatedtype Value: Codable & Sendable
     var value: Value? { get set }
 }
 

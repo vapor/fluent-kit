@@ -6,7 +6,7 @@ public protocol Database {
     
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void>
 
     func execute(
@@ -19,9 +19,9 @@ public protocol Database {
 
     var inTransaction: Bool { get }
 
-    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
-    func withConnection<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 extension Database {

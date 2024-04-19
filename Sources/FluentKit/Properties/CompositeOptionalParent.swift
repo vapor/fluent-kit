@@ -217,8 +217,9 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let nilParentModels = sets.removeValue(forKey: nil) ?? []
+        var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let nilParentModels = _sets.removeValue(forKey: nil) ?? []
+        let sets = _sets
 
         let builder = To.query(on: database)
             .group(.or) { _ = sets.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }

@@ -1,6 +1,6 @@
 extension Fields {
     public typealias Enum<Value> = EnumProperty<Self, Value>
-        where Value: Codable,
+        where Value: Codable & Sendable,
             Value: RawRepresentable,
             Value.RawValue == String
 }
@@ -10,7 +10,7 @@ extension Fields {
 @propertyWrapper
 public final class EnumProperty<Model, Value>
     where Model: FluentKit.Fields,
-        Value: Codable,
+        Value: Codable & Sendable,
         Value: RawRepresentable,
         Value.RawValue == String
 {

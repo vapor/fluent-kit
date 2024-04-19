@@ -2,14 +2,14 @@ import Foundation
 
 extension Model {
     public typealias ID<Value> = IDProperty<Self, Value>
-        where Value: Codable
+        where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class IDProperty<Model, Value>
-    where Model: FluentKit.Model, Value: Codable
+    where Model: FluentKit.Model, Value: Codable & Sendable
 {
     public enum Generator {
         case user
@@ -109,7 +109,7 @@ public final class IDProperty<Model, Value>
         case .database:
             self.inputValue = .default
         case .random:
-            let generatable = Value.self as! any (RandomGeneratable & Encodable).Type
+            let generatable = Value.self as! any (RandomGeneratable & Encodable & Sendable).Type
             self.inputValue = .bind(generatable.generateRandom())
         case .user:
             // do nothing
