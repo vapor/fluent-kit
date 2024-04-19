@@ -1,9 +1,10 @@
-import class NIO.ThreadSpecificVariable
+import NIOConcurrencyHelpers
+import class NIOPosix.ThreadSpecificVariable
 import Foundation
 
 // MARK: Format
 
-public protocol TimestampFormat {
+public protocol TimestampFormat: Sendable {
     associatedtype Value: Codable & Sendable
 
     func parse(_ value: Value) -> Date?
@@ -66,7 +67,7 @@ extension ISO8601DateFormatter {
     fileprivate static let shared: NIOLockedValueBox<ISO8601DateFormatter> = .init(.init())
 }
 
-public struct ISO8601TimestampFormat: TimestampFormat {
+public struct ISO8601TimestampFormat: TimestampFormat, @unchecked Sendable {
     public typealias Value = String
 
     let formatter: ISO8601DateFormatter

@@ -120,13 +120,13 @@ public struct Migrator {
     }
 }
 
-private final class DatabaseMigrator {
+private final class DatabaseMigrator: Sendable {
     let migrations: [any Migration]
-    let database: any Database
+    let database: any Database & Sendable
     let id: DatabaseID?
     let migrationLogLevel: Logger.Level
 
-    init(id: DatabaseID?, database: any Database, migrations: [any Migration], migrationLogLeveL: Logger.Level) {
+    init(id: DatabaseID?, database: any Database & Sendable, migrations: [any Migration], migrationLogLeveL: Logger.Level) {
         self.migrations = migrations
         self.database = database
         self.id = id

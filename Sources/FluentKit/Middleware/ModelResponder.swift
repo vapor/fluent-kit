@@ -1,6 +1,6 @@
 import NIOCore
 
-public protocol AnyModelResponder {
+public protocol AnyModelResponder: Sendable {
     func handle(
         _ event: ModelEvent,
         _ model: any AnyModel,

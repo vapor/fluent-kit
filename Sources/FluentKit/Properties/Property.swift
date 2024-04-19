@@ -2,7 +2,7 @@
 /// access a model's set of Fluent properties in a fully generic fashion (with a
 /// little help from runtime reflection). It is generally not meaningful to conform
 /// to this protocol without also at least conforming to ``Property``.
-public protocol AnyProperty: AnyObject {
+public protocol AnyProperty: AnyObject, Sendable {
     static var anyValueType: Any.Type { get }
     var anyValue: Any? { get }
 }

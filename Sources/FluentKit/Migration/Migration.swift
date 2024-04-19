@@ -3,7 +3,7 @@ import NIOCore
 /// Fluent's `Migration` can handle database migrations, which can include
 /// adding new table, changing existing tables or adding
 /// seed data. These actions are executed only once.
-public protocol Migration {
+public protocol Migration: Sendable {
     
     /// The name of the migration which Fluent uses to track the state of.
     var name: String { get }

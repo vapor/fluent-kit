@@ -1,12 +1,12 @@
 extension DatabaseQuery {
-    public enum Value {
-        case bind(any Encodable)
+    public enum Value: Sendable {
+        case bind(any Encodable & Sendable)
         case dictionary([FieldKey: Value])
         case array([Value])
         case null
         case enumCase(String)
         case `default`
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

@@ -5,8 +5,8 @@ import NIOCore
 ///
 /// - Note: This protocol should probably require conformance to ``Property``, but adding that requirement
 ///   wouldn't have enough value to be worth having to hand-wave a technically semver-major change.
-public protocol Relation {
-    associatedtype RelatedValue
+public protocol Relation: Sendable {
+    associatedtype RelatedValue: Sendable
     var name: String { get }
     var value: RelatedValue? { get set }
     func load(on database: any Database) -> EventLoopFuture<Void>
@@ -44,7 +44,7 @@ extension Relation {
 ///
 /// This type was extracted from its original definitions as a subtype of the property types. A typealias is
 /// provided on the property types to maintain public API compatibility.
-public enum RelationParentKey<From, To>
+public enum RelationParentKey<From, To>: Sendable
     where From: FluentKit.Model, To: FluentKit.Model
 {
     case required(KeyPath<To, To.Parent<From>>)
@@ -69,7 +69,7 @@ extension RelationParentKey: CustomStringConvertible {
 ///
 /// - Note: This type is public partly to allow FluentKit users to introspect model metadata, but mostly it's
 ///   to maintain parity with ``RelationParentKey``, which was public in its original definition.
-public enum CompositeRelationParentKey<From, To>
+public enum CompositeRelationParentKey<From, To>: Sendable
     where From: FluentKit.Model, To: FluentKit.Model, From.IDValue: Fields
 {
     case required(KeyPath<To, To.CompositeParent<From>>)

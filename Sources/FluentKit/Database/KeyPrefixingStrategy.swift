@@ -1,5 +1,5 @@
 /// A strategy describing how to apply a prefix to a ``FieldKey``.
-public enum KeyPrefixingStrategy: CustomStringConvertible {
+public enum KeyPrefixingStrategy: CustomStringConvertible, Sendable {
     /// The "do nothing" strategy - the prefix is applied to each key by simple concatenation.
     case none
     

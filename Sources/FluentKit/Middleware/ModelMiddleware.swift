@@ -1,6 +1,6 @@
 import NIOCore
 
-public protocol AnyModelMiddleware {
+public protocol AnyModelMiddleware: Sendable {
     func handle(
         _ event: ModelEvent,
         _ model: any AnyModel,
@@ -88,7 +88,7 @@ private struct ModelMiddlewareResponder: AnyModelResponder {
     }
 }
 
-public enum ModelEvent {
+public enum ModelEvent: Sendable {
     case create
     case update
     case delete(Bool)

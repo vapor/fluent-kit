@@ -1,7 +1,7 @@
 import NIOCore
 
 public protocol Model: AnyModel {
-    associatedtype IDValue: Codable, Hashable
+    associatedtype IDValue: Codable, Hashable, Sendable
     var id: IDValue? { get set }
 }
 

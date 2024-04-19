@@ -138,7 +138,7 @@ extension Model {
     }
 }
 
-extension Collection where Element: FluentKit.Model {
+extension Collection where Self: Sendable, Element: FluentKit.Model {
     public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())

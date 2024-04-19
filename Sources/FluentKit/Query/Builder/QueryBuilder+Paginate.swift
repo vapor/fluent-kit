@@ -106,7 +106,7 @@ public struct PageMetadata: Codable {
 }
 
 /// Represents information needed to generate a `Page` from the full result set.
-public struct PageRequest: Decodable {
+public struct PageRequest: Decodable, Sendable {
     /// Page number to request. Starts at `1`.
     public let page: Int
 

@@ -1,7 +1,7 @@
 import NIOCore
 import Logging
 
-public protocol Database {
+public protocol Database: Sendable {
     var context: DatabaseContext { get }
     
     func execute(
