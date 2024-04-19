@@ -34,3 +34,5 @@ extension FieldKey: CustomStringConvertible {
 extension FieldKey: Equatable { }
 
 extension FieldKey: Hashable { }
+
+extension FieldKey: Sendable { }
