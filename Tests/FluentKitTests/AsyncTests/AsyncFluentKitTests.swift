@@ -324,7 +324,7 @@ final class AsyncFluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() async throws {
-        final class DGOFoo: Model {
+        final class DGOFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -332,7 +332,6 @@ final class AsyncFluentKitTests: XCTestCase {
                 self.id = id
             }
         }
-
 
         let test = CallbackTestDatabase { query in
             switch query.input[0] {

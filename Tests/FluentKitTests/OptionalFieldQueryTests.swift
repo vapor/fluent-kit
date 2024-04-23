@@ -76,7 +76,7 @@ final class OptionalFieldQueryTests: DbQueryTestCase {
     }
 }
 
-private final class Thing: Model {
+private final class Thing: Model, @unchecked Sendable {
     static let schema = "things"
 
     @ID(custom: "id", generatedBy: .user)

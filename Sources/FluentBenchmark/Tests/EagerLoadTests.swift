@@ -278,7 +278,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class A: Model {
+private final class A: Model, @unchecked Sendable {
     static let schema = "a"
 
     @ID
@@ -290,7 +290,7 @@ private final class A: Model {
     init() { }
 }
 
-private final class B: Model {
+private final class B: Model, @unchecked Sendable {
     static let schema = "b"
 
     @ID
@@ -302,7 +302,7 @@ private final class B: Model {
     init() { }
 }
 
-private final class C: Model {
+private final class C: Model, @unchecked Sendable {
     static let schema = "c"
 
     @ID

@@ -35,7 +35,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)

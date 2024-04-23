@@ -24,7 +24,7 @@ final class FluentKitTests: XCTestCase {
     /// the format in question, it is desirable to enforce that it should never change, just in
     /// case someone actually is relying on it for some hopefully very good reason.
     func testAnyModelDescriptionFormatHasNotChanged() throws {
-        final class Foo: Model {
+        final class Foo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID(key: .id) var id: UUID?
             @Field(key: "name") var name: String
@@ -509,7 +509,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class EFoo: Model {
+        final class EFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID var id: UUID?
             @Enum(key: "bar") var bar: Bar
@@ -537,7 +537,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class OEFoo: Model {
+        final class OEFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID var id: UUID?
             @OptionalEnum(key: "bar") var bar: Bar?
@@ -618,14 +618,14 @@ final class FluentKitTests: XCTestCase {
     }
     
     func testGroupCoding() throws {
-        final class GroupedFoo: Fields {
+        final class GroupedFoo: Fields, @unchecked Sendable {
             @Field(key: "hello")
             var string: String
             
             init() {}
         }
         
-        final class GroupFoo: Model {
+        final class GroupFoo: Model, @unchecked Sendable {
             static let schema = "group_foos"
             
             @ID(key: .id) var id: UUID?
@@ -659,7 +659,7 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() throws {
-        final class DGOFoo: Model {
+        final class DGOFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -766,7 +766,7 @@ final class FluentKitTests: XCTestCase {
     }
     
     func testCreatingModelArraysWithUnsetOptionalProperties() throws {
-        final class Foo: Model {
+        final class Foo: Model, @unchecked Sendable {
             static let schema = "foos"
             
             @ID var id: UUID?
@@ -798,7 +798,7 @@ final class FluentKitTests: XCTestCase {
     }
 }
 
-final class User: Model {
+final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID var id: UUID?
@@ -825,7 +825,7 @@ enum Animal: String, Codable {
     case cat, dog
 }
 
-final class Pet: Fields {
+final class Pet: Fields, @unchecked Sendable {
     @Field(key: "name")
     var name: String
 
@@ -848,7 +848,7 @@ enum ToyType: String, Codable {
     case mouse, bone
 }
 
-final class Toy: Fields {
+final class Toy: Fields, @unchecked Sendable {
     @Field(key: "name")
     var name: String
 
@@ -867,7 +867,7 @@ final class Toy: Fields {
     }
 }
 
-final class ToyFoo: Fields {
+final class ToyFoo: Fields, @unchecked Sendable {
     @Field(key: "bar")
     var bar: Int
 
@@ -882,7 +882,7 @@ final class ToyFoo: Fields {
     }
 }
 
-final class Planet2: Model {
+final class Planet2: Model, @unchecked Sendable {
     static let schema = "planets"
     
     @ID(custom: "id", generatedBy: .database)
@@ -906,7 +906,7 @@ final class Planet2: Model {
     }
 }
 
-final class AltPlanet: Model {
+final class AltPlanet: Model, @unchecked Sendable {
     public static let space: String? = "mirror_universe"
     public static let schema = "planets"
 
@@ -945,7 +945,7 @@ final class AltPlanet: Model {
     }
 }
 
-final class LotsOfFields: Model {
+final class LotsOfFields: Model, @unchecked Sendable {
     static let schema = "never_used"
     
     @ID(custom: "id")
@@ -1012,7 +1012,7 @@ final class LotsOfFields: Model {
     var field20: String
 }
 
-final class AtFoo: Model {
+final class AtFoo: Model, @unchecked Sendable {
     static let schema = "foos"
     
     @ID(custom: .id) var id: Int?
@@ -1022,7 +1022,7 @@ final class AtFoo: Model {
     init(id: Int? = nil, preFoo: PreFoo?) { self.id = id; self.$preFoo.id = preFoo?.id; self.$preFoo.value = preFoo }
 }
 
-final class PostFoo: Model {
+final class PostFoo: Model, @unchecked Sendable {
     static let schema = "postfoos"
     
     @ID(custom: .id) var id: Int?
@@ -1031,7 +1031,7 @@ final class PostFoo: Model {
     init(id: Int? = nil) { self.id = id }
 }
 
-final class PreFoo: Model {
+final class PreFoo: Model, @unchecked Sendable {
     static let schema = "prefoos"
     
     @ID(custom: .id) var id: Int?
@@ -1045,10 +1045,10 @@ final class PreFoo: Model {
     init(id: Int? = nil, boo: Bool) { self.id = id; self.boo = boo }
 }
 
-final class MidFoo: Model {
+final class MidFoo: Model, @unchecked Sendable {
     static let schema = "midfoos"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "prefoo_id") var prefoo: PreFoo
         @Parent(key: "postfoo_id") var postfoo: PostFoo
     

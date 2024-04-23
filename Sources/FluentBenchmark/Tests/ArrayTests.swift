@@ -68,7 +68,7 @@ private struct Qux: Codable {
     var foo: String
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)
@@ -114,7 +114,7 @@ private enum Role: String, Codable, Equatable {
     case client
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)
@@ -144,7 +144,7 @@ private struct UserMigration: Migration {
     }
 }
 
-private final class FooSet: Model {
+private final class FooSet: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)

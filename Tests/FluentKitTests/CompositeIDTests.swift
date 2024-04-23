@@ -363,7 +363,7 @@ fileprivate func XCTAssertNilNil<V>(_ expression: @autoclosure () throws -> Opti
     }
 }
 
-final class PlanetUsingCompositePivot: Model {
+final class PlanetUsingCompositePivot: Model, @unchecked Sendable {
     static let schema = Planet.schema
     
     @ID(key: .id) var id: UUID?
@@ -381,10 +381,10 @@ final class PlanetUsingCompositePivot: Model {
     }
 }
 
-final class CompositePlanetTag: Model {
+final class CompositePlanetTag: Model, @unchecked Sendable {
     static let schema = "composite+planet+tag"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "planet_id") var planet: PlanetUsingCompositePivot
         @Parent(key: "tag_id") var tag: Tag
         
@@ -424,7 +424,7 @@ struct CompositePlanetTagMigration: Migration {
     }
 }
 
-final class SolarSystem: Model {
+final class SolarSystem: Model, @unchecked Sendable {
     static let schema = "solar_system"
     
     @ID(key: .id) var id: UUID?
@@ -439,11 +439,11 @@ final class SolarSystem: Model {
     }
 }
 
-final class CompositePlanet: Model {
+final class CompositePlanet: Model, @unchecked Sendable {
     static let schema = "composite+planet"
     
     // Note for the curious: "normalized ordinal" means "how many orbits from the center if a unique value was chosen for every planet despite overlapping or shared orbits"
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "system_id") var solarSystem: SolarSystem
         @Field(key: "nrm_ord") var normalizedOrdinal: Int
         
@@ -471,7 +471,7 @@ final class CompositePlanet: Model {
     }
 }
 
-final class CompositeMoon: Model {
+final class CompositeMoon: Model, @unchecked Sendable {
     static let schema = "composite+moon"
     
     @ID(key: .id) var id: UUID?

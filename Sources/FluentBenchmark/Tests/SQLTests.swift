@@ -21,7 +21,7 @@ extension FluentBenchmarker {
 
             // test db.first(decoding:)
             do {
-                let user = try sql.raw("SELECT * FROM users").first(decoding: User.self).wait()
+                let user = try sql.raw("SELECT * FROM users").first(decodingFluent: User.self).wait()
                 XCTAssertNotNil(user)
                 if let user = user {
                     XCTAssertEqual(user.id, tanner.id)
@@ -33,7 +33,7 @@ extension FluentBenchmarker {
 
             // test db.all(decoding:)
             do {
-                let users = try sql.raw("SELECT * FROM users").all(decoding: User.self).wait()
+                let users = try sql.raw("SELECT * FROM users").all(decodingFluent: User.self).wait()
                 XCTAssertEqual(users.count, 1)
                 if let user = users.first {
                     XCTAssertEqual(user.id, tanner.id)
@@ -46,7 +46,7 @@ extension FluentBenchmarker {
             // test row.decode()
             do {
                 let users = try sql.raw("SELECT * FROM users").all().wait().map {
-                    try $0.decode(model: User.self)
+                    try $0.decode(fluentModel: User.self)
                 }
                 XCTAssertEqual(users.count, 1)
                 if let user = users.first {
@@ -61,7 +61,7 @@ extension FluentBenchmarker {
 }
 
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)

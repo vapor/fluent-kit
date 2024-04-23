@@ -76,7 +76,7 @@ extension FluentBenchmarker {
 }
 
 // Model recommended, default @ID configuration.
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID
@@ -101,7 +101,7 @@ private struct FooMigration: Migration {
 }
 
 // Model with custom id key and type.
-private final class StringFoo: Model {
+private final class StringFoo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(custom: .id, generatedBy: .user)
@@ -126,7 +126,7 @@ private struct StringFooMigration: Migration {
 }
 
 // Model with auto-incrementing id.
-private final class AutoincrementingFoo: Model {
+private final class AutoincrementingFoo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(custom: .id, generatedBy: .database)
@@ -151,7 +151,7 @@ private struct AutoincrementingFooMigration: Migration {
 }
 
 // Model with auto-incrementing and custom key.
-private final class CustomAutoincrementingFoo: Model {
+private final class CustomAutoincrementingFoo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(custom: "bar", generatedBy: .database)

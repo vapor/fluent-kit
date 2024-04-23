@@ -50,7 +50,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class Test: Model {
+private final class Test: Model, @unchecked Sendable {
     static let schema = "test"
 
     @ID(key: .id)
@@ -81,7 +81,7 @@ private enum Foo: String, Codable {
     case bar, baz
 }
 
-private final class Test2: Model {
+private final class Test2: Model, @unchecked Sendable {
     static let schema = "test"
 
     @ID(key: .id)

@@ -2,7 +2,7 @@ import FluentKit
 import Foundation
 import NIOCore
 
-public final class Moon: Model {
+public final class Moon: Model, @unchecked Sendable {
     public static let schema = "moons"
 
     @ID(key: .id)

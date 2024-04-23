@@ -156,7 +156,7 @@ extension FluentBenchmarker {
     }
 
     private func testJoin_aliasNesting() throws {
-        final class ChatParticipant: Model {
+        final class ChatParticipant: Model, @unchecked Sendable {
             static let schema = "chat_participants"
 
             @ID(key: .id)
@@ -166,7 +166,7 @@ extension FluentBenchmarker {
             var user: User
         }
 
-        final class User: Model {
+        final class User: Model, @unchecked Sendable {
             static let schema = "users"
 
             @ID(key: .id)
@@ -179,7 +179,7 @@ extension FluentBenchmarker {
         }
         final class OtherParticipant: ModelAlias {
             static let name: String = "other_participant"
-            var model = ChatParticipant()
+            let model = ChatParticipant()
         }
 
         _ = User.query(on: self.database)
@@ -234,7 +234,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class Team: Model {
+private final class Team: Model, @unchecked Sendable {
     static let schema = "teams"
 
     @ID(key: .id)
@@ -270,7 +270,7 @@ private struct TeamMigration: Migration {
     }
 }
 
-private final class Match: Model {
+private final class Match: Model, @unchecked Sendable {
     static let schema = "matches"
 
     @ID(key: .id)
@@ -316,7 +316,7 @@ private struct TeamMatchSeed: Migration {
         let b = Team(name: "b")
         let c = Team(name: "c")
         return a.create(on: database).and(b.create(on: database)).and(c.create(on: database)).flatMap { _ -> EventLoopFuture<Void> in
-            return .andAllSucceed([
+            .andAllSucceed([
                 Match(name: "a vs. b", homeTeam: a, awayTeam: b).save(on: database),
                 Match(name: "a vs. c", homeTeam: a, awayTeam: c).save(on: database),
                 Match(name: "b vs. c", homeTeam: b, awayTeam: c).save(on: database),
@@ -337,7 +337,7 @@ private struct TeamMatchSeed: Migration {
 }
 
 
-private final class School: Model {
+private final class School: Model, @unchecked Sendable {
     static let schema = "schools"
 
     @ID(key: .id)
@@ -423,7 +423,7 @@ private struct SchoolSeed: Migration {
     }
 }
 
-private final class City: Model {
+private final class City: Model, @unchecked Sendable {
     static let schema = "cities"
 
     @ID(key: .id)
@@ -475,6 +475,6 @@ private struct CitySeed: Migration {
     }
 
     func revert(on database: any Database) -> EventLoopFuture<Void> {
-        return database.eventLoop.makeSucceededFuture(())
+        database.eventLoop.makeSucceededFuture(())
     }
 }

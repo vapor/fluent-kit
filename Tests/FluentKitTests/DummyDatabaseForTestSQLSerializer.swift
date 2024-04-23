@@ -3,8 +3,9 @@ import FluentSQL
 import NIOEmbedded
 import SQLKit
 import XCTFluent
+import NIOConcurrencyHelpers
 
-public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+public final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     public var inTransaction: Bool {
         false
     }
@@ -25,7 +26,11 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     }
 
     public let context: DatabaseContext
-    public var sqlSerializers: [SQLSerializer]
+    let _sqlSerializers = NIOLockedValueBox<[SQLSerializer]>([])
+    public var sqlSerializers: [SQLSerializer] {
+        get { self._sqlSerializers.withLockedValue { $0 } }
+        set { self._sqlSerializers.withLockedValue { $0 = newValue } }
+    }
 
     public init() {
         self.context = .init(
@@ -33,7 +38,6 @@ public class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
             logger: .init(label: "test"),
             eventLoop: EmbeddedEventLoop()
         )
-        self.sqlSerializers = []
     }
 
     public func reset() {

@@ -2,6 +2,7 @@ import FluentKit
 import Foundation
 import NIOEmbedded
 import NIOCore
+import NIOConcurrencyHelpers
 
 public struct DummyDatabase: Database {
     public var context: DatabaseContext
@@ -52,15 +53,15 @@ public struct DummyDatabaseConfiguration: DatabaseConfiguration {
 
 public final class DummyDatabaseDriver: DatabaseDriver {
     public let eventLoopGroup: any EventLoopGroup
-    var didShutdown: Bool
+    let didShutdown: NIOLockedValueBox<Bool>
     
     public var fieldDecoder: any Decoder {
-        return DummyDecoder()
+        DummyDecoder()
     }
 
     public init(on eventLoopGroup: any EventLoopGroup) {
         self.eventLoopGroup = eventLoopGroup
-        self.didShutdown = false
+        self.didShutdown = .init(false)
     }
     
     public func makeDatabase(with context: DatabaseContext) -> any Database {
@@ -68,10 +69,10 @@ public final class DummyDatabaseDriver: DatabaseDriver {
     }
 
     public func shutdown() {
-        self.didShutdown = true
+        self.didShutdown.withLockedValue { $0 = true }
     }
     deinit {
-        assert(self.didShutdown, "DummyDatabase did not shutdown before deinit.")
+        assert(self.didShutdown.withLockedValue { $0 }, "DummyDatabase did not shutdown before deinit.")
     }
 }
 

@@ -17,9 +17,10 @@ extension FluentBenchmarker {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(StarMigration())
-
+            
+            let database = self.database
             let migrator = Migrator(
-                databaseFactory: { _ in self.database },
+                databaseFactory: { _ in database },
                 migrations: migrations,
                 on: self.database.eventLoop
             )
@@ -45,9 +46,10 @@ extension FluentBenchmarker {
             migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
             migrations.add(StarMigration())
-
+            
+            let database = self.database
             let migrator = Migrator(
-                databaseFactory: { _ in self.database },
+                databaseFactory: { _ in database },
                 migrations: migrations,
                 on: self.database.eventLoop
             )

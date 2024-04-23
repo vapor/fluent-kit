@@ -310,7 +310,7 @@ private enum Bar: String, Codable {
     case baz, qux, quz, quzz
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)
@@ -389,7 +389,7 @@ private enum Animal: UInt8, Codable {
     case dog, cat
 }
 
-private final class Pet: Model {
+private final class Pet: Model, @unchecked Sendable {
     static let schema = "pets"
 
     @ID(key: .id)
@@ -420,7 +420,7 @@ private struct PetMigration: Migration {
     }
 }
 
-private final class Flags: Model {
+private final class Flags: Model, @unchecked Sendable {
     static let schema = "flags"
     
     @ID(key: .id)
@@ -457,7 +457,7 @@ private final class Flags: Model {
     }
 }
 
-private final class RawFlags: Model {
+private final class RawFlags: Model, @unchecked Sendable {
     static let schema = "flags"
     
     @ID(key: .id) var id: UUID?

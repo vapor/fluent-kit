@@ -3,7 +3,7 @@ import Foundation
 import NIOCore
 import XCTest
 
-public final class PlanetTag: Model {
+public final class PlanetTag: Model, @unchecked Sendable {
     public static let schema = "planet+tag"
     
     @ID(key: .id)

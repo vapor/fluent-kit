@@ -88,7 +88,7 @@ final class OptionalEnumQueryTests: DbQueryTestCase {
     }
 }
 
-private final class Thing: Model {
+private final class Thing: Model, @unchecked Sendable {
     enum FizzBuzz: String, Codable {
         case fizz
         case buzz

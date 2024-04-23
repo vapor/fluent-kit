@@ -2,10 +2,10 @@ import FluentKit
 import Foundation
 import NIOCore
 
-public final class GalacticJurisdiction: Model {
+public final class GalacticJurisdiction: Model, @unchecked Sendable {
     public static let schema = "galaxy_jurisdictions"
     
-    public final class IDValue: Fields, Hashable {
+    public final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "galaxy_id")
         public var galaxy: Galaxy
         

@@ -2,6 +2,7 @@ import FluentKit
 import NIOEmbedded
 import Logging
 import NIOCore
+import NIOConcurrencyHelpers
 
 /// Lets you mock the row results for each query.
 ///
@@ -43,50 +44,52 @@ import NIOCore
 ///     ])
 ///
 public final class ArrayTestDatabase: TestDatabase {
-    var results: [[any DatabaseOutput]]
+    let results: NIOLockedValueBox<[[any DatabaseOutput]]>
 
     public init() {
-        self.results = []
+        self.results = .init([])
     }
 
     public func append(_ result: [any DatabaseOutput]) {
-        self.results.append(result)
+        self.results.withLockedValue { $0.append(result) }
     }
 
     public func append<M>(_ result: [M]) 
         where M: Model
     {
-        self.results.append(result.map { TestOutput($0) })
+        self.results.withLockedValue { $0.append(result.map { TestOutput($0) }) }
     }
 
-    public func execute(query: DatabaseQuery, onOutput: (any DatabaseOutput) -> ()) throws {
-        guard !self.results.isEmpty else {
+    public func execute(query: DatabaseQuery, onOutput: @Sendable (any DatabaseOutput) -> ()) throws {
+        guard !self.results.withLockedValue({ $0.isEmpty }) else {
             throw TestDatabaseError.ranOutOfResults
         }
-        for output in self.results.removeFirst() {
-            onOutput(output)
+        self.results.withLockedValue {
+            for output in $0.removeFirst() {
+                onOutput(output)
+            }
         }
     }
 }
 
 public final class CallbackTestDatabase: TestDatabase {
-    var callback: (DatabaseQuery) -> [any DatabaseOutput]
+    let callback: @Sendable (DatabaseQuery) -> [any DatabaseOutput]
 
-    public init(callback: @escaping (DatabaseQuery) -> [any DatabaseOutput]) {
+    public init(callback: @escaping @Sendable (DatabaseQuery) -> [any DatabaseOutput]) {
         self.callback = callback
     }
 
-    public func execute(query: DatabaseQuery, onOutput: (any DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: @Sendable (any DatabaseOutput) -> ()) throws {
         for output in self.callback(query) {
             onOutput(output)
         }
     }
 }
 
-public protocol TestDatabase {
+public protocol TestDatabase: Sendable {
     func execute(
         query: DatabaseQuery,
-        onOutput: (any DatabaseOutput) -> ()
+        onOutput: @Sendable (any DatabaseOutput) -> ()
     ) throws
 }
 
@@ -113,7 +116,7 @@ private struct _TestDatabase: Database {
 
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
         guard context.eventLoop.inEventLoop else {
             return self.eventLoop.flatSubmit {
@@ -209,13 +212,13 @@ public struct TestOutput: DatabaseOutput {
         return "<dummy>"
     }
 
-    var dummyDecodedFields: [FieldKey: Any]
+    var dummyDecodedFields: [FieldKey: any Sendable]
 
     public init() {
         self.dummyDecodedFields = [:]
     }
 
-    public init(_ mockFields: [FieldKey: Any]) {
+    public init(_ mockFields: [FieldKey: any Sendable]) {
         self.dummyDecodedFields = mockFields
     }
 
@@ -248,7 +251,7 @@ public struct TestOutput: DatabaseOutput {
         )
     }
 
-    public mutating func append(key: FieldKey, value: Any) {
+    public mutating func append(key: FieldKey, value: any Sendable) {
         dummyDecodedFields[key] = value
     }
 }

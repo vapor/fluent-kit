@@ -16,7 +16,7 @@ class DbQueryTestCase: XCTestCase {
 func assertQuery(
     _ db: DummyDatabaseForTestSQLSerializer,
     _ query: String,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
 ) {
     XCTAssertEqual(db.sqlSerializers.count, 1, file: file, line: line)
@@ -26,7 +26,7 @@ func assertQuery(
 func assertLastQuery(
     _ db: DummyDatabaseForTestSQLSerializer,
     _ query: String,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
 ) {
     XCTAssertEqual(db.sqlSerializers.last?.sql, query, file: file, line: line)

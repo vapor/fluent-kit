@@ -146,10 +146,10 @@ extension FluentBenchmarker {
     }
 }
 
-final class CompositeIDParentModel: Model {
+final class CompositeIDParentModel: Model, @unchecked Sendable {
     static let schema = "composite_id_parent_models"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Field(key: "name")
         var name: String
         
@@ -228,7 +228,7 @@ final class CompositeIDParentModel: Model {
     }
 }
 
-final class CompositeIDChildModel: Model {
+final class CompositeIDChildModel: Model, @unchecked Sendable {
     static let schema = "composite_id_child_models"
     
     @ID(custom: .id)
@@ -339,10 +339,10 @@ extension DatabaseSchema.Constraint {
     }
 }
 
-final class CompositeParentTheFirst: Model {
+final class CompositeParentTheFirst: Model, @unchecked Sendable {
     static let schema = "composite_parent_the_first"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "parent_id")
         var parent: Galaxy
         
@@ -389,10 +389,10 @@ final class CompositeParentTheFirst: Model {
     }
 }
 
-final class CompositeParentTheSecond: Model {
+final class CompositeParentTheSecond: Model, @unchecked Sendable {
     static let schema = "composite_parent_the_second"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @CompositeParent(prefix: "ref", strategy: .snakeCase)
         var parent: CompositeParentTheFirst
 

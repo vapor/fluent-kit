@@ -28,7 +28,7 @@ extension FluentBenchmarker {
     }
 }
 
-final class Question: Model {
+final class Question: Model, @unchecked Sendable {
     static let schema = "questions"
 
     @ID(custom: "id")
@@ -57,7 +57,7 @@ final class Question: Model {
     }
 }
 
-final class Project: Model {
+final class Project: Model, @unchecked Sendable {
     static let schema = "projects"
 
     @ID(custom: "id")

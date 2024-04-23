@@ -121,7 +121,7 @@ enum Diggity: String, Codable {
     case done, notDone
 }
 
-final class Task: Model {
+final class Task: Model, @unchecked Sendable {
     static let schema = "tasks"
 
     @ID(custom: "id", generatedBy: .user)

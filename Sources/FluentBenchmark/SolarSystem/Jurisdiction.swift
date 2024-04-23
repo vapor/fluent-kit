@@ -3,7 +3,7 @@ import Foundation
 import NIOCore
 import XCTest
 
-public final class Jurisdiction: Model {
+public final class Jurisdiction: Model, @unchecked Sendable {
     public static let schema = "jurisdictions"
     
     @ID(key: .id)

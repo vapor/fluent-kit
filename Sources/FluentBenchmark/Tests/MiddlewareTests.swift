@@ -140,7 +140,7 @@ private struct TestError: Error {
     var string: String
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)

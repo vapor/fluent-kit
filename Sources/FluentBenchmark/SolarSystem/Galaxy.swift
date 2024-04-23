@@ -3,7 +3,7 @@ import Foundation
 import NIOCore
 import XCTest
 
-public final class Galaxy: Model {
+public final class Galaxy: Model, @unchecked Sendable {
     public static let schema = "galaxies"
     
     @ID(key: .id)
