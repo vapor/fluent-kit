@@ -1,5 +1,6 @@
 import NIOCore
 import NIOConcurrencyHelpers
+import struct SQLKit.SomeCodingKey
 
 extension Model {
     public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
@@ -28,11 +29,7 @@ public final class OptionalParentProperty<From, To>: @unchecked Sendable
         return self
     }
 
-    let _value: NIOLockedValueBox<To??> = .init(nil)
-    public var value: To?? {
-        get { self._value.withLockedValue { $0 } }
-        set { self._value.withLockedValue { $0 = newValue } }
-    }
+    public var value: To??
 
     public init(key: FieldKey) {
         guard !(To.IDValue.self is any Fields.Type) else {

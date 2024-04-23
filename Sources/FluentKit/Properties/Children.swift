@@ -15,17 +15,9 @@ public final class ChildrenProperty<From, To>: @unchecked Sendable
     public typealias Key = RelationParentKey<From, To>
 
     public let parentKey: Key
-    let _idValue: NIOLockedValueBox<From.IDValue?> = .init(nil)
-    var idValue: From.IDValue? {
-        get { self._idValue.withLockedValue { $0 } }
-        set { self._idValue.withLockedValue { $0 = newValue } }
-    }
+    var idValue: From.IDValue?
     
-    let _value: NIOLockedValueBox<[To]?> = .init(nil)
-    public var value: [To]? {
-        get { self._value.withLockedValue { $0 } }
-        set { self._value.withLockedValue { $0 = newValue } }
-    }
+    public var value: [To]?
 
     public convenience init(for parent: KeyPath<To, To.Parent<From>>) {
         self.init(for: .required(parent))

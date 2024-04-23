@@ -22,17 +22,9 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
 
     public let from: KeyPath<Through, Through.Parent<From>>
     public let to: KeyPath<Through, Through.Parent<To>>
-    let _idValue: NIOLockedValueBox<From.IDValue?> = .init(nil)
-    var idValue: From.IDValue? {
-        get { self._idValue.withLockedValue { $0 } }
-        set { self._idValue.withLockedValue { $0 = newValue } }
-    }
+    var idValue: From.IDValue?
     
-    let _value: NIOLockedValueBox<[To]?> = .init(nil)
-    public var value: [To]? {
-        get { self._value.withLockedValue { $0 } }
-        set { self._value.withLockedValue { $0 = newValue } }
-    }
+    public var value: [To]?
     
     /// Allows eager loading of pivot objects through the sibling relation.
     /// Example:

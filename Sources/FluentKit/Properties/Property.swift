@@ -17,7 +17,7 @@ public protocol AnyProperty: AnyObject {
 /// many-to-many relation.
 public protocol Property: AnyProperty {
     associatedtype Model: Fields
-    associatedtype Value: Codable
+    associatedtype Value: Codable & Sendable
     var value: Value? { get set }
 }
 
@@ -109,7 +109,7 @@ public protocol AnyQueryableProperty: AnyProperty {
 /// Marks a property as being "queryable", meaning that it represents exactly one
 /// "real" database field (i.e. the database table will contain a "physical" field
 /// corresponding to the property, and it will be the only field that does so).
-public protocol QueryableProperty: AnyQueryableProperty, Property where Value: Sendable {
+public protocol QueryableProperty: AnyQueryableProperty, Property {
     /// Requests a description of the appropriate method of encoding a value of the
     /// property's wrapped type into a database query. In essence, this is the static
     /// version of ``AnyQueryableProperty/queryableValue()-3uzih``, except that this

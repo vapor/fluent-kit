@@ -1,5 +1,6 @@
 import NIOCore
 import NIOConcurrencyHelpers
+import struct SQLKit.SomeCodingKey
 
 extension Model {
     /// A convenience alias for ``CompositeOptionalParentProperty``. It is strongly recommended that callers
@@ -75,22 +76,10 @@ public final class CompositeOptionalParentProperty<From, To>: @unchecked Sendabl
 {
     public let prefix: FieldKey
     public let prefixingStrategy: KeyPrefixingStrategy
-    let _value: NIOLockedValueBox<To??> = .init(nil)
-    public var value: To?? {
-        get { self._value.withLockedValue { $0 } }
-        set { self._value.withLockedValue { $0 = newValue } }
-    }
+    public var value: To??
 
-    let _inputId: NIOLockedValueBox<To.IDValue??> = .init(nil)
-    var inputId: To.IDValue?? {
-        get { self._inputId.withLockedValue { $0 } }
-        set { self._inputId.withLockedValue { $0 = newValue } }
-    }
-    let _outputId: NIOLockedValueBox<To.IDValue??> = .init(nil)
-    var outputId: To.IDValue?? {
-        get { self._outputId.withLockedValue { $0 } }
-        set { self._outputId.withLockedValue { $0 = newValue } }
-    }
+    var inputId: To.IDValue??
+    var outputId: To.IDValue??
     public var id: To.IDValue? {
         get { self.inputId ?? self.outputId ?? nil }
         set { self.inputId = .some(newValue) }

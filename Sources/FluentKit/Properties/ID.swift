@@ -8,7 +8,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class IDProperty<Model, Value>
+public final class IDProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Model, Value: Codable & Sendable
 {
     public enum Generator {

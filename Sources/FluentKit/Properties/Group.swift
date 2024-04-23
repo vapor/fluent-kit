@@ -12,11 +12,7 @@ public final class GroupProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
     public let key: FieldKey
-    let _value: NIOLockedValueBox<Value?> = .init(nil)
-    public var value: Value? {
-        get { self._value.withLockedValue { $0 } }
-        set { self._value.withLockedValue { $0 = newValue } }
-    }
+    public var value: Value?
 
     public var projectedValue: GroupProperty<Model, Value> {
         return self

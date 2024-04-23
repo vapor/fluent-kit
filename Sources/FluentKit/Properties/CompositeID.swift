@@ -11,21 +11,9 @@ extension Model {
 public final class CompositeIDProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Model, Value: FluentKit.Fields
 {
-    let _value: NIOLockedValueBox<Value?> = .init(.init())
-    public var value: Value? {
-        get { self._value.withLockedValue { $0 } }
-        set { self._value.withLockedValue { $0 = newValue } }
-    }
-    let _exists: NIOLockedValueBox<Bool> = .init(false)
-    public var exists: Bool {
-        get { self._exists.withLockedValue { $0 } }
-        set { self._exists.withLockedValue { $0 = newValue } }
-    }
-    let _cachedOutput: NIOLockedValueBox<(any DatabaseOutput)?> = .init(nil)
-    var cachedOutput: (any DatabaseOutput)? {
-        get { self._cachedOutput.withLockedValue { $0 } }
-        set { self._cachedOutput.withLockedValue { $0 = newValue } }
-    }
+    public var value: Value? = .init(.init())
+    public var exists: Bool = false
+    var cachedOutput: (any DatabaseOutput)?
 
     public var projectedValue: CompositeIDProperty<Model, Value> { self }
     

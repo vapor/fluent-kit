@@ -8,20 +8,12 @@ extension Fields {
 // MARK: Type
 
 @propertyWrapper
-public final class FieldProperty<Model, Value>: Sendable
+public final class FieldProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Fields, Value: Codable & Sendable
 {
     public let key: FieldKey
-    let _outputValue: NIOLockedValueBox<Value?> = .init(nil)
-    var outputValue: Value? {
-        get { self._outputValue.withLockedValue { $0 } }
-        set { self._outputValue.withLockedValue { $0 = newValue } }
-    }
-    let _inputValue: NIOLockedValueBox<DatabaseQuery.Value?> = .init(nil)
-    var inputValue: DatabaseQuery.Value? {
-        get { self._inputValue.withLockedValue { $0 } }
-        set { self._inputValue.withLockedValue { $0 = newValue } }
-    }
+    var outputValue: Value?
+    var inputValue: DatabaseQuery.Value?
     
     public var projectedValue: FieldProperty<Model, Value> {
         self
