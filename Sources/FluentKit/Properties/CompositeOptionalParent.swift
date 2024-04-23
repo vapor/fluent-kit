@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     /// A convenience alias for ``CompositeOptionalParentProperty``. It is strongly recommended that callers
@@ -69,15 +70,27 @@ extension Model {
 /// }
 /// ```
 @propertyWrapper @dynamicMemberLookup
-public final class CompositeOptionalParentProperty<From, To>
+public final class CompositeOptionalParentProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model, To.IDValue: Fields
 {
     public let prefix: FieldKey
     public let prefixingStrategy: KeyPrefixingStrategy
-    public var value: To??
+    let _value: NIOLockedValueBox<To??> = .init(nil)
+    public var value: To?? {
+        get { self._value.withLockedValue { $0 } }
+        set { self._value.withLockedValue { $0 = newValue } }
+    }
 
-    var inputId: To.IDValue??
-    var outputId: To.IDValue??
+    let _inputId: NIOLockedValueBox<To.IDValue??> = .init(nil)
+    var inputId: To.IDValue?? {
+        get { self._inputId.withLockedValue { $0 } }
+        set { self._inputId.withLockedValue { $0 = newValue } }
+    }
+    let _outputId: NIOLockedValueBox<To.IDValue??> = .init(nil)
+    var outputId: To.IDValue?? {
+        get { self._outputId.withLockedValue { $0 } }
+        set { self._outputId.withLockedValue { $0 = newValue } }
+    }
     public var id: To.IDValue? {
         get { self.inputId ?? self.outputId ?? nil }
         set { self.inputId = .some(newValue) }
@@ -218,18 +231,19 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let nilParentModels = _sets.removeValue(forKey: nil) ?? []
-        let sets = _sets
+        let nilParentModels = UnsafeTransfer(wrappedValue: _sets.removeValue(forKey: nil) ?? [])
+        let sets = UnsafeTransfer(wrappedValue: _sets)
 
         let builder = To.query(on: database)
-            .group(.or) { _ = sets.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }
+            .group(.or) { _ = sets.wrappedValue.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }
         if (self.withDeleted) {
             builder.withDeleted()
         }
+        
         return builder.all().flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-                for (parentId, models) in sets {
+                for (parentId, models) in sets.wrappedValue {
                     guard let parent = parents[parentId!] else {
                         database.logger.debug(
                             "Missing parent model in eager-load lookup results.",
@@ -239,7 +253,7 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
                     }
                     models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
                 }
-                nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+                nilParentModels.wrappedValue.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
             }
     }
 }

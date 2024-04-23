@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
@@ -8,7 +9,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class SiblingsProperty<From, To, Through>
+public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     where From: Model, To: Model, Through: Model
 {
     public enum AttachMethod {
@@ -21,9 +22,17 @@ public final class SiblingsProperty<From, To, Through>
 
     public let from: KeyPath<Through, Through.Parent<From>>
     public let to: KeyPath<Through, Through.Parent<To>>
-    var idValue: From.IDValue?
+    let _idValue: NIOLockedValueBox<From.IDValue?> = .init(nil)
+    var idValue: From.IDValue? {
+        get { self._idValue.withLockedValue { $0 } }
+        set { self._idValue.withLockedValue { $0 = newValue } }
+    }
     
-    public var value: [To]?
+    let _value: NIOLockedValueBox<[To]?> = .init(nil)
+    public var value: [To]? {
+        get { self._value.withLockedValue { $0 } }
+        set { self._value.withLockedValue { $0 = newValue } }
+    }
     
     /// Allows eager loading of pivot objects through the sibling relation.
     /// Example:
@@ -154,12 +163,13 @@ public final class SiblingsProperty<From, To, Through>
         case .always:
             return self.attach(to, on: database, edit)
         case .ifNotExists:
-            return self.isAttached(to: to, on: database).flatMap { alreadyAttached in
+            let to = UnsafeTransfer(wrappedValue: to)
+            return self.isAttached(to: to.wrappedValue, on: database).flatMap { alreadyAttached in
                 if alreadyAttached {
                     return database.eventLoop.makeSucceededFuture(())
                 }
 
-                return self.attach(to, on: database, edit)
+                return self.attach(to.wrappedValue, on: database, edit)
             }
         }
     }
@@ -388,15 +398,14 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
-        return builder.all()
-            .flatMapThrowing
-        {
+        let models = UnsafeTransfer(wrappedValue: models)
+        return builder.all().flatMapThrowing {
             var map: [From.IDValue: [To]] = [:]
             for to in $0 {
                 let fromID = try to.joined(Through.self)[keyPath: from].id
                 map[fromID, default: []].append(to)
             }
-            for model in models {
+            for model in models.wrappedValue {
                 guard let id = model.id else { throw FluentError.idRequired }
                 model[keyPath: self.relationKey].value = map[id] ?? []
             }

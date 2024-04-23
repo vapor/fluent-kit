@@ -1,3 +1,5 @@
+import NIOConcurrencyHelpers
+
 extension Fields {
     public typealias Field<Value> = FieldProperty<Self, Value>
         where Value: Codable & Sendable
@@ -6,12 +8,20 @@ extension Fields {
 // MARK: Type
 
 @propertyWrapper
-public final class FieldProperty<Model, Value>
+public final class FieldProperty<Model, Value>: Sendable
     where Model: FluentKit.Fields, Value: Codable & Sendable
 {
     public let key: FieldKey
-    var outputValue: Value?
-    var inputValue: DatabaseQuery.Value?
+    let _outputValue: NIOLockedValueBox<Value?> = .init(nil)
+    var outputValue: Value? {
+        get { self._outputValue.withLockedValue { $0 } }
+        set { self._outputValue.withLockedValue { $0 = newValue } }
+    }
+    let _inputValue: NIOLockedValueBox<DatabaseQuery.Value?> = .init(nil)
+    var inputValue: DatabaseQuery.Value? {
+        get { self._inputValue.withLockedValue { $0 } }
+        set { self._inputValue.withLockedValue { $0 = newValue } }
+    }
     
     public var projectedValue: FieldProperty<Model, Value> {
         self

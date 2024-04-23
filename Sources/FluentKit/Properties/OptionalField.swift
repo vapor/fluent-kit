@@ -1,3 +1,5 @@
+import NIOConcurrencyHelpers
+
 extension Fields {
     public typealias OptionalField<Value> = OptionalFieldProperty<Self, Value>
         where Value: Codable & Sendable
@@ -6,12 +8,20 @@ extension Fields {
 // MARK: Type
 
 @propertyWrapper
-public final class OptionalFieldProperty<Model, WrappedValue>
+public final class OptionalFieldProperty<Model, WrappedValue>: Sendable
     where Model: FluentKit.Fields, WrappedValue: Codable & Sendable
 {
     public let key: FieldKey
-    var outputValue: WrappedValue??
-    var inputValue: DatabaseQuery.Value?
+    let _outputValue: NIOLockedValueBox<WrappedValue??> = .init(nil)
+    var outputValue: WrappedValue?? {
+        get { self._outputValue.withLockedValue { $0 } }
+        set { self._outputValue.withLockedValue { $0 = newValue } }
+    }
+    let _inputValue: NIOLockedValueBox<DatabaseQuery.Value?> = .init(nil)
+    var inputValue: DatabaseQuery.Value? {
+        get { self._inputValue.withLockedValue { $0 } }
+        set { self._inputValue.withLockedValue { $0 = newValue } }
+    }
 
     public var projectedValue: OptionalFieldProperty<Model, WrappedValue> {
         self

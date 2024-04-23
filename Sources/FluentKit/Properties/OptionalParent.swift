@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
@@ -8,7 +9,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class OptionalParentProperty<From, To>
+public final class OptionalParentProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     @OptionalFieldProperty<From, To.IDValue>
@@ -27,7 +28,11 @@ public final class OptionalParentProperty<From, To>
         return self
     }
 
-    public var value: To??
+    let _value: NIOLockedValueBox<To??> = .init(nil)
+    public var value: To?? {
+        get { self._value.withLockedValue { $0 } }
+        set { self._value.withLockedValue { $0 = newValue } }
+    }
 
     public init(key: FieldKey) {
         guard !(To.IDValue.self is any Fields.Type) else {
@@ -171,23 +176,23 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let nilParentModels = _sets.removeValue(forKey: nil) ?? []
-        let sets = _sets
+        let nilParentModels = UnsafeTransfer(wrappedValue: _sets.removeValue(forKey: nil) ?? [])
+        let sets = UnsafeTransfer(wrappedValue: _sets)
 
-        if sets.isEmpty {
+        if sets.wrappedValue.isEmpty {
             // Fetching "To" objects is unnecessary when no models have an id for "To".
-            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+            nilParentModels.wrappedValue.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
             return database.eventLoop.makeSucceededVoidFuture()
         }
 
-        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 }))
+        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.wrappedValue.keys.compactMap { $0 }))
         if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-            for (parentId, models) in sets {
+            for (parentId, models) in sets.wrappedValue {
                 guard let parent = parents[parentId!] else {
                     database.logger.debug(
                         "Missing parent model in eager-load lookup results.",
@@ -197,7 +202,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
                 }
                 models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
             }
-            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+            nilParentModels.wrappedValue.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
         }
     }
 }
