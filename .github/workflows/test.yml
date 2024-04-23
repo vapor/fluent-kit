@@ -114,5 +114,3 @@ jobs:
 
   unit-tests:
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@main
-    with:
-      coverage_ignores: '/Tests/|/Sources/FluentBenchmark/'
