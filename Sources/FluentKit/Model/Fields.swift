@@ -1,3 +1,5 @@
+import SQLKit
+
 /// A type conforming to ``Fields`` is able to use FluentKit's various property wrappers to declare
 /// name, type, and semantic information for individual properties corresponding to fields in a
 /// generic database storage system.
@@ -12,7 +14,7 @@
 /// custom implementations of any other requirements is **strongly** discouraged; under most
 /// circumstances, such implementations will not be invoked in any event. They are only declared on
 /// the base protocol rather than solely in extensions because static dispatch improves performance.
-public protocol Fields: AnyObject, Codable {
+public protocol Fields: AnyObject, Codable, Sendable {
     /// Returns a fully generic list of every property on the given instance of the type which uses any of
     /// the FluentKit property wrapper types (e.g. any wrapper conforming to ``AnyProperty``). This accessor
     /// is not static because FluentKit depends upon access to the backing storage of the property wrappers,

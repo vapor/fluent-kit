@@ -24,8 +24,8 @@ import SQLKit
 ///     Original serialization: 1, 2, 3, 4, 5
 ///     Alternate serialization: 1 ,  2 ,  3 ,  4 ,  5
 ///
-/// - Warning: These extensions are not recommended, as it was never intended for this behavior to be
-///   public. Convert code using these extensions to invoke the original ``SQLKit/SQLList`` directly.
+/// > Warning: These extensions are not recommended, as it was never intended for this behavior to be
+/// > public. Convert code using these extensions to invoke the original ``SQLKit/SQLList`` directly.
 extension SQLKit.SQLList {
     @available(*, deprecated, message: "Use `expressions` instead.")
     public var items: [any SQLExpression] {

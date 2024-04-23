@@ -1,3 +1,5 @@
+import struct SQLKit.SomeCodingKey
+
 extension Fields {
     public init(from decoder: any Decoder) throws {
         self.init()

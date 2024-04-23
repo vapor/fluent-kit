@@ -1,7 +1,7 @@
 import struct NIOConcurrencyHelpers.NIOLock
 
 /// Holds the history of queries for a database
-public final class QueryHistory {
+public final class QueryHistory: @unchecked Sendable {
     /// The queries that were executed over a period of time
     public var queries: [DatabaseQuery]
 

@@ -64,7 +64,7 @@ public protocol DatabaseConfiguration: Sendable {
     func makeDriver(for databases: Databases) -> any DatabaseDriver
 }
 
-public struct DatabaseContext {
+public struct DatabaseContext: Sendable {
     public let configuration: any DatabaseConfiguration
     public let logger: Logger
     public let eventLoop: any EventLoop
