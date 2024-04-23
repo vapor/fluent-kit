@@ -12,4 +12,4 @@ let planets = try await Planet.query(on: database)
     .all()
 ```
 
-For more information, see the [Vapor documentation](https://docs.vapor.codes/fluent/overview/).
+For more information, see the [Fluent documentation](https://docs.vapor.codes/fluent/overview/).
