@@ -3,8 +3,8 @@ import AsyncKit
 import Logging
 import NIOCore
 
-public struct Migrator {
-    public let databaseFactory: (DatabaseID?) -> (any Database)
+public struct Migrator: Sendable {
+    public let databaseFactory: @Sendable (DatabaseID?) -> (any Database)
     public let migrations: Migrations
     public let eventLoop: any EventLoop
     public let migrationLogLevel: Logger.Level
@@ -27,7 +27,7 @@ public struct Migrator {
     }
 
     public init(
-        databaseFactory: @escaping (DatabaseID?) -> (any Database),
+        databaseFactory: @escaping @Sendable (DatabaseID?) -> (any Database),
         migrations: Migrations,
         on eventLoop: any EventLoop,
         migrationLogLevel: Logger.Level = .info
@@ -113,9 +113,9 @@ public struct Migrator {
     private func migrators<Result>(
         _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
     ) -> EventLoopFuture<[Result]> {
-        return self.migrations.storage.map {
-            handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLeveL: self.migrationLogLevel))
-        }
+        self.migrations.storage.withLockedValue { $0.map {
+            handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLevel: self.migrationLogLevel))
+        } }
         .flatten(on: self.eventLoop)
     }
 }
@@ -126,11 +126,11 @@ private final class DatabaseMigrator: Sendable {
     let id: DatabaseID?
     let migrationLogLevel: Logger.Level
 
-    init(id: DatabaseID?, database: any Database & Sendable, migrations: [any Migration], migrationLogLeveL: Logger.Level) {
+    init(id: DatabaseID?, database: any Database & Sendable, migrations: [any Migration], migrationLogLevel: Logger.Level) {
         self.migrations = migrations
         self.database = database
         self.id = id
-        self.migrationLogLevel = migrationLogLeveL
+        self.migrationLogLevel = migrationLogLevel
     }
 
     // MARK: Setup

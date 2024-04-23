@@ -54,12 +54,12 @@ extension Database {
     }
 }
 
-public protocol DatabaseDriver {
+public protocol DatabaseDriver: Sendable {
     func makeDatabase(with context: DatabaseContext) -> any Database
     func shutdown()
 }
 
-public protocol DatabaseConfiguration {
+public protocol DatabaseConfiguration: Sendable {
     var middleware: [any AnyModelMiddleware] { get set }
     func makeDriver(for databases: Databases) -> any DatabaseDriver
 }
