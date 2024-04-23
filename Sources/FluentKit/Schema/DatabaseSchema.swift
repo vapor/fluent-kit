@@ -1,14 +1,14 @@
 import struct Foundation.Date
 import struct Foundation.UUID
 
-public struct DatabaseSchema {
-    public enum Action {
+public struct DatabaseSchema: Sendable {
+    public enum Action: Sendable {
         case create
         case update
         case delete
     }
     
-    public indirect enum DataType {
+    public indirect enum DataType: Sendable {
         public static var int: DataType {
             return .int64
         }
@@ -28,7 +28,7 @@ public struct DatabaseSchema {
         
         case bool
         
-        public struct Enum {
+        public struct Enum: Sendable {
             public var name: String
             public var cases: [String]
 
@@ -61,10 +61,10 @@ public struct DatabaseSchema {
             .array(of: nil)
         }
         case array(of: DataType?)
-        case custom(Any)
+        case custom(any Sendable)
     }
 
-    public enum FieldConstraint {
+    public enum FieldConstraint: Sendable {
         public static func references(
             _ schema: String,
             space: String? = nil,
@@ -90,15 +90,15 @@ public struct DatabaseSchema {
             onDelete: ForeignKeyAction,
             onUpdate: ForeignKeyAction
         )
-        case custom(Any)
+        case custom(any Sendable)
     }
 
-    public enum Constraint {
+    public enum Constraint: Sendable {
         case constraint(ConstraintAlgorithm, name: String?)
-        case custom(Any)
+        case custom(any Sendable)
     }
     
-    public enum ConstraintAlgorithm {
+    public enum ConstraintAlgorithm: Sendable {
         case unique(fields: [FieldName])
         case foreignKey(
             _ fields: [FieldName],
@@ -109,10 +109,10 @@ public struct DatabaseSchema {
             onUpdate: ForeignKeyAction
         )
         case compositeIdentifier(_ fields: [FieldName])
-        case custom(Any)
+        case custom(any Sendable)
     }
 
-    public enum ForeignKeyAction {
+    public enum ForeignKeyAction: Sendable {
         case noAction
         case restrict
         case cascade
@@ -120,29 +120,29 @@ public struct DatabaseSchema {
         case setDefault
     }
     
-    public enum FieldDefinition {
+    public enum FieldDefinition: Sendable {
         case definition(
             name: FieldName,
             dataType: DataType,
             constraints: [FieldConstraint]
         )
-        case custom(Any)
+        case custom(any Sendable)
     }
 
-    public enum FieldUpdate {
+    public enum FieldUpdate: Sendable {
         case dataType(name: FieldName, dataType: DataType)
-        case custom(Any)
+        case custom(any Sendable)
     }
     
-    public enum FieldName {
+    public enum FieldName: Sendable {
         case key(FieldKey)
-        case custom(Any)
+        case custom(any Sendable)
     }
 
-    public enum ConstraintDelete {
+    public enum ConstraintDelete: Sendable {
         case constraint(ConstraintAlgorithm)
         case name(String)
-        case custom(Any)
+        case custom(any Sendable)
         
         /// Deletion specifier for an explicitly-named constraint known to be a referential constraint.
         /// 
@@ -204,7 +204,7 @@ extension DatabaseSchema.ConstraintDelete {
     /// The use of `@_spi` will be replaced with the `package` modifier once a suitable minimum version
     /// of Swift becomes required.
     @_spi(FluentSQLSPI)
-    public/*package*/ struct _ForeignKeyByNameExtension {
+    public/*package*/ struct _ForeignKeyByNameExtension: Sendable {
         public/*package*/ let name: String
     }
 }

@@ -1,6 +1,6 @@
 extension DatabaseQuery {
-    public enum Filter {
-        public enum Method {
+    public enum Filter: Sendable {
+        public enum Method: Sendable {
             public static var equal: Method {
                 return .equality(inverse: false)
             }
@@ -34,7 +34,7 @@ extension DatabaseQuery {
             /// LHS exists in/doesn't exist in RHS
             case subset(inverse: Bool)
 
-            public enum Contains {
+            public enum Contains: Sendable {
                 case prefix
                 case suffix
                 case anywhere
@@ -44,19 +44,19 @@ extension DatabaseQuery {
             case contains(inverse: Bool, Contains)
 
             /// Custom method
-            case custom(Any)
+            case custom(any Sendable)
         }
 
-        public enum Relation {
+        public enum Relation: Sendable {
             case and
             case or
-            case custom(Any)
+            case custom(any Sendable)
         }
 
         case value(Field, Method, Value)
         case field(Field, Method, Field)
         case group([Filter], Relation)
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

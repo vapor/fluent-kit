@@ -41,7 +41,7 @@ extension DatabaseQuery.Filter {
     public static func sql(
         _ left: SQLIdentifier,
         _ op: SQLBinaryOperator,
-        _ right: any Encodable
+        _ right: any Encodable & Sendable
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: SQLBind(right)))
     }
@@ -93,7 +93,7 @@ extension DatabaseQuery.Sort {
     public static func sql(
         _ left: SQLIdentifier,
         _ op: SQLBinaryOperator,
-        _ right: any Encodable
+        _ right: any Encodable & Sendable
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: SQLBind(right)))
     }

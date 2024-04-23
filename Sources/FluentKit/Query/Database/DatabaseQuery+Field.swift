@@ -1,8 +1,8 @@
 extension DatabaseQuery {
-    public enum Field {
+    public enum Field: Sendable {
         case path([FieldKey], schema: String)
         case extendedPath([FieldKey], schema: String, space: String?)
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

@@ -1,4 +1,4 @@
-public struct DatabaseQuery {
+public struct DatabaseQuery: Sendable {
     public var schema: String
     public var space: String?
     public var customIDKey: FieldKey?
