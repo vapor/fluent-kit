@@ -1,11 +1,11 @@
 import NIOCore
 import Foundation
 
-final class EnumMetadata: Model {
+final class EnumMetadata: Model, @unchecked Sendable {
     static let schema = "_fluent_enums"
 
     static var migration: any Migration {
-        return EnumMetadataMigration()
+        EnumMetadataMigration()
     }
 
     @ID(key: .id)
@@ -17,7 +17,7 @@ final class EnumMetadata: Model {
     @Field(key: "case")
     var `case`: String
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String, `case`: String) {
         self.id = id
@@ -26,10 +26,10 @@ final class EnumMetadata: Model {
     }
 }
 
-private struct EnumMetadataMigration: Migration {
-    func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        database.schema("_fluent_enums")
-            .field(.id, .uuid, .identifier(auto: false))
+private struct EnumMetadataMigration: AsyncMigration {
+    func prepare(on database: any Database) async throws {
+        try await database.schema(EnumMetadata.schema)
+            .id()
             .field("name", .string, .required)
             .field("case", .string, .required)
             .unique(on: "name", "case")
@@ -37,7 +37,7 @@ private struct EnumMetadataMigration: Migration {
             .create()
     }
 
-    func revert(on database: any Database) -> EventLoopFuture<Void> {
-        database.schema("_fluent_enums").delete()
+    func revert(on database: any Database) async throws {
+        try await database.schema(EnumMetadata.schema).delete()
     }
 }
