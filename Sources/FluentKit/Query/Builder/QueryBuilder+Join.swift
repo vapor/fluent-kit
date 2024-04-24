@@ -46,14 +46,14 @@ extension QueryBuilder {
     /// In debug builds, the join is checked (when possible) to verify that it corresponds correctly to the provided
     /// model type; an assertion failure occurs if there is a mismatch. This check is not performed in release builds.
     ///
-    /// - Warning: The space, schema, and alias specified by the join description _must_ match the `space`, `schema`,
-    ///   and `alias` properties of the provided `Foreign` type. Violation of this rule will cause runtime errors in
-    ///   most kinds of queries, and incorrect data may be returned from queries which do run.
+    /// > Warning: The space, schema, and alias specified by the join description _must_ match the `space`, `schema`,
+    /// > and `alias` properties of the provided `Foreign` type. Violation of this rule will cause runtime errors in
+    /// > most kinds of queries, and incorrect data may be returned from queries which do run.
     ///
-    /// - Tip: If you find that the requirements of your join are incompatible with this rule, you're probably trying
-    ///   to do something that's too complex for Fluent's API to accomodate. The recommended solution is to bypass
-    ///   Fluent and execute the desired query more directly, either via SQLKit when working with an SQL database, or
-    ///   via MongoKitten if using MongoDB.
+    /// > Tip: If you find that the requirements of your join are incompatible with this rule, you're probably trying
+    /// > to do something that's too complex for Fluent's API to accomodate. The recommended solution is to bypass
+    /// > Fluent and execute the desired query more directly, either via SQLKit when working with an SQL database, or
+    /// > via MongoKitten if using MongoDB.
     @discardableResult
     public func join<Foreign>(
         _ foreign: Foreign.Type,

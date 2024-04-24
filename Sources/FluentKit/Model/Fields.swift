@@ -20,10 +20,10 @@ public protocol Fields: AnyObject, Codable, Sendable {
     /// is not static because FluentKit depends upon access to the backing storage of the property wrappers,
     /// which is specific to each instance.
     ///
-    /// - Warning: This accessor triggers the use of reflection, which is at the time of this writing the
-    ///   most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
-    ///   carries the same cost; it is not possible to meaningfully cache the results. See
-    ///   `MirrorBypass.swift` for a considerable amount of very low-level detail.
+    /// > Warning: This accessor triggers the use of reflection, which is at the time of this writing the
+    /// > most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
+    /// > carries the same cost; it is not possible to meaningfully cache the results. See
+    /// > `MirrorBypass.swift` for a considerable amount of very low-level detail.
     var properties: [any AnyProperty] { get }
     
     init()
@@ -66,9 +66,9 @@ extension Fields {
     /// type was either loaded or created, add the key-value pair for said property to the given database
     /// input object. This prepares data in memory to be written to the database.
     ///
-    /// - Note: It is trivial to construct ``DatabaseInput`` objects which do not in fact actually transfer
-    ///   their contents to a database. FluentKit itself does this to implement a save/restore operation for
-    ///   model state under certain conditions (see ``Model``).
+    /// > Note: It is trivial to construct ``DatabaseInput`` objects which do not in fact actually transfer
+    /// > their contents to a database. FluentKit itself does this to implement a save/restore operation for
+    /// > model state under certain conditions (see ``Model``).
     public func input(to input: any DatabaseInput) {
         for field in self.databaseProperties {
             field.input(to: input)
@@ -79,8 +79,8 @@ extension Fields {
     /// output object, attempt to load the corresponding value into the property. This transfers data
     /// received from the database into memory.
     ///
-    /// - Note: It is trivial to construct ``DatabaseOutput`` objects which do not in fact actually represent
-    ///   data from a database. FluentKit itself does this to help keep models up to date (see ``Model``).
+    /// > Note: It is trivial to construct ``DatabaseOutput`` objects which do not in fact actually represent
+    /// > data from a database. FluentKit itself does this to help keep models up to date (see ``Model``).
     public func output(from output: any DatabaseOutput) throws {
         for field in self.databaseProperties {
             try field.output(from: output)
@@ -106,16 +106,16 @@ extension Fields {
     /// built-in ``Codable`` machinery (corresponding to the ``AnyCodableProperty`` protocol), indexed by
     /// the coding key for each property.
     ///
-    /// - Important: A property's _coding_ key is not the same as a _database_ key. The coding key is derived
-    ///   directly from the property's Swift name as provided by reflection, while database keys are provided
-    ///   in the property wrapper initializer declarations.
+    /// > Important: A property's _coding_ key is not the same as a _database_ key. The coding key is derived
+    /// > directly from the property's Swift name as provided by reflection, while database keys are provided
+    /// > in the property wrapper initializer declarations.
     ///
-    /// - Warning: Even if the type has a custom ``CodingKeys`` enum, the property's coding key will _not_
-    ///   correspond to the definition provided therein; it will always be based solely on the Swift
-    ///   property name.
+    /// > Warning: Even if the type has a custom ``CodingKeys`` enum, the property's coding key will _not_
+    /// > correspond to the definition provided therein; it will always be based solely on the Swift
+    /// > property name.
     ///
-    /// - Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
-    ///   performance penalties.
+    /// > Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
+    /// > performance penalties.
     internal var codableProperties: [SomeCodingKey: any AnyCodableProperty] {
         return .init(uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
             guard let value = $1 as? any AnyCodableProperty,

@@ -35,10 +35,10 @@ extension Model {
     /// version works for models which use `@CompositeID()`. It would not be necessary if
     /// support existed for property wrappers in protocols.
     ///
-    /// - Note: Adding this property to ``Model`` rather than making the ``AnyID`` protocol
-    ///   and ``anyID`` property public was chosen because implementing a new conformance for
-    ///   ``AnyID`` can not be done correctly from outside FluentKit; it would be mostly useless
-    ///   and potentially confusing public API surface.
+    /// > Note: Adding this property to ``Model`` rather than making the ``AnyID`` protocol
+    /// > and ``anyID`` property public was chosen because implementing a new conformance for
+    /// > ``AnyID`` can not be done correctly from outside FluentKit; it would be mostly useless
+    /// > and potentially confusing public API surface.
     public var _$idExists: Bool {
         get { self.anyID.exists }
         set { self.anyID.exists = newValue }

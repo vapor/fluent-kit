@@ -60,7 +60,7 @@ public final class ArrayTestDatabase: TestDatabase {
         self.results.withLockedValue { $0.append(result.map { TestOutput($0) }) }
     }
 
-    public func execute(query: DatabaseQuery, onOutput: @Sendable (any DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) throws {
         guard !self.results.withLockedValue({ $0.isEmpty }) else {
             throw TestDatabaseError.ranOutOfResults
         }
@@ -79,7 +79,7 @@ public final class CallbackTestDatabase: TestDatabase {
         self.callback = callback
     }
 
-    public func execute(query: DatabaseQuery, onOutput: @Sendable (any DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) throws {
         for output in self.callback(query) {
             onOutput(output)
         }
@@ -89,7 +89,7 @@ public final class CallbackTestDatabase: TestDatabase {
 public protocol TestDatabase: Sendable {
     func execute(
         query: DatabaseQuery,
-        onOutput: @Sendable (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) throws
 }
 
@@ -131,11 +131,11 @@ private struct _TestDatabase: Database {
         return self.eventLoop.makeSucceededFuture(())
     }
 
-    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
 
-    func withConnection<T>(_ closure: (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
 
@@ -209,7 +209,7 @@ public struct TestOutput: DatabaseOutput {
 
 
     public var description: String {
-        return "<dummy>"
+        "<dummy>"
     }
 
     var dummyDecodedFields: [FieldKey: any Sendable]
@@ -258,9 +258,11 @@ public struct TestOutput: DatabaseOutput {
 
 private final class CollectInput: DatabaseInput {
     var storage: [FieldKey: DatabaseQuery.Value]
+    
     init() {
         self.storage = [:]
     }
+    
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.storage[key] = value
     }

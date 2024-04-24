@@ -40,12 +40,12 @@ extension AnyProperty where Self: Property {
 /// receives output from the results of read queries, provides input to write queries,
 /// and/or represents one or more model fields.
 ///
-/// - Note: Most "database" properties participate in all three aspects (is/has fields,
-///   provides input, receives output), but certain properties only participate in
-///   receiving output (most notably the non-parent relation property types). Those
-///   properties only behave in this manner because the ability to look up the needed
-///   information on demand was not available in Swift until after the implementation was
-///   effectively complete. They should not be considered actual "database" properties.
+/// > Note: Most "database" properties participate in all three aspects (is/has fields,
+/// > provides input, receives output), but certain properties only participate in
+/// > receiving output (most notably the non-parent relation property types). Those
+/// > properties only behave in this manner because the ability to look up the needed
+/// > information on demand was not available in Swift until after the implementation was
+/// > effectively complete. They should not be considered actual "database" properties.
 public protocol AnyDatabaseProperty: AnyProperty {
     var keys: [FieldKey] { get }
     func input(to input: any DatabaseInput)
@@ -59,12 +59,12 @@ public protocol AnyDatabaseProperty: AnyProperty {
 /// which also wish to participate. Just about every property type is codable.
 ///
 /// > Warning: The various relation property types sometimes behave somewhat oddly
-///   when encoded and/or decoded.
+/// > when encoded and/or decoded.
 ///
 /// > TODO: When corresponding parent and child properties on their respective models
-///   refer to each other, such as due to both relations being eager-loaded, both
-///   encoding and decoding will crash due to infinite recursion. At some point, look
-///   into a way to at least error out rather than crashing.
+/// > refer to each other, such as due to both relations being eager-loaded, both
+/// > encoding and decoding will crash due to infinite recursion. At some point, look
+/// > into a way to at least error out rather than crashing.
 public protocol AnyCodableProperty: AnyProperty {
     /// Encode the property's data to an external representation.
     func encode(to encoder: any Encoder) throws
@@ -115,12 +115,12 @@ public protocol QueryableProperty: AnyQueryableProperty, Property {
     /// version of ``AnyQueryableProperty/queryableValue()-3uzih``, except that this
     /// version will always have an input and thus can not return `nil`.
     ///
-    /// - Warning: The existence of this method implies that any two identically-typed
-    ///   instances of a property _must_ encode their values into queries in exactly
-    ///   the same fashion, and Fluent does have code paths which proceed on that
-    ///   assumption. For example, this requirement is the primary reason that a
-    ///   ``TimestampProperty``'s format is represented as a generic type parameter
-    ///   rather than being provided to an initializer.
+    /// > Warning: The existence of this method implies that any two identically-typed
+    /// > instances of a property _must_ encode their values into queries in exactly
+    /// > the same fashion, and Fluent does have code paths which proceed on that
+    /// > assumption. For example, this requirement is the primary reason that a
+    /// > ``TimestampProperty``'s format is represented as a generic type parameter
+    /// > rather than being provided to an initializer.
     static func queryValue(_ value: Value) -> DatabaseQuery.Value
 }
 

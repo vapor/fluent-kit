@@ -24,40 +24,40 @@ internal struct _FastChildIterator: IteratorProtocol {
         deinit { self.freeFunc(self.ptr) }
     }
     
-#if compiler(<6)
+    #if compiler(<6)
     private let subject: AnyObject
     private let type: Any.Type
     private let childCount: Int
     private var index: Int
-#else
+    #else
     private var iterator: Mirror.Children.Iterator
-#endif
+    #endif
     private var lastNameBox: _CStringBox?
     
-#if compiler(<6)
+    #if compiler(<6)
     fileprivate init(subject: AnyObject, type: Any.Type, childCount: Int) {
         self.subject = subject
         self.type = type
         self.childCount = childCount
         self.index = 0
     }
-#else
+    #else
     fileprivate init(iterator: Mirror.Children.Iterator) {
         self.iterator = iterator
     }
-#endif
+    #endif
     
     init(subject: AnyObject) {
-#if compiler(<6)
+        #if compiler(<6)
         let type = _getNormalizedType(subject, type: Swift.type(of: subject))
         self.init(
             subject: subject,
             type: type,
             childCount: _getChildCount(subject, type: type)
         )
-#else
+        #else
         self.init(iterator: Mirror(reflecting: subject).children.makeIterator())
-#endif
+        #endif
     }
     
     /// The `name` pointer returned by this iterator has a rather unusual lifetime guarantee - it shall remain valid
@@ -66,10 +66,10 @@ internal struct _FastChildIterator: IteratorProtocol {
     /// `Mirror` as much as possible, and copying a name that many callers will never even access to begin with is
     /// hardly a means to that end.
     ///
-    /// - Note: Ironically, in the fallback case that uses `Mirror` directly, preserving this semantic actually imposes
-    ///   an _additional_ performance penalty.
+    /// > Note: Ironically, in the fallback case that uses `Mirror` directly, preserving this semantic actually imposes
+    /// > an _additional_ performance penalty.
     mutating func next() -> (name: UnsafePointer<CChar>?, child: Any)? {
-#if compiler(<6)
+        #if compiler(<6)
         guard self.index < self.childCount else {
             self.lastNameBox = nil // ensure any lingering name gets freed
             return nil
@@ -82,7 +82,7 @@ internal struct _FastChildIterator: IteratorProtocol {
         self.index += 1
         self.lastNameBox = nameC.flatMap { nameC in freeFunc.map { _CStringBox(ptr: nameC, freeFunc: $0) } } // don't make a box if there's no name or no free function to call
         return (name: nameC, child: child)
-#else
+        #else
         guard let child = self.iterator.next() else {
             self.lastNameBox = nil
             return nil
@@ -100,34 +100,34 @@ internal struct _FastChildIterator: IteratorProtocol {
             self.lastNameBox = nil
             return (name: nil, child: child.value)
         }
-#endif
+        #endif
     }
 }
 
 internal struct _FastChildSequence: Sequence {
-#if compiler(<6)
+    #if compiler(<6)
     private let subject: AnyObject
     private let type: Any.Type
     private let childCount: Int
-#else
+    #else
     private let children: Mirror.Children
-#endif
+    #endif
 
     init(subject: AnyObject) {
-#if compiler(<6)
+        #if compiler(<6)
         self.subject = subject
         self.type = _getNormalizedType(subject, type: Swift.type(of: subject))
         self.childCount = _getChildCount(subject, type: self.type)
-#else
+        #else
         self.children = Mirror(reflecting: subject).children
-#endif
+        #endif
     }
     
     func makeIterator() -> _FastChildIterator {
-#if compiler(<6)
-        return _FastChildIterator(subject: self.subject, type: self.type, childCount: self.childCount)
-#else
-        return _FastChildIterator(iterator: self.children.makeIterator())
-#endif
+        #if compiler(<6)
+        _FastChildIterator(subject: self.subject, type: self.type, childCount: self.childCount)
+        #else
+        _FastChildIterator(iterator: self.children.makeIterator())
+        #endif
     }
 }

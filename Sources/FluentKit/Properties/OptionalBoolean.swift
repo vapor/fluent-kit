@@ -41,7 +41,7 @@ extension Fields {
 ///         func revert(on database: Database) async throws -> Void { try await database.schema(MyModel.schema).delete() }
 ///     }
 ///
-/// - Note: See also ``BooleanProperty`` and ``BooleanPropertyFormat``.
+/// > Note: See also ``BooleanProperty`` and ``BooleanPropertyFormat``.
 @propertyWrapper
 public final class OptionalBooleanProperty<Model, Format>: @unchecked Sendable
     where Model: FluentKit.Fields, Format: BooleanPropertyFormat

@@ -280,7 +280,7 @@ public struct SQLSchemaConverter {
 
 /// SQL drop constraint expression with awareness of foreign keys (for MySQL's broken sake).
 ///
-/// - Warning: This is only public for the benefit of `FluentBenchmarks`. DO NOT USE THIS TYPE!
+/// > Warning: This is only public for the benefit of `FluentBenchmarks`. DO NOT USE THIS TYPE!
 public struct SQLDropTypedConstraint: SQLExpression {
     public let name: any SQLExpression
     public let algorithm: DatabaseSchema.ConstraintAlgorithm

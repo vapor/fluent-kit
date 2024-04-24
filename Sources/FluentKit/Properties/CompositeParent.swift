@@ -22,8 +22,8 @@ extension Model {
 ///
 /// Example:
 ///
-/// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
-///   complex relationships.
+/// > Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
+/// > complex relationships.
 ///
 /// ```
 /// final class TableMetadata: Model {
