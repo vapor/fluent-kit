@@ -133,7 +133,8 @@ final class AsyncFluentKitTests: XCTestCase {
     func testSQLSchemaCustomIndex() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         try await db.schema("foo").field(.custom("INDEX i_foo (foo)")).update()
-        print(db.sqlSerializers)
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"ALTER TABLE "foo" ADD INDEX i_foo (foo)"#)
     }
 
     func testRequiredFieldConstraint() async throws {

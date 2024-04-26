@@ -370,11 +370,16 @@ final class FluentKitTests: XCTestCase {
         let json = """
         {"name": "Earth"}
         """
-        do {
-            _ = try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))
-            XCTFail("should have thrown")
-        } catch {
-            print(error)
+        
+        XCTAssertThrowsError(try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))) {
+            guard case .typeMismatch(let type, let context) = $0 as? DecodingError else {
+                return XCTFail("Expected DecodingError.typeMismatch but got \(String(reflecting: $0))")
+            }
+            XCTAssert(type is Int.Type)
+            guard case .valueNotFound(let vtype, _) = context.underlyingError as? DecodingError else {
+                return XCTFail("Expected underlying error to be DecodingEror.valueNotFound but got \(String(reflecting: context.underlyingError))")
+            }
+            XCTAssert(vtype is Int.Type)
         }
     }
 
@@ -410,22 +415,6 @@ final class FluentKitTests: XCTestCase {
                 )
             )
         )
-
-        // GroupProperty<User, Pet>
-        let a = tanner.$pet
-        print(a)
-
-        // GroupedProperty<User, GroupProperty<Pet, Toy>>
-        let b = tanner.$pet.$toy
-        print(b)
-
-        // GroupedProperty<User, GroupedProperty<Pet, GroupProperty<Toy, Foo>>>
-        let c = tanner.$pet.$toy.$foo
-        print(c)
-
-        // GroupedProperty<User, GroupedProperty<Pet, GroupedProperty<Toy, FieldProperty<Foo, Int>>>>
-        let d = tanner.$pet.$toy.$foo.$bar
-        print(d)
 
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")

@@ -30,6 +30,7 @@ coverage:
 github_checks:
   annotations: true
 ignore:
+- ^Sources/XCTFluent/.*
 - ^Sources/FluentBenchmarks/.*
 - ^Tests/.*
 - ^.build/.*
