@@ -219,7 +219,7 @@ public final class QueryBuilder<Model>
 
     public func all() -> EventLoopFuture<[Model]> {
         #if swift(<5.10)
-        var models: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
+        let models: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
         
         return self
             .all { models.wrappedValue.append($0) }
