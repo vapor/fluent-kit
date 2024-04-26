@@ -43,7 +43,7 @@ extension Fields {
 ///
 /// > Note: See also ``OptionalBooleanProperty`` and ``BooleanPropertyFormat``.
 @propertyWrapper
-public final class BooleanProperty<Model, Format>: @unchecked Sendable
+public final class BooleanProperty<Model, Format>
     where Model: FluentKit.Fields, Format: BooleanPropertyFormat
 {
     @FieldProperty<Model, Format.Value>

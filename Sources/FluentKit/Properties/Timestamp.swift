@@ -17,7 +17,7 @@ public enum TimestampTrigger {
 // MARK: Type
 
 @propertyWrapper
-public final class TimestampProperty<Model, Format>: @unchecked Sendable
+public final class TimestampProperty<Model, Format>
     where Model: FluentKit.Model, Format: TimestampFormat
 {
     @OptionalFieldProperty<Model, Format.Value>
