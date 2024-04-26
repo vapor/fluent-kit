@@ -5,32 +5,58 @@ import SQLKit
 import XCTFluent
 import NIOConcurrencyHelpers
 
-public final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
-    public var inTransaction: Bool {
-        false
+struct FakedDatabaseRow: DatabaseOutput, SQLRow {
+    let data: [String: (any Sendable)?]
+    let schema: String?
+    
+    private func column(for key: FieldKey) -> String { "\(self.schema.map { "\($0)_" } ?? "")\(key.description)" }
+    func schema(_ schema: String) -> any DatabaseOutput { FakedDatabaseRow(self.data, schema: schema) }
+    func contains(_ key: FieldKey) -> Bool { self.contains(column: self.column(for: key)) }
+    func decodeNil(_ key: FieldKey) throws -> Bool { try self.decodeNil(column: self.column(for: key)) }
+    func decode<T: Decodable>(_ key: FieldKey, as: T.Type) throws -> T { try self.decode(column: self.column(for: key), as: T.self) }
+    
+    var allColumns: [String] { .init(self.data.keys) }
+    func contains(column: String) -> Bool { self.data.keys.contains(column) }
+    func decodeNil(column: String) throws -> Bool { self.data[column].map { $0 == nil } ?? true }
+    func decode<D: Decodable>(column c: String, as: D.Type) throws -> D {
+        guard case .some(.some(let v)) = self.data[c] else { throw DecodingError.keyNotFound(SomeCodingKey(stringValue: c), .init(codingPath: [], debugDescription: "")) }
+        guard let value = v as? D else { throw DecodingError.typeMismatch(D.self, .init(codingPath: [], debugDescription: "")) }
+        return value
     }
+    
+    var description: String { "" }
+    
+    init(_ data: [String: (any Sendable)?], schema: String? = nil) {
+        self.data = data
+        self.schema = schema
+    }
+}
+
+final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
+    var inTransaction: Bool { false }
 
     struct Configuration: DatabaseConfiguration {
-        func makeDriver(for databases: Databases) -> any DatabaseDriver {
-            fatalError()
-        }
-
+        func makeDriver(for databases: Databases) -> any DatabaseDriver { fatalError() }
         var middleware: [any AnyModelMiddleware] = []
     }
 
-    public var dialect: any SQLDialect {
-        DummyDatabaseDialect()
-    }
+    var dialect: any SQLDialect { DummyDatabaseDialect() }
 
-    public let context: DatabaseContext
+    let context: DatabaseContext
 
     let _sqlSerializers = NIOLockedValueBox<[SQLSerializer]>([])
-    public var sqlSerializers: [SQLSerializer] {
+    var sqlSerializers: [SQLSerializer] {
         get { self._sqlSerializers.withLockedValue { $0 } }
         set { self._sqlSerializers.withLockedValue { $0 = newValue } }
     }
+    
+    let _fakedRows = NIOLockedValueBox<[[FakedDatabaseRow]]>([])
+    var fakedRows: [[FakedDatabaseRow]] {
+        get { self._fakedRows.withLockedValue { $0 } }
+        set { self._fakedRows.withLockedValue { $0 = newValue } }
+    }
 
-    public init() {
+    init() {
         self.context = .init(
             configuration: Configuration(),
             logger: .init(label: "test"),
@@ -38,50 +64,53 @@ public final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         )
     }
 
-    public func reset() {
+    func reset() {
         self.sqlSerializers = []
     }
     
-    public func execute(
+    func execute(
         query: DatabaseQuery,
         onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
-        var sqlSerializer = SQLSerializer(database: self)
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
-        sqlExpression.serialize(to: &sqlSerializer)
-        self.sqlSerializers.append(sqlSerializer)
-        onOutput(DummyRow())
-        return self.eventLoop.makeSucceededFuture(())
+        
+        return self.execute(sql: sqlExpression, { row in onOutput(row as! any DatabaseOutput) })
     }
 
-    public func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
-        fatalError()
+    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
+        var sqlSerializer = SQLSerializer(database: self)
+        query.serialize(to: &sqlSerializer)
+        self._sqlSerializers.withLockedValue { $0.append(sqlSerializer) }
+        if !self.fakedRows.isEmpty {
+            for row in self._fakedRows.withLockedValue({ $0.removeFirst() }) {
+                onRow(row)
+            }
+        }
+        return self.eventLoop.makeSucceededVoidFuture()
     }
 
-    public func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
     
-    public func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
-        var sqlSerializer = SQLSerializer(database: self)
+    func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
-        sqlExpression.serialize(to: &sqlSerializer)
-        self.sqlSerializers.append(sqlSerializer)
-        return self.eventLoop.makeSucceededFuture(())
+        
+        return self.execute(sql: sqlExpression, { _ in })
     }
 
-    public func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+    func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
         // do nothing
-        self.eventLoop.makeSucceededFuture(())
+        self.eventLoop.makeSucceededVoidFuture()
     }
     
-    public func withConnection<T>(
+    func withConnection<T>(
         _ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>
     ) -> EventLoopFuture<T> {
         closure(self)
     }
 
-    public func shutdown() {
+    func shutdown() {
         //
     }
 }

@@ -117,12 +117,14 @@ final class AsyncFluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.starts(with: #"SELECT DISTINCT "planets"."#), true)
         db.reset()
 
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try await Planet.query(on: db).unique().count(\.$name)
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT "planets"."name") AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
 
-        _ = try await Planet.query(on: db).unique().sum(\.$id)
+        db.fakedRows.append([.init(["aggregate": 1])])
+        _ = try await Planet.query(on: db).unique().aggregate(.sum, \.$id, as: Int.self)
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT "planets"."id") AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
@@ -265,6 +267,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder1() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try await Planet2
             .query(on: db)
             .filter(\.$nickName != "first")
@@ -279,6 +282,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder2() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try await Planet2
             .query(on: db)
             .filter(\.$nickName != nil)
@@ -293,6 +297,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder3() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try await Planet2
             .query(on: db)
             .filter(\.$nickName != "first")
@@ -309,6 +314,7 @@ final class AsyncFluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder4() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try await Planet2
             .query(on: db)
             .filter(\.$nickName != "first")
@@ -356,11 +362,14 @@ final class AsyncFluentKitTests: XCTestCase {
 
     func testPaginationDoesNotCrashWithNegativeNumbers() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        
+        db.fakedRows.append([.init(["aggregate": 1])])
         let pageRequest1 = PageRequest(page: -1, per: 10)
         _ = try await Planet2
             .query(on: db)
             .paginate(pageRequest1)
 
+        db.fakedRows.append([.init(["aggregate": 1])])
         let pageRequest2 = PageRequest(page: 1, per: -10)
         _ = try await Planet2
             .query(on: db)
