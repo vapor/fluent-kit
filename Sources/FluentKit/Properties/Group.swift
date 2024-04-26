@@ -1,3 +1,5 @@
+import NIOConcurrencyHelpers
+
 extension Fields {
     public typealias Group<Value> = GroupProperty<Self, Value>
         where Value: Fields
@@ -6,7 +8,7 @@ extension Fields {
 // MARK: Type
 
 @propertyWrapper @dynamicMemberLookup
-public final class GroupProperty<Model, Value>
+public final class GroupProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
     public let key: FieldKey

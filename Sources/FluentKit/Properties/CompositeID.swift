@@ -1,3 +1,5 @@
+import NIOConcurrencyHelpers
+
 extension Model {
     public typealias CompositeID<Value> = CompositeIDProperty<Self, Value>
         where Value: Fields
@@ -6,11 +8,11 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper @dynamicMemberLookup
-public final class CompositeIDProperty<Model, Value>
+public final class CompositeIDProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Model, Value: FluentKit.Fields
 {
-    public var value: Value?
-    public var exists: Bool
+    public var value: Value? = .init(.init())
+    public var exists: Bool = false
     var cachedOutput: (any DatabaseOutput)?
 
     public var projectedValue: CompositeIDProperty<Model, Value> { self }
@@ -20,11 +22,7 @@ public final class CompositeIDProperty<Model, Value>
         set { self.value = newValue }
     }
 
-    public init() {
-        self.value = .init()
-        self.exists = false
-        self.cachedOutput = nil
-    }
+    public init() {}
 
     public subscript<Nested>(
          dynamicMember keyPath: KeyPath<Value, Nested>

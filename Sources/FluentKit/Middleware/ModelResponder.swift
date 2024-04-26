@@ -1,6 +1,6 @@
 import NIOCore
 
-public protocol AnyModelResponder {
+public protocol AnyModelResponder: Sendable {
     func handle(
         _ event: ModelEvent,
         _ model: any AnyModel,
@@ -31,7 +31,7 @@ extension AnyModelResponder {
 }
 
 internal struct BasicModelResponder<Model>: AnyModelResponder where Model: FluentKit.Model {
-    private let _handle: (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>
+    private let _handle: @Sendable (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>
     
     internal func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
         guard let modelType = model as? Model else {
@@ -45,7 +45,7 @@ internal struct BasicModelResponder<Model>: AnyModelResponder where Model: Fluen
         }
     }
     
-    init(handle: @escaping (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>) {
+    init(handle: @escaping @Sendable (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>) {
         self._handle = handle
     }
 }

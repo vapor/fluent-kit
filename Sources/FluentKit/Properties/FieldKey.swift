@@ -1,4 +1,4 @@
-public indirect enum FieldKey {
+public indirect enum FieldKey: Sendable {
     case id
     case string(String)
     case aggregate

@@ -3,7 +3,7 @@ import Foundation
 import NIOCore
 import XCTest
 
-public final class Governor: Model {
+public final class Governor: Model, @unchecked Sendable {
     public static let schema = "governors"
 
     @ID(key: .id)

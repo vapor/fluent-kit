@@ -147,7 +147,7 @@ private struct ExpeditionPeopleSeed: Migration {
     }
 }
 
-private final class Person: Model {
+private final class Person: Model, @unchecked Sendable {
     static let schema = "people"
 
     @ID
@@ -191,7 +191,7 @@ private struct PersonMigration: Migration {
     }
 }
 
-private final class Expedition: Model {
+private final class Expedition: Model, @unchecked Sendable {
     static let schema = "expeditions"
 
     @ID(key: .id)
@@ -245,7 +245,7 @@ private struct ExpeditionMigration: Migration {
     }
 }
 
-private final class ExpeditionOfficer: Model {
+private final class ExpeditionOfficer: Model, @unchecked Sendable {
     static let schema = "expedition+officer"
 
     @ID(key: .id)
@@ -274,7 +274,7 @@ private struct ExpeditionOfficerMigration: Migration {
     }
 }
 
-private final class ExpeditionScientist: Model {
+private final class ExpeditionScientist: Model, @unchecked Sendable {
     static let schema = "expedition+scientist"
 
     @ID(key: .id)
@@ -304,7 +304,7 @@ private struct ExpeditionScientistMigration: Migration {
 }
 
 
-private final class ExpeditionDoctor: Model {
+private final class ExpeditionDoctor: Model, @unchecked Sendable {
     static let schema = "expedition+doctor"
 
     @ID(key: .id)

@@ -15,16 +15,16 @@ final class FluentKitTests: XCTestCase {
     
     /// This test is a deliberate code smell put in place to prevent an even worse one from
     /// causing problems without at least some warning. Specifically, the output of
-    /// ``AnyModel//description`` is rather precise when it comes to labeling the input and
+    /// ``AnyModel/description`` is rather precise when it comes to labeling the input and
     /// output dictionaries when they are present. Non-trivial effort was made to produce this
     /// exact textual format. While it is never correct to rely on the output of a
-    /// ``description`` method (aside special cases like ``LosslessStringConvertible`` types),
+    /// `description` method (aside special cases like `LosslessStringConvertible` types),
     /// this has been public API for ages; [Hyrum's Law](https://www.hyrumslaw.com) thus applies.
     /// Since no part of Fluent or any of its drivers currently relies, or ever will rely, on
     /// the format in question, it is desirable to enforce that it should never change, just in
     /// case someone actually is relying on it for some hopefully very good reason.
     func testAnyModelDescriptionFormatHasNotChanged() throws {
-        final class Foo: Model {
+        final class Foo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID(key: .id) var id: UUID?
             @Field(key: "name") var name: String
@@ -35,7 +35,9 @@ final class FluentKitTests: XCTestCase {
         let modelEmptyDesc = model.description
         (model.name, model.num) = ("Test", 42)
         let modelInputDesc = model.description
-        try model.save(on: DummyDatabaseForTestSQLSerializer()).wait()
+        let db = DummyDatabaseForTestSQLSerializer()
+        db.fakedRows.append([.init(["id": UUID()])])
+        try model.save(on: db).wait()
         let modelOutputDesc = model.description
         model.num += 1
         let modelBothDesc = model.description
@@ -174,11 +176,13 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.first?.sql.starts(with: #"SELECT DISTINCT "planets"."#), true)
         db.reset()
         
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try? Planet.query(on: db).unique().count(\.$name).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT COUNT(DISTINCT "planets"."name") AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
         
+        db.fakedRows.append([.init(["aggregate": Int?(1)])])
         _ = try? Planet.query(on: db).unique().sum(\.$id).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT SUM(DISTINCT "planets"."id") AS "aggregate" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
@@ -188,7 +192,8 @@ final class FluentKitTests: XCTestCase {
     func testSQLSchemaCustomIndex() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         try db.schema("foo").field(.custom("INDEX i_foo (foo)")).update().wait()
-        print(db.sqlSerializers)
+        XCTAssertEqual(db.sqlSerializers.count, 1)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"ALTER TABLE "foo" ADD INDEX i_foo (foo)"#)
     }
   
     func testRequiredFieldConstraint() throws {
@@ -365,11 +370,12 @@ final class FluentKitTests: XCTestCase {
         let json = """
         {"name": "Earth"}
         """
-        do {
-            _ = try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))
-            XCTFail("should have thrown")
-        } catch {
-            print(error)
+        
+        XCTAssertThrowsError(try JSONDecoder().decode(Planet2.self, from: Data(json.utf8))) {
+            guard case .typeMismatch(let type, _) = $0 as? DecodingError else {
+                return XCTFail("Expected DecodingError.typeMismatch but got \(String(reflecting: $0))")
+            }
+            XCTAssert(type is Int.Type)
         }
     }
 
@@ -406,22 +412,6 @@ final class FluentKitTests: XCTestCase {
             )
         )
 
-        // GroupProperty<User, Pet>
-        let a = tanner.$pet
-        print(a)
-
-        // GroupedProperty<User, GroupProperty<Pet, Toy>>
-        let b = tanner.$pet.$toy
-        print(b)
-
-        // GroupedProperty<User, GroupedProperty<Pet, GroupProperty<Toy, Foo>>>
-        let c = tanner.$pet.$toy.$foo
-        print(c)
-
-        // GroupedProperty<User, GroupedProperty<Pet, GroupedProperty<Toy, FieldProperty<Foo, Int>>>>
-        let d = tanner.$pet.$toy.$foo.$bar
-        print(d)
-
         XCTAssertEqual(tanner.pet.name, "Ziz")
         XCTAssertEqual(tanner.$pet.$name.value, "Ziz")
         XCTAssertEqual(User.path(for: \.$pet.$toy.$foo.$bar).map { $0.description }, ["pet_toy_foo_bar"])
@@ -438,6 +428,7 @@ final class FluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder1() throws {
             let db = DummyDatabaseForTestSQLSerializer()
+            db.fakedRows.append([.init(["aggregate": 1])])
             _ = try Planet2
                 .query(on: db)
                 .filter(\.$nickName != "first")
@@ -452,6 +443,7 @@ final class FluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder2() throws {
             let db = DummyDatabaseForTestSQLSerializer()
+            db.fakedRows.append([.init(["aggregate": 1])])
             _ = try Planet2
                 .query(on: db)
                 .filter(\.$nickName != nil)
@@ -466,6 +458,7 @@ final class FluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder3() throws {
             let db = DummyDatabaseForTestSQLSerializer()
+            db.fakedRows.append([.init(["aggregate": 1])])
             _ = try Planet2
                 .query(on: db)
                 .filter(\.$nickName != "first")
@@ -482,6 +475,7 @@ final class FluentKitTests: XCTestCase {
 
     func testPlanet2FilterPlaceholder4() throws {
         let db = DummyDatabaseForTestSQLSerializer()
+            db.fakedRows.append([.init(["aggregate": 1])])
         _ = try Planet2
             .query(on: db)
             .filter(\.$nickName != "first")
@@ -509,7 +503,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class EFoo: Model {
+        final class EFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID var id: UUID?
             @Enum(key: "bar") var bar: Bar
@@ -537,7 +531,7 @@ final class FluentKitTests: XCTestCase {
         enum Bar: String, Codable, Equatable {
             case baz
         }
-        final class OEFoo: Model {
+        final class OEFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID var id: UUID?
             @OptionalEnum(key: "bar") var bar: Bar?
@@ -563,8 +557,11 @@ final class FluentKitTests: XCTestCase {
     
     func testOptionalParentCoding() throws {
         let db = DummyDatabaseForTestSQLSerializer()
+        db.fakedRows.append([.init(["id": 1])])
         let prefoo = PreFoo(boo: true); try prefoo.create(on: db).wait()
+        db.fakedRows.append([.init(["id": 2])])
         let foo1 = AtFoo(preFoo: prefoo); try foo1.create(on: db).wait()
+        db.fakedRows.append([.init(["id": 3])])
         let foo2 = AtFoo(preFoo: nil); try foo2.create(on: db).wait()
         prefoo.$foos.fromId = prefoo.id//; prefoo.$foos.value = []
         
@@ -618,14 +615,14 @@ final class FluentKitTests: XCTestCase {
     }
     
     func testGroupCoding() throws {
-        final class GroupedFoo: Fields {
+        final class GroupedFoo: Fields, @unchecked Sendable {
             @Field(key: "hello")
             var string: String
             
             init() {}
         }
         
-        final class GroupFoo: Model {
+        final class GroupFoo: Model, @unchecked Sendable {
             static let schema = "group_foos"
             
             @ID(key: .id) var id: UUID?
@@ -659,7 +656,7 @@ final class FluentKitTests: XCTestCase {
     }
 
     func testDatabaseGeneratedIDOverride() throws {
-        final class DGOFoo: Model {
+        final class DGOFoo: Model, @unchecked Sendable {
             static let schema = "foos"
             @ID(custom: .id) var id: Int?
             init() { }
@@ -701,12 +698,14 @@ final class FluentKitTests: XCTestCase {
     func testPaginationDoesntCrashWithNegativeNumbers() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         let pageRequest1 = PageRequest(page: -1, per: 10)
+        db.fakedRows.append([.init(["aggregate": 1])])
         XCTAssertNoThrow(try Planet2
             .query(on: db)
             .paginate(pageRequest1)
             .wait())
 
         let pageRequest2 = PageRequest(page: 1, per: -10)
+        db.fakedRows.append([.init(["aggregate": 1])])
         XCTAssertNoThrow(try Planet2
             .query(on: db)
             .paginate(pageRequest2)
@@ -726,6 +725,7 @@ final class FluentKitTests: XCTestCase {
             .create()
             .wait()
         _ = try AltPlanet.query(on: db).filter(\.$name == "Earth").all().wait()
+        db.fakedRows.append([.init(["id": UUID()])])
         try AltPlanet(name: "Nemesis").create(on: db).wait()
         let updateMe = AltPlanet(id: UUID(), name: "Vulcan")
         updateMe.$id.exists = true
@@ -766,7 +766,7 @@ final class FluentKitTests: XCTestCase {
     }
     
     func testCreatingModelArraysWithUnsetOptionalProperties() throws {
-        final class Foo: Model {
+        final class Foo: Model, @unchecked Sendable {
             static let schema = "foos"
             
             @ID var id: UUID?
@@ -798,7 +798,7 @@ final class FluentKitTests: XCTestCase {
     }
 }
 
-final class User: Model {
+final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID var id: UUID?
@@ -825,7 +825,7 @@ enum Animal: String, Codable {
     case cat, dog
 }
 
-final class Pet: Fields {
+final class Pet: Fields, @unchecked Sendable {
     @Field(key: "name")
     var name: String
 
@@ -848,7 +848,7 @@ enum ToyType: String, Codable {
     case mouse, bone
 }
 
-final class Toy: Fields {
+final class Toy: Fields, @unchecked Sendable {
     @Field(key: "name")
     var name: String
 
@@ -867,7 +867,7 @@ final class Toy: Fields {
     }
 }
 
-final class ToyFoo: Fields {
+final class ToyFoo: Fields, @unchecked Sendable {
     @Field(key: "bar")
     var bar: Int
 
@@ -882,7 +882,7 @@ final class ToyFoo: Fields {
     }
 }
 
-final class Planet2: Model {
+final class Planet2: Model, @unchecked Sendable {
     static let schema = "planets"
     
     @ID(custom: "id", generatedBy: .database)
@@ -906,7 +906,7 @@ final class Planet2: Model {
     }
 }
 
-final class AltPlanet: Model {
+final class AltPlanet: Model, @unchecked Sendable {
     public static let space: String? = "mirror_universe"
     public static let schema = "planets"
 
@@ -945,7 +945,7 @@ final class AltPlanet: Model {
     }
 }
 
-final class LotsOfFields: Model {
+final class LotsOfFields: Model, @unchecked Sendable {
     static let schema = "never_used"
     
     @ID(custom: "id")
@@ -1012,7 +1012,7 @@ final class LotsOfFields: Model {
     var field20: String
 }
 
-final class AtFoo: Model {
+final class AtFoo: Model, @unchecked Sendable {
     static let schema = "foos"
     
     @ID(custom: .id) var id: Int?
@@ -1022,7 +1022,7 @@ final class AtFoo: Model {
     init(id: Int? = nil, preFoo: PreFoo?) { self.id = id; self.$preFoo.id = preFoo?.id; self.$preFoo.value = preFoo }
 }
 
-final class PostFoo: Model {
+final class PostFoo: Model, @unchecked Sendable {
     static let schema = "postfoos"
     
     @ID(custom: .id) var id: Int?
@@ -1031,7 +1031,7 @@ final class PostFoo: Model {
     init(id: Int? = nil) { self.id = id }
 }
 
-final class PreFoo: Model {
+final class PreFoo: Model, @unchecked Sendable {
     static let schema = "prefoos"
     
     @ID(custom: .id) var id: Int?
@@ -1045,10 +1045,10 @@ final class PreFoo: Model {
     init(id: Int? = nil, boo: Bool) { self.id = id; self.boo = boo }
 }
 
-final class MidFoo: Model {
+final class MidFoo: Model, @unchecked Sendable {
     static let schema = "midfoos"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "prefoo_id") var prefoo: PreFoo
         @Parent(key: "postfoo_id") var postfoo: PostFoo
     

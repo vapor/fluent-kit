@@ -176,7 +176,7 @@ extension FluentBenchmarker {
     }
 }
 
-final class Category: Model {
+final class Category: Model, @unchecked Sendable {
     static let schema = "categories"
     @ID var id: UUID?
     @Field(key: "name") var name: String

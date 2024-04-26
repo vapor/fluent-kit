@@ -1,4 +1,6 @@
 import NIOCore
+import NIOConcurrencyHelpers
+import struct SQLKit.SomeCodingKey
 
 extension Model {
     public typealias Parent<To> = ParentProperty<Self, To>
@@ -8,7 +10,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class ParentProperty<From, To>
+public final class ParentProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     @FieldProperty<From, To.IDValue>
@@ -164,15 +166,15 @@ private struct ParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
+        let sets = UnsafeTransfer(wrappedValue: Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id }))
+        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.wrappedValue.keys))
         if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-            for (parentId, models) in sets {
+            for (parentId, models) in sets.wrappedValue {
                 guard let parent = parents[parentId] else {
                     database.logger.debug(
                         "Missing parent model in eager-load lookup results.",

@@ -318,7 +318,6 @@ public struct SQLQueryConverter {
         }
     }
 
-    
     private func value(_ value: DatabaseQuery.Value) -> any SQLExpression {
         switch value {
         case .bind(let encodable):
@@ -382,9 +381,9 @@ private struct EncodableDatabaseInput: Encodable {
     let input: [FieldKey: DatabaseQuery.Value]
 
     func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: FluentKit.SomeCodingKey.self)
+        var container = encoder.container(keyedBy: SomeCodingKey.self)
         for (key, value) in self.input {
-            try container.encode(EncodableDatabaseValue(value: value), forKey: FluentKit.SomeCodingKey(stringValue: key.description))
+            try container.encode(EncodableDatabaseValue(value: value), forKey: SomeCodingKey(stringValue: key.description))
         }
     }
 }
@@ -392,14 +391,15 @@ private struct EncodableDatabaseInput: Encodable {
 private struct EncodableDatabaseValue: Encodable {
     let value: DatabaseQuery.Value
     func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+
         switch self.value {
         case .bind(let encodable):
-            try encodable.encode(to: encoder)
+            try container.encode(encodable)
         case .null:
-            var container = encoder.singleValueContainer()
             try container.encodeNil()
         case .dictionary(let dictionary):
-            try EncodableDatabaseInput(input: dictionary).encode(to: encoder)
+            try container.encode(EncodableDatabaseInput(input: dictionary))
         default:
             fatalError("Unsupported codable database value: \(self.value)")
         }

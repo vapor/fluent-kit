@@ -169,7 +169,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)
@@ -213,7 +213,7 @@ private struct UserMigration: Migration {
 }
 
 
-private final class Event: Model {
+private final class Event: Model, @unchecked Sendable {
     static let schema = "events"
 
     @ID(key: .id)

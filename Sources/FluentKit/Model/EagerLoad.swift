@@ -11,7 +11,7 @@ extension EagerLoader {
     }
 }
 
-public protocol AnyEagerLoader {
+public protocol AnyEagerLoader: Sendable {
     func anyRun(models: [any AnyModel], on database: any Database) -> EventLoopFuture<Void>
 }
 

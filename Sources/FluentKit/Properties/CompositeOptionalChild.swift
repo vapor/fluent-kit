@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     /// A convenience alias for ``CompositeOptionalChildProperty``. It is strongly recommended that callers use this
@@ -22,8 +23,8 @@ extension Model {
 ///
 /// Example:
 ///
-/// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
-///   complex relationships.
+/// > Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
+/// > complex relationships.
 ///
 /// ```
 /// final class TableMetadata: Model {
@@ -58,7 +59,7 @@ extension Model {
 /// }
 /// ```
 @propertyWrapper
-public final class CompositeOptionalChildProperty<From, To>
+public final class CompositeOptionalChildProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model, From.IDValue: Fields
 {
     public typealias Key = CompositeRelationParentKey<From, To>
@@ -187,10 +188,11 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
+        let models = UnsafeTransfer(wrappedValue: models)
         return builder.all().map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
             
-            for model in models {
+            for model in models.wrappedValue {
                 model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
             }
         }

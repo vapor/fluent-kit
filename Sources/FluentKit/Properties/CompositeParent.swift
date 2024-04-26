@@ -1,4 +1,6 @@
 import NIOCore
+import NIOConcurrencyHelpers
+import struct SQLKit.SomeCodingKey
 
 extension Model {
     /// A convenience alias for ``CompositeParentProperty``. It is strongly recommended that callers use this
@@ -20,8 +22,8 @@ extension Model {
 ///
 /// Example:
 ///
-/// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
-///   complex relationships.
+/// > Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
+/// > complex relationships.
 ///
 /// ```
 /// final class TableMetadata: Model {
@@ -64,12 +66,12 @@ extension Model {
 /// }
 /// ```
 @propertyWrapper @dynamicMemberLookup
-public final class CompositeParentProperty<From, To>
+public final class CompositeParentProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model, To.IDValue: Fields
 {
     public let prefix: FieldKey
     public let prefixingStrategy: KeyPrefixingStrategy
-    public var id: To.IDValue
+    public var id: To.IDValue = .init()
     public var value: To?
 
     public var wrappedValue: To {
@@ -91,7 +93,6 @@ public final class CompositeParentProperty<From, To>
     ///   - strategy: The strategy to use when applying prefixes to keys. ``KeyPrefixingStrategy/snakeCase`` is
     ///     the default.
     public init(prefix: FieldKey, strategy: KeyPrefixingStrategy = .snakeCase) {
-        self.id = .init()
         self.prefix = prefix
         self.prefixingStrategy = strategy
     }
@@ -194,11 +195,11 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let sets = UnsafeTransfer(wrappedValue: Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id }))
 
         let builder = To.query(on: database)
             .group(.or) {
-                _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
+                _ = sets.wrappedValue.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
         if (self.withDeleted) {
             builder.withDeleted()
@@ -207,7 +208,7 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
             .flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-                for (parentId, models) in sets {
+                for (parentId, models) in sets.wrappedValue {
                     guard let parent = parents[parentId] else {
                         database.logger.debug(
                             "Missing parent model in eager-load lookup results.",

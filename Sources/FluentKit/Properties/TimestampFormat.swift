@@ -1,10 +1,11 @@
-import class NIO.ThreadSpecificVariable
+import NIOConcurrencyHelpers
+import class NIOPosix.ThreadSpecificVariable
 import Foundation
 
 // MARK: Format
 
-public protocol TimestampFormat {
-    associatedtype Value: Codable
+public protocol TimestampFormat: Sendable {
+    associatedtype Value: Codable & Sendable
 
     func parse(_ value: Value) -> Date?
     func serialize(_ date: Date) -> Value?
@@ -52,32 +53,21 @@ extension TimestampFormatFactory {
         withMilliseconds: Bool
     ) -> TimestampFormatFactory<ISO8601TimestampFormat> {
         .init {
-            let formatter = ISO8601DateFormatter.threadSpecific
-            if withMilliseconds {
-                formatter.formatOptions.insert(.withFractionalSeconds)
+            ISO8601DateFormatter.shared.withLockedValue {
+                if withMilliseconds {
+                    $0.formatOptions.insert(.withFractionalSeconds)
+                }
+                return ISO8601TimestampFormat(formatter: $0)
             }
-            return ISO8601TimestampFormat(formatter: formatter)
         }
     }
 }
 
 extension ISO8601DateFormatter {
-    private static var cache: ThreadSpecificVariable<ISO8601DateFormatter> = .init()
-
-    static var threadSpecific: ISO8601DateFormatter {
-        let formatter: ISO8601DateFormatter
-        if let existing = ISO8601DateFormatter.cache.currentValue {
-            formatter = existing
-        } else {
-            let new = ISO8601DateFormatter()
-            self.cache.currentValue = new
-            formatter = new
-        }
-        return formatter
-    }
+    fileprivate static let shared: NIOLockedValueBox<ISO8601DateFormatter> = .init(.init())
 }
 
-public struct ISO8601TimestampFormat: TimestampFormat {
+public struct ISO8601TimestampFormat: TimestampFormat, @unchecked Sendable {
     public typealias Value = String
 
     let formatter: ISO8601DateFormatter

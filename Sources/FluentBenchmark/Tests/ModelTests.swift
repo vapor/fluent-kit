@@ -183,12 +183,12 @@ extension FluentBenchmarker {
     
     private func testModel_useOfFieldsWithoutGroup() throws {
         try runTest(#function, []) {
-            final class Contained: Fields {
+            final class Contained: Fields, @unchecked Sendable {
                 @Field(key: "something") var something: String
                 @Field(key: "another") var another: Int
                 init() {}
             }
-            final class Enclosure: Model {
+            final class Enclosure: Model, @unchecked Sendable {
                 static let schema = "enclosures"
                 @ID(custom: .id) var id: Int?
                 @Field(key: "primary") var primary: Contained
@@ -253,7 +253,7 @@ struct BadFooOutput: DatabaseOutput {
     }
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)
@@ -283,7 +283,7 @@ private struct FooMigration: Migration {
     }
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)
@@ -312,7 +312,7 @@ private struct UserMigration: Migration {
     }
 }
 
-private final class Todo: Model {
+private final class Todo: Model, @unchecked Sendable {
     static let schema = "todos"
 
     @ID(key: .id)
@@ -341,7 +341,7 @@ private struct TodoMigration: Migration {
     }
 }
 
-private final class Bar: Model {
+private final class Bar: Model, @unchecked Sendable {
     static let schema = "bars"
 
     @ID

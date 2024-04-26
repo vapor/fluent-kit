@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
@@ -8,7 +9,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class SiblingsProperty<From, To, Through>
+public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     where From: Model, To: Model, Through: Model
 {
     public enum AttachMethod {
@@ -148,18 +149,19 @@ public final class SiblingsProperty<From, To, Through>
         _ to: To,
         method: AttachMethod,
         on database: any Database,
-        _ edit: @escaping (Through) -> () = { _ in }
+        _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         switch method {
         case .always:
             return self.attach(to, on: database, edit)
         case .ifNotExists:
-            return self.isAttached(to: to, on: database).flatMap { alreadyAttached in
+            let to = UnsafeTransfer(wrappedValue: to)
+            return self.isAttached(to: to.wrappedValue, on: database).flatMap { alreadyAttached in
                 if alreadyAttached {
                     return database.eventLoop.makeSucceededFuture(())
                 }
 
-                return self.attach(to, on: database, edit)
+                return self.attach(to.wrappedValue, on: database, edit)
             }
         }
     }
@@ -173,7 +175,7 @@ public final class SiblingsProperty<From, To, Through>
     public func attach(
         _ to: To,
         on database: any Database,
-        _ edit: (Through) -> () = { _ in }
+        _ edit: @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
@@ -388,15 +390,14 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
-        return builder.all()
-            .flatMapThrowing
-        {
+        let models = UnsafeTransfer(wrappedValue: models)
+        return builder.all().flatMapThrowing {
             var map: [From.IDValue: [To]] = [:]
             for to in $0 {
                 let fromID = try to.joined(Through.self)[keyPath: from].id
                 map[fromID, default: []].append(to)
             }
-            for model in models {
+            for model in models.wrappedValue {
                 guard let id = model.id else { throw FluentError.idRequired }
                 model[keyPath: self.relationKey].value = map[id] ?? []
             }

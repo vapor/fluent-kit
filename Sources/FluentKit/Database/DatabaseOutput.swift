@@ -1,4 +1,4 @@
-public protocol DatabaseOutput: CustomStringConvertible {
+public protocol DatabaseOutput: CustomStringConvertible, Sendable {
     func schema(_ schema: String) -> any DatabaseOutput
     func contains(_ key: FieldKey) -> Bool
     func decodeNil(_ key: FieldKey) throws -> Bool

@@ -1,4 +1,6 @@
 import NIOCore
+import NIOConcurrencyHelpers
+import struct SQLKit.SomeCodingKey
 
 extension Model {
     public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
@@ -8,7 +10,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class OptionalParentProperty<From, To>
+public final class OptionalParentProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     @OptionalFieldProperty<From, To.IDValue>
@@ -170,23 +172,24 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        var sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let nilParentModels = sets.removeValue(forKey: nil) ?? []
+        var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let nilParentModels = UnsafeTransfer(wrappedValue: _sets.removeValue(forKey: nil) ?? [])
+        let sets = UnsafeTransfer(wrappedValue: _sets)
 
-        if sets.isEmpty {
+        if sets.wrappedValue.isEmpty {
             // Fetching "To" objects is unnecessary when no models have an id for "To".
-            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+            nilParentModels.wrappedValue.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
             return database.eventLoop.makeSucceededVoidFuture()
         }
 
-        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys.compactMap { $0 }))
+        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.wrappedValue.keys.compactMap { $0 }))
         if (self.withDeleted) {
             builder.withDeleted()
         }
         return builder.all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-            for (parentId, models) in sets {
+            for (parentId, models) in sets.wrappedValue {
                 guard let parent = parents[parentId!] else {
                     database.logger.debug(
                         "Missing parent model in eager-load lookup results.",
@@ -196,7 +199,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
                 }
                 models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
             }
-            nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+            nilParentModels.wrappedValue.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
         }
     }
 }

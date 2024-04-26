@@ -4,15 +4,15 @@ import NIOCore
 import NIOPosix
 import Logging
 
-public struct DatabaseConfigurationFactory {
-    public let make: () -> any DatabaseConfiguration
+public struct DatabaseConfigurationFactory: Sendable {
+    public let make: @Sendable () -> any DatabaseConfiguration
 
-    public init(make: @escaping () -> any DatabaseConfiguration) {
+    public init(make: @escaping @Sendable () -> any DatabaseConfiguration) {
         self.make = make
     }
 }
 
-public final class Databases {
+public final class Databases: @unchecked Sendable { // @unchecked is safe here; mutable data is protected by lock
     public let eventLoopGroup: any EventLoopGroup
     public let threadPool: NIOThreadPool
 

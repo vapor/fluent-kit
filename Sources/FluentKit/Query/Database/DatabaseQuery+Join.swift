@@ -1,9 +1,9 @@
 extension DatabaseQuery {
-    public enum Join {
-        public enum Method {
+    public enum Join: Sendable {
+        public enum Method: Sendable {
             case inner
             case left
-            case custom(Any)
+            case custom(any Sendable)
         }
 
         case join(
@@ -31,7 +31,7 @@ extension DatabaseQuery {
             filters: [Filter]
         )
         
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

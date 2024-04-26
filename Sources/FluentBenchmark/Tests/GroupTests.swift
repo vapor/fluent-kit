@@ -90,7 +90,7 @@ extension FluentBenchmarker {
 
 // MARK: Flat
 
-private final class FlatMoon: Model {
+private final class FlatMoon: Model, @unchecked Sendable {
     static let schema = "moons"
 
     @ID(key: .id)
@@ -99,7 +99,7 @@ private final class FlatMoon: Model {
     @Field(key: "name")
     var name: String
 
-    final class Planet: Fields {
+    final class Planet: Fields, @unchecked Sendable {
         @Field(key: "name")
         var name: String
 
@@ -110,11 +110,11 @@ private final class FlatMoon: Model {
         @Field(key: "type")
         var type: PlanetType
 
-        final class Star: Fields {
+        final class Star: Fields, @unchecked Sendable {
             @Field(key: "name")
             var name: String
 
-            final class Galaxy: Fields {
+            final class Galaxy: Fields, @unchecked Sendable {
                 @Field(key: "name")
                 var name: String
 

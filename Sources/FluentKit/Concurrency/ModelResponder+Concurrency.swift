@@ -10,11 +10,11 @@ public protocol AnyAsyncModelResponder: AnyModelResponder {
 
 extension AnyAsyncModelResponder {
     func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
-        let promise = db.eventLoop.makePromise(of: Void.self)
-        promise.completeWithTask {
-            try await self.handle(event, model, on: db)
+        let model = UnsafeTransfer(wrappedValue: model)
+        
+        return db.eventLoop.makeFutureWithTask {
+            try await self.handle(event, model.wrappedValue, on: db)
         }
-        return promise.futureResult
     }
 }
 
@@ -41,13 +41,13 @@ extension AnyAsyncModelResponder {
 }
 
 internal struct AsyncBasicModelResponder: AnyAsyncModelResponder {
-    private let _handle: (ModelEvent, any AnyModel, any Database) async throws -> Void
+    private let _handle: @Sendable (ModelEvent, any AnyModel, any Database) async throws -> Void
 
     internal func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) async throws {
-        return try await _handle(event, model, db)
+        try await _handle(event, model, db)
     }
 
-    init(handle: @escaping (ModelEvent, any AnyModel, any Database) async throws -> Void) {
+    init(handle: @escaping @Sendable (ModelEvent, any AnyModel, any Database) async throws -> Void) {
         self._handle = handle
     }
 }

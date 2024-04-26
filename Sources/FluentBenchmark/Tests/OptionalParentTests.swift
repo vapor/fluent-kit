@@ -89,7 +89,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     struct Pet: Codable {
         enum Animal: String, Codable {
             case cat, dog

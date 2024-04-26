@@ -146,22 +146,37 @@ public final class QueryBuilder<Model>
 
     // MARK: Fetch
 
-    public func chunk(max: Int, closure: @escaping ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
-        var partial: [Result<Model, any Error>] = []
-        partial.reserveCapacity(max)
+    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
+        #if swift(<5.10)
+        let partial: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
+        partial.wrappedValue.reserveCapacity(max)
         return self.all { row in
-            partial.append(row)
-            if partial.count >= max {
-                closure(partial)
-                partial = []
+            partial.wrappedValue.append(row)
+            if partial.wrappedValue.count >= max {
+                closure(partial.wrappedValue)
+                partial.wrappedValue.removeAll(keepingCapacity: true)
             }
         }.flatMapThrowing { 
-            // any stragglers
-            if !partial.isEmpty {
-                closure(partial)
-                partial = []
+            if !partial.wrappedValue.isEmpty {
+                closure(partial.wrappedValue)
             }
         }
+        #else
+        nonisolated(unsafe) var partial: [Result<UnsafeTransfer<Model>, any Error>] = []
+        partial.reserveCapacity(max)
+        
+        return self.all { row in
+            partial.append(row.map { .init(wrappedValue: $0) })
+            if partial.count >= max {
+                closure(partial.map { $0.map { $0.wrappedValue } })
+                partial.removeAll(keepingCapacity: true)
+            }
+        }.flatMapThrowing {
+            if !partial.isEmpty {
+                closure(partial.map { $0.map { $0.wrappedValue } })
+            }
+        }
+        #endif
     }
 
     public func first() -> EventLoopFuture<Model?> {
@@ -203,41 +218,66 @@ public final class QueryBuilder<Model>
     }
 
     public func all() -> EventLoopFuture<[Model]> {
-        var models: [Result<Model, any Error>] = []
-        return self.all { model in
-            models.append(model)
-        }.flatMapThrowing {
-            return try models
-                .map { try $0.get() }
-        }
+        #if swift(<5.10)
+        let models: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
+        
+        return self
+            .all { models.wrappedValue.append($0) }
+            .flatMapThrowing { try models.wrappedValue.map { try $0.get() } }
+        #else
+        nonisolated(unsafe) var models: [Result<UnsafeTransfer<Model>, any Error>] = []
+
+        return self
+            .all { models.append($0.map { .init(wrappedValue: $0) }) }
+            .flatMapThrowing { try models.map { try $0.get().wrappedValue } }
+        #endif
     }
 
     public func run() -> EventLoopFuture<Void> {
-        return self.run { _ in }
+        self.run { _ in }
     }
 
-    public func all(_ onOutput: @escaping (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
-        var all: [Model] = []
+    #if swift(<5.10)
+    private final class AllWrapper: @unchecked Sendable {
+        var all: [UnsafeTransfer<Model>] = []
+        var isEmpty: Bool { self.all.isEmpty }
+        func append(_ value: UnsafeTransfer<Model>) { self.all.append(value) }
+    }
+    #endif
+
+    public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
+        #if swift(>=5.10)
+        nonisolated(unsafe) var all: [UnsafeTransfer<Model>] = []
+        #else
+        let all: AllWrapper = .init()
+        #endif
 
         let done = self.run { output in
             onOutput(.init(catching: {
                 let model = Model()
                 try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
-                all.append(model)
+                all.append(.init(wrappedValue: model))
                 return model
             }))
         }
 
         // if eager loads exist, run them, and update models
         if !self.eagerLoaders.isEmpty {
-            return done.flatMap {
+            let loaders = self.eagerLoaders
+            let db = self.database
+            
+            return done.flatMapWithEventLoop {
                 // don't run eager loads if result set was empty
                 guard !all.isEmpty else {
-                    return self.database.eventLoop.makeSucceededFuture(())
+                    return $1.makeSucceededFuture(())
                 }
                 // run eager loads
-                return self.eagerLoaders.sequencedFlatMapEach(on: self.database.eventLoop) { loader in
-                    return loader.anyRun(models: all, on: self.database)
+                return loaders.sequencedFlatMapEach(on: $1) { loader in
+                    #if swift(>=5.10)
+                    loader.anyRun(models: all.map { $0.wrappedValue }, on: db)
+                    #else
+                    loader.anyRun(models: all.all.map { $0.wrappedValue }, on: db)
+                    #endif
                 }
             }
         } else {
@@ -251,7 +291,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    public func run(_ onOutput: @escaping (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run(_ onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -293,19 +333,15 @@ public final class QueryBuilder<Model>
         self.database.logger.debug("\(self.query)")
         self.database.history?.add(self.query)
 
+        let loop = self.database.eventLoop
+        
         let done = self.database.execute(query: query) { output in
-            assert(
-                self.database.eventLoop.inEventLoop,
-                "database driver output was not on eventloop"
-            )
+            loop.assertInEventLoop()
             onOutput(output)
         }
 
         done.whenComplete { _ in
-            assert(
-                self.database.eventLoop.inEventLoop,
-                "database driver output was not on eventloop"
-            )
+            loop.assertInEventLoop()
         }
         return done
     }
@@ -328,3 +364,7 @@ public final class QueryBuilder<Model>
         query.input = data
     }
 }
+
+#if swift(<6) || !$InferSendableFromCaptures
+extension Swift.KeyPath: @unchecked Sendable {}
+#endif

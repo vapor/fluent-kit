@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     public typealias Children<To> = ChildrenProperty<Self, To>
@@ -8,14 +9,14 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class ChildrenProperty<From, To>
+public final class ChildrenProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     public typealias Key = RelationParentKey<From, To>
 
     public let parentKey: Key
     var idValue: From.IDValue?
-
+    
     public var value: [To]?
 
     public convenience init(for parent: KeyPath<To, To.Parent<From>>) {
@@ -102,7 +103,7 @@ extension ChildrenProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension ChildrenProperty: AnyProperty { }
+extension ChildrenProperty: AnyProperty {}
 
 extension ChildrenProperty: Property {
     public typealias Model = From
@@ -220,8 +221,9 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
+        let models = UnsafeTransfer(wrappedValue: models)
         return builder.all().map {
-            for model in models {
+            for model in models.wrappedValue {
                 let id = model[keyPath: self.relationKey].idValue!
                 model[keyPath: self.relationKey].value = $0.filter { child in
                     switch parentKey {

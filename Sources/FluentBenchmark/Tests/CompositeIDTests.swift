@@ -175,10 +175,10 @@ extension FluentBenchmarker {
     }
 }
 
-public final class CompositeIDModel: Model {
+public final class CompositeIDModel: Model, @unchecked Sendable {
     public static let schema = "composite_id_models"
     
-    public final class IDValue: Fields, Hashable {
+    public final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Field(key: "name")
         public var name: String
         

@@ -24,7 +24,7 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let test = ArrayTestDatabase()
         test.append([
             TestOutput([
-                "id": planet.id as Any,
+                "id": planet.id as any Sendable,
                 "name": planet.name,
                 "star_id": UUID()
             ])
@@ -41,7 +41,7 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let test = ArrayTestDatabase()
         test.append([
             TestOutput([
-                "id": planet.id as Any,
+                "id": planet.id as any Sendable,
                 "name": planet.name,
                 "star_id": UUID()
             ]),
@@ -250,9 +250,14 @@ final class AsyncQueryBuilderTests: XCTestCase {
 
     // https://github.com/vapor/fluent-kit/issues/310
     func testJoinOverloads() async throws {
-        var query: DatabaseQuery?
+        final class UnsafeMutableTransferBox<Wrapped>: @unchecked Sendable {
+            var wrappedValue: Wrapped
+            init(_ wrappedValue: Wrapped) { self.wrappedValue = wrappedValue }
+        }
+
+        let query = UnsafeMutableTransferBox<DatabaseQuery?>(nil)
         let test = CallbackTestDatabase {
-            query = $0
+            query.wrappedValue = $0
             return []
         }
         let planets = try await Planet.query(on: test.db)
@@ -261,8 +266,8 @@ final class AsyncQueryBuilderTests: XCTestCase {
             .filter(Star.self, \.$name, .custom("ilike"), "sun")
             .all()
         XCTAssertEqual(planets.count, 0)
-        XCTAssertNotNil(query?.filters[1])
-        switch query?.filters[1] {
+        XCTAssertNotNil(query.wrappedValue?.filters[1])
+        switch query.wrappedValue?.filters[1] {
         case .value(let field, let method, let value):
             switch field {
             case .path(let path, let schema):

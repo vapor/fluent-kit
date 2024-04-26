@@ -1,19 +1,19 @@
 import NIOCore
 
 public extension Database {
-    func transaction<T>(_ closure: @Sendable @escaping (any Database) async throws -> T) async throws -> T {
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T {
         try await self.transaction { db -> EventLoopFuture<T> in
-            let promise = self.eventLoop.makePromise(of: T.self)
-            promise.completeWithTask{ try await closure(db) }
-            return promise.futureResult
+            self.eventLoop.makeFutureWithTask {
+                try await closure(db)
+            }
         }.get()
     }
 
-    func withConnection<T>(_ closure: @Sendable @escaping (any Database) async throws -> T) async throws -> T {
+    func withConnection<T>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T {
         try await self.withConnection { db -> EventLoopFuture<T> in
-            let promise = self.eventLoop.makePromise(of: T.self)
-            promise.completeWithTask{ try await closure(db) }
-            return promise.futureResult
+            self.eventLoop.makeFutureWithTask {
+                try await closure(db)
+            }
         }.get()
     }
 }

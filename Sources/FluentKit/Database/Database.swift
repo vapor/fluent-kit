@@ -1,12 +1,12 @@
 import NIOCore
 import Logging
 
-public protocol Database {
+public protocol Database: Sendable {
     var context: DatabaseContext { get }
     
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void>
 
     func execute(
@@ -19,9 +19,9 @@ public protocol Database {
 
     var inTransaction: Bool { get }
 
-    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
     
-    func withConnection<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 extension Database {
@@ -54,17 +54,17 @@ extension Database {
     }
 }
 
-public protocol DatabaseDriver {
+public protocol DatabaseDriver: Sendable {
     func makeDatabase(with context: DatabaseContext) -> any Database
     func shutdown()
 }
 
-public protocol DatabaseConfiguration {
+public protocol DatabaseConfiguration: Sendable {
     var middleware: [any AnyModelMiddleware] { get set }
     func makeDriver(for databases: Databases) -> any DatabaseDriver
 }
 
-public struct DatabaseContext {
+public struct DatabaseContext: Sendable {
     public let configuration: any DatabaseConfiguration
     public let logger: Logger
     public let eventLoop: any EventLoop

@@ -130,7 +130,7 @@ public func <= <Model, Field>(lhs: KeyPath<Model, Field>, rhs: DatabaseQuery.Val
     .init(lhs, .lessThanOrEqual, rhs)
 }
 
-public struct ModelValueFilter<Model> where Model: Fields {
+public struct ModelValueFilter<Model>: Sendable where Model: Fields {
     public init<Field>(
         _ lhs: KeyPath<Model, Field>,
         _ method: DatabaseQuery.Filter.Method,
@@ -148,7 +148,7 @@ public struct ModelValueFilter<Model> where Model: Fields {
     let value: DatabaseQuery.Value
 }
 
-public struct ModelCompositeIDFilter<Model> where Model: FluentKit.Model, Model.IDValue: Fields {
+public struct ModelCompositeIDFilter<Model>: Sendable where Model: FluentKit.Model, Model.IDValue: Fields {
     public init(
         _ method: DatabaseQuery.Filter.Method,
         _ rhs: Model.IDValue

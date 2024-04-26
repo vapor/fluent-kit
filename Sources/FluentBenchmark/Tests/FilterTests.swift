@@ -247,7 +247,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class FooOwner: Model {
+private final class FooOwner: Model, @unchecked Sendable {
     static let schema = "foo_owners"
     @ID var id: UUID?
     @Field(key: "name") var name: String
@@ -263,7 +263,7 @@ private enum FooEnumType: String, Codable {
     case baz
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
     @ID var id: UUID?
     @OptionalField(key: "bar") var bar: String?

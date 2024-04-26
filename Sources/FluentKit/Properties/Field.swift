@@ -1,13 +1,15 @@
+import NIOConcurrencyHelpers
+
 extension Fields {
     public typealias Field<Value> = FieldProperty<Self, Value>
-        where Value: Codable
+        where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
-public final class FieldProperty<Model, Value>
-    where Model: FluentKit.Fields, Value: Codable
+public final class FieldProperty<Model, Value>: @unchecked Sendable
+    where Model: FluentKit.Fields, Value: Codable & Sendable
 {
     public let key: FieldKey
     var outputValue: Value?

@@ -1,15 +1,15 @@
 extension DatabaseQuery {
-    public enum Aggregate {
-        public enum Method {
+    public enum Aggregate: Sendable {
+        public enum Method: Sendable {
             case count
             case sum
             case average
             case minimum
             case maximum
-            case custom(Any)
+            case custom(any Sendable)
         }
         case field(Field, Method)
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

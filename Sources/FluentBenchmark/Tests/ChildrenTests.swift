@@ -35,7 +35,7 @@ extension FluentBenchmarker {
 }
 
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)
@@ -71,7 +71,7 @@ private struct FooMigration: Migration {
     }
 }
 
-private final class Bar: Model {
+private final class Bar: Model, @unchecked Sendable {
     static let schema = "bars"
 
     @ID(key: .id)
@@ -106,7 +106,7 @@ private struct BarMigration: Migration {
     }
 }
 
-private final class Baz: Model {
+private final class Baz: Model, @unchecked Sendable {
     static let schema = "bazs"
 
     @ID(key: .id)

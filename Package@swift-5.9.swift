@@ -44,16 +44,16 @@ let package = Package(
         .target(
             name: "FluentSQL",
             dependencies: [
-                .target(name: "FluentKit"),
                 .product(name: "SQLKit", package: "sql-kit"),
+                .target(name: "FluentKit"),
             ],
             swiftSettings: swiftSettings
         ),
         .target(
             name: "XCTFluent",
             dependencies: [
-                .target(name: "FluentKit"),
                 .product(name: "NIOEmbedded", package: "swift-nio"),
+                .target(name: "FluentKit"),
             ],
             swiftSettings: swiftSettings
         ),
@@ -71,4 +71,12 @@ let package = Package(
 
 var swiftSettings: [SwiftSetting] { [
     .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("ConciseMagicFile"),
+    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("ImportObjcForwardDeclarations"),
+    .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableUpcomingFeature("IsolatedDefaultValues"),
+    .enableUpcomingFeature("GlobalConcurrency"),
+    .enableUpcomingFeature("StrictConcurrency"),
+    .enableExperimentalFeature("StrictConcurrency=complete"),
 ] }

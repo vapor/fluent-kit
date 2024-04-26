@@ -115,9 +115,9 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 /// to a  ``QueryBuilder/group(_:_:)`` closure to create an instance of this type.
 ///
 /// > Tip: Applying a query filter via database input is especially useful as a means of providing generic
-///   support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
-///   as the input for a ``CompositeParentProperty`` filters the query according to the set of appropriately
-///   prefixed field keys the property encapsulates.
+/// > support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
+/// > as the input for a ``CompositeParentProperty`` filters the query according to the set of appropriately
+/// > prefixed field keys the property encapsulates.
 internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Schema>: DatabaseInput {
     let builder: QueryBuilder<BuilderModel>
     let inverted: Bool

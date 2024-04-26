@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
@@ -8,7 +9,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class OptionalChildProperty<From, To>
+public final class OptionalChildProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     public typealias Key = RelationParentKey<From, To>
@@ -205,8 +206,9 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
+        let models = UnsafeTransfer(wrappedValue: models)
         return builder.all().map {
-            for model in models {
+            for model in models.wrappedValue {
                 let id = model[keyPath: self.relationKey].idValue!
                 let children = $0.filter { child in
                     switch parentKey {
