@@ -25,7 +25,7 @@ extension FluentBenchmarker {
                     XCTFail("bad chunk count")
                     return
                 }
-                fetched64.withLockedValue { $0 += 1 }
+                fetched64.withLockedValue { $0 += chunk.count }
             }.wait()
 
             guard fetched64.withLockedValue({ $0 }) == 512 else {
@@ -40,7 +40,7 @@ extension FluentBenchmarker {
                     XCTFail("bad chunk count")
                     return
                 }
-                fetched511.withLockedValue { $0 += 1 }
+                fetched511.withLockedValue { $0 += chunk.count }
             }.wait()
 
             guard fetched511.withLockedValue({ $0 }) == 512 else {
