@@ -113,20 +113,20 @@ public struct Migrator: Sendable {
     private func migrators<Result>(
         _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
     ) -> EventLoopFuture<[Result]> {
-        self.migrations.storage.withLockedValue { $0.map {
+        self.migrations.storage.withLockedValue { $0 }.map {
             handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLevel: self.migrationLogLevel))
-        } }
+        }
         .flatten(on: self.eventLoop)
     }
 }
 
 private final class DatabaseMigrator: Sendable {
     let migrations: [any Migration]
-    let database: any Database & Sendable
+    let database: any Database
     let id: DatabaseID?
     let migrationLogLevel: Logger.Level
 
-    init(id: DatabaseID?, database: any Database & Sendable, migrations: [any Migration], migrationLogLevel: Logger.Level) {
+    init(id: DatabaseID?, database: any Database, migrations: [any Migration], migrationLogLevel: Logger.Level) {
         self.migrations = migrations
         self.database = database
         self.id = id
@@ -172,11 +172,11 @@ private final class DatabaseMigrator: Sendable {
     }
 
     func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.preparedMigrations(batch: number).sequencedFlatMapEach(self.revert)
+        self.preparedMigrations(batch: number).sequencedFlatMapEach { self.revert($0) }
     }
 
     func revertAllBatches() -> EventLoopFuture<Void> {
-        self.preparedMigrations().sequencedFlatMapEach(self.revert)
+        self.preparedMigrations().sequencedFlatMapEach { self.revert($0) }
     }
 
     // MARK: Preview
