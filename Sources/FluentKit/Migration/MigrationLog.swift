@@ -6,7 +6,7 @@ public final class MigrationLog: Model, @unchecked Sendable {
     public static let schema = "_fluent_migrations"
 
     public static var migration: any Migration {
-        return MigrationLogMigration()
+        MigrationLogMigration()
     }
 
     @ID(key: .id)
@@ -35,9 +35,9 @@ public final class MigrationLog: Model, @unchecked Sendable {
     }
 }
 
-private struct MigrationLogMigration: AsyncMigration {
-    func prepare(on database: any Database) async throws {
-        try await database.schema(MigrationLog.schema)
+private struct MigrationLogMigration: Migration {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
+        database.schema(MigrationLog.schema)
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("batch", .int, .required)
@@ -48,7 +48,7 @@ private struct MigrationLogMigration: AsyncMigration {
             .create()
     }
 
-    func revert(on database: any Database) async throws {
-        try await database.schema(MigrationLog.schema).delete()
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
+        database.schema(MigrationLog.schema).delete()
     }
 }
