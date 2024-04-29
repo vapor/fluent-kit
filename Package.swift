@@ -16,9 +16,9 @@ let package = Package(
         .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.55.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.2"),
-        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.28.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.62.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.29.2"),
         .package(url: "https://github.com/vapor/async-kit.git", from: "1.17.0"),
     ],
     targets: [

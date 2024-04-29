@@ -207,16 +207,21 @@ extension FluentBenchmarker {
                 }
             }
             
+            try (self.database as? any SQLDatabase)?.drop(table: Enclosure.schema).ifExists().run().wait()
             try Enclosure.Migration().prepare(on: self.database).wait()
             
-            let enclosure = Enclosure()
-            enclosure.primary = .init()
-            enclosure.primary.something = ""
-            enclosure.primary.another = 0
-            enclosure.additional = []
-            try enclosure.save(on: self.database).wait()
-            
-            try! Enclosure.Migration().revert(on: self.database).wait()
+            do {
+                let enclosure = Enclosure()
+                enclosure.primary = .init()
+                enclosure.primary.something = ""
+                enclosure.primary.another = 0
+                enclosure.additional = []
+                try enclosure.save(on: self.database).wait()
+            } catch {
+                try? Enclosure.Migration().revert(on: self.database).wait()
+                throw error
+            }
+            try Enclosure.Migration().revert(on: self.database).wait()
         }
     }
 }
