@@ -3,8 +3,8 @@
 
 @_documentation(visibility: internal) @_exported import Logging
 
-@_documentation(visibility: internal) @_exported import protocol NIOCore.EventLoop
-@_documentation(visibility: internal) @_exported import class NIOCore.EventLoopFuture
-@_documentation(visibility: internal) @_exported import struct NIOCore.EventLoopPromise
-@_documentation(visibility: internal) @_exported import protocol NIOCore.EventLoopGroup
-@_documentation(visibility: internal) @_exported import class NIOPosix.NIOThreadPool
+@_documentation(visibility: internal) @_exported import protocol NIO.EventLoop
+@_documentation(visibility: internal) @_exported import class NIO.EventLoopFuture
+@_documentation(visibility: internal) @_exported import struct NIO.EventLoopPromise
+@_documentation(visibility: internal) @_exported import protocol NIO.EventLoopGroup
+@_documentation(visibility: internal) @_exported import class NIO.NIOThreadPool
