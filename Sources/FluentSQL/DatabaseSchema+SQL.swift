@@ -2,8 +2,13 @@ import FluentKit
 import SQLKit
 
 extension DatabaseSchema.DataType {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(_ dataType: SQLDataType) -> Self {
@@ -20,8 +25,13 @@ extension DatabaseSchema.DataType {
 }
 
 extension DatabaseSchema.Constraint {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(_ constraint: SQLTableConstraintAlgorithm) -> Self {
@@ -38,8 +48,13 @@ extension DatabaseSchema.Constraint {
 }
 
 extension DatabaseSchema.ConstraintAlgorithm {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
@@ -52,8 +67,13 @@ extension DatabaseSchema.ConstraintAlgorithm {
 }
 
 extension DatabaseSchema.FieldConstraint {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(_ constraint: SQLColumnConstraintAlgorithm) -> Self {
@@ -70,8 +90,13 @@ extension DatabaseSchema.FieldConstraint {
 }
 
 extension DatabaseSchema.FieldDefinition {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
@@ -84,8 +109,13 @@ extension DatabaseSchema.FieldDefinition {
 }
 
 extension DatabaseSchema.FieldUpdate {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
@@ -98,8 +128,13 @@ extension DatabaseSchema.FieldUpdate {
 }
 
 extension DatabaseSchema.FieldName {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
@@ -112,8 +147,13 @@ extension DatabaseSchema.FieldName {
 }
 
 extension DatabaseSchema.ConstraintDelete {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
