@@ -45,7 +45,7 @@ extension FluentBenchmarker {
             SolarSystem()
         ]) {
             let moon = try Moon.query(on: self.database)
-                .filter(\.$name == .sql(raw: "'Moon'"))
+                .filter(\.$name == .sql(unsafeRaw: "'Moon'"))
                 .first()
                 .wait()
 
