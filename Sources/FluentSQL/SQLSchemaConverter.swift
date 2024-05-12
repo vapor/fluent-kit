@@ -270,18 +270,8 @@ public struct SQLSchemaConverter {
         }
     }
 
-    private func key(_ key: FieldKey) -> String {
-        switch key {
-        case .id:
-            return "id"
-        case .string(let name):
-            return name
-        case .aggregate:
-            return key.description
-        case .prefix(let prefix, let key):
-            return self.key(prefix) + self.key(key)
-        }
-    }
+    @inline(__always)
+    private func key(_ key: FieldKey) -> String { key.description }
 }
 
 /// SQL drop constraint expression with awareness of foreign keys (for MySQL's broken sake).
