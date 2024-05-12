@@ -10,7 +10,7 @@ public struct DatabaseSchema: Sendable {
     
     public indirect enum DataType: Sendable {
         public static var int: DataType {
-            return .int64
+            .int64
         }
         case int8
         case int16
@@ -18,7 +18,7 @@ public struct DatabaseSchema: Sendable {
         case int64
         
         public static var uint: DataType {
-            return .uint64
+            .uint64
         }
         case uint8
         case uint16

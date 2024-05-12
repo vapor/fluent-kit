@@ -28,7 +28,7 @@ extension Migration {
     }
 
     internal var defaultName: String {
-#if compiler(>=5.3) && compiler(<6)
+        #if compiler(<6)
         /// `String.init(reflecting:)` creates a `Mirror` unconditionally, but
         /// when the parameter is a metatype (such as is the case here), that
         /// mirror is never actually used for anything. Unfortunately, just
@@ -39,9 +39,9 @@ extension Migration {
         /// runtime function directly instead of taking the huge speed hit just
         /// because the leading underscore makes it harder to ignore the
         /// fragility of the usage.
-        return Swift._typeName(Self.self, qualified: true)
-#else
-        return String(reflecting: Self.self)
-#endif
+        Swift._typeName(Self.self, qualified: true)
+        #else
+        String(reflecting: Self.self)
+        #endif
     }
 }

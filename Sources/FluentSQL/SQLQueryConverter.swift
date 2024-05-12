@@ -9,13 +9,14 @@ public struct SQLQueryConverter {
     
     public func convert(_ fluent: DatabaseQuery) -> any SQLExpression {
         let sql: any SQLExpression
+        
         switch fluent.action {
-        case .read, .aggregate: sql = self.select(fluent)
-        case .create: sql = self.insert(fluent)
-        case .update: sql = self.update(fluent)
-        case .delete: sql = self.delete(fluent)
-        case .custom(let any):
-            return custom(any)
+        case .read:            sql = self.select(fluent)
+        case .aggregate:       sql = self.select(fluent)
+        case .create:          sql = self.insert(fluent)
+        case .update:          sql = self.update(fluent)
+        case .delete:          sql = self.delete(fluent)
+        case .custom(let any): sql = custom(any)
         }
         return sql
     }
@@ -35,12 +36,18 @@ public struct SQLQueryConverter {
         }
         update.values = query.fields.compactMap { field -> (any SQLExpression)? in
             let key: FieldKey
+            
             switch field {
-            case let .path(path, schema) where schema == query.schema: key = path[0]
-            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space: key = path[0]
-            default: return nil
+            case let .path(path, schema) where schema == query.schema:
+                key = path[0]
+            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space:
+                key = path[0]
+            default:
+                return nil
             }
-            guard let value = values[key] else { return nil }
+            guard let value = values[key] else {
+                return nil
+            }
             return SQLColumnAssignment(setting: SQLColumn(self.key(key)), to: self.value(value))
         }
         update.predicate = self.filters(query.filters)
@@ -91,20 +98,26 @@ public struct SQLQueryConverter {
         // 2. Translate the list of fields from the query, which are given in a meaningful, deterministic order, into
         //    column designators.
         let keys = query.fields.compactMap { field -> FieldKey? in switch field {
-            case let .path(path, schema) where schema == query.schema: return path[0]
-            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space: return path[0]
-            default: return nil
+            case let .path(path, schema) where schema == query.schema:
+                return path[0]
+            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space:
+                return path[0]
+            default:
+                return nil
         } }
         
         // 3. Filter the list of columns so that only those actually provided are specified to the insert query, since
         //    often a query will insert only some of a model's fields while still listing all of them.
-        let usedKeys = keys.filter { firstValues.keys.contains($0) }
+        let usedKeys = keys.filter {
+            firstValues.keys.contains($0)
+        }
         
         // 4. Validate each set of inputs, making sure it provides exactly the keys as the first, and convert the sets
         //    to their underlying SQL representations.
         let dictionaries = query.input.map { input -> [FieldKey: any SQLExpression] in
             guard case let .dictionary(value) = input else { fatalError("Unexpected query input: \(input)") }
             guard Set(value.keys).symmetricDifference(usedKeys).isEmpty else { fatalError("Non-uniform query input: \(query.input)") }
+            
             return value.mapValues(self.value(_:))
         }
         
@@ -217,6 +230,7 @@ public struct SQLQueryConverter {
             return any as! any SQLExpression
         case .field(let field, let method):
             let name: String
+            
             switch method {
             case .average: name = "AVG"
             case .count: name = "COUNT"
@@ -225,6 +239,7 @@ public struct SQLQueryConverter {
             case .minimum: name = "MIN"
             case .custom(let custom): name = custom as! String
             }
+            
             return SQLAlias(
                 SQLFunction(
                     name,
@@ -344,17 +359,9 @@ public struct SQLQueryConverter {
     private func method(_ method: DatabaseQuery.Filter.Method) -> any SQLExpression {
         switch method {
         case .equality(let inverse):
-            if inverse {
-                return SQLBinaryOperator.notEqual
-            } else {
-                return SQLBinaryOperator.equal
-            }
+            return inverse ? SQLBinaryOperator.notEqual : SQLBinaryOperator.equal
         case .subset(let inverse):
-            if inverse {
-                return SQLBinaryOperator.notIn
-            } else {
-                return SQLBinaryOperator.in
-            }
+            return inverse ? SQLBinaryOperator.notIn : SQLBinaryOperator.in
         case .order(let inverse, let equality):
             switch (inverse, equality) {
             case (false, false):
@@ -382,6 +389,7 @@ private struct EncodableDatabaseInput: Encodable {
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: SomeCodingKey.self)
+
         for (key, value) in self.input {
             try container.encode(EncodableDatabaseValue(value: value), forKey: SomeCodingKey(stringValue: key.description))
         }

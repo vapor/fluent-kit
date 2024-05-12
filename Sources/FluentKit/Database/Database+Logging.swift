@@ -33,7 +33,6 @@ extension LoggingOverrideDatabase: Database {
     func execute(
         schema: DatabaseSchema
     ) -> EventLoopFuture<Void> {
-
         self.database.execute(schema: schema)
     }
 
