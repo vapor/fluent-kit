@@ -225,11 +225,11 @@ public final class QueryBuilder<Model>
             .all { models.wrappedValue.append($0) }
             .flatMapThrowing { try models.wrappedValue.map { try $0.get() } }
         #else
-        nonisolated(unsafe) var models: [Result<UnsafeTransfer<Model>, any Error>] = []
+        nonisolated(unsafe) var models: [Result<Model, any Error>] = []
 
         return self
-            .all { models.append($0.map { .init(wrappedValue: $0) }) }
-            .flatMapThrowing { try models.map { try $0.get().wrappedValue } }
+            .all { models.append($0) }
+            .flatMapThrowing { try models.map { try $0.get() } }
         #endif
     }
 
@@ -239,15 +239,15 @@ public final class QueryBuilder<Model>
 
     #if swift(<5.10)
     private final class AllWrapper: @unchecked Sendable {
-        var all: [UnsafeTransfer<Model>] = []
+        var all: [Model] = []
         var isEmpty: Bool { self.all.isEmpty }
-        func append(_ value: UnsafeTransfer<Model>) { self.all.append(value) }
+        func append(_ value: Model) { self.all.append(value) }
     }
     #endif
 
     public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
         #if swift(>=5.10)
-        nonisolated(unsafe) var all: [UnsafeTransfer<Model>] = []
+        nonisolated(unsafe) var all: [Model] = []
         #else
         let all: AllWrapper = .init()
         #endif
@@ -256,7 +256,7 @@ public final class QueryBuilder<Model>
             onOutput(.init(catching: {
                 let model = Model()
                 try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
-                all.append(.init(wrappedValue: model))
+                all.append(model)
                 return model
             }))
         }
@@ -274,9 +274,9 @@ public final class QueryBuilder<Model>
                 // run eager loads
                 return loaders.sequencedFlatMapEach(on: $1) { loader in
                     #if swift(>=5.10)
-                    loader.anyRun(models: all.map { $0.wrappedValue }, on: db)
+                    loader.anyRun(models: all.map { $0 }, on: db)
                     #else
-                    loader.anyRun(models: all.all.map { $0.wrappedValue }, on: db)
+                    loader.anyRun(models: all.all.map { $0 }, on: db)
                     #endif
                 }
             }

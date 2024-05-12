@@ -59,6 +59,13 @@ extension LoggingOverrideDatabase: SQLDatabase where D: SQLDatabase {
     func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
         self.database.execute(sql: query, onRow)
     }
+    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) async throws {
+        try await self.database.execute(sql: query, onRow)
+    }
+    func withSession<R>(_ closure: @escaping @Sendable (any SQLDatabase) async throws -> R) async throws -> R {
+        try await self.database.withSession(closure)
+    }
     var dialect: any SQLDialect { self.database.dialect }
     var version: (any SQLDatabaseReportedVersion)? { self.database.version }
+    var queryLogLevel: Logger.Level? { self.database.queryLogLevel }
 }

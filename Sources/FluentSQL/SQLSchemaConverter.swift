@@ -74,7 +74,7 @@ public struct SQLSchemaConverter {
     }
     
     private func name(_ string: String, space: String? = nil) -> any SQLExpression {
-        return SQLQualifiedTable(string, space: space)
+        SQLKit.SQLQualifiedTable(string, space: space)
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> any SQLExpression {

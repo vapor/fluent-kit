@@ -24,13 +24,15 @@ public struct SQLQueryConverter {
     // MARK: Private
     
     private func delete(_ query: DatabaseQuery) -> any SQLExpression {
-        var delete = SQLDelete(table: SQLQualifiedTable(query.schema, space: query.space))
+        var delete = SQLDelete(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
+
         delete.predicate = self.filters(query.filters)
         return delete
     }
     
     private func update(_ query: DatabaseQuery) -> any SQLExpression {
-        var update = SQLUpdate(table: SQLQualifiedTable(query.schema, space: query.space))
+        var update = SQLUpdate(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
+
         guard case .dictionary(let values) = query.input.first else {
             fatalError("Missing query input generating update query")
         }
@@ -56,7 +58,8 @@ public struct SQLQueryConverter {
     
     private func select(_ query: DatabaseQuery) -> any SQLExpression {
         var select = SQLSelect()
-        select.tables.append(SQLQualifiedTable(query.schema, space: query.space))
+        
+        select.tables.append(SQLKit.SQLQualifiedTable(query.schema, space: query.space))
         switch query.action {
         case .read:
             select.isDistinct = query.isUnique
@@ -88,7 +91,7 @@ public struct SQLQueryConverter {
     }
     
     private func insert(_ query: DatabaseQuery) -> any SQLExpression {
-        var insert = SQLInsert(table: SQLQualifiedTable(query.schema, space: query.space))
+        var insert = SQLInsert(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
 
         // 1. Load the first set of inputs to the query, used as a basis to validate uniformity of all inputs.
         guard let firstInput = query.input.first, case let .dictionary(firstValues) = firstInput else {
@@ -179,8 +182,10 @@ public struct SQLQueryConverter {
         method: DatabaseQuery.Join.Method,
         filters: [DatabaseQuery.Filter]
     ) -> any SQLExpression {
-        let table: any SQLExpression = alias.map { SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0)) } ??
-                                   SQLQualifiedTable(schema, space: space)
+        let table: any SQLExpression = alias.map {
+            SQLAlias(SQLKit.SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0))
+        } ??
+            SQLKit.SQLQualifiedTable(schema, space: space)
         
         return SQLJoin(method: self.joinMethod(method), table: table, expression: self.filters(filters) ?? SQLLiteral.boolean(true))
     }
@@ -210,7 +215,7 @@ public struct SQLQueryConverter {
         
         switch path.count {
         case 1:
-            field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
+            field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLKit.SQLQualifiedTable(schema, space: space))
         case 2...:
             field = self.delegate.nestedFieldExpression(self.key(path[0]), path[1...].map(self.key))
         default:
