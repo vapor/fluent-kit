@@ -2,10 +2,15 @@ import FluentKit
 import SQLKit
 
 extension DatabaseQuery.Value {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
     }
-    
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
+    }
+
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
@@ -16,8 +21,13 @@ extension DatabaseQuery.Value {
 }
 
 extension DatabaseQuery.Field {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(_ identifier: String) -> Self {
@@ -34,8 +44,13 @@ extension DatabaseQuery.Field {
 }
 
 extension DatabaseQuery.Filter {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(
@@ -72,8 +87,13 @@ extension DatabaseQuery.Filter {
 }
 
 extension DatabaseQuery.Join {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
@@ -86,8 +106,13 @@ extension DatabaseQuery.Join {
 }
 
 extension DatabaseQuery.Sort {
+    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
     public static func sql(raw: String) -> Self {
-        .sql(SQLRaw(raw))
+        .sql(unsafeRaw: raw)
+    }
+
+    public static func sql(unsafeRaw: String) -> Self {
+        .sql(SQLRaw(unsafeRaw))
     }
 
     public static func sql(

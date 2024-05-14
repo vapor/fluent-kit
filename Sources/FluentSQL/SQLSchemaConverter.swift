@@ -19,12 +19,14 @@ extension SQLConverterDelegate {
 
 public struct SQLSchemaConverter {
     let delegate: any SQLConverterDelegate
+    
     public init(delegate: any SQLConverterDelegate) {
         self.delegate = delegate
     }
     
     public func convert(_ schema: DatabaseSchema) -> any SQLExpression {
         let schema = self.delegate.beforeConvert(schema)
+        
         switch schema.action {
         case .create:
             return self.create(schema)
@@ -39,6 +41,7 @@ public struct SQLSchemaConverter {
 
     private func update(_ schema: DatabaseSchema) -> any SQLExpression {
         var update = SQLAlterTable(name: self.name(schema.schema, space: schema.space))
+    
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
         update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
@@ -53,11 +56,13 @@ public struct SQLSchemaConverter {
     
     private func delete(_ schema: DatabaseSchema) -> any SQLExpression {
         let delete = SQLDropTable(table: self.name(schema.schema, space: schema.space))
+    
         return delete
     }
     
     private func create(_ schema: DatabaseSchema) -> any SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.schema, space: schema.space))
+    
         create.columns = schema.createFields.map(self.fieldDefinition)
         create.tableConstraints = schema.createConstraints.map {
             self.constraint($0, table: schema.schema)
@@ -69,7 +74,7 @@ public struct SQLSchemaConverter {
     }
     
     private func name(_ string: String, space: String? = nil) -> any SQLExpression {
-        return SQLQualifiedTable(string, space: space)
+        SQLKit.SQLQualifiedTable(string, space: space)
     }
     
     private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> any SQLExpression {
@@ -144,6 +149,7 @@ public struct SQLSchemaConverter {
                 return "\(table).\(self.key(key))"
             }
         }.joined(separator: "+")
+
         return "\(prefix):\(fieldsString)"
     }
 
@@ -264,18 +270,8 @@ public struct SQLSchemaConverter {
         }
     }
 
-    private func key(_ key: FieldKey) -> String {
-        switch key {
-        case .id:
-            return "id"
-        case .string(let name):
-            return name
-        case .aggregate:
-            return key.description
-        case .prefix(let prefix, let key):
-            return self.key(prefix) + self.key(key)
-        }
-    }
+    @inline(__always)
+    private func key(_ key: FieldKey) -> String { key.description }
 }
 
 /// SQL drop constraint expression with awareness of foreign keys (for MySQL's broken sake).
@@ -332,7 +328,9 @@ public struct SQLDropConstraint: SQLExpression {
         } else {
             serializer.write("CONSTRAINT ")
         }
+
         let normalizedName = serializer.dialect.normalizeSQLConstraint(identifier: name)
+
         normalizedName.serialize(to: &serializer)
     }
 }

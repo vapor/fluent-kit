@@ -41,72 +41,60 @@ public struct Migrator: Sendable {
     // MARK: Setup
     
     public func setupIfNeeded() -> EventLoopFuture<Void> {
-        return self.migrators() { $0.setupIfNeeded() }.transform(to: ())
+        self.migrators() { $0.setupIfNeeded() }.transform(to: ())
     }
     
     // MARK: Prepare
     
     public func prepareBatch() -> EventLoopFuture<Void> {
-        return self.migrators() { $0.prepareBatch() }.transform(to: ())
+        self.migrators() { $0.prepareBatch() }.transform(to: ())
     }
     
     // MARK: Revert
     
     public func revertLastBatch() -> EventLoopFuture<Void> {
-        return self.migrators() { $0.revertLastBatch() }.transform(to: ())
+        self.migrators() { $0.revertLastBatch() }.transform(to: ())
     }
     
     public func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        return self.migrators() { $0.revertBatch(number: number) }.transform(to: ())
+        self.migrators() { $0.revertBatch(number: number) }.transform(to: ())
     }
     
     public func revertAllBatches() -> EventLoopFuture<Void> {
-        return self.migrators() { $0.revertAllBatches() }.transform(to: ())
+        self.migrators() { $0.revertAllBatches() }.transform(to: ())
     }
     
     // MARK: Preview
     
     public func previewPrepareBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        return self.migrators() { migrator in
-            return migrator.previewPrepareBatch().and(value: migrator.id)
-        }.map { items in
-            return items.reduce(into: []) { result, batch in
-                let pairs = batch.0.map { ($0, batch.1) }
-                result.append(contentsOf: pairs)
-            }
+        self.migrators() { migrator in
+            migrator.previewPrepareBatch().and(value: migrator.id)
+        }.map {
+            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
     
     public func previewRevertLastBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        return self.migrators() { migrator in
-            return migrator.previewRevertLastBatch().and(value: migrator.id)
-        }.map { items in
-            return items.reduce(into: []) { result, batch in
-                let pairs = batch.0.map { ($0, batch.1) }
-                result.append(contentsOf: pairs)
-            }
+        self.migrators() { migrator in
+            migrator.previewRevertLastBatch().and(value: migrator.id)
+        }.map {
+            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
     
     public func previewRevertBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        return self.migrators() { migrator in
+        self.migrators() { migrator in
             return migrator.previewPrepareBatch().and(value: migrator.id)
-        }.map { items in
-            return items.reduce(into: []) { result, batch in
-                let pairs = batch.0.map { ($0, batch.1) }
-                result.append(contentsOf: pairs)
-            }
+        }.map {
+            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
     
     public func previewRevertAllBatches() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        return self.migrators() { migrator in
-            return migrator.previewRevertAllBatches().and(value: migrator.id)
-        }.map { items in
-            return items.reduce(into: []) { result, batch in
-                let pairs = batch.0.map { ($0, batch.1) }
-                result.append(contentsOf: pairs)
-            }
+        self.migrators() { migrator in
+            migrator.previewRevertAllBatches().and(value: migrator.id)
+        }.map {
+            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
 
@@ -203,22 +191,28 @@ private final class DatabaseMigrator: Sendable {
 
     private func prepare(_ migration: any Migration, batch: Int) -> EventLoopFuture<Void> {
         self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
+        
         return migration.prepare(on: self.database).flatMap {
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
+        
             return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
         }.flatMapErrorThrowing {
             self.database.logger.error("[Migrator] Failed prepare: \(String(reflecting: $0))", metadata: ["migration": .string(migration.name)])
+        
             throw $0
         }
     }
 
     private func revert(_ migration: any Migration) -> EventLoopFuture<Void> {
         self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
+        
         return migration.revert(on: self.database).flatMap {
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
+        
             return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
         }.flatMapErrorThrowing {
             self.database.logger.error("[Migrator] Failed revert: \(String(reflecting: $0))", metadata: ["migration": .string(migration.name)])
+        
             throw $0
         }
     }

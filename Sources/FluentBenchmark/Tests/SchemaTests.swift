@@ -96,7 +96,7 @@ extension FluentBenchmarker {
                 .constraint(.sql(embed: "CONSTRAINT \(normalized1) UNIQUE (\(ident: "id"))"))
                 
                 // Test raw SQL for table constraint definitions (but not names):
-                .constraint(.constraint(.sql(raw: "UNIQUE (id)"), name: "id_unq_2"))
+                .constraint(.constraint(.sql(unsafeRaw: "UNIQUE (id)"), name: "id_unq_2"))
                 .constraint(.constraint(.sql(embed: "UNIQUE (\(ident: "id"))"), name: "id_unq_3"))
                 
                 .create().wait()
@@ -104,7 +104,7 @@ extension FluentBenchmarker {
             if (self.database as! any SQLDatabase).dialect.alterTableSyntax.allowsBatch {
                 try self.database.schema("custom_constraints")
                     // Test raw SQL for dropping constraints:
-                    .deleteConstraint(.sql(embed: "\(SQLDropTypedConstraint(name: SQLIdentifier("id_unq_1"), algorithm: .sql(raw: "")))"))
+                    .deleteConstraint(.sql(embed: "\(SQLDropTypedConstraint(name: SQLIdentifier("id_unq_1"), algorithm: .sql(unsafeRaw: "")))"))
                     .update().wait()
             }
         }
@@ -127,7 +127,7 @@ extension FluentBenchmarker {
                 .field("neverbeid", .string, .sql(embed: "NOT NULL"))
                 
                 // Test raw SQL for entire field definitions:
-                .field(.sql(raw: "idnah INTEGER NOT NULL"))
+                .field(.sql(unsafeRaw: "idnah INTEGER NOT NULL"))
                 .field(.sql(embed: "\(ident: "notid") INTEGER"))
                 
                 .create().wait()

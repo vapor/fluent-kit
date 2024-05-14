@@ -1,8 +1,10 @@
 import FluentKit
 import Foundation
 import NIOCore
+import NIOPosix
 import XCTest
 import SQLKit
+import SQLKitBenchmark
 
 extension FluentBenchmarker {
     public func testSQL() throws {
@@ -10,6 +12,9 @@ extension FluentBenchmarker {
             return
         }
         try self.testSQL_rawDecode(sql)
+        try MultiThreadedEventLoopGroup.singleton.any().makeFutureWithTask {
+            try await SQLBenchmarker(on: sql).runAllTests()
+        }.wait()
     }
 
     private func testSQL_rawDecode(_ sql: any SQLDatabase) throws {

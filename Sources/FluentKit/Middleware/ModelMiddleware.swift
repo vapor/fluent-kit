@@ -40,29 +40,29 @@ extension ModelMiddleware {
     }
     
     public func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.create(model, on: db)
+        next.create(model, on: db)
     }
     
     public func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.update(model, on: db)
+        next.update(model, on: db)
     }
     
     public func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.delete(model, force: force, on: db)
+        next.delete(model, force: force, on: db)
     }
     
     public func softDelete(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.softDelete(model, on: db)
+        next.softDelete(model, on: db)
     }
     
     public func restore(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        return next.restore(model, on: db)
+        next.restore(model, on: db)
     }
 }
 
 extension AnyModelMiddleware {
     func makeResponder(chainingTo responder: any AnyModelResponder) -> any AnyModelResponder {
-        return ModelMiddlewareResponder(middleware: self, responder: responder)
+        ModelMiddlewareResponder(middleware: self, responder: responder)
     }
 }
 
@@ -84,7 +84,7 @@ private struct ModelMiddlewareResponder: AnyModelResponder {
     var responder: any AnyModelResponder
     
     func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
-        return self.middleware.handle(event, model, on: db, chainingTo: responder)
+        self.middleware.handle(event, model, on: db, chainingTo: responder)
     }
 }
 

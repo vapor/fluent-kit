@@ -8,6 +8,7 @@ public final class FluentBenchmarker {
 
     public init(databases: Databases) {
         precondition(databases.ids().count >= 2, "FluentBenchmarker Databases instance must have 2 or more registered databases")
+        
         self.databases = databases
         self.database = self.databases.database(
             logger: .init(label: "codes.vapor.fluent.benchmarker"),

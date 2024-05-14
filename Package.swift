@@ -16,10 +16,10 @@ let package = Package(
         .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.62.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
-        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.29.2"),
-        .package(url: "https://github.com/vapor/async-kit.git", from: "1.17.0"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.29.3"),
+        .package(url: "https://github.com/vapor/async-kit.git", from: "1.19.0"),
     ],
     targets: [
         .target(
@@ -38,6 +38,8 @@ let package = Package(
             dependencies: [
                 .target(name: "FluentKit"),
                 .target(name: "FluentSQL"),
+                .product(name: "SQLKit", package: "sql-kit"),
+                .product(name: "SQLKitBenchmark", package: "sql-kit"),
             ],
             swiftSettings: swiftSettings
         ),
@@ -72,10 +74,4 @@ let package = Package(
 var swiftSettings: [SwiftSetting] { [
     .enableUpcomingFeature("ConciseMagicFile"),
     .enableUpcomingFeature("ForwardTrailingClosures"),
-    .enableUpcomingFeature("ImportObjcForwardDeclarations"),
-    .enableUpcomingFeature("DisableOutwardActorInference"),
-    .enableUpcomingFeature("IsolatedDefaultValues"),
-    .enableUpcomingFeature("GlobalConcurrency"),
-    .enableUpcomingFeature("StrictConcurrency"),
-    .enableExperimentalFeature("StrictConcurrency=complete"),
 ] }

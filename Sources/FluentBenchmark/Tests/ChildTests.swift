@@ -267,7 +267,9 @@ private final class Player: Model, @unchecked Sendable {
 
     init(
         id: Int? = nil,
-        name: String, gameID: Game.IDValue) {
+        name: String,
+        gameID: Game.IDValue
+    ) {
         self.id = id
         self.name = name
         self.$game.id = gameID
