@@ -232,7 +232,7 @@ public struct SQLQueryConverter {
     private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> any SQLExpression {
         switch aggregate {
         case .custom(let any):
-            return any as! any SQLExpression
+            return custom(any)
         case .field(let field, let method):
             let name: String
             
