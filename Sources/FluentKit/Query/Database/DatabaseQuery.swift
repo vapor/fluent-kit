@@ -34,9 +34,10 @@ extension DatabaseQuery: CustomStringConvertible {
             "\(self.action)",
         ]
         if let space = self.space {
-            parts.append(space)
+            parts.append("\(space).\(self.schema)")
+        } else {
+            parts.append(self.schema)
         }
-        parts.append(self.schema)
         if self.isUnique {
             parts.append("unique")
         }
@@ -56,5 +57,26 @@ extension DatabaseQuery: CustomStringConvertible {
             parts.append("offsets=\(self.offsets)")
         }
         return parts.joined(separator: " ")
+    }
+    
+    var describedByLoggingMetadata: Logger.Metadata {
+        func valueMetadata(_ input: DatabaseQuery.Value) -> Logger.MetadataValue {
+            switch input {
+            case .dictionary(let d): return .dictionary(.init(uniqueKeysWithValues: d.map { ($0.description, valueMetadata($1)) }))
+            case .array(let a): return .array(a.map { valueMetadata($0) })
+            default: return .stringConvertible(input)
+            }
+        }
+
+        return [
+            "action": "\(self.action)",
+            "schema": "\(self.space.map { "\($0)." } ?? "")\(self.schema)",
+            "unique": "\(self.isUnique)",
+            "fields": .array(self.fields.map { .stringConvertible($0) }),
+            "filters": .array(self.filters.map { .stringConvertible($0) }),
+            "input": self.input.count == 1 ? valueMetadata(self.input.first!) : .array(self.input.map { valueMetadata($0) }),
+            "limits": .array(self.limits.map { .stringConvertible($0) }),
+            "offsets": .array(self.offsets.map { .stringConvertible($0) }),
+        ]
     }
 }

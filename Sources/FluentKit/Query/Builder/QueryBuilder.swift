@@ -330,7 +330,9 @@ public final class QueryBuilder<Model>
             break
         }
 
-        self.database.logger.debug("\(self.query)")
+        // N.B.: We use `self.query` here instead of `query` so that the logging reflects the query the user requested,
+        // without having to deal with the noise of us having added default fields, or doing deletedAt checks, etc.
+        self.database.logger.debug("Running query", metadata: self.query.describedByLoggingMetadata)
         self.database.history?.add(self.query)
 
         let loop = self.database.eventLoop
