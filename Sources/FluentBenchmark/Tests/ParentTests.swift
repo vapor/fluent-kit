@@ -14,14 +14,14 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            let galaxies = try Galaxy.query(on: self.database)
-                .all().wait()
+            let stars = try Star.query(on: self.database).all().wait()
 
-            let encoded = try JSONEncoder().encode(galaxies)
-            self.database.logger.debug("\(String(decoding: encoded, as: UTF8.self)))")
-            let decoded = try JSONDecoder().decode([GalaxyJSON].self, from: encoded)
-            XCTAssertEqual(galaxies.map { $0.id }, decoded.map { $0.id })
-            XCTAssertEqual(galaxies.map { $0.name }, decoded.map { $0.name })
+            let encoded = try JSONEncoder().encode(stars)
+            self.database.logger.trace("\(String(decoding: encoded, as: UTF8.self)))")
+            let decoded = try JSONDecoder().decode([StarJSON].self, from: encoded)
+            XCTAssertEqual(stars.map { $0.id }, decoded.map { $0.id })
+            XCTAssertEqual(stars.map { $0.name }, decoded.map { $0.name })
+            XCTAssertEqual(stars.map { $0.$galaxy.id }, decoded.map { $0.galaxy.id })
         }
     }
     
@@ -81,33 +81,9 @@ extension FluentBenchmarker {
     }
 }
 
-private struct GalaxyKey: CodingKey, ExpressibleByStringLiteral {
-    var stringValue: String
-    var intValue: Int? {
-        return Int(self.stringValue)
-    }
-
-    init(stringLiteral value: String) {
-        self.stringValue = value
-    }
-
-    init?(stringValue: String) {
-        self.stringValue = stringValue
-    }
-
-    init?(intValue: Int) {
-        self.stringValue = intValue.description
-    }
-}
-
-private struct GalaxyJSON: Codable {
+private struct StarJSON: Codable {
     var id: UUID
     var name: String
-
-    init(from decoder: any Decoder) throws {
-        let keyed = try decoder.container(keyedBy: GalaxyKey.self)
-        self.id = try keyed.decode(UUID.self, forKey: "id")
-        self.name = try keyed.decode(String.self, forKey: "name")
-        XCTAssertEqual(keyed.allKeys.count, 2)
-    }
+    struct GalaxyJSON: Codable { var id: UUID }
+    var galaxy: GalaxyJSON
 }
