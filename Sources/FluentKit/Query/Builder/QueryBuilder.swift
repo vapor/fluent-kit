@@ -368,5 +368,5 @@ public final class QueryBuilder<Model>
 }
 
 #if swift(<6) || !$InferSendableFromCaptures
-extension Swift.KeyPath: @unchecked Sendable {}
+extension Swift.KeyPath: @unchecked Swift.Sendable {}
 #endif
