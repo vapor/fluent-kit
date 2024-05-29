@@ -53,18 +53,26 @@ extension TimestampFormatFactory {
         withMilliseconds: Bool
     ) -> TimestampFormatFactory<ISO8601TimestampFormat> {
         .init {
-            ISO8601DateFormatter.shared.withLockedValue {
-                if withMilliseconds {
-                    $0.formatOptions.insert(.withFractionalSeconds)
-                }
-                return ISO8601TimestampFormat(formatter: $0)
-            }
+            ISO8601TimestampFormat(formatter: (withMilliseconds ?
+                ISO8601DateFormatter.sharedWithMs :
+                ISO8601DateFormatter.sharedWithoutMs
+            ).value)
         }
     }
 }
 
 extension ISO8601DateFormatter {
-    fileprivate static let shared: NIOLockedValueBox<ISO8601DateFormatter> = .init(.init())
+    // We use this to suppress warnings about ISO8601DateFormatter not being Sendable. It's safe to do so because we
+    // know that in reality, the formatter is safe to use simultaneously from multiple threads as long as the options
+    // are not changed, and we never change the options after the formatter is first created.
+    fileprivate struct FakeSendable<T>: @unchecked Sendable { let value: T }
+    
+    fileprivate static let sharedWithoutMs: FakeSendable<ISO8601DateFormatter> = .init(value: .init())
+    fileprivate static let sharedWithMs: FakeSendable<ISO8601DateFormatter> = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions.insert(.withFractionalSeconds)
+        return .init(value: formatter)
+    }()
 }
 
 public struct ISO8601TimestampFormat: TimestampFormat, @unchecked Sendable {
