@@ -263,7 +263,7 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let planets = try await Planet.query(on: test.db)
             .join(Star.self, on: \Star.$id == \Planet.$star.$id)
             .filter(\.$name, .custom("ilike"), "earth")
-            .filter(Star.self, \.$name, .custom("ilike"), "sun")
+            .filter(Star.self, \.$name, .custom("ilike"), "Sol")
             .all()
         XCTAssertEqual(planets.count, 0)
         XCTAssertNotNil(query.wrappedValue?.filters[1])
@@ -288,7 +288,7 @@ final class AsyncQueryBuilderTests: XCTestCase {
             }
             switch value {
             case .bind(let any as String):
-                XCTAssertEqual(any, "sun")
+                XCTAssertEqual(any, "Sol")
             default:
                 XCTFail("\(value)")
             }

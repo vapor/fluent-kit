@@ -14,7 +14,7 @@ extension FluentBenchmarker {
         ]) {
             let result = self.database.transaction { transaction in
                 Star.query(on: transaction)
-                    .filter(\.$name == "Sun")
+                    .filter(\.$name == "Sol")
                     .first()
                     .flatMap
                 { sun -> EventLoopFuture<Planet> in

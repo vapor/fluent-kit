@@ -36,7 +36,7 @@ extension FluentBenchmarker {
                 let star = try planet.$star.get(on: self.database).wait()
                 switch planet.name {
                 case "Earth", "Jupiter":
-                    XCTAssertEqual(star.name, "Sun")
+                    XCTAssertEqual(star.name, "Sol")
                 case "Proxima Centauri b":
                     XCTAssertEqual(star.name, "Alpha Centauri")
                 default: break
@@ -61,7 +61,7 @@ extension FluentBenchmarker {
             XCTAssertNil(earth.$star.value)
             try earth.$star.load(on: self.database).wait()
             XCTAssertNotNil(earth.$star.value)
-            XCTAssertEqual(earth.star.name, "Sun")
+            XCTAssertEqual(earth.star.name, "Sol")
 
             let test = Star(name: "Foo")
             earth.$star.value = test
@@ -69,14 +69,14 @@ extension FluentBenchmarker {
             // test get uses cached value
             try XCTAssertEqual(earth.$star.get(on: self.database).wait().name, "Foo")
             // test get can reload relation
-            try XCTAssertEqual(earth.$star.get(reload: true, on: self.database).wait().name, "Sun")
+            try XCTAssertEqual(earth.$star.get(reload: true, on: self.database).wait().name, "Sol")
 
             // test clearing loaded relation
             earth.$star.value = nil
             XCTAssertNil(earth.$star.value)
 
             // test get loads relation if nil
-            try XCTAssertEqual(earth.$star.get(on: self.database).wait().name, "Sun")
+            try XCTAssertEqual(earth.$star.get(on: self.database).wait().name, "Sol")
         }
     }
 }

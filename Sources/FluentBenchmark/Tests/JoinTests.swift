@@ -27,7 +27,7 @@ extension FluentBenchmarker {
                 let star = try planet.joined(Star.self)
                 switch planet.name {
                 case "Earth":
-                    XCTAssertEqual(star.name, "Sun")
+                    XCTAssertEqual(star.name, "Sol")
                 case "Proxima Centauri b":
                     XCTAssertEqual(star.name, "Alpha Centauri")
                 default: break
@@ -42,7 +42,7 @@ extension FluentBenchmarker {
             for galaxy in galaxies {
                 let star = try galaxy.joined(Star.self)
                 switch star.name {
-                case "Sun", "Alpha Centauri":
+                case "Sol", "Alpha Centauri":
                     XCTAssertEqual(galaxy.name, "Milky Way")
                 case "Alpheratz":
                     XCTAssertEqual(galaxy.name, "Andromeda")
@@ -193,7 +193,7 @@ extension FluentBenchmarker {
             let planets = try Planet.query(on: self.database)
                 .field(\.$name)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id)
-                .filter(Star.self, \.$name ~~ ["Sun", "Alpha Centauri"])
+                .filter(Star.self, \.$name ~~ ["Sol", "Alpha Centauri"])
                 .field(Star.self, \.$name)
                 .all().wait()
 
@@ -203,7 +203,7 @@ extension FluentBenchmarker {
                 XCTAssertNil(star.$id.value)
                 switch planet.name {
                 case "Earth":
-                    XCTAssertEqual(star.name, "Sun")
+                    XCTAssertEqual(star.name, "Sol")
                 case "Proxima Centauri b":
                     XCTAssertEqual(star.name, "Alpha Centauri")
                 default: break
@@ -226,7 +226,7 @@ extension FluentBenchmarker {
             XCTAssertFalse(planets.isEmpty)
             
             let morePlanets = try Planet.query(on: self.database)
-                .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != "Sun")
+                .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != "Sol")
                 .all().wait()
             
             XCTAssertEqual(morePlanets.count, 1)

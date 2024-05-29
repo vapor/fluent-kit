@@ -53,7 +53,7 @@ public final class FluentBenchmarker {
 
     // MARK: Utilities
 
-    internal func runTest(
+    func runTest(
         _ name: String, 
         _ migrations: [any Migration], 
         _ test: () throws -> ()
@@ -61,7 +61,7 @@ public final class FluentBenchmarker {
         try self.runTest(name, migrations, { _ in try test() })
     }
     
-    internal func runTest(
+    func runTest(
         _ name: String,
         _ migrations: [any Migration],
         _ test: (any Database) throws -> ()
@@ -74,7 +74,7 @@ public final class FluentBenchmarker {
         try self.runTest(name, migrations, on: self.database, test)
     }
     
-    internal func runTest(
+    func runTest(
         _ name: String,
         _ migrations: [any Migration],
         on database: any Database,
