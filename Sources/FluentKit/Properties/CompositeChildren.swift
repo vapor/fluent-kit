@@ -199,6 +199,9 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
+        if self.withDeleted {
+            builder.withDeleted()
+        }
         
         return builder.all().map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
