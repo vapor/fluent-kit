@@ -16,10 +16,11 @@ extension FluentBenchmarker {
                 Star.query(on: transaction)
                     .filter(\.$name == "Sol")
                     .first()
-                    .flatMap
-                { sun -> EventLoopFuture<Planet> in
+                    .flatMapWithEventLoop
+                { sun, eventLoop -> EventLoopFuture<Planet> in
+                    guard let sun else { return eventLoop.makeFailedFuture(FluentError.missingField(name: "Sol")) }
                     let pluto = Planet(name: "Pluto")
-                    return sun!.$planets.create(pluto, on: transaction).map {
+                    return sun.$planets.create(pluto, on: transaction).map {
                         pluto
                     }
                 }.flatMap { pluto -> EventLoopFuture<(Planet, Tag)> in
