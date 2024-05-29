@@ -27,7 +27,7 @@ public final class TimestampProperty<Model, Format>
     let format: Format
 
     public var projectedValue: TimestampProperty<Model, Format> {
-        return self
+        self
     }
 
     public var wrappedValue: Date? {
@@ -190,7 +190,7 @@ extension Fields {
     }
     
     func touchTimestamps(_ triggers: TimestampTrigger...) {
-        return self.touchTimestamps(triggers)
+        self.touchTimestamps(triggers)
     }
 
     private func touchTimestamps(_ triggers: [TimestampTrigger]) {

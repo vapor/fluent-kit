@@ -11,7 +11,7 @@ public protocol OptionalType: AnyOptionalType {
 
 extension OptionalType {
     public static var wrappedType: Any.Type {
-        return Wrapped.self
+        Wrapped.self
     }
 }
 

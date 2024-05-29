@@ -20,12 +20,8 @@ public final class OptionalFieldProperty<Model, WrappedValue>: @unchecked Sendab
     }
 
     public var wrappedValue: WrappedValue? {
-        get {
-            self.value ?? nil
-        }
-        set {
-            self.value = .some(newValue)
-        }
+        get { self.value ?? nil }
+        set { self.value = .some(newValue) }
     }
 
     public init(key: FieldKey) {

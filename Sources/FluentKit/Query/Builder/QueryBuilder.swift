@@ -162,18 +162,18 @@ public final class QueryBuilder<Model>
             }
         }
         #else
-        nonisolated(unsafe) var partial: [Result<UnsafeTransfer<Model>, any Error>] = []
+        nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
         
         return self.all { row in
-            partial.append(row.map { .init(wrappedValue: $0) })
+            partial.append(row)
             if partial.count >= max {
-                closure(partial.map { $0.map { $0.wrappedValue } })
+                closure(partial)
                 partial.removeAll(keepingCapacity: true)
             }
         }.flatMapThrowing {
             if !partial.isEmpty {
-                closure(partial.map { $0.map { $0.wrappedValue } })
+                closure(partial)
             }
         }
         #endif

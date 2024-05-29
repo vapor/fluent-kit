@@ -30,7 +30,7 @@ public extension Model {
     }
 }
 
-public extension Collection where Element: FluentKit.Model {
+public extension Collection where Element: FluentKit.Model, Self: Sendable {
     func delete(force: Bool = false, on database: any Database) async throws {
         try await self.delete(force: force, on: database).get()
     }

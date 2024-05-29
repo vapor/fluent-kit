@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 
 extension Model {
     public typealias Children<To> = ChildrenProperty<Self, To>
@@ -44,11 +43,11 @@ public final class ChildrenProperty<From, To>: @unchecked Sendable
     }
 
     public var projectedValue: ChildrenProperty<From, To> {
-        return self
+        self
     }
     
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
@@ -221,9 +220,8 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
-        let models = UnsafeTransfer(wrappedValue: models)
         return builder.all().map {
-            for model in models.wrappedValue {
+            for model in models {
                 let id = model[keyPath: self.relationKey].idValue!
                 model[keyPath: self.relationKey].value = $0.filter { child in
                     switch parentKey {

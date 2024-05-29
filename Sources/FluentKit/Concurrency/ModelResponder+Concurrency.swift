@@ -10,10 +10,8 @@ public protocol AnyAsyncModelResponder: AnyModelResponder {
 
 extension AnyAsyncModelResponder {
     func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
-        let model = UnsafeTransfer(wrappedValue: model)
-        
-        return db.eventLoop.makeFutureWithTask {
-            try await self.handle(event, model.wrappedValue, on: db)
+        db.eventLoop.makeFutureWithTask {
+            try await self.handle(event, model, on: db)
         }
     }
 }

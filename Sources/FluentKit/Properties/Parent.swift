@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 import struct SQLKit.SomeCodingKey
 
 extension Model {
@@ -27,7 +26,7 @@ public final class ParentProperty<From, To>: @unchecked Sendable
     }
 
     public var projectedValue: ParentProperty<From, To> {
-        return self
+        self
     }
 
     public var value: To?
@@ -41,7 +40,7 @@ public final class ParentProperty<From, To>: @unchecked Sendable
     }
 
     public func query(on database: any Database) -> QueryBuilder<To> {
-        return To.query(on: database)
+        To.query(on: database)
             .filter(\._$id == self.id)
     }
 }
@@ -166,15 +165,15 @@ private struct ParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        let sets = UnsafeTransfer(wrappedValue: Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id }))
-        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.wrappedValue.keys))
-        if (self.withDeleted) {
+        let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
+        let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
+        if self.withDeleted {
             builder.withDeleted()
         }
         return builder.all().flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-            for (parentId, models) in sets.wrappedValue {
+            for (parentId, models) in sets {
                 guard let parent = parents[parentId] else {
                     database.logger.debug(
                         "Missing parent model in eager-load lookup results.",

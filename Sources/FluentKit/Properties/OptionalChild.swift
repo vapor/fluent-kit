@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
@@ -44,11 +43,11 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
     }
 
     public var projectedValue: OptionalChildProperty<From, To> {
-        return self
+        self
     }
     
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
@@ -203,12 +202,12 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
-        if (self.withDeleted) {
+        if self.withDeleted {
             builder.withDeleted()
         }
-        let models = UnsafeTransfer(wrappedValue: models)
+        let models = models
         return builder.all().map {
-            for model in models.wrappedValue {
+            for model in models {
                 let id = model[keyPath: self.relationKey].idValue!
                 let children = $0.filter { child in
                     switch parentKey {

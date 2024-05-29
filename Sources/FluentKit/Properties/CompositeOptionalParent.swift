@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 import struct SQLKit.SomeCodingKey
 
 extension Model {
@@ -104,7 +103,7 @@ public final class CompositeOptionalParentProperty<From, To>: @unchecked Sendabl
     }
 
     public func query(on database: any Database) -> QueryBuilder<To> {
-        return To.query(on: database).group(.and) {
+        To.query(on: database).group(.and) {
             self.id?.input(to: QueryFilterInput(builder: $0)) ?? To.IDValue().input(to: QueryFilterInput(builder: $0).nullValueOveridden())
         }
     }
@@ -220,19 +219,19 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
-        let nilParentModels = UnsafeTransfer(wrappedValue: _sets.removeValue(forKey: nil) ?? [])
-        let sets = UnsafeTransfer(wrappedValue: _sets)
+        let nilParentModels = _sets.removeValue(forKey: nil) ?? []
+        let sets = _sets
 
         let builder = To.query(on: database)
-            .group(.or) { _ = sets.wrappedValue.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }
-        if (self.withDeleted) {
+            .group(.or) { _ = sets.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }
+        if self.withDeleted {
             builder.withDeleted()
         }
         
         return builder.all().flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-                for (parentId, models) in sets.wrappedValue {
+                for (parentId, models) in sets {
                     guard let parent = parents[parentId!] else {
                         database.logger.debug(
                             "Missing parent model in eager-load lookup results.",
@@ -242,7 +241,7 @@ private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
                     }
                     models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
                 }
-                nilParentModels.wrappedValue.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+                nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
             }
     }
 }

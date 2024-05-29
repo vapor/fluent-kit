@@ -18,7 +18,7 @@ public final class CompositeIDProperty<Model, Value>: @unchecked Sendable
     public var projectedValue: CompositeIDProperty<Model, Value> { self }
     
     public var wrappedValue: Value? {
-        get { return self.value }
+        get { self.value }
         set { self.value = newValue }
     }
 
@@ -29,7 +29,7 @@ public final class CompositeIDProperty<Model, Value>: @unchecked Sendable
     ) -> Nested
         where Nested: Property
     {
-        return self.value![keyPath: keyPath]
+        self.value![keyPath: keyPath]
     }
 }
 

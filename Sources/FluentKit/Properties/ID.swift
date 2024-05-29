@@ -33,29 +33,21 @@ public final class IDProperty<Model, Value>: @unchecked Sendable
     var cachedOutput: (any DatabaseOutput)?
 
     public var key: FieldKey {
-        return self.field.key
+        self.field.key
     }
 
     var inputValue: DatabaseQuery.Value? {
-        get {
-            return self.field.inputValue
-        }
-        set {
-            self.field.inputValue = newValue
-        }
+        get { self.field.inputValue }
+        set { self.field.inputValue = newValue }
     }
 
     public var projectedValue: IDProperty<Model, Value> {
-        return self
+        self
     }
     
     public var wrappedValue: Value? {
-        get {
-            return self.value
-        }
-        set {
-            self.value = newValue
-        }
+        get { self.value }
+        set { self.value = newValue }
     }
 
     /// Initializes an `ID` property with the key `.id` and type `UUID`.
@@ -131,7 +123,7 @@ extension IDProperty: AnyProperty { }
 extension IDProperty: Property {
     public var value: Value? {
         get {
-            return self.field.value ?? nil
+            self.field.value ?? nil
         }
         set {
             self.field.value = newValue

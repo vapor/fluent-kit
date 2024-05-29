@@ -13,11 +13,11 @@ public struct DefaultBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
     
     public func parse(_ value: Bool) -> Bool? {
-        return value
+        value
     }
     
     public func serialize(_ bool: Bool) -> Bool {
-        return bool
+        bool
     }
 }
 
@@ -42,7 +42,7 @@ public struct IntegerBooleanPropertyFormat<T: FixedWidthInteger & Codable & Send
     }
     
     public func serialize(_ bool: Bool) -> T {
-        return .zero.advanced(by: bool ? 1 : 0)
+        .zero.advanced(by: bool ? 1 : 0)
     }
 }
 
@@ -63,7 +63,7 @@ public struct OneZeroBooleanPropertyFormat: BooleanPropertyFormat {
     }
     
     public func serialize(_ bool: Bool) -> String {
-        return bool ? "1" : "0"
+        bool ? "1" : "0"
     }
 }
 
@@ -84,7 +84,7 @@ public struct YNBooleanPropertyFormat: BooleanPropertyFormat {
     }
     
     public func serialize(_ bool: Bool) -> String {
-        return bool ? "Y" : "N"
+        bool ? "Y" : "N"
     }
 }
 
@@ -106,7 +106,7 @@ public struct YesNoBooleanPropertyFormat: BooleanPropertyFormat {
     }
     
     public func serialize(_ bool: Bool) -> String {
-        return bool ? "YES" : "NO"
+        bool ? "YES" : "NO"
     }
 }
 
@@ -127,7 +127,7 @@ public struct OnOffBooleanPropertyFormat: BooleanPropertyFormat {
     }
         
     public func serialize(_ bool: Bool) -> String {
-        return bool ? "ON" : "OFF"
+        bool ? "ON" : "OFF"
     }
 }
 
@@ -148,7 +148,7 @@ public struct TrueFalseBooleanPropertyFormat: BooleanPropertyFormat {
     }
     
     public func serialize(_ bool: Bool) -> String {
-        return bool ? "true" : "false"
+        bool ? "true" : "false"
     }
 }
 
