@@ -33,4 +33,13 @@ extension DatabaseQuery.Value: CustomStringConvertible {
             return "custom(\(custom))"
         }
     }
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .dictionary(let d): return .dictionary(.init(uniqueKeysWithValues: d.map { ($0.description, $1.describedByLoggingMetadata) }))
+        case .array(let a): return .array(a.map(\.describedByLoggingMetadata))
+        default: return .stringConvertible(self)
+        }
+    }
+
 }

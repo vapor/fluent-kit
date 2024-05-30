@@ -17,4 +17,15 @@ extension DatabaseQuery.Field: CustomStringConvertible {
             return "custom(\(custom))"
         }
     }
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .path(let array, let schema):
+            return "\(schema).\(array.map(\.description).joined(separator: "->"))"
+        case .extendedPath(let array, let schema, let space):
+            return "\(space.map { "\($0)." } ?? "")\(schema).\(array.map(\.description).joined(separator: "->"))"
+        case .custom:
+            return .stringConvertible(self)
+        }
+    }
 }

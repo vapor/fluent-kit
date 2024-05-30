@@ -73,6 +73,19 @@ extension DatabaseQuery.Filter: CustomStringConvertible {
             return "custom(\(any))"
         }
     }
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .value(let field, let method, let value):
+            return ["field": field.describedByLoggingMetadata, "method": "\(method)", "value": value.describedByLoggingMetadata]
+        case .field(let field, let method, let field2):
+            return ["field1": field.describedByLoggingMetadata, "method": "\(method)", "field2": field2.describedByLoggingMetadata]
+        case .group(let array, let relation):
+            return ["group": .array(array.map(\.describedByLoggingMetadata)), "relation": "\(relation)"]
+        case .custom:
+            return .stringConvertible(self)
+        }
+    }
 }
 
 extension DatabaseQuery.Filter.Method: CustomStringConvertible {

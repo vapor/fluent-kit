@@ -19,6 +19,15 @@ extension DatabaseQuery.Sort: CustomStringConvertible {
             return "custom(\(custom))"
         }
     }
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .sort(let field, let direction):
+            return ["field": field.describedByLoggingMetadata, "direction": "\(direction)"]
+        case .custom:
+            return .stringConvertible(self)
+        }
+    }
 }
 
 extension DatabaseQuery.Sort.Direction: CustomStringConvertible {
