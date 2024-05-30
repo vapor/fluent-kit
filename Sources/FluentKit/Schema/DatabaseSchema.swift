@@ -25,7 +25,6 @@ public struct DatabaseSchema: Sendable {
         case uint32
         case uint64
         
-        
         case bool
         
         public struct Enum: Sendable {

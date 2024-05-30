@@ -216,7 +216,7 @@ private struct UserMiddleware: ModelMiddleware {
         model.name = "B"
         
         return next.create(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
         }
     }
 
@@ -224,7 +224,7 @@ private struct UserMiddleware: ModelMiddleware {
         model.name = "D"
 
         return next.update(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
         }
     }
 
@@ -232,7 +232,7 @@ private struct UserMiddleware: ModelMiddleware {
         model.name = "E"
 
         return next.softDelete(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
         }
     }
 
@@ -240,7 +240,7 @@ private struct UserMiddleware: ModelMiddleware {
         model.name = "F"
 
         return next.restore(model , on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
         }
     }
 
@@ -248,7 +248,7 @@ private struct UserMiddleware: ModelMiddleware {
         model.name = "G"
 
         return next.delete(model, force: force, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
         }
     }
 }

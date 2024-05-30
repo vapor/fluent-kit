@@ -17,7 +17,7 @@ extension AsyncModelMiddleware {
         on db: any Database,
         chainingTo next: any AnyModelResponder
     ) -> EventLoopFuture<Void> {
-        guard let modelType = (model as? Model).map({ UnsafeTransfer(wrappedValue: $0) }) else {
+        guard let modelType = (model as? Model) else {
             return next.handle(event, model, on: db)
         }
 
@@ -28,15 +28,15 @@ extension AsyncModelMiddleware {
 
             switch event {
             case .create:
-                try await self.create(model: modelType.wrappedValue, on: db, next: responder)
+                try await self.create(model: modelType, on: db, next: responder)
             case .update:
-                try await self.update(model: modelType.wrappedValue, on: db, next: responder)
+                try await self.update(model: modelType, on: db, next: responder)
             case .delete(let force):
-                try await self.delete(model: modelType.wrappedValue, force: force, on: db, next: responder)
+                try await self.delete(model: modelType, force: force, on: db, next: responder)
             case .softDelete:
-                try await self.softDelete(model: modelType.wrappedValue, on: db, next: responder)
+                try await self.softDelete(model: modelType, on: db, next: responder)
             case .restore:
-                try await self.restore(model: modelType.wrappedValue, on: db, next: responder)
+                try await self.restore(model: modelType, on: db, next: responder)
             }
         }
     }

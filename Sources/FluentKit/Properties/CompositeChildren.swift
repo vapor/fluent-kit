@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 
 extension Model {
     /// A convenience alias for ``CompositeChildrenProperty``. It is strongly recommended that callers use this
@@ -107,7 +106,7 @@ public final class CompositeChildrenProperty<From, To>: @unchecked Sendable
     public var projectedValue: CompositeChildrenProperty<From, To> { self }
     
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
@@ -200,12 +199,14 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
+        if self.withDeleted {
+            builder.withDeleted()
+        }
         
-        let models = UnsafeTransfer(wrappedValue: models)
         return builder.all().map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
             
-            for model in models.wrappedValue {
+            for model in models {
                 model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!] ?? []
             }
         }

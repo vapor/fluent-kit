@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 
 extension Model {
     public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
@@ -64,11 +63,11 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     }
 
     public var projectedValue: SiblingsProperty<From, To, Through> {
-        return self
+        self
     }
 
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
@@ -155,13 +154,12 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         case .always:
             return self.attach(to, on: database, edit)
         case .ifNotExists:
-            let to = UnsafeTransfer(wrappedValue: to)
-            return self.isAttached(to: to.wrappedValue, on: database).flatMap { alreadyAttached in
+            return self.isAttached(to: to, on: database).flatMap { alreadyAttached in
                 if alreadyAttached {
                     return database.eventLoop.makeSucceededFuture(())
                 }
 
-                return self.attach(to.wrappedValue, on: database, edit)
+                return self.attach(to, on: database, edit)
             }
         }
     }
@@ -387,17 +385,16 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         let builder = To.query(on: database)
             .join(Through.self, on: \To._$id == to.appending(path: \.$id))
             .filter(Through.self, from.appending(path: \.$id) ~~ Set(ids))
-        if (self.withDeleted) {
+        if self.withDeleted {
             builder.withDeleted()
         }
-        let models = UnsafeTransfer(wrappedValue: models)
         return builder.all().flatMapThrowing {
             var map: [From.IDValue: [To]] = [:]
             for to in $0 {
                 let fromID = try to.joined(Through.self)[keyPath: from].id
                 map[fromID, default: []].append(to)
             }
-            for model in models.wrappedValue {
+            for model in models {
                 guard let id = model.id else { throw FluentError.idRequired }
                 model[keyPath: self.relationKey].value = map[id] ?? []
             }

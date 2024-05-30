@@ -1,5 +1,4 @@
 import NIOCore
-import NIOConcurrencyHelpers
 import struct SQLKit.SomeCodingKey
 
 extension Model {
@@ -98,7 +97,7 @@ public final class CompositeParentProperty<From, To>: @unchecked Sendable
     }
 
     public func query(on database: any Database) -> QueryBuilder<To> {
-        return To.query(on: database).group(.and) { self.id.input(to: QueryFilterInput(builder: $0)) }
+        To.query(on: database).group(.and) { self.id.input(to: QueryFilterInput(builder: $0)) }
     }
 
     public subscript<Nested>(dynamicMember keyPath: KeyPath<To.IDValue, Nested>) -> Nested
@@ -195,20 +194,20 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        let sets = UnsafeTransfer(wrappedValue: Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id }))
+        let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
         let builder = To.query(on: database)
             .group(.or) {
-                _ = sets.wrappedValue.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
+                _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
-        if (self.withDeleted) {
+        if self.withDeleted {
             builder.withDeleted()
         }
         return builder.all()
             .flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-                for (parentId, models) in sets.wrappedValue {
+                for (parentId, models) in sets {
                     guard let parent = parents[parentId] else {
                         database.logger.debug(
                             "Missing parent model in eager-load lookup results.",

@@ -162,18 +162,18 @@ public final class QueryBuilder<Model>
             }
         }
         #else
-        nonisolated(unsafe) var partial: [Result<UnsafeTransfer<Model>, any Error>] = []
+        nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
         
         return self.all { row in
-            partial.append(row.map { .init(wrappedValue: $0) })
+            partial.append(row)
             if partial.count >= max {
-                closure(partial.map { $0.map { $0.wrappedValue } })
+                closure(partial)
                 partial.removeAll(keepingCapacity: true)
             }
         }.flatMapThrowing {
             if !partial.isEmpty {
-                closure(partial.map { $0.map { $0.wrappedValue } })
+                closure(partial)
             }
         }
         #endif
@@ -330,7 +330,9 @@ public final class QueryBuilder<Model>
             break
         }
 
-        self.database.logger.debug("\(self.query)")
+        // N.B.: We use `self.query` here instead of `query` so that the logging reflects the query the user requested,
+        // without having to deal with the noise of us having added default fields, or doing deletedAt checks, etc.
+        self.database.logger.debug("Running query", metadata: self.query.describedByLoggingMetadata)
         self.database.history?.add(self.query)
 
         let loop = self.database.eventLoop
@@ -366,5 +368,5 @@ public final class QueryBuilder<Model>
 }
 
 #if swift(<6) || !$InferSendableFromCaptures
-extension Swift.KeyPath: @unchecked Sendable {}
+extension Swift.KeyPath: @unchecked Swift.Sendable {}
 #endif

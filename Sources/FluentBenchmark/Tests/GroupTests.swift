@@ -26,7 +26,7 @@ extension FluentBenchmarker {
             XCTAssertEqual(moon.name, "Moon")
             XCTAssertEqual(moon.planet.name, "Earth")
             XCTAssertEqual(moon.planet.type, .smallRocky)
-            XCTAssertEqual(moon.planet.star.name, "Sun")
+            XCTAssertEqual(moon.planet.star.name, "Sol")
             XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
 
             // Test JSON
@@ -36,7 +36,7 @@ extension FluentBenchmarker {
             XCTAssertEqual(decoded.name, "Moon")
             XCTAssertEqual(decoded.planet.name, "Earth")
             XCTAssertEqual(decoded.planet.type, .smallRocky)
-            XCTAssertEqual(decoded.planet.star.name, "Sun")
+            XCTAssertEqual(decoded.planet.star.name, "Sol")
             XCTAssertEqual(decoded.planet.star.galaxy.name, "Milky Way")
 
             // Test deeper filter
@@ -66,7 +66,7 @@ extension FluentBenchmarker {
 //            XCTAssertEqual(moon.name, "Moon")
 //            XCTAssertEqual(moon.planet.name, "Earth")
 //            XCTAssertEqual(moon.planet.type, .smallRocky)
-//            XCTAssertEqual(moon.planet.star.name, "Sun")
+//            XCTAssertEqual(moon.planet.star.name, "Sol")
 //            XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
 //
 //            // Test JSON
@@ -75,7 +75,7 @@ extension FluentBenchmarker {
 //            XCTAssertEqual(decoded.name, "Moon")
 //            XCTAssertEqual(decoded.planet.name, "Earth")
 //            XCTAssertEqual(decoded.planet.type, .smallRocky)
-//            XCTAssertEqual(decoded.planet.star.name, "Sun")
+//            XCTAssertEqual(decoded.planet.star.name, "Sol")
 //            XCTAssertEqual(decoded.planet.star.galaxy.name, "Milky Way")
 //
 //            // Test deeper filter
@@ -189,7 +189,7 @@ private struct FlatMoonSeed: Migration {
                 name: "Earth",
                 type: .smallRocky,
                 star: .init(
-                    name: "Sun",
+                    name: "Sol",
                     galaxy: .init(name: "Milky Way")
                 )
             )
@@ -200,7 +200,7 @@ private struct FlatMoonSeed: Migration {
                 name: "Jupiter",
                 type: .gasGiant,
                 star: .init(
-                    name: "Sun",
+                    name: "Sol",
                     galaxy: .init(name: "Milky Way")
                 )
             )
@@ -313,7 +313,7 @@ private struct FlatMoonSeed: Migration {
 //                name: "Earth",
 //                type: .smallRocky,
 //                star: .init(
-//                    name: "Sun",
+//                    name: "Sol",
 //                    galaxy: .init(name: "Milky Way")
 //                )
 //            )
@@ -324,7 +324,7 @@ private struct FlatMoonSeed: Migration {
 //                name: "Jupiter",
 //                type: .gasGiant,
 //                star: .init(
-//                    name: "Sun",
+//                    name: "Sol",
 //                    galaxy: .init(name: "Milky Way")
 //                )
 //            )

@@ -68,7 +68,7 @@ public struct PlanetSeed: Migration {
             .andAllSucceed(stars.map { star in
                 let planets: [Planet]
                 switch star.name {
-                case "Sun":
+                case "Sol":
                     planets = [
                         .init(name: "Mercury"),
                         .init(name: "Venus"),

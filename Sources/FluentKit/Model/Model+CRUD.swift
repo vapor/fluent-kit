@@ -17,7 +17,6 @@ extension Model {
     }
 
     private func _create(on database: any Database) -> EventLoopFuture<Void> {
-        let transfer = UnsafeTransfer(wrappedValue: self)
         precondition(!self._$idExists)
         self.touchTimestamps(.create, .update)
         if self.anyID is any AnyQueryableProperty {
@@ -29,12 +28,12 @@ extension Model {
                 .run { promise.succeed($0) }
                 .cascadeFailure(to: promise)
             return promise.futureResult.flatMapThrowing { output in
-                var input = transfer.wrappedValue.collectInput()
-                if case .default = transfer.wrappedValue._$id.inputValue {
+                var input = self.collectInput()
+                if case .default = self._$id.inputValue {
                     let idKey = Self()._$id.key
                     input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
                 }
-                try transfer.wrappedValue.output(from: SavedInput(input))
+                try self.output(from: SavedInput(input))
             }
         } else {
             return Self.query(on: database)
@@ -42,7 +41,7 @@ extension Model {
                 .action(.create)
                 .run()
                 .flatMapThrowing {
-                    try transfer.wrappedValue.output(from: SavedInput(transfer.wrappedValue.collectInput()))
+                    try self.output(from: SavedInput(self.collectInput()))
                 }
         }
     }
@@ -61,14 +60,13 @@ extension Model {
         self.touchTimestamps(.update)
         let input = self.collectInput()
         guard let id = self.id else { throw FluentError.idRequired }
-        let transfer = UnsafeTransfer(wrappedValue: self)
         return Self.query(on: database)
             .filter(id: id)
             .set(input)
             .update()
             .flatMapThrowing
         {
-            try transfer.wrappedValue.output(from: SavedInput(input))
+            try self.output(from: SavedInput(input))
         }
     }
 
@@ -87,14 +85,13 @@ extension Model {
 
     private func _delete(force: Bool = false, on database: any Database) throws -> EventLoopFuture<Void> {
         guard let id = self.id else { throw FluentError.idRequired }
-        let transfer = UnsafeTransfer(wrappedValue: self)
         return Self.query(on: database)
             .filter(id: id)
             .delete(force: force)
             .map
         {
-            if force || transfer.wrappedValue.deletedTimestamp == nil {
-                transfer.wrappedValue._$idExists = false
+            if force || self.deletedTimestamp == nil {
+                self._$idExists = false
             }
         }
     }
@@ -112,7 +109,6 @@ extension Model {
         timestamp.touch(date: nil)
         precondition(self._$idExists)
         guard let id = self.id else { throw FluentError.idRequired }
-        let transfer = UnsafeTransfer(wrappedValue: self)
         return Self.query(on: database)
             .withDeleted()
             .filter(id: id)
@@ -121,8 +117,8 @@ extension Model {
             .run()
             .flatMapThrowing
         {
-            try transfer.wrappedValue.output(from: SavedInput(transfer.wrappedValue.collectInput()))
-            transfer.wrappedValue._$idExists = true
+            try self.output(from: SavedInput(self.collectInput()))
+            self._$idExists = true
         }
     }
 
@@ -142,7 +138,7 @@ extension Model {
     }
 }
 
-extension Collection where Element: FluentKit.Model {
+extension Collection where Element: FluentKit.Model, Self: Sendable {
     public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
@@ -150,20 +146,18 @@ extension Collection where Element: FluentKit.Model {
         
         precondition(self.allSatisfy { $0._$idExists })
 
-        let transfer = UnsafeTransfer(wrappedValue: self) // ouch, the retains...
-
         return EventLoopFuture<Void>.andAllSucceed(self.map { model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 db.eventLoop.makeSucceededFuture(())
             }.delete(model, force: force, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .filter(ids: transfer.wrappedValue.map { $0.id! })
+                .filter(ids: self.map { $0.id! })
                 .delete(force: force)
         }.map {
             guard force else { return }
             
-            for model in transfer.wrappedValue where model.deletedTimestamp == nil {
+            for model in self where model.deletedTimestamp == nil {
                 model._$idExists = false
             }
         }
@@ -176,8 +170,6 @@ extension Collection where Element: FluentKit.Model {
         
         precondition(self.allSatisfy { !$0._$idExists })
         
-        let transfer = UnsafeTransfer(wrappedValue: self) // ouch, the retains...
-
         return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
             database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 if model.anyID is any AnyQueryableProperty {
@@ -188,10 +180,10 @@ extension Collection where Element: FluentKit.Model {
             }.create(model, on: database)
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
-                .set(transfer.wrappedValue.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
+                .set(self.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
                 .create()
         }.map {
-            for model in transfer.wrappedValue {
+            for model in self {
                 model._$idExists = true
             }
         }

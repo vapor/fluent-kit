@@ -131,7 +131,7 @@ extension AnyQueryableProperty where Self: QueryableProperty {
     /// "identical encoding for identical property types" rule (see
     /// ``QueryableProperty/queryValue(_:)-5df0n``).
     public func queryableValue() -> DatabaseQuery.Value? {
-        return self.value.map { Self.queryValue($0) }
+        self.value.map { Self.queryValue($0) }
     }
 }
 

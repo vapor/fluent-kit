@@ -13,15 +13,18 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            let inhabited = try Tag.query(on: self.database)
+            let inhabited = try XCTUnwrap(try Tag.query(on: self.database)
                 .filter(\.$name == "Inhabited")
-                .first().wait()!
-            let smallRocky = try Tag.query(on: self.database)
+                .first().wait()
+            )
+            let smallRocky = try XCTUnwrap(try Tag.query(on: self.database)
                 .filter(\.$name == "Small Rocky")
-                .first().wait()!
-            let earth = try Planet.query(on: self.database)
+                .first().wait()
+            )
+            let earth = try XCTUnwrap(try Planet.query(on: self.database)
                 .filter(\.$name == "Earth")
-                .first().wait()!
+                .first().wait()
+            )
 
             // check tag has expected planet
             do {

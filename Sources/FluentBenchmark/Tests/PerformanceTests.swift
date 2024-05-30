@@ -1,5 +1,9 @@
 import FluentKit
+#if !canImport(Darwin)
+@preconcurrency import Foundation
+#else
 import Foundation
+#endif
 import NIOCore
 import XCTest
 

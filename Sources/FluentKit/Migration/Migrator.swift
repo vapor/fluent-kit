@@ -141,7 +141,7 @@ private final class DatabaseMigrator: Sendable {
                 self.database.logger.critical("The migration at \(migration.name) is in a private context. Either explicitly give it a name by adding the `var name: String` property or make the migration `internal` or `public` instead of `private`.")
                 fatalError("Private migrations not allowed")
             }
-            self.database.logger.error("The migration at \(migration.name) has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.")
+            self.database.logger.error("The migration has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.", metadata: ["migration": .string(migration.name)])
         }
     }
 
@@ -197,7 +197,7 @@ private final class DatabaseMigrator: Sendable {
         
             return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
         }.flatMapErrorThrowing {
-            self.database.logger.error("[Migrator] Failed prepare: \(String(reflecting: $0))", metadata: ["migration": .string(migration.name)])
+            self.database.logger.error("[Migrator] Failed prepare", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
         
             throw $0
         }
@@ -211,7 +211,7 @@ private final class DatabaseMigrator: Sendable {
         
             return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
         }.flatMapErrorThrowing {
-            self.database.logger.error("[Migrator] Failed revert: \(String(reflecting: $0))", metadata: ["migration": .string(migration.name)])
+            self.database.logger.error("[Migrator] Failed revert", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
         
             throw $0
         }

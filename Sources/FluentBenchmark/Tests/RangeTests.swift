@@ -16,7 +16,7 @@ extension FluentBenchmarker {
                     .sort(\.$name)
                     .all().wait()
                 XCTAssertEqual(planets.count, 3)
-                XCTAssertEqual(planets[0].name, "Mars")
+                XCTAssertEqual(planets.first?.name, "Mars")
             }
             do {
                 let planets = try Planet.query(on: self.database)

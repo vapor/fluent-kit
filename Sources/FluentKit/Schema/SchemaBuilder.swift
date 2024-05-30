@@ -1,6 +1,6 @@
 extension Database {
     public func schema(_ schema: String, space: String? = nil) -> SchemaBuilder {
-        return .init(database: self, schema: schema, space: space)
+        .init(database: self, schema: schema, space: space)
     }
 }
 

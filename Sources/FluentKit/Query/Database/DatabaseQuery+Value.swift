@@ -15,14 +15,14 @@ extension DatabaseQuery.Value: CustomStringConvertible {
         switch self {
         case .bind(let encodable):
             if let convertible = encodable as? any CustomDebugStringConvertible {
-                return convertible.debugDescription
+                return String(reflecting: convertible)
             } else {
-                return "\(encodable)"
+                return String(describing: encodable)
             }
         case .dictionary(let dictionary):
-            return dictionary.description
+            return String(describing: dictionary)
         case .array(let array):
-            return array.description
+            return String(describing: array)
         case .enumCase(let string):
             return string
         case .null:
@@ -33,4 +33,13 @@ extension DatabaseQuery.Value: CustomStringConvertible {
             return "custom(\(custom))"
         }
     }
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .dictionary(let d): return .dictionary(.init(uniqueKeysWithValues: d.map { ($0.description, $1.describedByLoggingMetadata) }))
+        case .array(let a): return .array(a.map(\.describedByLoggingMetadata))
+        default: return .stringConvertible(self)
+        }
+    }
+
 }

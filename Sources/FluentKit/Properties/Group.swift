@@ -15,7 +15,7 @@ public final class GroupProperty<Model, Value>: @unchecked Sendable
     public var value: Value?
 
     public var projectedValue: GroupProperty<Model, Value> {
-        return self
+        self
     }
 
     public var wrappedValue: Value {
