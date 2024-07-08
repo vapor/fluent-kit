@@ -152,7 +152,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
 
     private func _requireConfiguration(for id: DatabaseID) -> any DatabaseConfiguration {
         guard let configuration = self.configurations[id] else {
-            fatalError("No datatabase configuration registered for \(id).")
+            fatalError("No database configuration registered for \(id).")
         }
         return configuration
     }
