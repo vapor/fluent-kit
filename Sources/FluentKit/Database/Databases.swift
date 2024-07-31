@@ -141,12 +141,27 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
         self.lock.withLock { Set(self.configurations.keys) }
     }
 
+    @available(*, noasync, message: "Drivers may call wait() and should not be used in an async context", renamed: "shutdownAsync()")
     public func shutdown() {
         self.lock.withLockVoid {
             for driver in self.drivers.values {
                 driver.shutdown()
             }
             self.drivers = [:]
+        }
+    }
+    
+    public func shutdownAsync() async {
+        var driversToShutdown: [any DatabaseDriver] = []
+        
+        self.lock.withLockVoid {
+            for driver in self.drivers.values {
+                driversToShutdown.append(driver)
+            }
+            self.drivers = [:]
+        }
+        for driver in driversToShutdown {
+            await driver.shutdownAsync()
         }
     }
 
