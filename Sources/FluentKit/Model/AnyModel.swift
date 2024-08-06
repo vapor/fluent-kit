@@ -14,17 +14,31 @@ extension AnyModel {
         
         return "\(Self.self)(\(info.isEmpty ? ":" : info.map { "\($0): \($1)" }.joined(separator: ", ")))"
     }
+  
+  public func layout<Joined>(_ model: Joined.Type) throws -> Joined
+      where Joined: Schema
+  {
+      guard let output = self.anyID.cachedOutput else {
+          fatalError("Can only access joined models using models fetched from database (from \(Self.self) to \(Joined.self)).")
+      }
+      let joined = Joined()
+      try joined.output(from: output.qualifiedSchema(space: Joined.spaceIfNotAliased, Joined.schemaOrAlias))
+      return joined
+  }
 
     // MARK: Joined
 
     public func joined<Joined>(_ model: Joined.Type) throws -> Joined
-        where Joined: Schema
+        where Joined: Schema & Model
     {
         guard let output = self.anyID.cachedOutput else {
             fatalError("Can only access joined models using models fetched from database (from \(Self.self) to \(Joined.self)).")
         }
         let joined = Joined()
         try joined.output(from: output.qualifiedSchema(space: Joined.spaceIfNotAliased, Joined.schemaOrAlias))
+        guard (try? joined.requireID()) != nil else {
+            fatalError("Can only access joined models using models fetched from database (from \(Self.self) to \(Joined.self)).")
+        }
         return joined
     }
 
