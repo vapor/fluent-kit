@@ -57,6 +57,13 @@ extension Database {
 public protocol DatabaseDriver: Sendable {
     func makeDatabase(with context: DatabaseContext) -> any Database
     func shutdown()
+    func shutdownAsync() async
+}
+
+public extension DatabaseDriver {
+    func shutdownAsync() async {
+        shutdown()
+    }
 }
 
 public protocol DatabaseConfiguration: Sendable {
