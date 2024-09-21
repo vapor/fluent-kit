@@ -1,6 +1,6 @@
 extension Fields {
     public typealias OptionalEnum<Value> = OptionalEnumProperty<Self, Value>
-        where Value: Codable,
+        where Value: Codable & Sendable,
             Value: RawRepresentable,
             Value.RawValue == String
 }
@@ -10,7 +10,7 @@ extension Fields {
 @propertyWrapper
 public final class OptionalEnumProperty<Model, WrappedValue>
     where Model: FluentKit.Fields,
-        WrappedValue: Codable,
+        WrappedValue: Codable & Sendable,
         WrappedValue: RawRepresentable,
         WrappedValue.RawValue == String
 {
@@ -77,7 +77,7 @@ extension OptionalEnumProperty: QueryableProperty {
 // MARK: Query-addressable
 
 extension OptionalEnumProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -92,7 +92,7 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
         self.field.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         let value: DatabaseQuery.Value
         if !input.wantsUnmodifiedKeys {
             guard let ivalue = self.field.inputValue else { return }
@@ -116,7 +116,7 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
         }
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 }
@@ -124,12 +124,12 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension OptionalEnumProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
             self.value = nil

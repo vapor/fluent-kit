@@ -8,14 +8,14 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class ChildrenProperty<From, To>
+public final class ChildrenProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     public typealias Key = RelationParentKey<From, To>
 
     public let parentKey: Key
     var idValue: From.IDValue?
-
+    
     public var value: [To]?
 
     public convenience init(for parent: KeyPath<To, To.Parent<From>>) {
@@ -43,15 +43,15 @@ public final class ChildrenProperty<From, To>
     }
 
     public var projectedValue: ChildrenProperty<From, To> {
-        return self
+        self
     }
     
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query children relation \(self.name) from unsaved model.")
         }
@@ -65,7 +65,7 @@ public final class ChildrenProperty<From, To>
         return builder
     }
 
-    public func create(_ to: [To], on database: Database) -> EventLoopFuture<Void> {
+    public func create(_ to: [To], on database: any Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
             fatalError("Cannot save child in relation \(self.name) to unsaved model.")
         }
@@ -80,7 +80,7 @@ public final class ChildrenProperty<From, To>
         return to.create(on: database)
     }
 
-    public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
+    public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
             fatalError("Cannot save child in relation \(self.name) to unsaved model.")
         }
@@ -102,7 +102,7 @@ extension ChildrenProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension ChildrenProperty: AnyProperty { }
+extension ChildrenProperty: AnyProperty {}
 
 extension ChildrenProperty: Property {
     public typealias Model = From
@@ -116,11 +116,11 @@ extension ChildrenProperty: AnyDatabaseProperty {
         []
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         // children never has input
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         let key = From()._$id.field.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
@@ -131,14 +131,14 @@ extension ChildrenProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension ChildrenProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         if let rows = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(rows)
         }
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         // don't decode
     }
     
@@ -154,7 +154,7 @@ extension ChildrenProperty: Relation {
         "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
 
-    public func load(on database: Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database).all().map {
             self.value = $0
         }
@@ -206,7 +206,7 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.Children<To>>
     let withDeleted: Bool
     
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
 
         let builder = To.query(on: database)
@@ -242,7 +242,7 @@ private struct ThroughChildrenEagerLoader<From, Through, Loader>: EagerLoader
     let relationKey: KeyPath<From, From.Children<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let throughs = models.flatMap {
             $0[keyPath: self.relationKey].value!
         }

@@ -1,3 +1,5 @@
+import SQLKit
+
 /// A type conforming to ``Fields`` is able to use FluentKit's various property wrappers to declare
 /// name, type, and semantic information for individual properties corresponding to fields in a
 /// generic database storage system.
@@ -12,22 +14,22 @@
 /// custom implementations of any other requirements is **strongly** discouraged; under most
 /// circumstances, such implementations will not be invoked in any event. They are only declared on
 /// the base protocol rather than solely in extensions because static dispatch improves performance.
-public protocol Fields: AnyObject, Codable {
+public protocol Fields: AnyObject, Codable, Sendable {
     /// Returns a fully generic list of every property on the given instance of the type which uses any of
     /// the FluentKit property wrapper types (e.g. any wrapper conforming to ``AnyProperty``). This accessor
     /// is not static because FluentKit depends upon access to the backing storage of the property wrappers,
     /// which is specific to each instance.
     ///
-    /// - Warning: This accessor triggers the use of reflection, which is at the time of this writing the
-    ///   most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
-    ///   carries the same cost; it is not possible to meaningfully cache the results. See
-    ///   `MirrorBypass.swift` for a considerable amount of very low-level detail.
-    var properties: [AnyProperty] { get }
+    /// > Warning: This accessor triggers the use of reflection, which is at the time of this writing the
+    /// > most severe performance bottleneck in FluentKit by a huge margin. Every access of this property
+    /// > carries the same cost; it is not possible to meaningfully cache the results. See
+    /// > `MirrorBypass.swift` for a considerable amount of very low-level detail.
+    var properties: [any AnyProperty] { get }
     
     init()
     
-    func input(to input: DatabaseInput)
-    func output(from output: DatabaseOutput) throws
+    func input(to input: any DatabaseInput)
+    func output(from output: any DatabaseOutput) throws
 }
 
 // MARK: Path
@@ -64,10 +66,10 @@ extension Fields {
     /// type was either loaded or created, add the key-value pair for said property to the given database
     /// input object. This prepares data in memory to be written to the database.
     ///
-    /// - Note: It is trivial to construct ``DatabaseInput`` objects which do not in fact actually transfer
-    ///   their contents to a database. FluentKit itself does this to implement a save/restore operation for
-    ///   model state under certain conditions (see ``Model``).
-    public func input(to input: DatabaseInput) {
+    /// > Note: It is trivial to construct ``DatabaseInput`` objects which do not in fact actually transfer
+    /// > their contents to a database. FluentKit itself does this to implement a save/restore operation for
+    /// > model state under certain conditions (see ``Model``).
+    public func input(to input: any DatabaseInput) {
         for field in self.databaseProperties {
             field.input(to: input)
         }
@@ -77,9 +79,9 @@ extension Fields {
     /// output object, attempt to load the corresponding value into the property. This transfers data
     /// received from the database into memory.
     ///
-    /// - Note: It is trivial to construct ``DatabaseOutput`` objects which do not in fact actually represent
-    ///   data from a database. FluentKit itself does this to help keep models up to date (see ``Model``).
-    public func output(from output: DatabaseOutput) throws {
+    /// > Note: It is trivial to construct ``DatabaseOutput`` objects which do not in fact actually represent
+    /// > data from a database. FluentKit itself does this to help keep models up to date (see ``Model``).
+    public func output(from output: any DatabaseOutput) throws {
         for field in self.databaseProperties {
             try field.output(from: output)
         }
@@ -90,33 +92,33 @@ extension Fields {
 
 extension Fields {
     /// Default implementation of ``Fields/properties-dup4``.
-    public var properties: [AnyProperty] {
-        return _FastChildSequence(subject: self).compactMap { $1 as? AnyProperty }
+    public var properties: [any AnyProperty] {
+        return _FastChildSequence(subject: self).compactMap { $1 as? any AnyProperty }
     }
     
     /// A wrapper around ``properties`` which returns only the properties which have database keys and can be
     /// input to and output from a database (corresponding to the ``AnyDatabaseProperty`` protocol).
-    internal var databaseProperties: [AnyDatabaseProperty] {
-        self.properties.compactMap { $0 as? AnyDatabaseProperty }
+    internal var databaseProperties: [any AnyDatabaseProperty] {
+        self.properties.compactMap { $0 as? any AnyDatabaseProperty }
     }
 
     /// Returns all properties which can be serialized and deserialized independently of a database via the
     /// built-in ``Codable`` machinery (corresponding to the ``AnyCodableProperty`` protocol), indexed by
     /// the coding key for each property.
     ///
-    /// - Important: A property's _coding_ key is not the same as a _database_ key. The coding key is derived
-    ///   directly from the property's Swift name as provided by reflection, while database keys are provided
-    ///   in the property wrapper initializer declarations.
+    /// > Important: A property's _coding_ key is not the same as a _database_ key. The coding key is derived
+    /// > directly from the property's Swift name as provided by reflection, while database keys are provided
+    /// > in the property wrapper initializer declarations.
     ///
-    /// - Warning: Even if the type has a custom ``CodingKeys`` enum, the property's coding key will _not_
-    ///   correspond to the definition provided therein; it will always be based solely on the Swift
-    ///   property name.
+    /// > Warning: Even if the type has a custom ``CodingKeys`` enum, the property's coding key will _not_
+    /// > correspond to the definition provided therein; it will always be based solely on the Swift
+    /// > property name.
     ///
-    /// - Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
-    ///   performance penalties.
-    internal var codableProperties: [SomeCodingKey: AnyCodableProperty] {
+    /// > Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
+    /// > performance penalties.
+    internal var codableProperties: [SomeCodingKey: any AnyCodableProperty] {
         return .init(uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
-            guard let value = $1 as? AnyCodableProperty,
+            guard let value = $1 as? any AnyCodableProperty,
                   let nameC = $0, nameC[0] != 0, nameC[1] != 0,
                   let name = String(utf8String: nameC + 1)
             else {
@@ -154,9 +156,12 @@ private final class HasChangesInput: DatabaseInput {
 // MARK: Collect Input
 
 extension Fields {
+    /// For internal use only.
+    ///
     /// Returns a dictionary of field keys and associated values representing all "pending"
     /// data - e.g. all fields (if any) which have been changed by something other than Fluent.
-    internal func collectInput(withDefaultedValues defaultedValues: Bool = false) -> [FieldKey: DatabaseQuery.Value] {
+    @_spi(FluentSQLSPI)
+    public/*package*/ func collectInput(withDefaultedValues defaultedValues: Bool = false) -> [FieldKey: DatabaseQuery.Value] {
         let input = DictionaryInput(wantsUnmodifiedKeys: defaultedValues)
         self.input(to: input)
         return input.storage

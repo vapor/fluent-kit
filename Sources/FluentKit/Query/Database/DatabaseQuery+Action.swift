@@ -1,11 +1,11 @@
 extension DatabaseQuery {
-    public enum Action {
+    public enum Action: Sendable {
         case create
         case read
         case update
         case delete
         case aggregate(Aggregate)
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

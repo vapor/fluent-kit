@@ -1,6 +1,6 @@
 extension DatabaseQuery {
-    public enum Filter {
-        public enum Method {
+    public enum Filter: Sendable {
+        public enum Method: Sendable {
             public static var equal: Method {
                 return .equality(inverse: false)
             }
@@ -34,7 +34,7 @@ extension DatabaseQuery {
             /// LHS exists in/doesn't exist in RHS
             case subset(inverse: Bool)
 
-            public enum Contains {
+            public enum Contains: Sendable {
                 case prefix
                 case suffix
                 case anywhere
@@ -44,19 +44,19 @@ extension DatabaseQuery {
             case contains(inverse: Bool, Contains)
 
             /// Custom method
-            case custom(Any)
+            case custom(any Sendable)
         }
 
-        public enum Relation {
+        public enum Relation: Sendable {
             case and
             case or
-            case custom(Any)
+            case custom(any Sendable)
         }
 
         case value(Field, Method, Value)
         case field(Field, Method, Field)
         case group([Filter], Relation)
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 
@@ -65,15 +65,25 @@ extension DatabaseQuery.Filter: CustomStringConvertible {
         switch self {
         case .value(let field, let method, let value):
             return "\(field) \(method) \(value)"
-        
         case .field(let fieldA, let method, let fieldB):
             return "\(fieldA) \(method) \(fieldB)"
-        
         case .group(let filters, let relation):
-            return filters.map{ "(\($0.description))" }.joined(separator: " \(relation) ")
-        
+            return filters.map { "(\($0))" }.joined(separator: " \(relation) ")
         case .custom(let any):
             return "custom(\(any))"
+        }
+    }
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .value(let field, let method, let value):
+            return ["field": field.describedByLoggingMetadata, "method": "\(method)", "value": value.describedByLoggingMetadata]
+        case .field(let field, let method, let field2):
+            return ["field1": field.describedByLoggingMetadata, "method": "\(method)", "field2": field2.describedByLoggingMetadata]
+        case .group(let array, let relation):
+            return ["group": .array(array.map(\.describedByLoggingMetadata)), "relation": "\(relation)"]
+        case .custom:
+            return .stringConvertible(self)
         }
     }
 }
@@ -83,20 +93,16 @@ extension DatabaseQuery.Filter.Method: CustomStringConvertible {
         switch self {
         case .equality(let inverse):
             return inverse ? "!=" : "="
-
         case .order(let inverse, let equality):
             if equality {
                 return inverse ? "<=" : ">="
             } else {
                 return inverse ? "<" : ">"
             }
-
         case .subset(let inverse):
             return inverse ? "!~~" : "~~"
-
         case .contains(let inverse, let contains):
             return inverse ? "!\(contains)" : "\(contains)"
-        
         case .custom(let any):
             return "custom(\(any))"
         }
@@ -108,10 +114,8 @@ extension DatabaseQuery.Filter.Method.Contains: CustomStringConvertible {
         switch self {
         case .prefix:
             return "startswith"
-        
         case .suffix:
             return "endswith"
-        
         case .anywhere:
             return "contains"
         }

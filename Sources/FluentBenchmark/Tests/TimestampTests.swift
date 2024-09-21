@@ -169,7 +169,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)
@@ -197,7 +197,7 @@ private final class User: Model {
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -207,13 +207,13 @@ private struct UserMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }
 
 
-private final class Event: Model {
+private final class Event: Model, @unchecked Sendable {
     static let schema = "events"
 
     @ID(key: .id)
@@ -247,7 +247,7 @@ private final class Event: Model {
 }
 
 private struct EventMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("events")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -258,7 +258,7 @@ private struct EventMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("events").delete()
     }
 }

@@ -76,7 +76,7 @@ extension FluentBenchmarker {
 }
 
 // Model recommended, default @ID configuration.
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID
@@ -89,19 +89,19 @@ private final class Foo: Model {
     }
 }
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .id()
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
 
 // Model with custom id key and type.
-private final class StringFoo: Model {
+private final class StringFoo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(custom: .id, generatedBy: .user)
@@ -114,19 +114,19 @@ private final class StringFoo: Model {
     }
 }
 private struct StringFooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field(.id, .string, .identifier(auto: false))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
 
 // Model with auto-incrementing id.
-private final class AutoincrementingFoo: Model {
+private final class AutoincrementingFoo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(custom: .id, generatedBy: .database)
@@ -139,19 +139,19 @@ private final class AutoincrementingFoo: Model {
     }
 }
 private struct AutoincrementingFooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field(.id, .int, .identifier(auto: true))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }
 
 // Model with auto-incrementing and custom key.
-private final class CustomAutoincrementingFoo: Model {
+private final class CustomAutoincrementingFoo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(custom: "bar", generatedBy: .database)
@@ -165,13 +165,13 @@ private final class CustomAutoincrementingFoo: Model {
 }
 
 private struct CustomAutoincrementingFooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("bar", .int, .identifier(auto: true))
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }

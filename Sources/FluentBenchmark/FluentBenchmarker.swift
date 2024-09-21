@@ -8,6 +8,7 @@ public final class FluentBenchmarker {
 
     public init(databases: Databases) {
         precondition(databases.ids().count >= 2, "FluentBenchmarker Databases instance must have 2 or more registered databases")
+        
         self.databases = databases
         self.database = self.databases.database(
             logger: .init(label: "codes.vapor.fluent.benchmarker"),
@@ -52,17 +53,17 @@ public final class FluentBenchmarker {
 
     // MARK: Utilities
 
-    internal func runTest(
+    func runTest(
         _ name: String, 
-        _ migrations: [Migration], 
+        _ migrations: [any Migration], 
         _ test: () throws -> ()
     ) throws {
         try self.runTest(name, migrations, { _ in try test() })
     }
     
-    internal func runTest(
+    func runTest(
         _ name: String,
-        _ migrations: [Migration],
+        _ migrations: [any Migration],
         _ test: (any Database) throws -> ()
     ) throws {
         // This re-initialization is required to make the middleware tests work thanks to ridiculous design flaws
@@ -73,9 +74,9 @@ public final class FluentBenchmarker {
         try self.runTest(name, migrations, on: self.database, test)
     }
     
-    internal func runTest(
+    func runTest(
         _ name: String,
-        _ migrations: [Migration],
+        _ migrations: [any Migration],
         on database: any Database,
         _ test: (any Database) throws -> ()
     ) throws {

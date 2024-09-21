@@ -3,7 +3,7 @@ import Foundation
 import NIOCore
 import XCTest
 
-public final class Planet: Model {
+public final class Planet: Model, @unchecked Sendable {
     public static let schema = "planets"
 
     @ID(key: .id)
@@ -45,7 +45,7 @@ public final class Planet: Model {
 }
 
 public struct PlanetMigration: Migration {
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("planets")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -55,7 +55,7 @@ public struct PlanetMigration: Migration {
             .create()
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("planets").delete()
     }
 }
@@ -63,12 +63,12 @@ public struct PlanetMigration: Migration {
 public struct PlanetSeed: Migration {
     public init() { }
 
-    public func prepare(on database: Database) -> EventLoopFuture<Void> {
+    public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         Star.query(on: database).all().flatMap { stars in
             .andAllSucceed(stars.map { star in
                 let planets: [Planet]
                 switch star.name {
-                case "Sun":
+                case "Sol":
                     planets = [
                         .init(name: "Mercury"),
                         .init(name: "Venus"),
@@ -91,7 +91,7 @@ public struct PlanetSeed: Migration {
         }
     }
 
-    public func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: any Database) -> EventLoopFuture<Void> {
         Planet.query(on: database).delete(force: true)
     }
 }

@@ -48,7 +48,7 @@ extension FluentBenchmarker {
                 switch galaxy.name {
                 case "Milky Way":
                     XCTAssertEqual(
-                        galaxy.stars.contains { $0.name == "Sun" },
+                        galaxy.stars.contains { $0.name == "Sol" },
                         true
                     )
                     XCTAssertEqual(
@@ -68,7 +68,7 @@ extension FluentBenchmarker {
             try Planet.query(on: self.database).filter(\.$name == "Jupiter").delete().wait()
             
             let sun1 = try XCTUnwrap(Star.query(on: self.database)
-                .filter(\.$name == "Sun")
+                .filter(\.$name == "Sol")
                 .with(\.$planets, withDeleted: true)
                 .first().wait()
             )
@@ -76,7 +76,7 @@ extension FluentBenchmarker {
             XCTAssertTrue(sun1.planets.contains { $0.name == "Jupiter" })
             
             let sun2 = try XCTUnwrap(Star.query(on: self.database)
-                .filter(\.$name == "Sun")
+                .filter(\.$name == "Sol")
                 .with(\.$planets)
                 .first().wait()
             )
@@ -96,7 +96,7 @@ extension FluentBenchmarker {
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    XCTAssertEqual(planet.star.name, "Sun")
+                    XCTAssertEqual(planet.star.name, "Sol")
                 case "Proxima Centauri b":
                     XCTAssertEqual(planet.star.name, "Alpha Centauri")
                 default: break
@@ -109,14 +109,14 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             SolarSystem()
         ]) {
-            try Star.query(on: self.database).filter(\.$name == "Sun").delete().wait()
+            try Star.query(on: self.database).filter(\.$name == "Sol").delete().wait()
             
             let planet = try XCTUnwrap(Planet.query(on: self.database)
                 .filter(\.$name == "Earth")
                 .with(\.$star, withDeleted: true)
                 .first().wait()
             )
-            XCTAssertEqual(planet.star.name, "Sun")
+            XCTAssertEqual(planet.star.name, "Sol")
             
             XCTAssertThrowsError(
                 try Planet.query(on: self.database)
@@ -145,13 +145,13 @@ extension FluentBenchmarker {
             for planet in planets {
                 switch planet.name {
                 case "Earth":
-                    XCTAssertEqual(planet.star.name, "Sun")
+                    XCTAssertEqual(planet.star.name, "Sol")
                     XCTAssertEqual(planet.tags.map { $0.name }.sorted(), ["Inhabited", "Small Rocky"])
                 case "Proxima Centauri b":
                     XCTAssertEqual(planet.star.name, "Alpha Centauri")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Small Rocky"])
                 case "Jupiter":
-                    XCTAssertEqual(planet.star.name, "Sun")
+                    XCTAssertEqual(planet.star.name, "Sol")
                     XCTAssertEqual(planet.tags.map { $0.name }, ["Gas Giant"])
                 default: break
                 }
@@ -278,7 +278,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class A: Model {
+private final class A: Model, @unchecked Sendable {
     static let schema = "a"
 
     @ID
@@ -290,7 +290,7 @@ private final class A: Model {
     init() { }
 }
 
-private final class B: Model {
+private final class B: Model, @unchecked Sendable {
     static let schema = "b"
 
     @ID
@@ -302,7 +302,7 @@ private final class B: Model {
     init() { }
 }
 
-private final class C: Model {
+private final class C: Model, @unchecked Sendable {
     static let schema = "c"
 
     @ID
@@ -312,7 +312,7 @@ private final class C: Model {
 }
 
 private struct ABCMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         .andAllSucceed([
             database.schema("a").id().field("b_id", .uuid).create(),
             database.schema("b").id().field("c_id", .uuid, .required).create(),
@@ -320,7 +320,7 @@ private struct ABCMigration: Migration {
         ], on: database.eventLoop)
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         .andAllSucceed([
             database.schema("a").delete(),
             database.schema("b").delete(),

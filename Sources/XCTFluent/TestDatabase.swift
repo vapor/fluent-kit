@@ -2,6 +2,7 @@ import FluentKit
 import NIOEmbedded
 import Logging
 import NIOCore
+import NIOConcurrencyHelpers
 
 /// Lets you mock the row results for each query.
 ///
@@ -43,55 +44,57 @@ import NIOCore
 ///     ])
 ///
 public final class ArrayTestDatabase: TestDatabase {
-    var results: [[DatabaseOutput]]
+    let results: NIOLockedValueBox<[[any DatabaseOutput]]>
 
     public init() {
-        self.results = []
+        self.results = .init([])
     }
 
-    public func append(_ result: [DatabaseOutput]) {
-        self.results.append(result)
+    public func append(_ result: [any DatabaseOutput]) {
+        self.results.withLockedValue { $0.append(result) }
     }
 
     public func append<M>(_ result: [M]) 
         where M: Model
     {
-        self.results.append(result.map { TestOutput($0) })
+        self.results.withLockedValue { $0.append(result.map { TestOutput($0) }) }
     }
 
-    public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
-        guard !self.results.isEmpty else {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) throws {
+        guard !self.results.withLockedValue({ $0.isEmpty }) else {
             throw TestDatabaseError.ranOutOfResults
         }
-        for output in self.results.removeFirst() {
-            onOutput(output)
+        self.results.withLockedValue {
+            for output in $0.removeFirst() {
+                onOutput(output)
+            }
         }
     }
 }
 
 public final class CallbackTestDatabase: TestDatabase {
-    var callback: (DatabaseQuery) -> [DatabaseOutput]
+    let callback: @Sendable (DatabaseQuery) -> [any DatabaseOutput]
 
-    public init(callback: @escaping (DatabaseQuery) -> [DatabaseOutput]) {
+    public init(callback: @escaping @Sendable (DatabaseQuery) -> [any DatabaseOutput]) {
         self.callback = callback
     }
 
-    public func execute(query: DatabaseQuery, onOutput: (DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) throws {
         for output in self.callback(query) {
             onOutput(output)
         }
     }
 }
 
-public protocol TestDatabase {
+public protocol TestDatabase: Sendable {
     func execute(
         query: DatabaseQuery,
-        onOutput: (DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) throws
 }
 
 extension TestDatabase {
-    public var db: Database {
+    public var db: any Database {
         self.database(context: .init(
             configuration: self.configuration,
             logger: Logger(label: "codes.vapor.fluent.test"),
@@ -99,7 +102,7 @@ extension TestDatabase {
         ))
     }
 
-    public func database(context: DatabaseContext) -> Database {
+    public func database(context: DatabaseContext) -> any Database {
         _TestDatabase(test: self, context: context)
     }
 }
@@ -108,12 +111,12 @@ private struct _TestDatabase: Database {
     var inTransaction: Bool {
         false
     }
-    let test: TestDatabase
+    let test: any TestDatabase
     var context: DatabaseContext
 
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping (DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
         guard context.eventLoop.inEventLoop else {
             return self.eventLoop.flatSubmit {
@@ -128,11 +131,11 @@ private struct _TestDatabase: Database {
         return self.eventLoop.makeSucceededFuture(())
     }
 
-    func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
 
-    func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
 
@@ -146,25 +149,25 @@ private struct _TestDatabase: Database {
 }
 
 extension TestDatabase {
-    public var configuration: DatabaseConfiguration {
+    public var configuration: any DatabaseConfiguration {
         _TestConfiguration(test: self)
     }
 }
 
 
 private struct _TestConfiguration: DatabaseConfiguration {
-    let test: TestDatabase
-    var middleware: [AnyModelMiddleware] = []
+    let test: any TestDatabase
+    var middleware: [any AnyModelMiddleware] = []
 
-    func makeDriver(for databases: Databases) -> DatabaseDriver {
+    func makeDriver(for databases: Databases) -> any DatabaseDriver {
         _TestDriver(test: self.test)
     }
 }
 
 private struct _TestDriver: DatabaseDriver {
-    let test: TestDatabase
+    let test: any TestDatabase
 
-    func makeDatabase(with context: DatabaseContext) -> Database {
+    func makeDatabase(with context: DatabaseContext) -> any Database {
         self.test.database(context: context)
     }
 
@@ -178,7 +181,7 @@ public enum TestDatabaseError: Error {
 }
 
 public struct TestOutput: DatabaseOutput {
-    public func schema(_ schema: String) -> DatabaseOutput {
+    public func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 
@@ -196,7 +199,7 @@ public struct TestOutput: DatabaseOutput {
     }
 
 
-    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    public func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
 
@@ -206,16 +209,16 @@ public struct TestOutput: DatabaseOutput {
 
 
     public var description: String {
-        return "<dummy>"
+        "<dummy>"
     }
 
-    var dummyDecodedFields: [FieldKey: Any]
+    var dummyDecodedFields: [FieldKey: any Sendable]
 
     public init() {
         self.dummyDecodedFields = [:]
     }
 
-    public init(_ mockFields: [FieldKey: Any]) {
+    public init(_ mockFields: [FieldKey: any Sendable]) {
         self.dummyDecodedFields = mockFields
     }
 
@@ -248,16 +251,18 @@ public struct TestOutput: DatabaseOutput {
         )
     }
 
-    public mutating func append(key: FieldKey, value: Any) {
+    public mutating func append(key: FieldKey, value: any Sendable) {
         dummyDecodedFields[key] = value
     }
 }
 
 private final class CollectInput: DatabaseInput {
     var storage: [FieldKey: DatabaseQuery.Value]
+    
     init() {
         self.storage = [:]
     }
+    
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.storage[key] = value
     }

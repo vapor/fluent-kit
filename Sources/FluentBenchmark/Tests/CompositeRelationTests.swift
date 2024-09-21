@@ -146,10 +146,10 @@ extension FluentBenchmarker {
     }
 }
 
-final class CompositeIDParentModel: Model {
+final class CompositeIDParentModel: Model, @unchecked Sendable {
     static let schema = "composite_id_parent_models"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Field(key: "name")
         var name: String
         
@@ -199,7 +199,7 @@ final class CompositeIDParentModel: Model {
     }
 
     struct ModelMigration: Migration {
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
+        func prepare(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeIDParentModel.schema)
                 .field("name", .string, .required)
                 .field("dimensions", .int, .required)
@@ -207,14 +207,14 @@ final class CompositeIDParentModel: Model {
                 .create()
         }
         
-        func revert(on database: Database) -> EventLoopFuture<Void> {
+        func revert(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeIDParentModel.schema)
                 .delete()
         }
     }
 
     struct ModelSeed: Migration {
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
+        func prepare(on database: any Database) -> EventLoopFuture<Void> {
             [
                 CompositeIDParentModel(name: "A", dimensions: 1),
                 CompositeIDParentModel(name: "B", dimensions: 1),
@@ -222,13 +222,13 @@ final class CompositeIDParentModel: Model {
             ].map { $0.create(on: database) }.flatten(on: database.eventLoop)
         }
         
-        func revert(on database: Database) -> EventLoopFuture<Void> {
+        func revert(on database: any Database) -> EventLoopFuture<Void> {
             CompositeIDParentModel.query(on: database).delete()
         }
     }
 }
 
-final class CompositeIDChildModel: Model {
+final class CompositeIDChildModel: Model, @unchecked Sendable {
     static let schema = "composite_id_child_models"
     
     @ID(custom: .id)
@@ -263,9 +263,9 @@ final class CompositeIDChildModel: Model {
     }
     
     struct ModelMigration: Migration {
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
+        func prepare(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeIDChildModel.schema)
-                .field(.id, .int, .required, .identifier(auto: (database as? SQLDatabase)?.dialect.name != "sqlite"))
+                .field(.id, .int, .required, .identifier(auto: (database as? any SQLDatabase)?.dialect.name != "sqlite"))
 
                 .field("comp_parent_model_name", .string, .required)
                 .field("comp_parent_model_dimensions", .int, .required)
@@ -297,13 +297,13 @@ final class CompositeIDChildModel: Model {
                 .create()
         }
         
-        func revert(on database: Database) -> EventLoopFuture<Void> {
+        func revert(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeIDChildModel.schema).delete()
         }
     }
     
     struct ModelSeed: Migration {
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
+        func prepare(on database: any Database) -> EventLoopFuture<Void> {
             [
                 CompositeIDChildModel(id: 1, parentId: .init(name: "A"), additionalParentId: nil,              linkedId: .init(name: "A"), additionalLinkedId: nil),
                 CompositeIDChildModel(id: 2, parentId: .init(name: "A"), additionalParentId: .init(name: "B"), linkedId: .init(name: "B"), additionalLinkedId: .init(name: "A")),
@@ -311,7 +311,7 @@ final class CompositeIDChildModel: Model {
             ].create(on: database)
         }
         
-        func revert(on database: Database) -> EventLoopFuture<Void> {
+        func revert(on database: any Database) -> EventLoopFuture<Void> {
             CompositeIDChildModel.query(on: database).delete()
         }
     }
@@ -339,10 +339,10 @@ extension DatabaseSchema.Constraint {
     }
 }
 
-final class CompositeParentTheFirst: Model {
+final class CompositeParentTheFirst: Model, @unchecked Sendable {
     static let schema = "composite_parent_the_first"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "parent_id")
         var parent: Galaxy
         
@@ -374,7 +374,7 @@ final class CompositeParentTheFirst: Model {
     }
     
     struct ModelMigration: Migration {
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
+        func prepare(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeParentTheFirst.schema)
                 .field("parent_id", .uuid, .required)
                 .foreignKey("parent_id", references: Galaxy.schema, .id, onDelete: .cascade, onUpdate: .cascade)
@@ -382,17 +382,17 @@ final class CompositeParentTheFirst: Model {
                 .create()
         }
         
-        func revert(on database: Database) -> EventLoopFuture<Void> {
+        func revert(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeParentTheFirst.schema)
                 .delete()
         }
     }
 }
 
-final class CompositeParentTheSecond: Model {
+final class CompositeParentTheSecond: Model, @unchecked Sendable {
     static let schema = "composite_parent_the_second"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @CompositeParent(prefix: "ref", strategy: .snakeCase)
         var parent: CompositeParentTheFirst
 
@@ -421,7 +421,7 @@ final class CompositeParentTheSecond: Model {
     }
     
     struct ModelMigration: Migration {
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
+        func prepare(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeParentTheSecond.schema)
                 .field("ref_parent_id", .uuid, .required)
                 .foreignKey("ref_parent_id", references: CompositeParentTheFirst.schema, "parent_id", onDelete: .cascade, onUpdate: .cascade)
@@ -429,7 +429,7 @@ final class CompositeParentTheSecond: Model {
                 .create()
         }
         
-        func revert(on database: Database) -> EventLoopFuture<Void> {
+        func revert(on database: any Database) -> EventLoopFuture<Void> {
             database.schema(CompositeParentTheSecond.schema)
                 .delete()
         }

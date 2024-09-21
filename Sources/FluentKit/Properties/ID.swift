@@ -2,14 +2,14 @@ import Foundation
 
 extension Model {
     public typealias ID<Value> = IDProperty<Self, Value>
-        where Value: Codable
+        where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
-public final class IDProperty<Model, Value>
-    where Model: FluentKit.Model, Value: Codable
+public final class IDProperty<Model, Value>: @unchecked Sendable
+    where Model: FluentKit.Model, Value: Codable & Sendable
 {
     public enum Generator {
         case user
@@ -17,7 +17,7 @@ public final class IDProperty<Model, Value>
         case database
 
         static func `default`<T>(for type: T.Type) -> Generator {
-            if T.self is RandomGeneratable.Type {
+            if T.self is any RandomGeneratable.Type {
                 return .random
             } else if T.self == Int.self {
                 return .database
@@ -30,32 +30,24 @@ public final class IDProperty<Model, Value>
     public let field: Model.OptionalField<Value>
     public var exists: Bool
     let generator: Generator
-    var cachedOutput: DatabaseOutput?
+    var cachedOutput: (any DatabaseOutput)?
 
     public var key: FieldKey {
-        return self.field.key
+        self.field.key
     }
 
     var inputValue: DatabaseQuery.Value? {
-        get {
-            return self.field.inputValue
-        }
-        set {
-            self.field.inputValue = newValue
-        }
+        get { self.field.inputValue }
+        set { self.field.inputValue = newValue }
     }
 
     public var projectedValue: IDProperty<Model, Value> {
-        return self
+        self
     }
     
     public var wrappedValue: Value? {
-        get {
-            return self.value
-        }
-        set {
-            self.value = newValue
-        }
+        get { self.value }
+        set { self.value = newValue }
     }
 
     /// Initializes an `ID` property with the key `.id` and type `UUID`.
@@ -98,7 +90,7 @@ public final class IDProperty<Model, Value>
         switch self.inputValue {
         case .none, .null:
             break
-        case .bind(let value) where (value as? AnyOptionalType).map({ $0.wrappedValue == nil }) ?? false:
+        case .bind(let value) where (value as? any AnyOptionalType).map({ $0.wrappedValue == nil }) ?? false:
             break
         default:
             return
@@ -109,7 +101,7 @@ public final class IDProperty<Model, Value>
         case .database:
             self.inputValue = .default
         case .random:
-            let generatable = Value.self as! (RandomGeneratable & Encodable).Type
+            let generatable = Value.self as! any (RandomGeneratable & Encodable & Sendable).Type
             self.inputValue = .bind(generatable.generateRandom())
         case .user:
             // do nothing
@@ -131,7 +123,7 @@ extension IDProperty: AnyProperty { }
 extension IDProperty: Property {
     public var value: Value? {
         get {
-            return self.field.value ?? nil
+            self.field.value ?? nil
         }
         set {
             self.field.value = newValue
@@ -152,7 +144,7 @@ extension IDProperty: QueryableProperty { }
 // MARK: Query-addressable
 
 extension IDProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -167,11 +159,11 @@ extension IDProperty: AnyDatabaseProperty {
         self.field.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.field.input(to: input)
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         self.exists = true
         self.cachedOutput = output
         try self.field.output(from: output)
@@ -181,11 +173,11 @@ extension IDProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension IDProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         try self.field.encode(to: encoder)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         try self.field.decode(from: decoder)
     }
 }
@@ -197,5 +189,5 @@ extension IDProperty: AnyID { }
 protocol AnyID: AnyObject {
     func generate()
     var exists: Bool { get set }
-    var cachedOutput: DatabaseOutput? { get set }
+    var cachedOutput: (any DatabaseOutput)? { get set }
 }

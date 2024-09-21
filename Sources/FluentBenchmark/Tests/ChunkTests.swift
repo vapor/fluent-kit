@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 import XCTest
 
 extension FluentBenchmarker {
@@ -10,8 +11,6 @@ extension FluentBenchmarker {
         try runTest(#function, [
             GalaxyMigration(),
         ]) {
-            var fetched64: [Result<Galaxy, Error>] = []
-            var fetched2047: [Result<Galaxy, Error>] = []
 
             let saves = (1...512).map { i -> EventLoopFuture<Void> in
                 return Galaxy(name: "Milky Way \(i)")
@@ -19,29 +18,33 @@ extension FluentBenchmarker {
             }
             try EventLoopFuture<Void>.andAllSucceed(saves, on: self.database.eventLoop).wait()
 
+            let fetched64 = NIOLockedValueBox<Int>(0)
+
             try Galaxy.query(on: self.database).chunk(max: 64) { chunk in
                 guard chunk.count == 64 else {
                     XCTFail("bad chunk count")
                     return
                 }
-                fetched64 += chunk
+                fetched64.withLockedValue { $0 += chunk.count }
             }.wait()
 
-            guard fetched64.count == 512 else {
-                XCTFail("did not fetch all - only \(fetched64.count) out of 512")
+            guard fetched64.withLockedValue({ $0 }) == 512 else {
+                XCTFail("did not fetch all - only \(fetched64.withLockedValue { $0 }) out of 512")
                 return
             }
+
+            let fetched511 = NIOLockedValueBox<Int>(0)
 
             try Galaxy.query(on: self.database).chunk(max: 511) { chunk in
                 guard chunk.count == 511 || chunk.count == 1 else {
                     XCTFail("bad chunk count")
                     return
                 }
-                fetched2047 += chunk
+                fetched511.withLockedValue { $0 += chunk.count }
             }.wait()
 
-            guard fetched2047.count == 512 else {
-                XCTFail("did not fetch all - only \(fetched2047.count) out of 512")
+            guard fetched511.withLockedValue({ $0 }) == 512 else {
+                XCTFail("did not fetch all - only \(fetched511.withLockedValue { $0 }) out of 512")
                 return
             }
         }

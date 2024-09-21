@@ -27,7 +27,7 @@ public final class TimestampProperty<Model, Format>
     let format: Format
 
     public var projectedValue: TimestampProperty<Model, Format> {
-        return self
+        self
     }
 
     public var wrappedValue: Date? {
@@ -115,7 +115,7 @@ extension TimestampProperty: QueryableProperty { }
 // MARK: Query-addressable
 
 extension TimestampProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -130,11 +130,11 @@ extension TimestampProperty: AnyDatabaseProperty {
         self.$timestamp.keys
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.$timestamp.input(to: input)
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         try self.$timestamp.output(from: output)
     }
 }
@@ -142,12 +142,12 @@ extension TimestampProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension TimestampProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
             self.value = nil
@@ -183,14 +183,14 @@ extension AnyTimestamp {
 }
 
 extension Fields {
-    var timestamps: [AnyTimestamp] {
+    var timestamps: [any AnyTimestamp] {
         self.properties.compactMap {
-            $0 as? AnyTimestamp
+            $0 as? any AnyTimestamp
         }
     }
     
     func touchTimestamps(_ triggers: TimestampTrigger...) {
-        return self.touchTimestamps(triggers)
+        self.touchTimestamps(triggers)
     }
 
     private func touchTimestamps(_ triggers: [TimestampTrigger]) {
@@ -202,7 +202,7 @@ extension Fields {
         }
     }
 
-    var deletedTimestamp: AnyTimestamp? {
+    var deletedTimestamp: (any AnyTimestamp)? {
         self.timestamps.filter { $0.trigger == .delete }.first
     }
 }

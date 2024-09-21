@@ -1,12 +1,12 @@
 extension DatabaseQuery {
-    public enum Limit {
+    public enum Limit: Sendable {
         case count(Int)
-        case custom(Any)
+        case custom(any Sendable)
     }
 
-    public enum Offset {
+    public enum Offset: Sendable {
         case count(Int)
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 

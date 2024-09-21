@@ -1,9 +1,9 @@
 extension DatabaseQuery {
-    public enum Join {
-        public enum Method {
+    public enum Join: Sendable {
+        public enum Method: Sendable {
             case inner
             case left
-            case custom(Any)
+            case custom(any Sendable)
         }
 
         case join(
@@ -31,7 +31,7 @@ extension DatabaseQuery {
             filters: [Filter]
         )
         
-        case custom(Any)
+        case custom(any Sendable)
     }
 }
 
@@ -51,7 +51,29 @@ extension DatabaseQuery.Join: CustomStringConvertible {
             return "custom(\(custom))"
         }
     }
-    
+
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .join(let schema, let alias, let method, let foreign, let local):
+            return .dictionary([
+                "schema": "\(schema)", "alias": alias.map { "\($0)" }, "method": "\(method)",
+                "foreign": foreign.describedByLoggingMetadata, "local": local.describedByLoggingMetadata
+            ].compactMapValues { $0 })
+        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
+            return .dictionary([
+                "schema": "\(schema)", "space": space.map { "\($0)" }, "alias": alias.map { "\($0)" }, "method": "\(method)",
+                "foreign": foreign.describedByLoggingMetadata, "local": local.describedByLoggingMetadata
+            ].compactMapValues { $0 })
+        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+            return .dictionary([
+                "schema": "\(schema)", "space": space.map { "\($0)" }, "alias": alias.map { "\($0)" }, "method": "\(method)",
+                "filters": .array(filters.map(\.describedByLoggingMetadata))
+            ].compactMapValues { $0 })
+        case .custom:
+            return .stringConvertible(self)
+        }
+    }
+
     private func schemaDescription(space: String? = nil, schema: String, alias: String?) -> String {
         [space, schema].compactMap({ $0 }).joined(separator: ".") + (alias.map { " as \($0)" } ?? "")
     }

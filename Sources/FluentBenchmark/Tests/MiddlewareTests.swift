@@ -140,7 +140,7 @@ private struct TestError: Error {
     var string: String
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)
@@ -161,7 +161,7 @@ private final class User: Model {
 }
 
 private struct UserBatchMiddleware: ModelMiddleware {
-    func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    func create(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         if model.name == "A" {
             model.name = "AA"
             return next.create(model, on: db)
@@ -175,35 +175,35 @@ private struct UserBatchMiddleware: ModelMiddleware {
 }
 
 private struct AsyncUserMiddleware: AsyncModelMiddleware {
-    func create(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+    func create(model: User, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         model.name = "B"
 
         try await next.create(model, on: db)
         throw TestError(string: "didCreate")
     }
 
-    func update(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+    func update(model: User, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         model.name = "D"
 
         try await next.update(model, on: db)
         throw TestError(string: "didUpdate")
     }
 
-    func softDelete(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+    func softDelete(model: User, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         model.name = "E"
 
         try await next.softDelete(model, on: db)
         throw TestError(string: "didSoftDelete")
     }
 
-    func restore(model: User, on db: Database, next: AnyAsyncModelResponder) async throws {
+    func restore(model: User, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         model.name = "F"
 
         try await next.restore(model , on: db)
         throw TestError(string: "didRestore")
     }
 
-    func delete(model: User, force: Bool, on db: Database, next: AnyAsyncModelResponder) async throws {
+    func delete(model: User, force: Bool, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         model.name = "G"
 
         try await next.delete(model, force: force, on: db)
@@ -212,49 +212,49 @@ private struct AsyncUserMiddleware: AsyncModelMiddleware {
 }
 
 private struct UserMiddleware: ModelMiddleware {
-    func create(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    func create(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "B"
         
         return next.create(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
         }
     }
 
-    func update(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    func update(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "D"
 
         return next.update(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didUpdate"))
         }
     }
 
-    func softDelete(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    func softDelete(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "E"
 
         return next.softDelete(model, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didSoftDelete"))
         }
     }
 
-    func restore(model: User, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    func restore(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "F"
 
         return next.restore(model , on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
         }
     }
 
-    func delete(model: User, force: Bool, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    func delete(model: User, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "G"
 
         return next.delete(model, force: force, on: db).flatMap {
-            return db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
+            db.eventLoop.makeFailedFuture(TestError(string: "didDelete"))
         }
     }
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -262,7 +262,7 @@ private struct UserMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }

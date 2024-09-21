@@ -1,5 +1,9 @@
 import FluentKit
+#if !canImport(Darwin)
+@preconcurrency import Foundation
+#else
 import Foundation
+#endif
 import NIOCore
 import XCTest
 
@@ -39,7 +43,7 @@ extension FluentBenchmarker {
     }
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
      static let schema = "foos"
 
      struct Thud: Codable {
@@ -98,7 +102,7 @@ private final class Foo: Model {
 private struct FooMigration: Migration {
     let decimalType: DatabaseSchema.DataType
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .int, .required)
@@ -116,7 +120,7 @@ private struct FooMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("foos").delete()
     }
 }

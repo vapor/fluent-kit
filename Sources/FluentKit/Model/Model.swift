@@ -1,18 +1,18 @@
 import NIOCore
 
 public protocol Model: AnyModel {
-    associatedtype IDValue: Codable, Hashable
+    associatedtype IDValue: Codable, Hashable, Sendable
     var id: IDValue? { get set }
 }
 
 extension Model {
-    public static func query(on database: Database) -> QueryBuilder<Self> {
+    public static func query(on database: any Database) -> QueryBuilder<Self> {
         .init(database: database)
     }
 
     public static func find(
         _ id: Self.IDValue?,
-        on database: Database
+        on database: any Database
     ) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)
@@ -35,10 +35,10 @@ extension Model {
     /// version works for models which use `@CompositeID()`. It would not be necessary if
     /// support existed for property wrappers in protocols.
     ///
-    /// - Note: Adding this property to ``Model`` rather than making the ``AnyID`` protocol
-    ///   and ``anyID`` property public was chosen because implementing a new conformance for
-    ///   ``AnyID`` can not be done correctly from outside FluentKit; it would be mostly useless
-    ///   and potentially confusing public API surface.
+    /// > Note: Adding this property to ``Model`` rather than making the ``AnyID`` protocol
+    /// > and ``anyID`` property public was chosen because implementing a new conformance for
+    /// > ``AnyID`` can not be done correctly from outside FluentKit; it would be mostly useless
+    /// > and potentially confusing public API surface.
     public var _$idExists: Bool {
         get { self.anyID.exists }
         set { self.anyID.exists = newValue }

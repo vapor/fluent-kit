@@ -2,7 +2,7 @@ import Foundation
 
 public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
     case idRequired
-    case invalidField(name: String, valueType: Any.Type, error: Error)
+    case invalidField(name: String, valueType: Any.Type, error: any Error)
     case missingField(name: String)
     case relationNotLoaded(name: String)
     case missingParent(from: String, to: String, key: String, id: String)
@@ -96,8 +96,8 @@ extension FluentError {
 /// An error describing a failure during an an operation on an ``SiblingsProperty``.
 ///
 /// > Note: This should just be another case on ``FluentError``, not a separate error type, but at the time
-///   of this writing, non-frozen enums are still not available to non-stdlib packages, so to avoid source
-///   breakage we chose this as the least annoying of the several annoying workarounds.
+/// > of this writing, non-frozen enums are still not available to non-stdlib packages, so to avoid source
+/// > breakage we chose this as the least annoying of the several annoying workarounds.
 public enum SiblingsPropertyError: Error, LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
     /// An attempt was made to query, attach to, or detach from a siblings property whose owning model's ID
     /// is not currently known (usually because that model has not yet been saved to the database).

@@ -1,3 +1,5 @@
+import NIOConcurrencyHelpers
+
 extension Fields {
     public typealias Group<Value> = GroupProperty<Self, Value>
         where Value: Fields
@@ -6,14 +8,14 @@ extension Fields {
 // MARK: Type
 
 @propertyWrapper @dynamicMemberLookup
-public final class GroupProperty<Model, Value>
+public final class GroupProperty<Model, Value>: @unchecked Sendable
     where Model: FluentKit.Fields, Value: FluentKit.Fields
 {
     public let key: FieldKey
     public var value: Value?
 
     public var projectedValue: GroupProperty<Model, Value> {
-        return self
+        self
     }
 
     public var wrappedValue: Value {
@@ -67,11 +69,11 @@ extension GroupProperty: AnyDatabaseProperty {
         .prefix(self.key, .string("_"))
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.value?.input(to: input.prefixed(by: self.prefix))
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         if self.value == nil { self.value = .init() }
         try self.value!.output(from: output.prefixed(by: self.prefix))
     }
@@ -80,11 +82,11 @@ extension GroupProperty: AnyDatabaseProperty {
 // MARK: + Codable
 
 extension GroupProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         try self.value?.encode(to: encoder)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         
         guard !container.decodeNil() else { return }
@@ -175,7 +177,7 @@ extension GroupPropertyPath: QueryableProperty
 extension GroupPropertyPath: AnyQueryAddressableProperty
     where Property: AnyQueryAddressableProperty
 {
-    public var anyQueryableProperty: AnyQueryableProperty {
+    public var anyQueryableProperty: any AnyQueryableProperty {
         self.property.anyQueryableProperty
     }
     

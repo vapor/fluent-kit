@@ -1,5 +1,5 @@
-public struct DatabaseEnum {
-    public enum Action {
+public struct DatabaseEnum: Sendable {
+    public enum Action: Sendable {
         case create
         case update
         case delete

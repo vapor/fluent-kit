@@ -41,7 +41,7 @@ extension Fields {
 ///         func revert(on database: Database) async throws -> Void { try await database.schema(MyModel.schema).delete() }
 ///     }
 ///
-/// - Note: See also ``OptionalBooleanProperty`` and ``BooleanPropertyFormat``.
+/// > Note: See also ``OptionalBooleanProperty`` and ``BooleanPropertyFormat``.
 @propertyWrapper
 public final class BooleanProperty<Model, Format>
     where Model: FluentKit.Fields, Format: BooleanPropertyFormat
@@ -102,7 +102,7 @@ extension BooleanProperty: QueryableProperty {
 }
 
 extension BooleanProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -112,17 +112,17 @@ extension BooleanProperty: QueryAddressableProperty {
 
 extension BooleanProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] { self.$field.keys }
-    public func input(to input: DatabaseInput) { self.$field.input(to: input) }
-    public func output(from output: DatabaseOutput) throws { try self.$field.output(from: output) }
+    public func input(to input: any DatabaseInput) { self.$field.input(to: input) }
+    public func output(from output: any DatabaseOutput) throws { try self.$field.output(from: output) }
 }
 
 extension BooleanProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.value = try container.decode(Value.self)
     }

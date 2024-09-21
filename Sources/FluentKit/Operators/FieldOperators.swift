@@ -176,7 +176,7 @@ public func !=~ <Left, Right, LeftField, RightField>(
     .init(lhs, .contains(inverse: true, .prefix), rhs)
 }
 
-public struct ModelFieldFilter<Left, Right>
+public struct ModelFieldFilter<Left, Right>: Sendable
     where Left: FluentKit.Schema, Right: FluentKit.Schema
 {
     public init<LeftField, RightField>(

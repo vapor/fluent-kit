@@ -7,7 +7,7 @@ extension QueryBuilder {
     ///
     ///     Planet.query(on: db)
     ///         .join(from: Planet.self, parent: \.$star)
-    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///         .filter(Star.self, \Star.$name == "Sol")
     ///
     /// - Parameters:
     ///   - model: The `Model` to join from
@@ -29,7 +29,7 @@ extension QueryBuilder {
     ///
     ///     Planet.query(on: db)
     ///         .join(parent: \.$star)
-    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///         .filter(Star.self, \Star.$name == "Sol")
     ///
     /// - Parameters:
     ///   - parent: The `ParentProperty` to join
@@ -49,7 +49,7 @@ extension QueryBuilder {
     ///
     ///     Planet.query(on: db)
     ///         .join(from: Planet.self, parent: \.$star)
-    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///         .filter(Star.self, \Star.$name == "Sol")
     ///
     /// - Parameters:
     ///   - model: The `Model` to join from
@@ -71,7 +71,7 @@ extension QueryBuilder {
     ///
     ///     Planet.query(on: db)
     ///         .join(parent: \.$star)
-    ///         .filter(Star.self, \Star.$name == "Sun")
+    ///         .filter(Star.self, \Star.$name == "Sol")
     ///
     /// - Parameters:
     ///   - parent: The `OptionalParentProperty` to join

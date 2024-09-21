@@ -8,7 +8,7 @@ extension Model {
 // MARK: Type
 
 @propertyWrapper
-public final class OptionalChildProperty<From, To>
+public final class OptionalChildProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model
 {
     public typealias Key = RelationParentKey<From, To>
@@ -43,15 +43,15 @@ public final class OptionalChildProperty<From, To>
     }
 
     public var projectedValue: OptionalChildProperty<From, To> {
-        return self
+        self
     }
     
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
@@ -65,7 +65,7 @@ public final class OptionalChildProperty<From, To>
         return builder
     }
 
-    public func create(_ to: To, on database: Database) -> EventLoopFuture<Void> {
+    public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
             fatalError("Cannot save child in \(self.name) to unsaved model in.")
         }
@@ -101,11 +101,11 @@ extension OptionalChildProperty: AnyDatabaseProperty {
         []
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         // child never has input
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         let key = From()._$id.field.key
         if output.contains(key) {
             self.idValue = try output.decode(key, as: From.IDValue.self)
@@ -116,14 +116,14 @@ extension OptionalChildProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension OptionalChildProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         if let child = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(child)
         }
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         // don't decode
     }
 
@@ -139,7 +139,7 @@ extension OptionalChildProperty: Relation {
         "Child<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
 
-    public func load(on database: Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database).first().map {
             self.value = $0
         }
@@ -191,7 +191,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.OptionalChild<To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let ids = models.compactMap { $0.id! }
 
         let builder = To.query(on: database)
@@ -202,9 +202,10 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
-        if (self.withDeleted) {
+        if self.withDeleted {
             builder.withDeleted()
         }
+        let models = models
         return builder.all().map {
             for model in models {
                 let id = model[keyPath: self.relationKey].idValue!
@@ -228,7 +229,7 @@ private struct ThroughChildEagerLoader<From, Through, Loader>: EagerLoader
     let relationKey: KeyPath<From, From.OptionalChild<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let throughs = models.compactMap {
             $0[keyPath: self.relationKey].value!
         }

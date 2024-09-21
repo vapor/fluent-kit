@@ -1,20 +1,22 @@
-public final class Migrations {
-    var storage: [DatabaseID?: [Migration]]
+import NIOConcurrencyHelpers
+
+public final class Migrations: Sendable {
+    let storage: NIOLockedValueBox<[DatabaseID?: [any Migration]]>
     
     public init() {
-        self.storage = [:]
+        self.storage = .init([:])
     }
     
-    public func add(_ migration: Migration, to id: DatabaseID? = nil) {
-        self.storage[id, default: []].append(migration)
+    public func add(_ migration: any Migration, to id: DatabaseID? = nil) {
+        self.storage.withLockedValue { $0[id, default: []].append(migration) }
     }
     
     @inlinable
-    public func add(_ migrations: Migration..., to id: DatabaseID? = nil) {
+    public func add(_ migrations: any Migration..., to id: DatabaseID? = nil) {
         self.add(migrations, to: id)
     }
 
-    public func add(_ migrations: [Migration], to id: DatabaseID? = nil) {
-        self.storage[id, default: []].append(contentsOf: migrations)
+    public func add(_ migrations: [any Migration], to id: DatabaseID? = nil) {
+        self.storage.withLockedValue { $0[id, default: []].append(contentsOf: migrations) }
     }
 }

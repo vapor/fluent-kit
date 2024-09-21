@@ -19,19 +19,19 @@ public extension SiblingsProperty {
     // MARK: Operations
     
     /// Attach multiple models with plain edit closure.
-    func attach(_ tos: [To], on database: any Database, _ edit: (Through) -> () = { _ in }) async throws {
+    func attach(_ tos: [To], on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
         try await self.attach(tos, on: database, edit).get()
     }
 
     /// Attach single model with plain edit closure.
-    func attach(_ to: To, on database: any Database, _ edit: @escaping (Through) -> () = { _ in }) async throws {
+    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
         try await self.attach(to, method: .always, on: database, edit)
     }
     
     /// Attach single model by specific method with plain edit closure.
     func attach(
         _ to: To, method: AttachMethod, on database: any Database,
-        _ edit: @escaping (Through) -> () = { _ in }
+        _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) async throws {
         try await self.attach(to, method: method, on: database, edit).get()
     }
@@ -45,7 +45,7 @@ public extension SiblingsProperty {
     func attach(
         _ tos: [To],
         on database: any Database,
-        _ edit: @Sendable @escaping (Through) async throws -> ()
+        _ edit: @escaping @Sendable (Through) async throws -> ()
     ) async throws {
         guard let fromID = self.idValue else {
             throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
@@ -71,7 +71,7 @@ public extension SiblingsProperty {
     /// A version of ``attach(_:on:_:)-791gu`` whose edit closure is async and can throw.
     ///
     /// These semantics require us to reimplement, rather than calling through to, the ELF version.
-    func attach(_ to: To, on database: any Database, _ edit: @Sendable @escaping (Through) async throws -> ()) async throws {
+    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) async throws -> ()) async throws {
         try await self.attach(to, method: .always, on: database, edit)
     }
     
@@ -80,7 +80,7 @@ public extension SiblingsProperty {
     /// These semantics require us to reimplement, rather than calling through to, the ELF version.
     func attach(
         _ to: To, method: AttachMethod, on database: any Database,
-        _ edit: @Sendable @escaping (Through) async throws -> ()
+        _ edit: @escaping @Sendable (Through) async throws -> ()
     ) async throws {
         switch method {
         case .ifNotExists:

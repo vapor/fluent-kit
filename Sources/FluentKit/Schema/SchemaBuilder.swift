@@ -1,16 +1,16 @@
 extension Database {
     public func schema(_ schema: String, space: String? = nil) -> SchemaBuilder {
-        return .init(database: self, schema: schema, space: space)
+        .init(database: self, schema: schema, space: space)
     }
 }
 
 import NIOCore
 
 public final class SchemaBuilder {
-    let database: Database
+    let database: any Database
     public var schema: DatabaseSchema
 
-    init(database: Database, schema: String, space: String? = nil) {
+    init(database: any Database, schema: String, space: String? = nil) {
         self.database = database
         self.schema = .init(schema: schema, space: space)
     }

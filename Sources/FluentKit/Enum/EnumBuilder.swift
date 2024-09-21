@@ -1,4 +1,5 @@
 import NIOCore
+import NIOConcurrencyHelpers
 import SQLKit
 
 extension Database {
@@ -7,13 +8,18 @@ extension Database {
     }
 }
 
-public final class EnumBuilder {
-    let database: Database
-    public var `enum`: DatabaseEnum
+public final class EnumBuilder: Sendable {
+    let database: any Database
+    let lockedEnum: NIOLockedValueBox<DatabaseEnum>
 
-    init(database: Database, name: String) {
+    public var `enum`: DatabaseEnum {
+        get { self.lockedEnum.withLockedValue { $0 } }
+        set { self.lockedEnum.withLockedValue { $0 = newValue } }
+    }
+
+    init(database: any Database, name: String) {
         self.database = database
-        self.enum = .init(name: name)
+        self.lockedEnum = .init(.init(name: name))
     }
 
     public func `case`(_ name: String) -> Self {

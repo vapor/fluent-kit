@@ -14,7 +14,7 @@ extension FluentBenchmarker {
         try self.testModel_jsonColumn()
         try self.testModel_hasChanges()
         try self.testModel_outputError()
-        if self.database is SQLDatabase {
+        if self.database is any SQLDatabase {
             // Broken in Mongo at this time
             try self.testModel_useOfFieldsWithoutGroup()
         }
@@ -134,7 +134,7 @@ extension FluentBenchmarker {
             let fetched = try Bar.find(bar.id, on: self.database).wait()
             XCTAssertEqual(fetched?.baz.quux, "test")
 
-            if self.database is SQLDatabase {
+            if self.database is any SQLDatabase {
                 let bars = try Bar.query(on: self.database)
                     .filter(.sql(json: "baz", "quux"), .equal, .bind("test"))
                     .all()
@@ -183,12 +183,12 @@ extension FluentBenchmarker {
     
     private func testModel_useOfFieldsWithoutGroup() throws {
         try runTest(#function, []) {
-            final class Contained: Fields {
+            final class Contained: Fields, @unchecked Sendable {
                 @Field(key: "something") var something: String
                 @Field(key: "another") var another: Int
                 init() {}
             }
-            final class Enclosure: Model {
+            final class Enclosure: Model, @unchecked Sendable {
                 static let schema = "enclosures"
                 @ID(custom: .id) var id: Int?
                 @Field(key: "primary") var primary: Contained
@@ -196,37 +196,42 @@ extension FluentBenchmarker {
                 init() {}
                 
                 struct Migration: FluentKit.Migration {
-                    func prepare(on database: Database) -> EventLoopFuture<Void> {
+                    func prepare(on database: any Database) -> EventLoopFuture<Void> {
                         database.schema(Enclosure.schema)
                             .field(.id, .int, .required, .identifier(auto: true))
                             .field("primary", .json, .required)
                             .field("additional", .array(of: .json), .required)
                             .create()
                     }
-                    func revert(on database: Database) -> EventLoopFuture<Void> { database.schema(Enclosure.schema).delete() }
+                    func revert(on database: any Database) -> EventLoopFuture<Void> { database.schema(Enclosure.schema).delete() }
                 }
             }
             
+            try (self.database as? any SQLDatabase)?.drop(table: Enclosure.schema).ifExists().run().wait()
             try Enclosure.Migration().prepare(on: self.database).wait()
             
-            let enclosure = Enclosure()
-            enclosure.primary = .init()
-            enclosure.primary.something = ""
-            enclosure.primary.another = 0
-            enclosure.additional = []
-            try enclosure.save(on: self.database).wait()
-            
-            try! Enclosure.Migration().revert(on: self.database).wait()
+            do {
+                let enclosure = Enclosure()
+                enclosure.primary = .init()
+                enclosure.primary.something = ""
+                enclosure.primary.another = 0
+                enclosure.additional = []
+                try enclosure.save(on: self.database).wait()
+            } catch {
+                try? Enclosure.Migration().revert(on: self.database).wait()
+                throw error
+            }
+            try Enclosure.Migration().revert(on: self.database).wait()
         }
     }
 }
 
 struct BadFooOutput: DatabaseOutput {
-    func schema(_ schema: String) -> DatabaseOutput {
+    func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 
-    func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
 
@@ -253,7 +258,7 @@ struct BadFooOutput: DatabaseOutput {
     }
 }
 
-private final class Foo: Model {
+private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
     @ID(key: .id)
@@ -271,19 +276,19 @@ private final class Foo: Model {
 }
 
 private struct FooMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("foos")
             .field("id", .uuid, .identifier(auto: false))
             .field("bar", .string)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("foos").delete()
     }
 }
 
-private final class User: Model {
+private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
     @ID(key: .id)
@@ -300,19 +305,19 @@ private final class User: Model {
 }
 
 private struct UserMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("users").delete()
     }
 }
 
-private final class Todo: Model {
+private final class Todo: Model, @unchecked Sendable {
     static let schema = "todos"
 
     @ID(key: .id)
@@ -329,19 +334,19 @@ private final class Todo: Model {
 }
 
 private struct TodoMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("todos")
             .field("id", .uuid, .identifier(auto: false))
             .field("title", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("todos").delete()
     }
 }
 
-private final class Bar: Model {
+private final class Bar: Model, @unchecked Sendable {
     static let schema = "bars"
 
     @ID
@@ -363,14 +368,14 @@ private final class Bar: Model {
 }
 
 private struct BarMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("bars")
             .field("id", .uuid, .identifier(auto: false))
             .field("baz", .json, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("bars").delete()
     }
 }

@@ -83,7 +83,7 @@ final class CompositeIDTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         try CompositePlanetTagMigration().prepare(on: db).wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "composite+planet+tag"("planet_id" UUID NOT NULL REFERENCES "planets" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "tag_id" UUID NOT NULL REFERENCES "tags" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "notation" TEXT NOT NULL, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ, PRIMARY KEY ("planet_id", "tag_id"))"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"CREATE TABLE "composite+planet+tag" ("planet_id" UUID NOT NULL REFERENCES "planets" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "tag_id" UUID NOT NULL REFERENCES "tags" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION, "notation" TEXT NOT NULL, "createdAt" TIMESTAMPTZ, "updatedAt" TIMESTAMPTZ, "deletedAt" TIMESTAMPTZ, PRIMARY KEY ("planet_id", "tag_id"))"#)
     }
     
     func testCompositeIDRelations() throws {
@@ -97,15 +97,24 @@ final class CompositeIDTests: XCTestCase {
         planet.$tags.fromId = planet.id!
         let tag = Tag(id: .init(uuidString: "33333333-3333-3333-3333-333333333333")!, name: "Tag")
         
+        db.fakedRows.append([.init(["id": UUID()])])
         _ = try model.$id.$planet.get(on: db).wait()
+        db.fakedRows.append([.init(["id": UUID()])])
         _ = try planet.$planetTags.get(on: db).wait()
+        db.fakedRows.append([.init(["id": UUID()])])
         _ = try planet.$tags.get(on: db).wait()
                 
+        db.fakedRows.append([.init(["id": UUID()])])
         try planet.$planetTags.create(model, on: db).wait()
+        db.fakedRows.append([.init(["id": UUID()])])
         try planet.$tags.attach(tag, method: .always, on: db).wait()
+        db.fakedRows.append([.init(["aggregate": 1])])
         try planet.$tags.attach(tag, method: .ifNotExists, on: db).wait()
+        db.fakedRows.append([.init(["aggregate": 1])])
         _ = try planet.$tags.isAttached(to: tag, on: db).wait()
+        db.fakedRows.append([.init(["id": UUID()])])
         try planet.$tags.detach(tag, on: db).wait()
+        db.fakedRows.append([.init(["id": UUID()])])
         try planet.$tags.detachAll(on: db).wait()
         
         XCTAssertEqual(db.sqlSerializers.count, 9)
@@ -132,15 +141,19 @@ final class CompositeIDTests: XCTestCase {
         planet.$tags.fromId = planet.id!
         let tag = Tag(id: .init(uuidString: "33333333-3333-3333-3333-333333333333")!, name: "Tag")
         
+        db.fakedRows.append([.init(["id": UUID()])])
         try await planet.$planetTags.create(model, on: db)
+        db.fakedRows.append([.init(["id": UUID()])])
         try await planet.$tags.attach([tag], on: db) { pivot in
             _ = try await Planet.query(on: db).all() // just to make there be something async happening
             pivot.notation = "notation"
         }
+        db.fakedRows.append([.init(["id": UUID()])])
         try await planet.$tags.attach(tag, on: db) { pivot in
             _ = try await Planet.query(on: db).all() // just to make there be something async happening
             pivot.notation = "notation"
         }
+        db.fakedRows.append(contentsOf: [[.init(["aggregate": 1])], [.init(["id": UUID()])]])
         try await planet.$tags.attach(tag, method: .ifNotExists, on: db) { pivot in
             _ = try await Planet.query(on: db).all() // just to make there be something async happening
             pivot.notation = "notation"
@@ -191,7 +204,7 @@ final class CompositeIDTests: XCTestCase {
         let allPlanetFields = #""composite+planet"."system_id" AS "composite+planet_system_id", "composite+planet"."nrm_ord" AS "composite+planet_nrm_ord", "composite+planet"."name" AS "composite+planet_name" FROM "composite+planet""#
         let allMoonFields = #""composite+moon"."id" AS "composite+moon_id", "composite+moon"."name" AS "composite+moon_name", "composite+moon"."planet_system_id" AS "composite+moon_planet_system_id", "composite+moon"."planet_nrm_ord" AS "composite+moon_planet_nrm_ord", "composite+moon"."progenitorSystem_id" AS "composite+moon_progenitorSystem_id", "composite+moon"."progenitorNrm_ord" AS "composite+moon_progenitorNrm_ord", "composite+moon"."planetoid_system_id" AS "composite+moon_planetoid_system_id", "composite+moon"."planetoid_nrm_ord" AS "composite+moon_planetoid_nrm_ord" FROM "composite+moon""#
         
-        let expectedQueries: [(String, [Encodable])] = [
+        let expectedQueries: [(String, [any Encodable])] = [
             (#"SELECT \#(allPlanetFields) WHERE ("composite+planet"."system_id" = $1 AND "composite+planet"."nrm_ord" = $2)"#,               [systemId, 1]),
             (#"SELECT \#(allPlanetFields) WHERE ("composite+planet"."system_id" = $1 AND "composite+planet"."nrm_ord" = $2)"#,               [systemId, 2]),
             (#"SELECT \#(allPlanetFields) WHERE ("composite+planet"."system_id" IS NULL AND "composite+planet"."nrm_ord" IS NULL)"#,         []),
@@ -221,6 +234,8 @@ final class CompositeIDTests: XCTestCase {
         let moon3 = CompositeMoon(name: "D", planetSolarSystemId: sysId, planetNormalizedOrdinal: 1)
         let moon4 = CompositeMoon(name: "E", planetSolarSystemId: sysId, planetNormalizedOrdinal: 1, planetoidId: .init(solarSystemId: sysId, normalizedOrdinal: 3))
         
+        db.fakedRows.append(contentsOf: [[.init(["id": UUID()])], [.init(["id": UUID()])], [.init(["id": UUID()])], [.init(["id": UUID()])], [.init(["id": UUID()])]])
+
         try planet1.create(on: db).wait()
         try [moon1, moon2, moon3, moon4].forEach { try $0.create(on: db).wait() }
         
@@ -237,7 +252,7 @@ final class CompositeIDTests: XCTestCase {
         let moonCols = #""id", "name", "planet_system_id", "planet_nrm_ord", "progenitorSystem_id", "progenitorNrm_ord", "planetoid_system_id", "planetoid_nrm_ord""#
         let fourVals = "$1, $2, $3, $4, NULL, NULL, NULL, NULL"
         let sixVals1 = "$1, $2, $3, $4, $5, $6, NULL, NULL", sixVals2 = "$1, $2, $3, $4, NULL, NULL, $5, $6"
-        let expectedQueries: [(String, [Encodable], UInt)] = [
+        let expectedQueries: [(String, [any Encodable], UInt)] = [
             (#"INSERT INTO "composite+planet" ("system_id", "nrm_ord", "name") VALUES ($1, $2, $3)"#,                                         [sysId, 1, "A"],                      #line),
             (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(fourVals))"#,                                                           [moon1.id!, "B", sysId, 1],           #line),
             (#"INSERT INTO "composite+moon" (\#(moonCols)) VALUES (\#(sixVals1))"#,                                                           [moon2.id!, "C", sysId, 1, sysId, 2], #line),
@@ -363,7 +378,7 @@ fileprivate func XCTAssertNilNil<V>(_ expression: @autoclosure () throws -> Opti
     }
 }
 
-final class PlanetUsingCompositePivot: Model {
+final class PlanetUsingCompositePivot: Model, @unchecked Sendable {
     static let schema = Planet.schema
     
     @ID(key: .id) var id: UUID?
@@ -381,10 +396,10 @@ final class PlanetUsingCompositePivot: Model {
     }
 }
 
-final class CompositePlanetTag: Model {
+final class CompositePlanetTag: Model, @unchecked Sendable {
     static let schema = "composite+planet+tag"
     
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "planet_id") var planet: PlanetUsingCompositePivot
         @Parent(key: "tag_id") var tag: Tag
         
@@ -407,7 +422,7 @@ final class CompositePlanetTag: Model {
 struct CompositePlanetTagMigration: Migration {
     init() {}
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema)
             .field("planet_id", .uuid, .required, .references(PlanetUsingCompositePivot.schema, "id"))
             .field("tag_id", .uuid, .required, .references(Tag.schema, "id"))
@@ -419,12 +434,12 @@ struct CompositePlanetTagMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(CompositePlanetTag.schema).delete()
     }
 }
 
-final class SolarSystem: Model {
+final class SolarSystem: Model, @unchecked Sendable {
     static let schema = "solar_system"
     
     @ID(key: .id) var id: UUID?
@@ -439,11 +454,11 @@ final class SolarSystem: Model {
     }
 }
 
-final class CompositePlanet: Model {
+final class CompositePlanet: Model, @unchecked Sendable {
     static let schema = "composite+planet"
     
     // Note for the curious: "normalized ordinal" means "how many orbits from the center if a unique value was chosen for every planet despite overlapping or shared orbits"
-    final class IDValue: Fields, Hashable {
+    final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "system_id") var solarSystem: SolarSystem
         @Field(key: "nrm_ord") var normalizedOrdinal: Int
         
@@ -471,7 +486,7 @@ final class CompositePlanet: Model {
     }
 }
 
-final class CompositeMoon: Model {
+final class CompositeMoon: Model, @unchecked Sendable {
     static let schema = "composite+moon"
     
     @ID(key: .id) var id: UUID?

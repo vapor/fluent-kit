@@ -17,9 +17,10 @@ extension FluentBenchmarker {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(StarMigration())
-
+            
+            let database = self.database
             let migrator = Migrator(
-                databaseFactory: { _ in self.database },
+                databaseFactory: { _ in database },
                 migrations: migrations,
                 on: self.database.eventLoop
             )
@@ -45,9 +46,10 @@ extension FluentBenchmarker {
             migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
             migrations.add(StarMigration())
-
+            
+            let database = self.database
             let migrator = Migrator(
-                databaseFactory: { _ in self.database },
+                databaseFactory: { _ in database },
                 migrations: migrations,
                 on: self.database.eventLoop
             )
@@ -175,11 +177,11 @@ internal struct ErrorMigration: Migration {
 
     struct Error: Swift.Error { }
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeFailedFuture(Error())
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeSucceededFuture(())
     }
 }

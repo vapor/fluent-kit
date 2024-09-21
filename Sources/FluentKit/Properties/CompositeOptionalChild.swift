@@ -22,8 +22,8 @@ extension Model {
 ///
 /// Example:
 ///
-/// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
-///   complex relationships.
+/// > Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
+/// > complex relationships.
 ///
 /// ```
 /// final class TableMetadata: Model {
@@ -58,7 +58,7 @@ extension Model {
 /// }
 /// ```
 @propertyWrapper
-public final class CompositeOptionalChildProperty<From, To>
+public final class CompositeOptionalChildProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model, From.IDValue: Fields
 {
     public typealias Key = CompositeRelationParentKey<From, To>
@@ -91,11 +91,11 @@ public final class CompositeOptionalChildProperty<From, To>
     public var projectedValue: CompositeOptionalChildProperty<From, To> { self }
     
     public var fromId: From.IDValue? {
-        get { return self.idValue }
+        get { self.idValue }
         set { self.idValue = newValue }
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
+    public func query(on database:any  Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
@@ -122,8 +122,8 @@ extension CompositeOptionalChildProperty: Property {
 
 extension CompositeOptionalChildProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] { [] }
-    public func input(to input: DatabaseInput) {}
-    public func output(from output: DatabaseOutput) throws {
+    public func input(to input: any DatabaseInput) {}
+    public func output(from output: any DatabaseOutput) throws {
         if From.IDValue.keys.reduce(true, { $0 && output.contains($1) }) { // don't output unless all keys are present
             self.idValue = From.IDValue()
             try self.idValue!.output(from: output)
@@ -132,19 +132,19 @@ extension CompositeOptionalChildProperty: AnyDatabaseProperty {
 }
 
 extension CompositeOptionalChildProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         if let value = self.value {
             var container = encoder.singleValueContainer()
             try container.encode(value)
         }
     }
-    public func decode(from decoder: Decoder) throws {}
+    public func decode(from decoder: any Decoder) throws {}
     public var skipPropertyEncoding: Bool { self.value == nil }
 }
 
 extension CompositeOptionalChildProperty: Relation {
     public var name: String { "CompositeOptionalChild<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: Database) -> EventLoopFuture<Void> { self.query(on: database).first().map { self.value = $0 } }
+    public func load(on database: any Database) -> EventLoopFuture<Void> { self.query(on: database).first().map { self.value = $0 } }
 }
 
 extension CompositeOptionalChildProperty: EagerLoadable {
@@ -176,7 +176,7 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.CompositeOptionalChild<To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -184,7 +184,7 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
-        if (self.withDeleted) {
+        if self.withDeleted {
             builder.withDeleted()
         }
         return builder.all().map {
@@ -203,7 +203,7 @@ private struct ThroughCompositeOptionalChildEagerLoader<From, Through, Loader>: 
     let relationKey: KeyPath<From, From.CompositeOptionalChild<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         return self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

@@ -126,7 +126,7 @@ public struct PageMetadata: Codable {
 }
 
 /// Represents information needed to generate a `Page` from the full result set.
-public struct PageRequest: Decodable {
+public struct PageRequest: Decodable, Sendable {
     /// Page number to request. Starts at `1`.
     public let page: Int
 
@@ -139,7 +139,7 @@ public struct PageRequest: Decodable {
     }
 
     /// `Decodable` conformance.
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.page = try container.decodeIfPresent(Int.self, forKey: .page) ?? 1
         self.per = try container.decodeIfPresent(Int.self, forKey: .per) ?? 10

@@ -2,11 +2,11 @@ import NIOCore
 import Foundation
 
 /// Stores information about `Migration`s that have been run.
-public final class MigrationLog: Model {
+public final class MigrationLog: Model, @unchecked Sendable {
     public static let schema = "_fluent_migrations"
 
-    public static var migration: Migration {
-        return MigrationLogMigration()
+    public static var migration: any Migration {
+        MigrationLogMigration()
     }
 
     @ID(key: .id)
@@ -24,7 +24,7 @@ public final class MigrationLog: Model {
     @Timestamp(key: "updated_at", on: .update)
     public var updatedAt: Date?
 
-    public init() { }
+    public init() {}
 
     public init(id: IDValue? = nil, name: String, batch: Int) {
         self.id = id
@@ -36,8 +36,8 @@ public final class MigrationLog: Model {
 }
 
 private struct MigrationLogMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("_fluent_migrations")
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
+        database.schema(MigrationLog.schema)
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("batch", .int, .required)
@@ -48,7 +48,7 @@ private struct MigrationLogMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("_fluent_migrations").delete()
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
+        database.schema(MigrationLog.schema).delete()
     }
 }

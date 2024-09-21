@@ -72,13 +72,13 @@ extension DatabaseInput {
 extension DatabaseInput {
     /// Return a ``DatabaseInput`` wrapping `self` so as to apply a given prefix to each field key
     /// before processing.
-    public func prefixed(by prefix: FieldKey) -> DatabaseInput {
+    public func prefixed(by prefix: FieldKey) -> any DatabaseInput {
         PrefixedDatabaseInput(prefix: prefix, strategy: .none, base: self)
     }
     
     /// Return a ``DatabaseInput`` wrapping `self` so as to apply a given prefix, according to a given
     /// ``KeyPrefixingStrategy``, to each field key before processing.
-    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> DatabaseInput {
+    public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> any DatabaseInput {
         PrefixedDatabaseInput(prefix: prefix, strategy: stratgey, base: self)
     }
 }
@@ -115,9 +115,9 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 /// to a  ``QueryBuilder/group(_:_:)`` closure to create an instance of this type.
 ///
 /// > Tip: Applying a query filter via database input is especially useful as a means of providing generic
-///   support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
-///   as the input for a ``CompositeParentProperty`` filters the query according to the set of appropriately
-///   prefixed field keys the property encapsulates.
+/// > support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
+/// > as the input for a ``CompositeParentProperty`` filters the query according to the set of appropriately
+/// > prefixed field keys the property encapsulates.
 internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Schema>: DatabaseInput {
     let builder: QueryBuilder<BuilderModel>
     let inverted: Bool
@@ -160,7 +160,7 @@ internal struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
 extension DatabaseInput {
     /// Returns `self` wrapped with a ``NullValueOverrideInput``. This is here primarily so the actual
     /// implementation be defined generically rather than using existentials.
-    internal func nullValueOveridden() -> DatabaseInput {
+    internal func nullValueOveridden() -> any DatabaseInput {
         NullValueOverrideInput(base: self)
     }
 }

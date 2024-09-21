@@ -1,4 +1,5 @@
 import NIOCore
+import struct SQLKit.SomeCodingKey
 
 extension Model {
     /// A convenience alias for ``CompositeParentProperty``. It is strongly recommended that callers use this
@@ -20,8 +21,8 @@ extension Model {
 ///
 /// Example:
 ///
-/// - Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
-///   complex relationships.
+/// > Note: This example is somewhat contrived; in reality, this kind of metadata would have much more
+/// > complex relationships.
 ///
 /// ```
 /// final class TableMetadata: Model {
@@ -64,12 +65,12 @@ extension Model {
 /// }
 /// ```
 @propertyWrapper @dynamicMemberLookup
-public final class CompositeParentProperty<From, To>
+public final class CompositeParentProperty<From, To>: @unchecked Sendable
     where From: Model, To: Model, To.IDValue: Fields
 {
     public let prefix: FieldKey
     public let prefixingStrategy: KeyPrefixingStrategy
-    public var id: To.IDValue
+    public var id: To.IDValue = .init()
     public var value: To?
 
     public var wrappedValue: To {
@@ -91,13 +92,12 @@ public final class CompositeParentProperty<From, To>
     ///   - strategy: The strategy to use when applying prefixes to keys. ``KeyPrefixingStrategy/snakeCase`` is
     ///     the default.
     public init(prefix: FieldKey, strategy: KeyPrefixingStrategy = .snakeCase) {
-        self.id = .init()
         self.prefix = prefix
         self.prefixingStrategy = strategy
     }
 
-    public func query(on database: Database) -> QueryBuilder<To> {
-        return To.query(on: database).group(.and) { self.id.input(to: QueryFilterInput(builder: $0)) }
+    public func query(on database: any Database) -> QueryBuilder<To> {
+        To.query(on: database).group(.and) { self.id.input(to: QueryFilterInput(builder: $0)) }
     }
 
     public subscript<Nested>(dynamicMember keyPath: KeyPath<To.IDValue, Nested>) -> Nested
@@ -118,7 +118,7 @@ extension CompositeParentProperty: Relation {
         "CompositeParent<\(From.self), \(To.self)>(prefix: \(self.prefix), strategy: \(self.prefixingStrategy))"
     }
     
-    public func load(on database: Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database)
             .first()
             .map {
@@ -141,17 +141,17 @@ extension CompositeParentProperty: AnyDatabaseProperty {
         }
     }
     
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         self.id.input(to: input.prefixed(by: self.prefix, using: self.prefixingStrategy))
     }
     
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         try self.id.output(from: output.prefixed(by: self.prefix, using: self.prefixingStrategy))
     }
 }
 
 extension CompositeParentProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         
         if let value = self.value {
@@ -161,7 +161,7 @@ extension CompositeParentProperty: AnyCodableProperty {
         }
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: SomeCodingKey.self)
         self.id = try container.decode(To.IDValue.self, forKey: .init(stringValue: "id"))
     }
@@ -193,14 +193,14 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.CompositeParent<To>>
     let withDeleted: Bool
     
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
         let builder = To.query(on: database)
             .group(.or) {
                 _ = sets.keys.reduce($0) { query, id in query.group(.and) { id.input(to: QueryFilterInput(builder: $0)) } }
             }
-        if (self.withDeleted) {
+        if self.withDeleted {
             builder.withDeleted()
         }
         return builder.all()
@@ -229,7 +229,7 @@ private struct ThroughCompositeParentEagerLoader<From, Through, Loader>: EagerLo
     let relationKey: KeyPath<From, From.CompositeParent<Through>>
     let loader: Loader
     
-    func run(models: [From], on database: Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         self.loader.run(models: models.map {
             $0[keyPath: self.relationKey].value!
         }, on: database)

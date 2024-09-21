@@ -24,7 +24,7 @@ final class QueryBuilderTests: XCTestCase {
         let test = ArrayTestDatabase()
         test.append([
             TestOutput([
-                "id": planet.id as Any,
+                "id": planet.id as any Sendable,
                 "name": planet.name,
                 "star_id": UUID()
             ])
@@ -41,7 +41,7 @@ final class QueryBuilderTests: XCTestCase {
         let test = ArrayTestDatabase()
         test.append([
             TestOutput([
-                "id": planet.id as Any,
+                "id": planet.id as any Sendable,
                 "name": planet.name,
                 "star_id": UUID()
             ]),
@@ -142,19 +142,24 @@ final class QueryBuilderTests: XCTestCase {
 
     // https://github.com/vapor/fluent-kit/issues/310
     func testJoinOverloads() throws {
-        var query: DatabaseQuery?
+        final class UnsafeMutableTransferBox<Wrapped>: @unchecked Sendable {
+            var wrappedValue: Wrapped
+            init(_ wrappedValue: Wrapped) { self.wrappedValue = wrappedValue }
+        }
+
+        let query = UnsafeMutableTransferBox<DatabaseQuery?>(nil)
         let test = CallbackTestDatabase {
-            query = $0
+            query.wrappedValue = $0
             return []
         }
         let planets = try Planet.query(on: test.db)
             .join(Star.self, on: \Star.$id == \Planet.$star.$id)
             .filter(\.$name, .custom("ilike"), "earth")
-            .filter(Star.self, \.$name, .custom("ilike"), "sun")
+            .filter(Star.self, \.$name, .custom("ilike"), "Sol")
             .all().wait()
         XCTAssertEqual(planets.count, 0)
-        XCTAssertNotNil(query?.filters[1])
-        switch query?.filters[1] {
+        XCTAssertNotNil(query.wrappedValue?.filters[1])
+        switch query.wrappedValue?.filters[1] {
         case .value(let field, let method, let value):
             switch field {
             case .path(let path, let schema):
@@ -175,7 +180,7 @@ final class QueryBuilderTests: XCTestCase {
             }
             switch value {
             case .bind(let any as String):
-                XCTAssertEqual(any, "sun")
+                XCTAssertEqual(any, "Sol")
             default: 
                 XCTFail("\(value)")
             }
@@ -188,10 +193,10 @@ final class QueryBuilderTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try Planet.query(on: db)
             .join(Planet.self,  Star.self,
-                  on: .custom(#"LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sun'"#))
+                  on: .custom(#"LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sol'"#))
             .all().wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "planets" LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sun' WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1) AND ("stars"."deleted_at" IS NULL OR "stars"."deleted_at" > $2)"#)
+        XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "planets" LEFT JOIN "stars" ON "stars"."id" = "planets"."id" AND "stars"."name" = 'Sol' WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1) AND ("stars"."deleted_at" IS NULL OR "stars"."deleted_at" > $2)"#)
     }
     
     func testComplexJoinOperators() throws {

@@ -2,6 +2,7 @@ import FluentKit
 import Foundation
 import NIOEmbedded
 import NIOCore
+import NIOConcurrencyHelpers
 
 public struct DummyDatabase: Database {
     public var context: DatabaseContext
@@ -18,18 +19,18 @@ public struct DummyDatabase: Database {
         false
     }
     
-    public func execute(query: DatabaseQuery, onOutput: @escaping (DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         for _ in 0..<Int.random(in: 1..<42) {
             onOutput(DummyRow())
         }
         return self.eventLoop.makeSucceededFuture(())
     }
 
-    public func transaction<T>(_ closure: @escaping (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    public func transaction<T>(_ closure: @escaping @Sendable(any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
     
-    public func withConnection<T>(_ closure: (Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    public func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
     
@@ -43,35 +44,35 @@ public struct DummyDatabase: Database {
 }
 
 public struct DummyDatabaseConfiguration: DatabaseConfiguration {
-    public var middleware: [AnyModelMiddleware]
+    public var middleware: [any AnyModelMiddleware]
 
-    public func makeDriver(for databases: Databases) -> DatabaseDriver {
+    public func makeDriver(for databases: Databases) -> any DatabaseDriver {
         DummyDatabaseDriver(on: databases.eventLoopGroup)
     }
 }
 
 public final class DummyDatabaseDriver: DatabaseDriver {
-    public let eventLoopGroup: EventLoopGroup
-    var didShutdown: Bool
+    public let eventLoopGroup: any EventLoopGroup
+    let didShutdown: NIOLockedValueBox<Bool>
     
-    public var fieldDecoder: Decoder {
-        return DummyDecoder()
+    public var fieldDecoder: any Decoder {
+        DummyDecoder()
     }
 
-    public init(on eventLoopGroup: EventLoopGroup) {
+    public init(on eventLoopGroup: any EventLoopGroup) {
         self.eventLoopGroup = eventLoopGroup
-        self.didShutdown = false
+        self.didShutdown = .init(false)
     }
     
-    public func makeDatabase(with context: DatabaseContext) -> Database {
+    public func makeDatabase(with context: DatabaseContext) -> any Database {
         DummyDatabase(context: context)
     }
 
     public func shutdown() {
-        self.didShutdown = true
+        self.didShutdown.withLockedValue { $0 = true }
     }
     deinit {
-        assert(self.didShutdown, "DummyDatabase did not shutdown before deinit.")
+        assert(self.didShutdown.withLockedValue { $0 }, "DummyDatabase did not shutdown before deinit.")
     }
 }
 
@@ -80,11 +81,11 @@ public final class DummyDatabaseDriver: DatabaseDriver {
 public struct DummyRow: DatabaseOutput {
     public init() { }
 
-    public func schema(_ schema: String) -> DatabaseOutput {
+    public func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
 
-    public func nested(_ key: FieldKey) throws -> DatabaseOutput {
+    public func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
 
@@ -105,50 +106,47 @@ public struct DummyRow: DatabaseOutput {
     }
 
     public func contains(_ key: FieldKey) -> Bool {
-        return true
+        true
     }
     
     public var description: String {
-        return "<dummy>"
+        "<dummy>"
     }
 }
 
 private struct DummyDecoder: Decoder {
-    var codingPath: [CodingKey] {
-        return []
+    var codingPath: [any CodingKey] {
+        []
     }
     
-    var userInfo: [CodingUserInfoKey : Any] {
-        return [:]
+    var userInfo: [CodingUserInfoKey: Any] {
+        [:]
     }
     
     init() {
         
     }
     
-    struct KeyedDecoder<Key>: KeyedDecodingContainerProtocol
-        where Key: CodingKey
-    {
-        var codingPath: [CodingKey] {
-            return []
-        }
-        var allKeys: [Key] {
-            return [
-                Key(stringValue: "test")!
-            ]
+    struct KeyedDecoder<Key: CodingKey>: KeyedDecodingContainerProtocol {
+        var codingPath: [any CodingKey] {
+            []
         }
         
-        init() { }
+        var allKeys: [Key] {
+            [Key(stringValue: "test")!]
+        }
+        
+        init() {}
         
         func contains(_ key: Key) -> Bool {
-            return false
+            false
         }
         
         func decodeNil(forKey key: Key) throws -> Bool {
-            return false
+            false
         }
         
-        func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
+        func decode<T: Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
             if T.self is UUID.Type {
                 return UUID() as! T
             } else {
@@ -156,25 +154,25 @@ private struct DummyDecoder: Decoder {
             }
         }
         
-        func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
-            return KeyedDecodingContainer<NestedKey>(KeyedDecoder<NestedKey>())
+        func nestedContainer<NestedKey: CodingKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> {
+            .init(KeyedDecoder<NestedKey>())
         }
         
-        func nestedUnkeyedContainer(forKey key: Key) throws -> UnkeyedDecodingContainer {
-            return UnkeyedDecoder()
+        func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer {
+            UnkeyedDecoder()
         }
         
-        func superDecoder() throws -> Decoder {
-            return DummyDecoder()
+        func superDecoder() throws -> any Decoder {
+            DummyDecoder()
         }
         
-        func superDecoder(forKey key: Key) throws -> Decoder {
-            return DummyDecoder()
+        func superDecoder(forKey key: Key) throws -> any Decoder {
+            DummyDecoder()
         }
     }
     
     struct UnkeyedDecoder: UnkeyedDecodingContainer {
-        var codingPath: [CodingKey]
+        var codingPath: [any CodingKey]
         var count: Int?
         var isAtEnd: Bool {
             guard let count = self.count else {
@@ -191,94 +189,94 @@ private struct DummyDecoder: Decoder {
         }
         
         mutating func decodeNil() throws -> Bool {
-            return true
+            true
         }
         
         mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-            return try T.init(from: DummyDecoder())
+            try T.init(from: DummyDecoder())
         }
         
-        mutating func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
-            return KeyedDecodingContainer<NestedKey>(KeyedDecoder())
+        mutating func nestedContainer<NestedKey: CodingKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> {
+            KeyedDecodingContainer<NestedKey>(KeyedDecoder())
         }
         
-        mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
-            return UnkeyedDecoder()
+        mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer {
+            UnkeyedDecoder()
         }
         
-        mutating func superDecoder() throws -> Decoder {
-            return DummyDecoder()
+        mutating func superDecoder() throws -> any Decoder {
+            DummyDecoder()
         }
     }
     
     struct SingleValueDecoder: SingleValueDecodingContainer {
-        var codingPath: [CodingKey] {
-            return []
+        var codingPath: [any CodingKey] {
+            []
         }
         
-        init() { }
+        init() {}
         
         func decodeNil() -> Bool {
-            return false
+            false
         }
         
         func decode(_ type: Bool.Type) throws -> Bool {
-            return false
+            false
         }
         
         func decode(_ type: String.Type) throws -> String {
-            return "foo"
+            "foo"
         }
         
         func decode(_ type: Double.Type) throws -> Double {
-            return 3.14
+            3.14
         }
         
         func decode(_ type: Float.Type) throws -> Float {
-            return 1.59
+            1.59
         }
         
         func decode(_ type: Int.Type) throws -> Int {
-            return -42
+            -42
         }
         
         func decode(_ type: Int8.Type) throws -> Int8 {
-            return -8
+            -8
         }
         
         func decode(_ type: Int16.Type) throws -> Int16 {
-            return -16
+            -16
         }
         
         func decode(_ type: Int32.Type) throws -> Int32 {
-            return -32
+            -32
         }
         
         func decode(_ type: Int64.Type) throws -> Int64 {
-            return -64
+            -64
         }
         
         func decode(_ type: UInt.Type) throws -> UInt {
-            return 42
+            42
         }
         
         func decode(_ type: UInt8.Type) throws -> UInt8 {
-            return 8
+            8
         }
         
         func decode(_ type: UInt16.Type) throws -> UInt16 {
-            return 16
+            16
         }
         
         func decode(_ type: UInt32.Type) throws -> UInt32 {
-            return 32
+            32
         }
         
         func decode(_ type: UInt64.Type) throws -> UInt64 {
-            return 64
+            64
         }
         
-        func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+        func decode<T: Decodable>(_ type: T.Type) throws -> T {
             if T.self is UUID.Type {
                 return UUID() as! T
             } else {
@@ -287,15 +285,15 @@ private struct DummyDecoder: Decoder {
         }
     }
     
-    func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
-        return .init(KeyedDecoder())
+    func container<Key: CodingKey>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> {
+        .init(KeyedDecoder())
     }
     
-    func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        return UnkeyedDecoder()
+    func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
+        UnkeyedDecoder()
     }
     
-    func singleValueContainer() throws -> SingleValueDecodingContainer {
-        return SingleValueDecoder()
+    func singleValueContainer() throws -> any SingleValueDecodingContainer {
+        SingleValueDecoder()
     }
 }

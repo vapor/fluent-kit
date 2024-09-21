@@ -1,10 +1,11 @@
-import class NIO.ThreadSpecificVariable
+import NIOConcurrencyHelpers
+import class NIOPosix.ThreadSpecificVariable
 import Foundation
 
 // MARK: Format
 
-public protocol TimestampFormat {
-    associatedtype Value: Codable
+public protocol TimestampFormat: Sendable {
+    associatedtype Value: Codable & Sendable
 
     func parse(_ value: Value) -> Date?
     func serialize(_ date: Date) -> Value?
@@ -52,32 +53,29 @@ extension TimestampFormatFactory {
         withMilliseconds: Bool
     ) -> TimestampFormatFactory<ISO8601TimestampFormat> {
         .init {
-            let formatter = ISO8601DateFormatter.threadSpecific
-            if withMilliseconds {
-                formatter.formatOptions.insert(.withFractionalSeconds)
-            }
-            return ISO8601TimestampFormat(formatter: formatter)
+            ISO8601TimestampFormat(formatter: (withMilliseconds ?
+                ISO8601DateFormatter.sharedWithMs :
+                ISO8601DateFormatter.sharedWithoutMs
+            ).value)
         }
     }
 }
 
 extension ISO8601DateFormatter {
-    private static var cache: ThreadSpecificVariable<ISO8601DateFormatter> = .init()
-
-    static var threadSpecific: ISO8601DateFormatter {
-        let formatter: ISO8601DateFormatter
-        if let existing = ISO8601DateFormatter.cache.currentValue {
-            formatter = existing
-        } else {
-            let new = ISO8601DateFormatter()
-            self.cache.currentValue = new
-            formatter = new
-        }
-        return formatter
-    }
+    // We use this to suppress warnings about ISO8601DateFormatter not being Sendable. It's safe to do so because we
+    // know that in reality, the formatter is safe to use simultaneously from multiple threads as long as the options
+    // are not changed, and we never change the options after the formatter is first created.
+    fileprivate struct FakeSendable<T>: @unchecked Sendable { let value: T }
+    
+    fileprivate static let sharedWithoutMs: FakeSendable<ISO8601DateFormatter> = .init(value: .init())
+    fileprivate static let sharedWithMs: FakeSendable<ISO8601DateFormatter> = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions.insert(.withFractionalSeconds)
+        return .init(value: formatter)
+    }()
 }
 
-public struct ISO8601TimestampFormat: TimestampFormat {
+public struct ISO8601TimestampFormat: TimestampFormat, @unchecked Sendable {
     public typealias Value = String
 
     let formatter: ISO8601DateFormatter

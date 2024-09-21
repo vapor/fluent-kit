@@ -3,7 +3,7 @@ extension QueryBuilder {
     
     @discardableResult
     internal func filter(id: Model.IDValue) -> Self {
-        if let fields = id as? Fields {
+        if let fields = id as? any Fields {
             return self.group(.and) { fields.input(to: QueryFilterInput(builder: $0)) }
         } else {
             return self.filter(\Model._$id == id)
@@ -13,8 +13,8 @@ extension QueryBuilder {
     @discardableResult
     internal func filter(ids: [Model.IDValue]) -> Self {
         guard let firstId = ids.first else { return self.limit(0) }
-        if firstId is Fields {
-            return self.group(.or) { q in ids.forEach { id in q.group(.and) { (id as! Fields).input(to: QueryFilterInput(builder: $0)) } } }
+        if firstId is any Fields {
+            return self.group(.or) { q in ids.forEach { id in q.group(.and) { (id as! any Fields).input(to: QueryFilterInput(builder: $0)) } } }
         } else {
             return self.filter(\Model._$id ~~ ids)
         }
@@ -71,7 +71,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
-        where Value: Codable
+        where Value: Codable & Sendable
     {
         self.filter([fieldName], method, value)
     }
@@ -82,7 +82,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
-        where Value: Codable
+        where Value: Codable & Sendable
     {
         self.filter(
             .extendedPath(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),

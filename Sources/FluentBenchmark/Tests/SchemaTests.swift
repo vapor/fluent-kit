@@ -12,7 +12,7 @@ extension FluentBenchmarker {
         if foreignKeys {
             try self.testSchema_fieldReference()
         }
-        if self.database is SQLDatabase {
+        if self.database is any SQLDatabase {
             try self.testSchema_customSqlConstraints()
             try self.testSchema_customSqlFields()
             try self.testSchema_deleteConstraints()
@@ -23,7 +23,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             CreateCategories()
         ]) {
-            guard let sql = self.database as? SQLDatabase, sql.dialect.alterTableSyntax.allowsBatch else {
+            guard let sql = self.database as? any SQLDatabase, sql.dialect.alterTableSyntax.allowsBatch else {
                 self.database.logger.warning("Skipping \(#function)")
                 return
             }
@@ -49,7 +49,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             CreateCategories()
         ]) {
-            guard let sql = self.database as? SQLDatabase, sql.dialect.alterTableSyntax.allowsBatch else {
+            guard let sql = self.database as? any SQLDatabase, sql.dialect.alterTableSyntax.allowsBatch else {
                 self.database.logger.warning("Skipping \(#function)")
                 return
             }
@@ -77,7 +77,7 @@ extension FluentBenchmarker {
         ]) {
             XCTAssertThrowsError(
                 try Star.query(on: self.database)
-                    .filter(\.$name == "Sun")
+                    .filter(\.$name == "Sol")
                     .delete(force: true).wait()
             )
         }
@@ -87,7 +87,7 @@ extension FluentBenchmarker {
         try self.runTest(#function, [
             DeleteTableMigration(name: "custom_constraints")
         ]) {
-            let normalized1 = (self.database as! SQLDatabase).dialect.normalizeSQLConstraint(identifier: SQLIdentifier("id_unq_1"))
+            let normalized1 = (self.database as! any SQLDatabase).dialect.normalizeSQLConstraint(identifier: SQLIdentifier("id_unq_1"))
             
             try self.database.schema("custom_constraints")
                 .id()
@@ -96,15 +96,15 @@ extension FluentBenchmarker {
                 .constraint(.sql(embed: "CONSTRAINT \(normalized1) UNIQUE (\(ident: "id"))"))
                 
                 // Test raw SQL for table constraint definitions (but not names):
-                .constraint(.constraint(.sql(raw: "UNIQUE (id)"), name: "id_unq_2"))
+                .constraint(.constraint(.sql(unsafeRaw: "UNIQUE (id)"), name: "id_unq_2"))
                 .constraint(.constraint(.sql(embed: "UNIQUE (\(ident: "id"))"), name: "id_unq_3"))
                 
                 .create().wait()
             
-            if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
+            if (self.database as! any SQLDatabase).dialect.alterTableSyntax.allowsBatch {
                 try self.database.schema("custom_constraints")
                     // Test raw SQL for dropping constraints:
-                    .deleteConstraint(.sql(embed: "\(SQLDropTypedConstraint(name: SQLIdentifier("id_unq_1"), algorithm: .sql(raw: "")))"))
+                    .deleteConstraint(.sql(embed: "\(SQLDropTypedConstraint(name: SQLIdentifier("id_unq_1"), algorithm: .sql(unsafeRaw: "")))"))
                     .update().wait()
             }
         }
@@ -118,7 +118,7 @@ extension FluentBenchmarker {
                 .id()
                 
                 // Test query string SQL for field data types:
-                .field("morenotid", .sql(embed: "\(raw: "TEXT")"))
+                .field("morenotid", .sql(embed: "\(unsafeRaw: "TEXT")"))
                 
                 // Test raw SQL for field names:
                 .field(.definition(name: .sql(embed: "\(ident: "stillnotid")"), dataType: .int, constraints: [.required]))
@@ -127,12 +127,12 @@ extension FluentBenchmarker {
                 .field("neverbeid", .string, .sql(embed: "NOT NULL"))
                 
                 // Test raw SQL for entire field definitions:
-                .field(.sql(raw: "idnah INTEGER NOT NULL"))
+                .field(.sql(unsafeRaw: "idnah INTEGER NOT NULL"))
                 .field(.sql(embed: "\(ident: "notid") INTEGER"))
                 
                 .create().wait()
                 
-            if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
+            if (self.database as! any SQLDatabase).dialect.alterTableSyntax.allowsBatch {
                 try self.database.schema("custom_fields")
                     
                     // Test raw SQL for field updates:
@@ -159,7 +159,7 @@ extension FluentBenchmarker {
                 
                 .create().wait()
             
-            if (self.database as! SQLDatabase).dialect.alterTableSyntax.allowsBatch {
+            if (self.database as! any SQLDatabase).dialect.alterTableSyntax.allowsBatch {
                 try self.database.schema("normal_constraints")
                     // Test `DROP FOREIGN KEY` (MySQL) or `DROP CONSTRAINT` (Postgres)
                     .deleteConstraint(.constraint(.foreignKey([.key("catid")], Category.schema, [.key(.id)], onDelete: .noAction, onUpdate: .noAction)))
@@ -176,7 +176,7 @@ extension FluentBenchmarker {
     }
 }
 
-final class Category: Model {
+final class Category: Model, @unchecked Sendable {
     static let schema = "categories"
     @ID var id: UUID?
     @Field(key: "name") var name: String
@@ -188,25 +188,25 @@ final class Category: Model {
 }
 
 struct CreateCategories: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("categories")
             .id()
             .field("name", .string, .required)
             .create()
     }
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("categories")
             .delete()
     }
 }
 
 struct AddUniqueConstraintToCategories: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("categories")
             .unique(on: "name")
             .update()
     }
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("categories")
             .deleteUnique(on: "name")
             .update()
@@ -215,12 +215,12 @@ struct AddUniqueConstraintToCategories: Migration {
 
 
 struct AddNamedUniqueConstraintToCategories: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("categories")
             .unique(on: "name", name: "foo")
             .update()
     }
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("categories")
             .deleteConstraint(name: "foo")
             .update()
@@ -231,11 +231,11 @@ struct AddNamedUniqueConstraintToCategories: Migration {
 struct DeleteTableMigration: Migration {
     let name: String
     
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.eventLoop.future()
     }
     
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(self.name).delete()
     }
 }

@@ -1,6 +1,6 @@
 extension Fields {
     public typealias Enum<Value> = EnumProperty<Self, Value>
-        where Value: Codable,
+        where Value: Codable & Sendable,
             Value: RawRepresentable,
             Value.RawValue == String
 }
@@ -10,7 +10,7 @@ extension Fields {
 @propertyWrapper
 public final class EnumProperty<Model, Value>
     where Model: FluentKit.Fields,
-        Value: Codable,
+        Value: Codable & Sendable,
         Value: RawRepresentable,
         Value.RawValue == String
 {
@@ -71,7 +71,7 @@ extension EnumProperty: QueryableProperty {
 // MARK: Query-addressable
 
 extension EnumProperty: AnyQueryAddressableProperty {
-    public var anyQueryableProperty: AnyQueryableProperty { self }
+    public var anyQueryableProperty: any AnyQueryableProperty { self }
     public var queryablePath: [FieldKey] { self.path }
 }
 
@@ -86,7 +86,7 @@ extension EnumProperty: AnyDatabaseProperty {
         self.field.keys
     }
 
-    public func input(to input: DatabaseInput) {
+    public func input(to input: any DatabaseInput) {
         let value: DatabaseQuery.Value
         if !input.wantsUnmodifiedKeys {
             guard let ivalue = self.field.inputValue else { return }
@@ -107,7 +107,7 @@ extension EnumProperty: AnyDatabaseProperty {
         }
     }
 
-    public func output(from output: DatabaseOutput) throws {
+    public func output(from output: any DatabaseOutput) throws {
         try self.field.output(from: output)
     }
 }
@@ -115,12 +115,12 @@ extension EnumProperty: AnyDatabaseProperty {
 // MARK: Codable
 
 extension EnumProperty: AnyCodableProperty {
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.wrappedValue)
     }
 
-    public func decode(from decoder: Decoder) throws {
+    public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.value = try container.decode(Value.self)
     }

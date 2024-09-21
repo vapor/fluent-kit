@@ -26,7 +26,7 @@ extension FluentBenchmarker {
             XCTAssertEqual(moon.name, "Moon")
             XCTAssertEqual(moon.planet.name, "Earth")
             XCTAssertEqual(moon.planet.type, .smallRocky)
-            XCTAssertEqual(moon.planet.star.name, "Sun")
+            XCTAssertEqual(moon.planet.star.name, "Sol")
             XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
 
             // Test JSON
@@ -36,7 +36,7 @@ extension FluentBenchmarker {
             XCTAssertEqual(decoded.name, "Moon")
             XCTAssertEqual(decoded.planet.name, "Earth")
             XCTAssertEqual(decoded.planet.type, .smallRocky)
-            XCTAssertEqual(decoded.planet.star.name, "Sun")
+            XCTAssertEqual(decoded.planet.star.name, "Sol")
             XCTAssertEqual(decoded.planet.star.galaxy.name, "Milky Way")
 
             // Test deeper filter
@@ -66,7 +66,7 @@ extension FluentBenchmarker {
 //            XCTAssertEqual(moon.name, "Moon")
 //            XCTAssertEqual(moon.planet.name, "Earth")
 //            XCTAssertEqual(moon.planet.type, .smallRocky)
-//            XCTAssertEqual(moon.planet.star.name, "Sun")
+//            XCTAssertEqual(moon.planet.star.name, "Sol")
 //            XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
 //
 //            // Test JSON
@@ -75,7 +75,7 @@ extension FluentBenchmarker {
 //            XCTAssertEqual(decoded.name, "Moon")
 //            XCTAssertEqual(decoded.planet.name, "Earth")
 //            XCTAssertEqual(decoded.planet.type, .smallRocky)
-//            XCTAssertEqual(decoded.planet.star.name, "Sun")
+//            XCTAssertEqual(decoded.planet.star.name, "Sol")
 //            XCTAssertEqual(decoded.planet.star.galaxy.name, "Milky Way")
 //
 //            // Test deeper filter
@@ -90,7 +90,7 @@ extension FluentBenchmarker {
 
 // MARK: Flat
 
-private final class FlatMoon: Model {
+private final class FlatMoon: Model, @unchecked Sendable {
     static let schema = "moons"
 
     @ID(key: .id)
@@ -99,7 +99,7 @@ private final class FlatMoon: Model {
     @Field(key: "name")
     var name: String
 
-    final class Planet: Fields {
+    final class Planet: Fields, @unchecked Sendable {
         @Field(key: "name")
         var name: String
 
@@ -110,11 +110,11 @@ private final class FlatMoon: Model {
         @Field(key: "type")
         var type: PlanetType
 
-        final class Star: Fields {
+        final class Star: Fields, @unchecked Sendable {
             @Field(key: "name")
             var name: String
 
-            final class Galaxy: Fields {
+            final class Galaxy: Fields, @unchecked Sendable {
                 @Field(key: "name")
                 var name: String
 
@@ -162,7 +162,7 @@ private final class FlatMoon: Model {
 
 
 private struct FlatMoonMigration: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("moons")
             .field("id", .uuid, .identifier(auto: false))
             .field("name", .string, .required)
@@ -173,7 +173,7 @@ private struct FlatMoonMigration: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("moons").delete()
     }
 }
@@ -182,14 +182,14 @@ private struct FlatMoonMigration: Migration {
 private struct FlatMoonSeed: Migration {
     init() { }
 
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let moon = FlatMoon(
             name: "Moon",
             planet: .init(
                 name: "Earth",
                 type: .smallRocky,
                 star: .init(
-                    name: "Sun",
+                    name: "Sol",
                     galaxy: .init(name: "Milky Way")
                 )
             )
@@ -200,7 +200,7 @@ private struct FlatMoonSeed: Migration {
                 name: "Jupiter",
                 type: .gasGiant,
                 star: .init(
-                    name: "Sun",
+                    name: "Sol",
                     galaxy: .init(name: "Milky Way")
                 )
             )
@@ -210,7 +210,7 @@ private struct FlatMoonSeed: Migration {
             .map { _ in }
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.eventLoop.makeSucceededFuture(())
     }
 }
@@ -313,7 +313,7 @@ private struct FlatMoonSeed: Migration {
 //                name: "Earth",
 //                type: .smallRocky,
 //                star: .init(
-//                    name: "Sun",
+//                    name: "Sol",
 //                    galaxy: .init(name: "Milky Way")
 //                )
 //            )
@@ -324,7 +324,7 @@ private struct FlatMoonSeed: Migration {
 //                name: "Jupiter",
 //                type: .gasGiant,
 //                star: .init(
-//                    name: "Sun",
+//                    name: "Sol",
 //                    galaxy: .init(name: "Milky Way")
 //                )
 //            )
