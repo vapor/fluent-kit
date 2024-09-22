@@ -24,21 +24,6 @@ public extension QueryBuilder {
         try await self.first().get()
     }
     
-    func all<Field>(_ key: KeyPath<Model, Field>) async throws -> [Field.Value]
-        where Field: QueryableProperty, Field.Model == Model
-    {
-        try await self.all(key).get()
-    }
-    
-    func all<Joined, Field>(
-        _ joined: Joined.Type,
-        _ field: KeyPath<Joined, Field>
-    ) async throws -> [Field.Value]
-        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
-    {
-        try await self.all(joined, field).get()
-    }
-
     func all() async throws -> [Model] {
         try await self.all().get()
     }

@@ -185,24 +185,22 @@ public final class QueryBuilder<Model>
             .map { $0.first }
     }
 
-    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
+    public func all<Field>(_ key: KeyPath<Model, Field>) async throws -> [Field.Value]
         where
             Field: QueryableProperty,
             Field.Model == Model
     {
         let copy = self.copy()
         copy.query.fields = [.extendedPath(Model.path(for: key), schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)]
-        return copy.all().map {
-            $0.map {
-                $0[keyPath: key].value!
-            }
+        return try await copy.all().map {
+            $0[keyPath: key].value!
         }
     }
 
     public func all<Joined, Field>(
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
-    ) -> EventLoopFuture<[Field.Value]>
+    ) async throws -> [Field.Value]
         where
             Joined: Schema,
             Field: QueryableProperty,
@@ -210,47 +208,25 @@ public final class QueryBuilder<Model>
     {
         let copy = self.copy()
         copy.query.fields = [.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased)]
-        return copy.all().flatMapThrowing {
-            try $0.map {
-                try $0.joined(Joined.self)[keyPath: field].value!
-            }
+        return try await copy.all().map {
+            try $0.joined(Joined.self)[keyPath: field].value!
         }
     }
 
     public func all() -> EventLoopFuture<[Model]> {
-        #if swift(<5.10)
-        let models: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
-        
-        return self
-            .all { models.wrappedValue.append($0) }
-            .flatMapThrowing { try models.wrappedValue.map { try $0.get() } }
-        #else
         nonisolated(unsafe) var models: [Result<Model, any Error>] = []
 
         return self
             .all { models.append($0) }
             .flatMapThrowing { try models.map { try $0.get() } }
-        #endif
     }
 
     public func run() -> EventLoopFuture<Void> {
         self.run { _ in }
     }
 
-    #if swift(<5.10)
-    private final class AllWrapper: @unchecked Sendable {
-        var all: [Model] = []
-        var isEmpty: Bool { self.all.isEmpty }
-        func append(_ value: Model) { self.all.append(value) }
-    }
-    #endif
-
     public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
-        #if swift(>=5.10)
         nonisolated(unsafe) var all: [Model] = []
-        #else
-        let all: AllWrapper = .init()
-        #endif
 
         let done = self.run { output in
             onOutput(.init(catching: {
@@ -273,11 +249,7 @@ public final class QueryBuilder<Model>
                 }
                 // run eager loads
                 return loaders.sequencedFlatMapEach(on: $1) { loader in
-                    #if swift(>=5.10)
                     loader.anyRun(models: all.map { $0 }, on: db)
-                    #else
-                    loader.anyRun(models: all.all.map { $0 }, on: db)
-                    #endif
                 }
             }
         } else {
@@ -367,6 +339,4 @@ public final class QueryBuilder<Model>
     }
 }
 
-#if swift(<6) || !$InferSendableFromCaptures
 extension Swift.KeyPath: @unchecked Swift.Sendable {}
-#endif

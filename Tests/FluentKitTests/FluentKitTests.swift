@@ -157,7 +157,7 @@ final class FluentKitTests: XCTestCase {
     func testSingleColumnSelect() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         
-        _ = try Planet.query(on: db).all(\.$name).wait()
+        _ = try db.eventLoop.makeFutureWithTask { try await Planet.query(on: db).all(\.$name) }.wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT "planets"."name" AS "planets_name" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()
@@ -166,7 +166,7 @@ final class FluentKitTests: XCTestCase {
     func testSQLDistinct() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         
-        _ = try Planet.query(on: db).unique().all(\.$name).wait()
+        _ = try db.eventLoop.makeFutureWithTask { try await Planet.query(on: db).unique().all(\.$name) }.wait()
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"SELECT DISTINCT "planets"."name" AS "planets_name" FROM "planets" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1)"#)
         db.reset()

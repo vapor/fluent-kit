@@ -154,14 +154,18 @@ extension FluentBenchmarker {
             try migrator.setupIfNeeded().wait()
             try migrator.prepareBatch().wait()
 
-            let logs1 = try MigrationLog.query(on: databases[0])
-                .sort(\.$batch, .ascending)
-                .all(\.$batch).wait()
+            let logs1 = try databases[0].eventLoop.makeFutureWithTask {
+                try await MigrationLog.query(on: databases[0])
+                    .sort(\.$batch, .ascending)
+                    .all(\.$batch)
+            }.wait()
             XCTAssertEqual(logs1, [1, 1, 1], "batch did not apply first three")
 
-            let logs2 = try MigrationLog.query(on: databases[1])
-                .sort(\.$batch, .ascending)
-                .all(\.$batch).wait()
+            let logs2 = try databases[1].eventLoop.makeFutureWithTask {
+                try await MigrationLog.query(on: databases[1])
+                    .sort(\.$batch, .ascending)
+                    .all(\.$batch)
+            }.wait()
             XCTAssertEqual(logs2, [1, 1, 1], "batch did not apply second three")
 
             try migrator.revertAllBatches().wait()

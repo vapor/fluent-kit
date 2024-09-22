@@ -1,24 +1,25 @@
-// swift-tools-version:5.8
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
     name: "fluent-kit",
     platforms: [
-        .macOS(.v10_15),
-        .iOS(.v13),
-        .watchOS(.v6),
-        .tvOS(.v13),
+        .macOS(.v13),
+        .iOS(.v16),
+        .watchOS(.v9),
+        .tvOS(.v16),
     ],
     products: [
         .library(name: "FluentKit", targets: ["FluentKit"]),
         .library(name: "FluentBenchmark", targets: ["FluentBenchmark"]),
         .library(name: "FluentSQL", targets: ["FluentSQL"]),
+        .library(name: "SQLKit", targets: ["SQLKit"]),
+        .library(name: "SQLKitBenchmark", targets: ["SQLKitBenchmark"]),
         .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
-        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.29.3"),
         .package(url: "https://github.com/vapor/async-kit.git", from: "1.19.0"),
     ],
     targets: [
@@ -29,7 +30,17 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "AsyncKit", package: "async-kit"),
-                .product(name: "SQLKit", package: "sql-kit"),
+                .target(name: "SQLKit"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "SQLKit",
+            dependencies: [
+                .product(name: "NIO", package: "swift-nio"),
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "AsyncKit", package: "async-kit"),
             ],
             swiftSettings: swiftSettings
         ),
@@ -38,15 +49,22 @@ let package = Package(
             dependencies: [
                 .target(name: "FluentKit"),
                 .target(name: "FluentSQL"),
-                .product(name: "SQLKit", package: "sql-kit"),
-                .product(name: "SQLKitBenchmark", package: "sql-kit"),
+                .target(name: "SQLKit"),
+                .target(name: "SQLKitBenchmark"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "SQLKitBenchmark",
+            dependencies: [
+                .target(name: "SQLKit"),
             ],
             swiftSettings: swiftSettings
         ),
         .target(
             name: "FluentSQL",
             dependencies: [
-                .product(name: "SQLKit", package: "sql-kit"),
+                .target(name: "SQLKit"),
                 .target(name: "FluentKit"),
             ],
             swiftSettings: swiftSettings
@@ -68,10 +86,18 @@ let package = Package(
             ],
             swiftSettings: swiftSettings
         ),
-    ]
+        .testTarget(
+            name: "SQLKitTests",
+            dependencies: [
+                .target(name: "SQLKitBenchmark"),
+                .target(name: "SQLKit"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+    ],
+    swiftLanguageModes: [.v6]
 )
 
 var swiftSettings: [SwiftSetting] { [
-    .enableUpcomingFeature("ConciseMagicFile"),
-    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("ExistentialAny"),
 ] }
