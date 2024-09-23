@@ -5,7 +5,6 @@
 ### Properties
 
 - ``SQLDatabase/logger``
-- ``SQLDatabase/eventLoop``
 - ``SQLDatabase/version``
 - ``SQLDatabase/dialect``
 - ``SQLDatabase/queryLogLevel``
@@ -60,7 +59,3 @@
 ### Logging
 
 - ``SQLDatabase/logging(to:)``
-
-### Legacy query interface
-
-- ``SQLDatabase/execute(sql:_:)-90wi9``

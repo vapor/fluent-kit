@@ -1,5 +1,3 @@
-import protocol NIOCore.EventLoop
-import class NIOCore.EventLoopFuture
 import struct Logging.Logger
 
 /// The common interface to SQLKit for both drivers and client code.
@@ -54,16 +52,8 @@ import struct Logging.Logger
 /// ```
 public protocol SQLDatabase: Sendable {
     /// The `Logger` used for logging all operations relating to a given database.
-    var logger: Logger { get }
-    
-    /// The `EventLoop` used for asynchronous operations on a given database.
-    ///
-    /// If there is no specific `EventLoop` which handles the database (such as because it is a connection pool which
-    /// assigns loops to connections at point of use, or because the underlying implementation is based on Swift
-    /// Concurrency or some other asynchronous execution technology), a single consistent `EventLoop` must be chosen
-    /// for the database and returned for this property nonetheless.
-    var eventLoop: any EventLoop { get }
-    
+    var logger: Logger { get set }
+
     /// The version number the database reports for itself.
     ///
     /// The version must be provided via a type conforming to the ``SQLDatabaseReportedVersion`` protocol. If the
@@ -105,27 +95,6 @@ public protocol SQLDatabase: Sendable {
     /// Requests that the given generic SQL query be serialized and executed on the database, and that
     /// the `onRow` closure be invoked once for each result row the query returns (if any).
     ///
-    /// Although it is a protocol requirement for historical reasons, this is considered a legacy interface thanks
-    /// to its reliance on `EventLoopFuture`. Implementers should implement both this method and
-    /// ``execute(sql:_:)-7trgm`` if they can, and users should use ``execute(sql:_:)-7trgm`` whenever possible.
-    ///
-    /// - Parameters:
-    ///   - query: An ``SQLExpression`` representing a complete query to execute.
-    ///   - onRow: A closure which is invoked once for each result row returned by the query (if any).
-    /// - Returns: An `EventLoopFuture`.
-    @preconcurrency
-    func execute(
-        sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> ()
-    ) -> EventLoopFuture<Void>
-
-    /// Requests that the given generic SQL query be serialized and executed on the database, and that
-    /// the `onRow` closure be invoked once for each result row the query returns (if any).
-    ///
-    /// If a concrete type conforming to ``SQLDatabase`` can provide a more efficient Concurrency-based implementation
-    /// than forwarding the invocation through the legacy `EventLoopFuture`-based API, it should override this method
-    /// in order to do so.
-    ///
     /// - Parameters:
     ///   - query: An ``SQLExpression`` representing a complete query to execute.
     ///   - onRow: A closure which is invoked once for each result row returned by the query (if any).
@@ -148,20 +117,6 @@ public protocol SQLDatabase: Sendable {
     func withSession<R>(
         _ closure: @escaping @Sendable (any SQLDatabase) async throws -> R
     ) async throws -> R
-}
-
-extension SQLDatabase {
-    /// The ``version-22wnn`` property was added to ``SQLDatabase`` multiple years after the protocol's
-    /// original definition; it was in fact the first change of any kind to the protocol since Fluent 4's
-    /// original release. Therefore it is necessary to provide a default value for the benefit of drivers
-    /// which haven't been updated, to avoid a source compatibility break. Conveniently, a `nil` version
-    /// represents an obviously desirable default: "database version is unknown".
-    public var version: (any SQLDatabaseReportedVersion)? { nil }
-    
-    /// Drivers which do not provide the ``queryLogLevel-991s4`` property must be given the automatic default
-    /// of `.debug`. It would be preferable not to provide a default conformance, but as the property was
-    /// another late addition to the protocol, it is required for source compatibility.
-    public var queryLogLevel: Logger.Level? { .debug }
 }
 
 extension SQLDatabase {
@@ -199,25 +154,6 @@ extension SQLDatabase {
     }
 }
 
-extension SQLDatabase {
-    /// The default implementation for ``execute(sql:_:)-4eg19``.
-    @inlinable
-    public func execute(
-        sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> ()
-    ) async throws {
-        try await self.execute(sql: query, onRow).get()
-    }
-    
-    /// The default implementation for ``withSession(_:)-9b68j``.
-    @inlinable
-    public func withSession<R>(
-        _ closure: @escaping @Sendable (any SQLDatabase) async throws -> R
-    ) async throws -> R {
-        try await closure(self)
-    }
-}
-
 /// Replaces the `Logger` of an existing ``SQLDatabase`` while forwarding all other properties and methods
 /// to the original.
 private struct CustomLoggerSQLDatabase<D: SQLDatabase>: SQLDatabase {
@@ -225,13 +161,8 @@ private struct CustomLoggerSQLDatabase<D: SQLDatabase>: SQLDatabase {
     let database: D
 
     // See `SQLDatabase.logger`.
-    let logger: Logger
+    var logger: Logger
     
-    // See `SQLDatabase.eventLoop`.
-    var eventLoop: any EventLoop {
-        self.database.eventLoop
-    }
-
     // See `SQLDatabase.version`.
     var version: (any SQLDatabaseReportedVersion)? {
         self.database.version
@@ -251,15 +182,13 @@ private struct CustomLoggerSQLDatabase<D: SQLDatabase>: SQLDatabase {
     func execute(
         sql query: any SQLExpression,
         _ onRow: @escaping @Sendable (any SQLRow) -> ()
-    ) -> EventLoopFuture<Void> {
-        self.database.execute(sql: query, onRow)
-    }
-
-    // See `SQLDatabase.execute(sql:_:)`.
-    func execute(
-        sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> ()
     ) async throws {
         try await self.database.execute(sql: query, onRow)
+    }
+
+    func withSession<R>(
+        _ closure: @escaping @Sendable (any SQLDatabase) async throws -> R
+    ) async throws -> R {
+        try await self.database.withSession(closure)
     }
 }

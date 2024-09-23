@@ -57,12 +57,6 @@ public enum SQLBinaryOperator: SQLExpression {
     /// Typed dissimilarity, or `IS NOT`.
     case isNot
     
-    /// String concatenation, or `||`.
-    ///
-    /// This operator is not implemented. Attempting to use it will trigger a runtime error.
-    @available(*, deprecated, message: "The || concatenation operator is not implemented due to legacy compatibility issues. Use SQLFunction(\"concat\") instead.")
-    case concatenate
-    
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {
@@ -86,10 +80,6 @@ public enum SQLBinaryOperator: SQLExpression {
         case .modulo:             serializer.write("%")
         case .add:                serializer.write("+")
         case .subtract:           serializer.write("-")
-
-        // See https://dev.mysql.com/doc/refman/8.0/en/sql-mode.html#sqlmode_pipes_as_concat
-        case .concatenate:
-            serializer.database.logger.debug("|| is not implemented, because it doesn't always work. Use `SQLFunction(\"CONCAT\", args...)` for MySQL or `SQLRaw(\"||\")` for Postgres and SQLite.")
         }
     }
 }

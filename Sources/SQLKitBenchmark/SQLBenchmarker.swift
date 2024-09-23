@@ -18,17 +18,7 @@ public final class SQLBenchmarker: Sendable {
             try await self.testJSONPaths()
         }
     }
-    
-    @available(*, deprecated, renamed: "runAllTests()", message: "Use `runAllTests()` instead.")
-    public func testAll() throws {
-        try database.eventLoop.makeFutureWithTask { try await self.runAllTests() }.wait()
-    }
-    
-    @available(*, deprecated, renamed: "runAllTests()", message: "Use `runAllTests()` instead.")
-    public func run() throws {
-        try self.testAll()
-    }
-    
+
     func runTest(
         _ name: String = #function,
         _ test: (any SQLDatabase) async throws -> ()

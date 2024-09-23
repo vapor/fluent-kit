@@ -15,14 +15,6 @@ public struct SQLRaw: SQLExpression {
     /// The raw SQL text serialized by this expression.
     public var sql: String
 
-    /// Legacy property specifying bound values. This property's value is **IGNORED**.
-    ///
-    /// The original intention was that bindings set in this property be serialized along with the SQL text, but this
-    /// functionality was never properly implemented and was never used, and is deprecated. Use ``SQLBind`` and/or
-    /// ``SQLQueryString`` to achieve the same effect.
-    @available(*, deprecated, message: "Binds set in an `SQLRaw` are ignored. Use `SQLBind` instead.")
-    public var binds: [any Encodable & Sendable] = []
-    
     /// Create a new raw SQL text expression.
     ///
     /// - Parameter sql: The raw SQL text to serialize.

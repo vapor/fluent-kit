@@ -15,16 +15,6 @@ public enum SQLJoinMethod: SQLExpression {
     /// filtering the Cartesian product (a cross join) of all rows in both tables with the join condition/predicate.
     case inner
     
-    /// An outer join not otherwise specified.
-    ///
-    /// Although this expression does generate `OUTER JOIN` for this case, this is not a valid join in most dialects.
-    /// It is therefore deprecated and should not be used. Users who need it can use `SQLRaw("OUTER JOIN")` instead.
-    ///
-    /// > Note: Presumably, the original intention of this case was to allow expressing a `FULL JOIN` or
-    /// > `FULL OUTER JOIN`, which is simply a combination of the effects of a left and right join.
-    @available(*, deprecated, message: "SQLJoinMethod.outer does not generate valid SQL syntax; do not use it.")
-    case outer
-    
     /// A left (outer) join.
     ///
     /// A left join is the result of performing an inner join, followed by adding additional result rows for every row
@@ -43,7 +33,6 @@ public enum SQLJoinMethod: SQLExpression {
     public func serialize(to serializer: inout SQLSerializer) {
         switch self {
         case .inner: serializer.write("INNER")
-        case .outer: serializer.write("OUTER")
         case .left: serializer.write("LEFT")
         case .right: serializer.write("RIGHT")
         }

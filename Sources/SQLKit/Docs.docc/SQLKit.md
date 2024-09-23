@@ -146,14 +146,3 @@ SQLKit does _not_ provide facilities for creating or managing database connectio
 ### Miscellaneous
 
 - ``SomeCodingKey``
-
-### Deprecated
-
-- ``SQLCreateTableAsSubqueryBuilder``
-- ``SQLError``
-- ``SQLErrorType``
-- ``SQLTriggerEach``
-- ``SQLTriggerEvent``
-- ``SQLTriggerOrder``
-- ``SQLTriggerTiming``
-- ``SQLTriggerWhen``
