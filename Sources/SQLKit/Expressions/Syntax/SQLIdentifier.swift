@@ -11,7 +11,7 @@
 /// To avoid the risk of accidental SQL injection vulnerabilities, in addition to quoting, identifiers are scanned for
 /// the identifier quote character(s) themselves; if found, they are escaped appropriately (by doubling any embedded
 /// quoting character(s), a syntax supported by all known dialects).
-public struct SQLIdentifier: SQLExpression, ExpressibleByStringLiteral {
+public struct SQLIdentifier: SQLExpression {
     /// The actual identifier itself, unescaped and unquoted.
     public var string: String
     
@@ -21,12 +21,6 @@ public struct SQLIdentifier: SQLExpression, ExpressibleByStringLiteral {
         self.string = string
     }
     
-    // See `ExpressibleByStringLiteral.init(stringLiteral:)`.
-    @inlinable
-    public init(stringLiteral value: String) {
-        self.init(value)
-    }
-
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {
