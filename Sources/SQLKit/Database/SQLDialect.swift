@@ -8,12 +8,11 @@
 public protocol SQLDialect: Sendable {
     /// The name of the dialect.
     ///
-    /// Dialect names were intended to just be human-readable strings, but in reality there
-    /// are several code paths which rely on checking for specific dialect names. As a result,
-    /// dialect names are implicitly required to be globally unique (though there's no way
-    /// to enforce this). SQLKit currenly recommends dialect names match a regular expression
-    /// of the form `/^[a-z][a-z0-9-]*$/` (starts with a lowercase ASCII letter, remainder
-    /// consists of only lowercase ASCII letters, ASCII digits, and/or dashes).
+    /// Dialect names were intended to just be human-readable strings, but in reality there are several code
+    /// paths which rely on checking for specific dialect names. As a result, dialect names are implicitly
+    /// required to be globally unique (though there's no way to enforce this). SQLKit currenly recommends that
+    /// dialect names match the regular expression `/^[a-z][a-z0-9-]*$/` (starts with a lowercase ASCII letter,
+    /// remainder consists of only lowercase ASCII letters, ASCII digits, and/or dashes).
     ///
     /// No default is provided.
     var name: String { get }
@@ -50,38 +49,33 @@ public protocol SQLDialect: Sendable {
     ///
     /// No default is provided.
     var literalStringQuote: String { get }
+
+    /// A function which returns a string representing the given literal boolean value.
     ///
     /// No default is provided.
-    var supportsAutoIncrement: Bool { get }
+    ///
+    /// - Parameter value: The boolean value to represent.
+    func literalBoolean(_ value: Bool) -> String
+
+    /// An string giving the syntax used to express both "use this as the default value" in a
+    /// column definition and "use the default value for this column" in a value list.
+    ///
+    /// ``SQLLiteral/default`` always serializes to this expression.
+    ///
+    /// Defaults to `"DEFAULT"`.
+    var literalDefault: String { get }
 
     /// An expression inserted in a column definition when a `.primaryKey(autoincrement: true)`
     /// constraint is specified for the column.
     ///
-    /// The expression will be included immediately after `PRIMARY KEY` in the resulting SQL.
+    /// If not `nil`, the expression will be included immediately after `PRIMARY KEY` in the
+    /// resulting SQL.
     ///
-    /// This property is ignored when ``supportsAutoIncrement`` is `false`, or when
-    /// ``autoIncrementFunction-4cc1b`` is _not_ `nil`.
+    /// If `nil`, it is assumed the database does not support autoincrement semantics.
     ///
     /// No default is provided.
-    var autoIncrementClause: any SQLExpression { get }
+    var autoIncrementClause: (any SQLExpression)? { get }
     
-    /// An expression inserted in a column definition when a
-    /// ``SQLColumnConstraintAlgorithm/primaryKey(autoIncrement:)`` or
-    /// ``SQLTableConstraintAlgorithm/primaryKey(columns:)`` constraint is specified for the
-    /// column.
-    ///
-    /// The expression will be immediately preceded by the ``literalDefault-4l1ox`` expression
-    /// and appear immediately before `PRIMARY KEY` in the resulting SQL.
-    ///
-    /// This property is ignored when ``supportsAutoIncrement`` is `false`. If this property is
-    /// not `nil`, it takes precedence over ``autoIncrementClause``.
-    ///
-    /// Defaults to `nil`.
-    ///
-    /// > Note: The design of this and the other autoincrement-released properties is less than
-    /// > ideal, but it's public API and we're stuck with it for now.
-    var autoIncrementFunction: (any SQLExpression)? { get }
-
     /// A function which returns an expression to be used as the placeholder for the `position`th
     /// bound parameter in a query.
     ///
@@ -93,23 +87,6 @@ public protocol SQLDialect: Sendable {
     /// - Parameter position: Indicates which bound parameter to create a placeholder for, where
     ///   the first parameter has position `1`. This value is guaranteed to be greater than zero.
     func bindPlaceholder(at position: Int) -> any SQLExpression
-    
-    /// A function which returns an SQL expression (usually an ``SQLRaw``) representing the given
-    /// literal boolean value.
-    /// 
-    /// No default is provided.
-    ///
-    /// - Parameter value: The boolean value to represent.
-    func literalBoolean(_ value: Bool) -> any SQLExpression
-    
-    /// An expression (usually an ``SQLRaw``) giving the syntax used to express both "use this as
-    /// the default value" in a column definition and "use the default value for this column" in
-    /// a value list.
-    ///
-    /// ``SQLLiteral/default`` always serializes to this expression.
-    ///
-    /// Defaults to `SQLRaw("DEFAULT")`.
-    var literalDefault: any SQLExpression { get }
     
     /// `true` if the dialect supports the `IF EXISTS` modifier for all types of `DROP` queries
     /// (such as ``SQLDropEnum``, ``SQLDropIndex``, ``SQLDropTable``, and ``SQLDropTrigger``) and
@@ -158,15 +135,15 @@ public protocol SQLDialect: Sendable {
     var alterTableSyntax: SQLAlterTableSyntax { get }
     
     /// A function which is consulted whenever an ``SQLDataType`` will be serialized into a
-    /// query. The dialect may return an expression which will replace the default serialization
+    /// query. The dialect may return a string which will replace the default representation
     /// of the given type. Returning `nil` causes the default to be used.
     ///
     /// This is intended to provide a customization point for dialects to override or supplement
     /// the default set of types and their default definitions.
     ///
     /// Defaults to returning `nil` for all inputs.
-    func customDataType(for dataType: SQLDataType) -> (any SQLExpression)?
-    
+    func customDataType(for dataType: SQLDataType) -> String?
+
     /// A function which is consulted whenever a constraint name will be serialized into a
     /// query. The dialect must return an expression for an identifer which is unique to the
     /// input identifier and is a valid constraint name for the dialect.
@@ -494,8 +471,8 @@ public struct SQLUnionFeatures: OptionSet, Sendable {
 extension SQLDialect {
     /// Default implementation of ``literalStringQuote-3ur0m``.
     @inlinable
-    public var literalStringQuote: any SQLExpression {
-        SQLRaw("'")
+    public var literalStringQuote: String {
+        "'"
     }
 
     /// Default implementation of ``autoIncrementFunction-1ktxy``.
@@ -506,8 +483,8 @@ extension SQLDialect {
 
     /// Default implementation of ``literalDefault-7nz7t``.
     @inlinable
-    public var literalDefault: any SQLExpression {
-        SQLRaw("DEFAULT")
+    public var literalDefault: String {
+        "DEFAULT"
     }
 
     /// Default implementation of ``supportsIfExists-5dxcu``.

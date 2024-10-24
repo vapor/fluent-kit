@@ -5,16 +5,11 @@ public enum SQLLiteral: SQLExpression {
     case all
     
     /// A literal expression representing the current dialect's equivalent of the `DEFAULT` keyword.
-    ///
-    /// > Note: There isn't really any reason for this to be a literal with special handling, especially since there
-    /// > aren't any dialects which don't use `DEFAULT` as their ``SQLDialect/literalDefault-4l1ox`` but it's
-    /// > long-standing public API.
     case `default`
     
     /// A literal expression representing a `NULL` SQL value  in the current dialect.
     ///
-    /// > Note: This makes more sense as a literal; although `NULL` is a keyword, it nonetheless represents a
-    /// > specific literal value.
+    /// > Note: Although `NULL` is a keyword, it nonetheless represents a specific literal value.
     case null
     
     /// A literal expression representing a boolean literal in the current dialect.
@@ -41,14 +36,14 @@ public enum SQLLiteral: SQLExpression {
             serializer.write("*")
         
         case .default:
-            serializer.dialect.literalDefault.serialize(to: &serializer)
+            serializer.write(serializer.dialect.literalDefault)
         
         case .null:
             serializer.write("NULL")
         
         case .boolean(let bool):
-            serializer.dialect.literalBoolean(bool).serialize(to: &serializer)
-        
+            serializer.write(serializer.dialect.literalBoolean(bool))
+
         case .numeric(let numeric):
             serializer.write(numeric)
         
