@@ -118,7 +118,7 @@ extension SQLQueryString {
     ///
     /// This overload is provided as shorthand - `\(bind: "a")` is identical to `\(SQLBind("a"))`.
     @inlinable
-    public mutating func appendInterpolation(bind value: any Encodable & Sendable) {
+    public mutating func appendInterpolation(bind value: some Encodable & Sendable) {
         self.fragments.append(SQLBind(value))
     }
 
@@ -127,7 +127,7 @@ extension SQLQueryString {
     ///
     /// This overload is equivalent to `\(SQLList(values.map(SQLBind.init(_:))))`.
     @inlinable
-    public mutating func appendInterpolation(binds values: [any Encodable & Sendable]) {
+    public mutating func appendInterpolation(binds values: [some Encodable & Sendable]) {
         self.fragments.append(SQLList(values.map { SQLBind($0) }))
     }
     
@@ -210,12 +210,12 @@ extension SQLQueryString {
     /// ```
     @inlinable
     public mutating func appendInterpolation(idents: [String], joinedBy joiner: String) {
-        self.fragments.append(SQLList(idents.map { SQLObjectIdentifier($0) }, separator: SQLRaw(joiner)))
+        self.fragments.append(SQLList(idents.map { SQLObjectIdentifier($0) }, separator: SQLUnsafeRaw(joiner)))
     }
 
     /// Embed an arbitary ``SQLExpression`` in the string.
     @inlinable
-    public mutating func appendInterpolation(_ expression: any SQLExpression) {
+    public mutating func appendInterpolation(_ expression: some SQLExpression) {
         self.fragments.append(expression)
     }
 }

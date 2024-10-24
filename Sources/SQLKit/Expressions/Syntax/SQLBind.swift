@@ -11,7 +11,7 @@ public struct SQLBind: SQLExpression {
     
     /// Create a list of bindings to an array of values, with the placeholders wrapped in an ``SQLGroupExpression``.
     @inlinable
-    public static func group(_ items: [any Encodable & Sendable]) -> any SQLExpression {
+    public static func group(_ items: [any Encodable & Sendable]) -> some SQLExpression {
         SQLGroupExpression(items.map(SQLBind.init))
     }
 
