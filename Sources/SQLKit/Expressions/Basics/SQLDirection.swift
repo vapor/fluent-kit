@@ -6,10 +6,10 @@ public enum SQLDirection: SQLExpression {
     /// Descending order (maximum to minimum), as defined by the sorting key's data type.
     case descending
     
-    /// `NULL` order (`NULL` values followed by non-`NULL` valeus).
+    /// `NULLS FIRST` order (`NULL` values followed by non-`NULL` valeus).
     case null
     
-    /// `NOT NULL` order (non-`NULL` values followed by `NULL` values).
+    /// `NULLS LAST` order (non-`NULL` values followed by `NULL` values).
     case notNull
     
     // See `SQLExpression.serialize(to:)`.
@@ -21,9 +21,9 @@ public enum SQLDirection: SQLExpression {
         case .descending:
             serializer.write("DESC")
         case .null:
-            serializer.write("NULL")
+            serializer.write("NULLS FIRST")
         case .notNull:
-            serializer.write("NOT NULL")
+            serializer.write("NULLS LAST")
         }
     }
 }
