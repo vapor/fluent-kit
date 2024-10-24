@@ -134,7 +134,7 @@ public struct SQLCreateTrigger: SQLExpression {
     ///   - event: Specifies the triggering event for the trigger. See ``SQLCreateTrigger/EventSpecifier``.
     @inlinable
     public init(trigger: String, table: String, when: WhenSpecifier, event: EventSpecifier) {
-        self.init(trigger: SQLIdentifier(trigger), table: SQLIdentifier(table), when: when, event: event)
+        self.init(trigger: SQLObjectIdentifier(trigger), table: SQLObjectIdentifier(table), when: when, event: event)
     }
 
     // See `SQLExpression.serialize(to:)`.

@@ -232,7 +232,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     @inlinable
     @discardableResult
     public func columns(_ columns: [String]) -> Self {
-        self.columns(columns.map(SQLIdentifier.init(_:)))
+        self.columns(columns.map(SQLObjectIdentifier.init(_:)))
     }
     
     /// Specify mutiple columns to be included in the list of columns for the query.
@@ -334,7 +334,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     @inlinable
     @discardableResult
     public func ignoringConflicts(with targetColumns: [String] = []) -> Self {
-        self.ignoringConflicts(with: targetColumns.map(SQLIdentifier.init(_:)))
+        self.ignoringConflicts(with: targetColumns.map(SQLObjectIdentifier.init(_:)))
     }
 
     /// Specify that constraint violations for the key over the given columns should cause the conflicting
@@ -365,7 +365,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
         with targetColumns: [String] = [],
         `do` updatePredicate: (SQLConflictUpdateBuilder) throws -> SQLConflictUpdateBuilder
     ) rethrows -> Self {
-        try self.onConflict(with: targetColumns.map(SQLIdentifier.init(_:)), do: updatePredicate)
+        try self.onConflict(with: targetColumns.map(SQLObjectIdentifier.init(_:)), do: updatePredicate)
     }
     
     /// Specify that constraint violations for the key over the given column should cause the conflicting
@@ -390,7 +390,7 @@ extension SQLDatabase {
     /// Create a new ``SQLInsertBuilder``.
     @inlinable
     public func insert(into table: String) -> SQLInsertBuilder {
-        self.insert(into: SQLIdentifier(table))
+        self.insert(into: SQLObjectIdentifier(table))
     }
     
     /// Create a new ``SQLInsertBuilder``.

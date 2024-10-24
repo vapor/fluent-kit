@@ -8,10 +8,10 @@
 /// The single requirement of ``SQLExpression`` is the ``SQLExpression/serialize(to:)`` method, which must output
 /// the appropriate raw text, bindings, and/or subexpressions to the provided ``SQLSerializer`` when invoked. Most
 /// interaction with ``SQLDialect`` takes place in the serialization logic of various ``SQLExpression``s - for
-/// example, ``SQLIdentifier`` uses the ``SQLDialect/identifierQuote`` of the serializer's dialect when quoting
-/// identifiers (naturally enough). Many ``SQLExpression``s - especially those representing entire SQL queries, such
-/// as ``SQLSelect`` or ``SQLCreateTable`` - function solely as containers of other expressions which are serialized
-/// in an appropriate sequence.
+/// example, ``SQLObjectIdentifier`` uses the ``SQLDialect/objectIdentifierQuote`` of the serializer's dialect when
+/// quoting identifiers (naturally enough). Many ``SQLExpression``s - especially those representing entire SQL queries,
+/// such as ``SQLSelect`` or ``SQLCreateTable`` - function solely as containers of other expressions which are
+/// serialized in an appropriate sequence.
 ///
 /// See ``SQLSerializer`` and ``SQLDatabase/serialize(_:)`` for additional details regarding serialization.
 ///

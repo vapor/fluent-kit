@@ -45,7 +45,7 @@ public struct SQLColumnDefinition: SQLExpression {
         dataType: SQLDataType,
         constraints: [SQLColumnConstraintAlgorithm] = []
     ) {
-        self.init(column: SQLIdentifier(name), dataType: dataType, constraints: constraints)
+        self.init(column: SQLObjectIdentifier(name), dataType: dataType, constraints: constraints)
     }
 
     // See `SQLExpression.serialize(to:)`.

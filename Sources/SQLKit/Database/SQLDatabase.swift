@@ -22,10 +22,10 @@ import struct Logging.Logger
 ///
 /// var select = SQLSelect()
 ///
-/// select.columns = [SQLColumn(SQLIdentifier("x"))]
-/// select.tables = [SQLIdentifier("y")]
+/// select.columns = [SQLColumn(SQLObjectIdentifier("x"))]
+/// select.tables = [SQLObjectIdentifier("y")]
 /// select.predicate = SQLBinaryExpression(
-///     left: SQLColumn(SQLIdentifier("z")),
+///     left: SQLColumn(SQLObjectIdentifier("z")),
 ///     op: SQLBinaryOperator.equal,
 ///     right: SQLLiteral.numeric("1")
 /// )

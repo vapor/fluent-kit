@@ -62,7 +62,7 @@ extension SQLDatabase {
     /// - Returns: A new builder.
     @inlinable
     public func update(_ table: String) -> SQLUpdateBuilder {
-        self.update(SQLIdentifier(table))
+        self.update(SQLObjectIdentifier(table))
     }
     
     /// Create a new ``SQLUpdateBuilder`` associated with this database.

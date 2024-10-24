@@ -39,7 +39,7 @@ extension SQLDatabase {
     /// Create a new ``SQLCreateEnumBuilder``.
     @inlinable
     public func create(enum name: String) -> SQLCreateEnumBuilder {
-        self.create(enum: SQLIdentifier(name))
+        self.create(enum: SQLObjectIdentifier(name))
     }
 
     /// Create a new ``SQLCreateEnumBuilder``.

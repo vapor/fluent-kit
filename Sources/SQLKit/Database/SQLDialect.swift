@@ -18,26 +18,38 @@ public protocol SQLDialect: Sendable {
     /// No default is provided.
     var name: String { get }
     
-    /// An expression (usually an ``SQLRaw``) giving the character(s) used to quote SQL
-    /// identifiers, such as table and column names.
+    /// A string giving the character(s) used to quote SQL object identifiers, such as table and column names.
     ///
-    /// The identifier quote is placed immediately preceding and following each identifier.
+    /// The object identifier quote is placed immediately preceding and following each object identifier. Occurrences
+    /// of the object identifier quote within an identifier are escaped by doubling the quote string (e.g. `qu"o"te`
+    /// becomes `"qu""o""te"`).
     ///
     /// No default is provided.
-    var identifierQuote: any SQLExpression { get }
-    
-    /// An expression (usually an ``SQLRaw``) giving the character(s) used to quote literal
-    /// string values which appear in a query, such as enumerator names.
+    ///
+    /// > Note: This is often identical to the dialect's ``typeIdentifierQuote``.
+    var objectIdentifierQuote: String { get }
+
+    /// A string giving the character(s) used to quote SQL type names, if any.
+    ///
+    /// The type identifier quote, if not `nil`, is placed immediately preceding and following each type name.
+    /// Occurrences of the type identifier quote within a type name are escaped by doubling the quote string
+    /// (e.g. `qu"o"te` becomes `"qu""o""te"`).
+    ///
+    /// No default is provided.
+    ///
+    /// > Warning: If no type identifier quote is provided, ``SQLTypeIdentifier`` becomes equivalent to
+    /// > ``SQLUnsafeRaw``. Dialects should always provide a type identifier quote if the syntax permits it.
+    ///
+    /// > Note: This is often identical to the dialect's ``objectIdentifierQuote``.
+    var typeIdentifierQuote: String? { get }
+
+    /// A string giving the character(s) used to quote literal string values which appear in a query,
+    /// such as enumerator names.
     ///
     /// The literal quote is placed immediately preceding and following each string literal.
     ///
-    /// Defaults to an apostrophe (`'`).
-    var literalStringQuote: any SQLExpression { get }
-    
-    /// `true` if the dialect supports auto-increment for primary key values when inserting
-    /// new rows, `false` if not.
-    ///
-    /// See also ``autoIncrementClause`` and ``autoIncrementFunction-4cc1b``.
+    /// No default is provided.
+    var literalStringQuote: String { get }
     ///
     /// No default is provided.
     var supportsAutoIncrement: Bool { get }

@@ -26,7 +26,7 @@ extension SQLSubquery {
     ///
     /// ```swift
     /// try await db.update("foos")
-    ///     .set(SQLIdentifier("bar_id"), to: SQLSubquery.select { $0
+    ///     .set(SQLObjectIdentifier("bar_id"), to: SQLSubquery.select { $0
     ///         .column("id")
     ///         .from("bars")
     ///         .where("baz", .notEqual, "bamf")
@@ -74,7 +74,7 @@ public final class SQLUnionSubqueryBuilder: SQLCommonUnionBuilder {
     ///
     /// ```swift
     /// try await db.update("foos")
-    ///     .set(SQLIdentifier("bar_id"), to: SQLSubquery
+    ///     .set(SQLObjectIdentifier("bar_id"), to: SQLSubquery
     ///         .union { $0
     ///             .column("id")
     ///             .from("bars")
@@ -103,7 +103,7 @@ extension SQLSubquery {
     ///
     /// ```swift
     /// try await db.update("foos")
-    ///     .set(SQLIdentifier("bar_id"), to: SQLSubquery
+    ///     .set(SQLObjectIdentifier("bar_id"), to: SQLSubquery
     ///         .union { $0
     ///             .column("id")
     ///             .from("bars")

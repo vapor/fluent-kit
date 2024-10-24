@@ -77,12 +77,12 @@ select.columns = [
     SQLColumn("column2", table: "table2"),
 ]
 select.tables = [
-    SQLIdentifier("table1")
+    SQLObjectIdentifier("table1")
 ]
 select.joins = [
     SQLJoin(
         method: SQLJoinMethod.inner,
-        table: SQLIdentifier("table2"),
+        table: SQLObjectIdentifier("table2"),
         expression: SQLBinaryExpression(
             SQLColumn("column1", table: "table1"),
             .equal,

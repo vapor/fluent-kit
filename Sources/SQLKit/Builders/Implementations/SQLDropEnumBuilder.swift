@@ -59,7 +59,7 @@ extension SQLDatabase {
     /// Create a new ``SQLDropEnumBuilder``.
     @inlinable
     public func drop(enum name: String) -> SQLDropEnumBuilder {
-        self.drop(enum: SQLIdentifier(name))
+        self.drop(enum: SQLObjectIdentifier(name))
     }
 
     /// Create a new ``SQLDropEnumBuilder``.

@@ -30,7 +30,7 @@ public struct SQLDistinct: SQLExpression {
     /// Create a `DISTINCT` expression with a list of string identifiers.
     @inlinable
     public init(_ args: [String]) {
-        self.init(args.map(SQLIdentifier.init(_:)))
+        self.init(args.map(SQLObjectIdentifier.init(_:)))
     }
     
     /// Create a `DISTINCT` expression with a list of expressions.

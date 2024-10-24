@@ -31,7 +31,7 @@ public final class SQLCreateIndexBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func on(_ table: String) -> Self {
-        self.on(SQLIdentifier(table))
+        self.on(SQLObjectIdentifier(table))
     }
     
     /// Specify a table to operate on.
@@ -46,7 +46,7 @@ public final class SQLCreateIndexBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func column(_ column: String) -> Self {
-        self.column(SQLIdentifier(column))
+        self.column(SQLObjectIdentifier(column))
     }
     
     /// Specify a column to include in the created index.
@@ -64,7 +64,7 @@ extension SQLDatabase {
     /// Creates a new ``SQLCreateIndexBuilder``.
     @inlinable
     public func create(index name: String) -> SQLCreateIndexBuilder {
-        self.create(index: SQLIdentifier(name))
+        self.create(index: SQLObjectIdentifier(name))
     }
     
     /// Creates a new ``SQLCreateIndexBuilder``.

@@ -31,7 +31,7 @@ public final class SQLDropIndexBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func on(_ owningObject: String) -> Self {
-        self.on(SQLIdentifier(owningObject))
+        self.on(SQLObjectIdentifier(owningObject))
     }
 
     /// The object (usually a table) which owns the index may be explicitly specified.
@@ -78,7 +78,7 @@ extension SQLDatabase {
     /// Create a new ``SQLDropIndexBuilder``.
     @inlinable
     public func drop(index name: String) -> SQLDropIndexBuilder {
-        self.drop(index: SQLIdentifier(name))
+        self.drop(index: SQLObjectIdentifier(name))
     }
     
     /// Create a new ``SQLDropIndexBuilder``.

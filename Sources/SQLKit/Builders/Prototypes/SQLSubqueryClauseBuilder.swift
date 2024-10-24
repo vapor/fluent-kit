@@ -97,7 +97,7 @@ extension SQLSubqueryClauseBuilder {
     @inlinable
     @discardableResult
     public func distinct(on column: String, _ columns: String...) -> Self {
-        self.distinct(on: ([column] + columns).map(SQLIdentifier.init(_:)))
+        self.distinct(on: ([column] + columns).map(SQLObjectIdentifier.init(_:)))
     }
     
     /// Adds a `DISTINCT` clause to the select statement and explicitly specifies columns to select,
@@ -134,7 +134,7 @@ extension SQLSubqueryClauseBuilder {
     @inlinable
     @discardableResult
     public func from(_ table: String) -> Self {
-        self.from(SQLIdentifier(table))
+        self.from(SQLObjectIdentifier(table))
     }
     
     /// Include the given table in the list of those used by the query, without performing an
@@ -154,7 +154,7 @@ extension SQLSubqueryClauseBuilder {
     @inlinable
     @discardableResult
     public func from(_ table: String, as alias: String) -> Self {
-        self.from(SQLIdentifier(table), as: SQLIdentifier(alias))
+        self.from(SQLObjectIdentifier(table), as: SQLObjectIdentifier(alias))
     }
     
     /// Include the given table and an alias for it in the list of those used by the query, without

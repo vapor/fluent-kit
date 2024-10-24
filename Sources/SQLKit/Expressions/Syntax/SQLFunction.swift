@@ -31,7 +31,7 @@ public struct SQLFunction: SQLExpression {
     ///   - args: The list of arguments.
     @inlinable
     public init(_ name: String, args: String...) {
-        self.init(name, args: args.map { SQLIdentifier($0) })
+        self.init(name, args: args.map { SQLObjectIdentifier($0) })
     }
     
     /// Create a function from a name and list of arguments.
@@ -43,7 +43,7 @@ public struct SQLFunction: SQLExpression {
     ///   - args: The list of arguments.
     @inlinable
     public init(_ name: String, args: [String]) {
-        self.init(name, args: args.map { SQLIdentifier($0) })
+        self.init(name, args: args.map { SQLObjectIdentifier($0) })
     }
     
     /// Create a function from a name and list of arguments.

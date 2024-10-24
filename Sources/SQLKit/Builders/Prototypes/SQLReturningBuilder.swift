@@ -10,7 +10,7 @@ extension SQLReturningBuilder {
     /// - Returns: A ``SQLReturningResultBuilder`` which must be used to execute the query.
     @inlinable
     public func returning(_ columns: String...) -> SQLReturningResultBuilder<Self> {
-        self.returning(columns.map { SQLColumn($0 == "*" ? SQLLiteral.all : SQLIdentifier($0)) })
+        self.returning(columns.map { SQLColumn($0 == "*" ? SQLLiteral.all : SQLObjectIdentifier($0)) })
     }
 
     /// Specify a list of columns to be returned as the result of the query.

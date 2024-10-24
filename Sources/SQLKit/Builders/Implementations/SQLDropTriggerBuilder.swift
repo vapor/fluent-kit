@@ -58,7 +58,7 @@ public final class SQLDropTriggerBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func table(_ name: String) -> Self {
-        self.table(SQLIdentifier(name))
+        self.table(SQLObjectIdentifier(name))
     }
     
     /// Specify an associated table that owns the trigger to drop, for dialects that require it.
@@ -74,7 +74,7 @@ extension SQLDatabase {
     /// Create a new ``SQLDropTableBuilder``.
     @inlinable
     public func drop(trigger: String) -> SQLDropTriggerBuilder {
-        self.drop(trigger: SQLIdentifier(trigger))
+        self.drop(trigger: SQLObjectIdentifier(trigger))
     }
 
     /// Create a new ``SQLDropTableBuilder``.

@@ -85,10 +85,10 @@ public enum SQLColumnConstraintAlgorithm: SQLExpression {
         .primaryKey(autoIncrement: true)
     }
 
-    /// Equivalent to `.collate(name: SQLIdentifier(name))`.
+    /// Equivalent to `.collate(name: SQLObjectIdentifier(name))`.
     @inlinable
     public static func collate(name: String) -> SQLColumnConstraintAlgorithm {
-        .collate(name: SQLIdentifier(name))
+        .collate(name: SQLObjectIdentifier(name))
     }
 
     /// Equivalent to `.default(SQLLiteral.string(value))`.
@@ -131,8 +131,8 @@ public enum SQLColumnConstraintAlgorithm: SQLExpression {
         onUpdate: SQLForeignKeyAction? = nil
     ) -> SQLColumnConstraintAlgorithm {
         self.references(
-            SQLIdentifier(table),
-            SQLIdentifier(column),
+            SQLObjectIdentifier(table),
+            SQLObjectIdentifier(column),
             onDelete: onDelete,
             onUpdate: onUpdate
         )

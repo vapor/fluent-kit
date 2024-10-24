@@ -6,7 +6,7 @@
 ///
 /// ```sql
 /// column alterColumnDefinitionTypeKeyword dataType
-/// -- Given column == SQLIdentifier("col"), dataType == SQLDataTyoe.text:
+/// -- Given column == SQLObjectIdentifier("col"), dataType == SQLDataTyoe.text:
 /// -- PostgreSQL: "col" SET DATA TYPE TEXT
 /// --      MySQL: `col` TEXT
 /// ```
@@ -25,7 +25,7 @@ public struct SQLAlterColumnDefinitionType: SQLExpression {
     ///   - column: The column to alter.
     ///   - dataType: The new data type.
     @inlinable
-    public init(column: SQLIdentifier, dataType: SQLDataType) {
+    public init(column: SQLObjectIdentifier, dataType: SQLDataType) {
         self.column = column
         self.dataType = dataType
     }

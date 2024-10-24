@@ -29,7 +29,7 @@ public enum SQLLiteral: SQLExpression {
     
     /// A literal expression representing a literal string in the current dialect.
     ///
-    /// Literal strings undergo quoting and escaping in exactly the same fashion described by ``SQLIdentifier``,
+    /// Literal strings undergo quoting and escaping in exactly the same fashion described by ``SQLObjectIdentifier``,
     /// except the dialect's ``SQLDialect/literalStringQuote-2vqlo`` is used.
     case string(String)
     
@@ -53,14 +53,10 @@ public enum SQLLiteral: SQLExpression {
             serializer.write(numeric)
         
         case .string(let string):
-            /// See ``SQLIdentifier/serialize(to:)`` for a discussion on why this is written the way it is.
-            if let rawQuote = (serializer.dialect.literalStringQuote as? SQLRaw)?.sql {
-                serializer.write("\(rawQuote)\(string.sqlkit_replacing(rawQuote, with: "\(rawQuote)\(rawQuote)"))\(rawQuote)")
-            } else {
-                serializer.dialect.literalStringQuote.serialize(to: &serializer)
-                serializer.write(string)
-                serializer.dialect.literalStringQuote.serialize(to: &serializer)
-            }
+            /// See ``SQLObjectIdentifier/serialize(to:)`` for a discussion on why this is written the way it is.
+            let rawQuote = serializer.dialect.literalStringQuote
+
+            serializer.write("\(rawQuote)\(string.sqlkit_replacing(rawQuote, with: "\(rawQuote)\(rawQuote)"))\(rawQuote)")
         }
     }
 }

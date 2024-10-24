@@ -37,7 +37,7 @@ public final class SQLCreateTableBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func column(_ column: String, type dataType: SQLDataType, _ constraints: [SQLColumnConstraintAlgorithm]) -> Self {
-        self.column(SQLIdentifier(column), type: dataType, constraints)
+        self.column(SQLObjectIdentifier(column), type: dataType, constraints)
     }
     
     /// Add a new column by name, type, and constraints.
@@ -125,7 +125,7 @@ extension SQLCreateTableBuilder {
     @inlinable
     @discardableResult
     public func primaryKey(_ columns: [String], named constraintName: String? = nil) -> Self {
-        self.primaryKey(columns.map(SQLIdentifier.init(_:)), named: constraintName.map(SQLIdentifier.init(_:)))
+        self.primaryKey(columns.map(SQLObjectIdentifier.init(_:)), named: constraintName.map(SQLObjectIdentifier.init(_:)))
     }
 
     /// Add a `PRIMARY KEY` constraint to the table.
@@ -162,7 +162,7 @@ extension SQLCreateTableBuilder {
     @inlinable
     @discardableResult
     public func unique(_ columns: [String], named constraintName: String? = nil) -> Self {
-        self.unique(columns.map(SQLIdentifier.init(_:)), named: constraintName.map(SQLIdentifier.init(_:)))
+        self.unique(columns.map(SQLObjectIdentifier.init(_:)), named: constraintName.map(SQLObjectIdentifier.init(_:)))
     }
 
     /// Add a `UNIQUE` constraint to the table.
@@ -188,7 +188,7 @@ extension SQLCreateTableBuilder {
     @inlinable
     @discardableResult
     public func check(_ expression: any SQLExpression, named constraintName: String? = nil) -> Self {
-        self.check(expression, named: constraintName.map(SQLIdentifier.init(_:)))
+        self.check(expression, named: constraintName.map(SQLObjectIdentifier.init(_:)))
     }
 
     /// Add a `CHECK` constraint to the table.
@@ -226,10 +226,10 @@ extension SQLCreateTableBuilder {
         named constraintName: String? = nil
     ) -> Self {
         self.foreignKey(
-            columns.map(SQLIdentifier.init(_:)),
-            references: SQLIdentifier(foreignTable), foreignColumns.map(SQLIdentifier.init(_:)),
+            columns.map(SQLObjectIdentifier.init(_:)),
+            references: SQLObjectIdentifier(foreignTable), foreignColumns.map(SQLObjectIdentifier.init(_:)),
             onDelete: onDelete, onUpdate: onUpdate,
-            named: constraintName.map(SQLIdentifier.init(_:))
+            named: constraintName.map(SQLObjectIdentifier.init(_:))
         )
     }
 
@@ -269,7 +269,7 @@ extension SQLDatabase {
     /// Create a new ``SQLCreateTableBuilder``.
     @inlinable
     public func create(table: String) -> SQLCreateTableBuilder {
-        self.create(table: SQLIdentifier(table))
+        self.create(table: SQLObjectIdentifier(table))
     }
     
     /// Create a new ``SQLCreateTableBuilder``.

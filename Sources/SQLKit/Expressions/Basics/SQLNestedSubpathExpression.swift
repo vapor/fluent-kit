@@ -30,7 +30,7 @@ public struct SQLNestedSubpathExpression: SQLExpression {
     ///   - column: A string to treat as an identifier to which the nested subpath applies.
     ///   - path: The subpath itself. If this array is empty, a runtime error occurs.
     public init(column: String, path: [String]) {
-        self.init(column: SQLIdentifier(column), path: path)
+        self.init(column: SQLObjectIdentifier(column), path: path)
     }
 
     // See `SQLExpression.serialize(to:)`.

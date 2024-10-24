@@ -8,12 +8,12 @@ public struct SQLQualifiedTable: SQLExpression {
     public var table: any SQLExpression
     
     /// If specified, the second-level namespace to which the table belongs.
-    /// Usually an ``SQLIdentifier`` if not `nil`.
     public var space: (any SQLExpression)?
     
+    /// Usually an ``SQLObjectIdentifier`` if not `nil`.
     /// Create an ``SQLQualifiedTable`` from a name and optional second-level namespace.
     public init(_ table: String, space: String? = nil) {
-        self.init(SQLIdentifier(table), space: space.flatMap(SQLIdentifier.init(_:)))
+        self.init(SQLObjectIdentifier(table), space: space.flatMap(SQLObjectIdentifier.init(_:)))
     }
     
     /// Create an ``SQLQualifiedTable`` from an identifier and optional second-level identifier.

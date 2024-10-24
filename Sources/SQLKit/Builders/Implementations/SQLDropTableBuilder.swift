@@ -68,7 +68,7 @@ extension SQLDatabase {
     /// Create a new ``SQLDropTableBuilder``.
     @inlinable
     public func drop(table: String) -> SQLDropTableBuilder {
-        self.drop(table: SQLIdentifier(table))
+        self.drop(table: SQLObjectIdentifier(table))
     }
     
     /// Create a new ``SQLDropTableBuilder``.

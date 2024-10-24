@@ -84,7 +84,7 @@ SQLKit does _not_ provide facilities for creating or managing database connectio
 - ``SQLBind``
 - ``SQLFunction``
 - ``SQLGroupExpression``
-- ``SQLIdentifier``
+- ``SQLObjectIdentifier``
 - ``SQLList``
 - ``SQLLiteral``
 - ``SQLRaw``

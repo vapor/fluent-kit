@@ -45,7 +45,7 @@ extension SQLDatabase {
     /// Create a new ``SQLDeleteBuilder``.
     @inlinable
     public func delete(from table: String) -> SQLDeleteBuilder {
-        self.delete(from: SQLIdentifier(table))
+        self.delete(from: SQLObjectIdentifier(table))
     }
     
     /// Create a new ``SQLDeleteBuilder``.

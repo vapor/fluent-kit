@@ -23,7 +23,7 @@ public final class SQLAlterTableBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func rename(to newName: String) -> Self {
-        self.rename(to: SQLIdentifier(newName))
+        self.rename(to: SQLObjectIdentifier(newName))
     }
     
     /// Rename the table.
@@ -45,7 +45,7 @@ public final class SQLAlterTableBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func column(_ column: String, type dataType: SQLDataType, _ constraints: [SQLColumnConstraintAlgorithm]) -> Self {
-        self.column(SQLIdentifier(column), type: dataType, constraints)
+        self.column(SQLObjectIdentifier(column), type: dataType, constraints)
     }
     
     /// Add a new column to the table.
@@ -81,7 +81,7 @@ public final class SQLAlterTableBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func modifyColumn(_ column: String, type dataType: SQLDataType, _ constraints: [SQLColumnConstraintAlgorithm]) -> Self {
-        self.modifyColumn(SQLIdentifier(column), type: dataType, constraints)
+        self.modifyColumn(SQLObjectIdentifier(column), type: dataType, constraints)
     }
     
     /// Change an existing column's type and constraints.
@@ -102,7 +102,7 @@ public final class SQLAlterTableBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func update(column: String, type dataType: SQLDataType) -> Self {
-        self.update(column: SQLIdentifier(column), type: dataType)
+        self.update(column: SQLObjectIdentifier(column), type: dataType)
     }
     
     /// Change an existing column's type.
@@ -124,7 +124,7 @@ public final class SQLAlterTableBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func dropColumn(_ column: String) -> Self {
-        self.dropColumn(SQLIdentifier(column))
+        self.dropColumn(SQLObjectIdentifier(column))
     }
     
     /// Drop an existing column from the table
@@ -140,12 +140,12 @@ extension SQLDatabase {
     /// Create a new ``SQLAlterTableBuilder``.
     @inlinable
     public func alter(table: String) -> SQLAlterTableBuilder {
-        self.alter(table: SQLIdentifier(table))
+        self.alter(table: SQLObjectIdentifier(table))
     }
     
     /// Create a new ``SQLAlterTableBuilder``.
     @inlinable
-    public func alter(table: SQLIdentifier) -> SQLAlterTableBuilder {
+    public func alter(table: SQLObjectIdentifier) -> SQLAlterTableBuilder {
          .init(.init(name: table), on: self)
     }
 }

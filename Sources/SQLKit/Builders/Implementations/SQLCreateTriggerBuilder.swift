@@ -52,7 +52,7 @@ public final class SQLCreateTriggerBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func columns(_ columns: [String]) -> Self {
-        self.columns(columns.map(SQLIdentifier.init(_:)))
+        self.columns(columns.map(SQLObjectIdentifier.init(_:)))
     }
 
     /// Specify the columns to which the trigger applies.
@@ -98,7 +98,7 @@ public final class SQLCreateTriggerBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func referencedTable(_ value: String) -> Self {
-        self.referencedTable(SQLIdentifier(value))
+        self.referencedTable(SQLObjectIdentifier(value))
     }
 
     /// Specify the name of another table referenced by the constraint.
@@ -125,7 +125,7 @@ public final class SQLCreateTriggerBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func procedure(_ name: String) -> Self {
-        self.procedure(SQLIdentifier(name))
+        self.procedure(SQLObjectIdentifier(name))
     }
 
     /// Specify a procedure name for the trigger to execute.
@@ -140,7 +140,7 @@ public final class SQLCreateTriggerBuilder: SQLQueryBuilder {
     @inlinable
     @discardableResult
     public func order(precedence: SQLCreateTrigger.OrderSpecifier, otherTriggerName: String) -> Self {
-        self.order(precedence: precedence, otherTriggerName: SQLIdentifier(otherTriggerName))
+        self.order(precedence: precedence, otherTriggerName: SQLObjectIdentifier(otherTriggerName))
     }
 
     /// Specify whether this trigger precedes or follows a referenced trigger.
@@ -169,7 +169,7 @@ extension SQLDatabase {
         when: SQLCreateTrigger.WhenSpecifier,
         event: SQLCreateTrigger.EventSpecifier
     ) -> SQLCreateTriggerBuilder {
-        self.create(trigger: SQLIdentifier(trigger), table: SQLIdentifier(table), when: when, event: event)
+        self.create(trigger: SQLObjectIdentifier(trigger), table: SQLObjectIdentifier(table), when: when, event: event)
     }
 
     /// Create a new ``SQLCreateTriggerBuilder``.

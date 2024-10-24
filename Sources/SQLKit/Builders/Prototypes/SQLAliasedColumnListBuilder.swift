@@ -12,14 +12,14 @@ extension SQLAliasedColumnListBuilder {
     @inlinable
     @discardableResult
     public func column(_ column: String, as alias: String) -> Self {
-        self.column(SQLColumn(column), as: SQLIdentifier(alias))
+        self.column(SQLColumn(column), as: SQLObjectIdentifier(alias))
     }
 
     /// Specify a column to retrieve with an aliased name.
     @inlinable
     @discardableResult
     public func column(_ column: any SQLExpression, as alias: String) -> Self {
-        self.column(column, as: SQLIdentifier(alias))
+        self.column(column, as: SQLObjectIdentifier(alias))
     }
 
     /// Specify a column to retrieve with an aliased name.

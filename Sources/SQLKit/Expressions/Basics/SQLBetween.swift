@@ -120,7 +120,7 @@ extension SQLBetween {
         column: String,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some Encodable & Sendable
-    ) where T == SQLIdentifier, U == SQLBind, V == SQLBind {
+    ) where T == SQLObjectIdentifier, U == SQLBind, V == SQLBind {
         self.init(operand: .init(column), lowerBound: .init(lowerBound), upperBound: .init(upperBound))
     }
     
@@ -130,7 +130,7 @@ extension SQLBetween {
         column: String,
         between lowerBound: some Encodable & Sendable,
         and upperBound: V
-    ) where T == SQLIdentifier, U == SQLBind {
+    ) where T == SQLObjectIdentifier, U == SQLBind {
         self.init(operand: .init(column), lowerBound: .init(lowerBound), upperBound: upperBound)
     }
     
@@ -140,7 +140,7 @@ extension SQLBetween {
         column: String,
         between lowerBound: U,
         and upperBound: some Encodable & Sendable
-    ) where T == SQLIdentifier, V == SQLBind {
+    ) where T == SQLObjectIdentifier, V == SQLBind {
         self.init(operand: .init(column), lowerBound: lowerBound, upperBound: .init(upperBound))
     }
     
@@ -150,7 +150,7 @@ extension SQLBetween {
         column: String,
         between lowerBound: U,
         and upperBound: V
-    ) where T == SQLIdentifier {
+    ) where T == SQLObjectIdentifier {
         self.init(operand: .init(column), lowerBound: lowerBound, upperBound: upperBound)
     }
 }

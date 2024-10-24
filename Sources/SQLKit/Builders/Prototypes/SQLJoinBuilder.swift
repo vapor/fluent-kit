@@ -15,7 +15,7 @@ extension SQLJoinBuilder {
     @inlinable
     @discardableResult
     public func join(_ table: String, method: SQLJoinMethod = .inner, on expression: any SQLExpression) -> Self {
-         self.join(SQLIdentifier(table), method: method, on: expression)
+         self.join(SQLObjectIdentifier(table), method: method, on: expression)
     }
 
     /// Include the given table in the list of those used by the query, performing an explicit join using the
@@ -48,7 +48,7 @@ extension SQLJoinBuilder {
         method: any SQLExpression = SQLJoinMethod.inner,
         on left: any SQLExpression, _ op: SQLBinaryOperator, _ right: any SQLExpression
     ) -> Self {
-        self.join(SQLIdentifier(table), method: method, on: left, op, right)
+        self.join(SQLObjectIdentifier(table), method: method, on: left, op, right)
     }
 
     /// Include the given table in the list of those used by the query, performing an explicit join using the
@@ -82,8 +82,8 @@ extension SQLJoinBuilder {
     public func join(_ table: any SQLExpression, method: any SQLExpression = SQLJoinMethod.inner, using columns: any SQLExpression) -> Self {
         // TODO: Make ``SQLJoin`` aware of the `USING` syntax; this method is hacky and somewhat driver-specific.
         self.joins.append(SQLList([
-            method, SQLRaw("JOIN"), table, SQLRaw("USING"), SQLGroupExpression(columns)
-        ], separator: SQLRaw(" ")))
+            method, SQLUnsafeRaw("JOIN"), table, SQLUnsafeRaw("USING"), SQLGroupExpression(columns)
+        ], separator: SQLUnsafeRaw(" ")))
         return self
     }
 }

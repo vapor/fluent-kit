@@ -183,13 +183,13 @@ extension SQLQueryString {
         self.fragments.append(SQLList(literals.map { SQLLiteral.string($0) }, separator: SQLRaw(joiner)))
     }
 
-    /// Embed a `String` as an identifier, as if via ``SQLIdentifier``.
+    /// Embed a `String` as an identifier, as if via ``SQLObjectIdentifier``.
     ///
     /// Use this interpolation preferentially to ensure that table names, column names, and other non-keyword
     /// identifier are correctly quoted and escaped.
     @inlinable
     public mutating func appendInterpolation(ident: String) {
-        self.fragments.append(SQLIdentifier(ident))
+        self.fragments.append(SQLObjectIdentifier(ident))
     }
 
     /// Embed an array of `String`s as a list of SQL identifiers, using the `joiner` to separate them.
@@ -210,7 +210,7 @@ extension SQLQueryString {
     /// ```
     @inlinable
     public mutating func appendInterpolation(idents: [String], joinedBy joiner: String) {
-        self.fragments.append(SQLList(idents.map { SQLIdentifier($0) }, separator: SQLRaw(joiner)))
+        self.fragments.append(SQLList(idents.map { SQLObjectIdentifier($0) }, separator: SQLRaw(joiner)))
     }
 
     /// Embed an arbitary ``SQLExpression`` in the string.
