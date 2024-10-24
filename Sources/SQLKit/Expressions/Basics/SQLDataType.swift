@@ -24,45 +24,42 @@ public enum SQLDataType: SQLExpression {
     /// Translates to `BLOB`, unless overridden by dialect. Represents binary non-textual data (i.e. an arbitrary
     /// byte string admitting of no particular format or representation).
     case blob
-    
+
     /// Translates to `TIMESTAMP`, unless overridden by dialect. Represents a type suitable for storing the encoded
     /// value of a `Date` in a form which can be saved to and reloaded from the database without suffering skew caused
     /// by time zone calculations.
-    ///
-    /// > Note: Implemented as a static var rather than a new case for now because adding new cases to a public enum
-    /// > is a source-breaking change.
-    public static var timestamp: Self {
-        .custom(SQLRaw("TIMESTAMP"))
-    }
-    
-    /// Translates to the serialization of the given expression, unless overridden by dialect.
-    case custom(any SQLExpression)
+    case timestamp
+
+    /// Translates to the given string, unless overridden by dialect.
+    case custom(String)
 
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {
-        let sql: any SQLExpression
-        
+        let sql: String
+
         if let dialect = serializer.dialect.customDataType(for: self) {
             sql = dialect
         } else {
             switch self {
             case .smallint:
-                sql = SQLRaw("SMALLINT")
+                sql = "SMALLINT"
             case .int:
-                sql = SQLRaw("INTEGER")
+                sql = "INTEGER"
             case .bigint:
-                sql = SQLRaw("BIGINT")
+                sql = "BIGINT"
             case .text:
-                sql = SQLRaw("TEXT")
+                sql = "TEXT"
             case .real:
-                sql = SQLRaw("REAL")
+                sql = "REAL"
             case .blob:
-                sql = SQLRaw("BLOB")
-            case .custom(let exp):
-                sql = exp
+                sql = "BLOB"
+            case .timestamp:
+                sql = "TIMESTAMP"
+            case .custom(let str):
+                sql = str
             }
         }
-        sql.serialize(to: &serializer)
+        serializer.write(sql)
     }
 }
