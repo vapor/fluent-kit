@@ -36,7 +36,16 @@ extension QueryBuilder {
     ) -> Self
         where Foreign: Schema
     {
-        self.join(Foreign.self, on: .advancedJoin(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
+      
+        // If deleted models aren't included, add filters
+        // to exclude them for each model being queried.
+        if !self.includeDeleted {
+            let filters = foreign.excludeDeleted(from: filters)
+            
+            return self.join(Foreign.self, on: .advancedJoin(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
+        }
+        
+        return self.join(Foreign.self, on: .advancedJoin(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
     }
     
     /// `.join(Foreign.self, on: databaseJoin)`
