@@ -1,5 +1,24 @@
 extension DatabaseQuery {
-    public enum Action: Sendable {
+    public enum Action: Sendable, Equatable {
+        
+        public static func == (lhs: DatabaseQuery.Action, rhs: DatabaseQuery.Action) -> Bool {
+            switch (lhs, rhs) {
+            case (.create, .create),
+                (.read, .read),
+                (.update, .update),
+                (.delete, .delete):
+                return true
+            case let (.aggregate(lhs), .aggregate(rhs)):
+                guard type(of: lhs) == type(of: rhs) else { return false }
+                return String(describing: lhs) == String(describing: rhs)
+            case let (.custom(lhs), .custom(rhs)):
+                guard type(of: lhs) == type(of: rhs) else { return false }
+                return String(describing: lhs) == String(describing: rhs)
+            default:
+                return false
+            }
+        }
+        
         case create
         case read
         case update

@@ -208,6 +208,7 @@ extension Fields {
 }
 
 extension Schema {
+  
     static func excludeDeleted(from query: inout DatabaseQuery) {
         guard let timestamp = self.init().deletedTimestamp else {
             return
@@ -221,5 +222,27 @@ extension Schema {
             .value(deletedAtField, .equal, .null),
             .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
         ], .or))
+    }
+  
+    
+    static func excludeDeleted(from filters: [DatabaseQuery.Filter]) -> [DatabaseQuery.Filter] {
+        guard let timestamp = self.init().deletedTimestamp else {
+            return filters
+        }
+        
+        let deletedAtField = DatabaseQuery.Field.extendedPath(
+            [timestamp.key],
+            schema: self.schemaOrAlias,
+            space: self.space
+        )
+        
+        var copy = filters
+        copy.append(.group([
+            .value(deletedAtField, .equal, .null),
+            .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
+        ], .or))
+        
+        let filters = copy
+        return filters
     }
 }

@@ -303,10 +303,11 @@ public final class QueryBuilder<Model>
                 self.addFields(for: model, to: &query)
             }
         }
-
+        
+        
         // If deleted models aren't included, add filters
         // to exclude them for each model being queried.
-        if !self.includeDeleted {
+        if  !self.includeDeleted {
             for model in self.models {
                 model.excludeDeleted(from: &query)
             }
