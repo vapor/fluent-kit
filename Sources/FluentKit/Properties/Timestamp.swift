@@ -208,7 +208,6 @@ extension Fields {
 }
 
 extension Schema {
-  
     static func excludeDeleted(from query: inout DatabaseQuery) {
         guard let timestamp = self.init().deletedTimestamp else {
             return
