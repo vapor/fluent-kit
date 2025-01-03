@@ -241,7 +241,6 @@ extension Schema {
             .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
         ], .or))
         
-        let filters = copy
-        return filters
+        return copy
     }
 }
