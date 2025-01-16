@@ -158,13 +158,13 @@ final class SQLTests: DbQueryTestCase {
         try await self.db.insert(into: FromPivot.schema).fluentModels([fromPivot1, fromPivot2]).run()
         
         XCTAssertEqual(self.db.sqlSerializers.count, 4)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(0).first?.sql, #"INSERT INTO "model1s" ("optfield", "id", "bool", "optbool", "group_groupfield2", "group_groupfield1", "created_at", "enum", "field", "optenum") VALUES ($1, DEFAULT, $2, $3, $4, $5, $6, 'foo', $7, 'bar'), (NULL, $8, $9, NULL, $10, $11, $12, 'foo', $13, NULL)"#)
+        XCTAssertEqual(self.db.sqlSerializers.dropFirst(0).first?.sql, #"INSERT INTO "model1s" ("bool", "created_at", "enum", "field", "group_groupfield1", "group_groupfield2", "id", "optbool", "optenum", "optfield") VALUES ($1, $2, 'foo', $3, $4, $5, DEFAULT, $6, 'bar', $7), ($8, $9, 'foo', $10, $11, $12, $13, NULL, NULL, NULL)"#)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(0).first?.binds.count, 13)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(1).first?.sql, #"INSERT INTO "model2s" ("id", "model1_id", "field", "othermodel1_id") VALUES (DEFAULT, $1, $2, $3), ($4, $5, $6, NULL)"#)
+        XCTAssertEqual(self.db.sqlSerializers.dropFirst(1).first?.sql, #"INSERT INTO "model2s" ("field", "id", "model1_id", "othermodel1_id") VALUES ($1, DEFAULT, $2, $3), ($4, $5, $6, NULL)"#)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(1).first?.binds.count, 6)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "pivots" ("model2_id", "model1_id") VALUES ($1, $2)"#)
+        XCTAssertEqual(self.db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "pivots" ("model1_id", "model2_id") VALUES ($1, $2)"#)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(2).first?.binds.count, 2)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(3).first?.sql, #"INSERT INTO "from_pivots" ("pivot_model2_id", "optpivot_model1_id", "pivot_model1_id", "field2", "optpivot_model2_id", "field1") VALUES ($1, $2, $3, $4, $5, $6), ($7, NULL, $8, $9, NULL, $10)"#)
+        XCTAssertEqual(self.db.sqlSerializers.dropFirst(3).first?.sql, #"INSERT INTO "from_pivots" ("field1", "field2", "optpivot_model1_id", "optpivot_model2_id", "pivot_model1_id", "pivot_model2_id") VALUES ($1, $2, $3, $4, $5, $6), ($7, $8, NULL, NULL, $9, $10)"#)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(3).first?.binds.count, 10)
     }
 }
