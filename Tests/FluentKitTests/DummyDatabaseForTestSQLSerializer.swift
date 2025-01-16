@@ -1,6 +1,6 @@
 import FluentKit
 import FluentSQL
-import NIOEmbedded
+import NIOCore
 import SQLKit
 import XCTFluent
 import NIOConcurrencyHelpers
@@ -60,7 +60,7 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.context = .init(
             configuration: Configuration(),
             logger: .init(label: "test"),
-            eventLoop: EmbeddedEventLoop()
+            eventLoop: NIOSingletons.posixEventLoopGroup.any()
         )
     }
 
@@ -81,12 +81,14 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         var sqlSerializer = SQLSerializer(database: self)
         query.serialize(to: &sqlSerializer)
         self._sqlSerializers.withLockedValue { $0.append(sqlSerializer) }
-        if !self.fakedRows.isEmpty {
-            for row in self._fakedRows.withLockedValue({ $0.removeFirst() }) {
+        return self.eventLoop.submit {
+            let rows = self._fakedRows.withLockedValue {
+                $0.isEmpty ? [] : $0.removeFirst()
+            }
+            for row in rows {
                 onRow(row)
             }
         }
-        return self.eventLoop.makeSucceededVoidFuture()
     }
 
     func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
