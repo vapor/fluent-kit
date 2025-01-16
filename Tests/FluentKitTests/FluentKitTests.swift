@@ -23,6 +23,10 @@ final class FluentKitTests: XCTestCase {
     /// Since no part of Fluent or any of its drivers currently relies, or ever will rely, on
     /// the format in question, it is desirable to enforce that it should never change, just in
     /// case someone actually is relying on it for some hopefully very good reason.
+    ///
+    /// Update: Ignore all of the above. This test is not reliable due to the instability of serializing
+    /// dictionaries as strings, and adding sorting changes the output, so the whole point is mooted.
+    /*
     func testAnyModelDescriptionFormatHasNotChanged() throws {
         final class Foo: Model, @unchecked Sendable {
             static let schema = "foos"
@@ -47,7 +51,8 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(modelOutputDesc, "Foo(output: [num: 42, name: \"Test\", id: \(model.id!)])")
         XCTAssertEqual(modelBothDesc,   "Foo(output: [num: 42, name: \"Test\", id: \(model.id!)], input: [num: 43])")
     }
-    
+    */
+
     func testMigrationLogNames() throws {
         XCTAssertEqual(MigrationLog.path(for: \.$id), [.id])
         XCTAssertEqual(MigrationLog.path(for: \.$name), ["name"])

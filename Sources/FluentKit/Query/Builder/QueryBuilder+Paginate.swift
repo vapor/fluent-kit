@@ -50,7 +50,7 @@ extension QueryBuilder {
 }
 
 /// A single section of a larger, traversable result set.
-public struct Page<T> {
+public struct Page<T: Sendable>: Sendable {
     /// The page's items. Usually models.
     public let items: [T]
 
@@ -76,7 +76,7 @@ extension Page: Encodable where T: Encodable {}
 extension Page: Decodable where T: Decodable {}
 
 /// Metadata for a given `Page`.
-public struct PageMetadata: Codable {
+public struct PageMetadata: Codable, Sendable {
     /// Current page number. Starts at `1`.
     public let page: Int
 

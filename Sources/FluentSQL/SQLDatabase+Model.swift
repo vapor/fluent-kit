@@ -83,7 +83,7 @@ extension DatabaseQuery.Value {
 
 extension Model {
     fileprivate func encodeForSQL(withDefaultedValues: Bool) -> [(String, any SQLExpression)] {
-        self.collectInput(withDefaultedValues: withDefaultedValues).map { ($0.description, $1.asSQLExpression) }
+        self.collectInput(withDefaultedValues: withDefaultedValues).map { ($0.description, $1.asSQLExpression) }.sorted(by: { $0.0 < $1.0 })
     }
 }
 
