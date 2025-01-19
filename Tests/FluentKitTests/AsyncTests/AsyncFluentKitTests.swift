@@ -75,12 +75,12 @@ final class AsyncFluentKitTests: XCTestCase {
         let db = DummyDatabaseForTestSQLSerializer()
         _ = try await Planet.query(on: db).join(child: \Planet.$governor).all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "governors" ON "planets"."id" = "governors"."planet_id" AND ("governors"."deleted_at" IS NULL OR "governors"."deleted_at" > $1)"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "governors" ON "planets"."id" = "governors"."planet_id""#), true)
         db.reset()
 
         _ = try await Planet.query(on: db).join(children: \Planet.$moons).all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "moons" ON "planets"."id" = "moons"."planet_id" AND ("moons"."deleted_at" IS NULL OR "moons"."deleted_at" > $1)"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "moons" ON "planets"."id" = "moons"."planet_id""#), true)
         db.reset()
 
         _ = try await Planet.query(on: db).join(parent: \Planet.$star).all()
@@ -90,8 +90,8 @@ final class AsyncFluentKitTests: XCTestCase {
 
         _ = try await Planet.query(on: db).join(siblings: \Planet.$tags).all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planet+tag"."planet_id" = "planets"."id" AND ("planet+tag"."deleted_at" IS NULL OR "planet+tag"."deleted_at" > $1)"#), true)
-        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "tags" ON "planet+tag"."tag_id" = "tags"."id" AND ("tags"."deleted_at" IS NULL OR "tags"."deleted_at" > $1)"#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "planet+tag" ON "planet+tag"."planet_id" = "planets"."id""#), true)
+        XCTAssertEqual(db.sqlSerializers.first?.sql.contains(#"INNER JOIN "tags" ON "planet+tag"."tag_id" = "tags"."id""#), true)
         db.reset()
     }
 

@@ -6,7 +6,7 @@ import NIOCore
 /// > Note: This protocol should probably require conformance to ``Property``, but adding that requirement
 /// > wouldn't have enough value to be worth having to hand-wave a technically semver-major change.
 public protocol Relation: Sendable {
-    associatedtype RelatedValue
+    associatedtype RelatedValue: Sendable
     var name: String { get }
     var value: RelatedValue? { get set }
     func load(on database: any Database) -> EventLoopFuture<Void>

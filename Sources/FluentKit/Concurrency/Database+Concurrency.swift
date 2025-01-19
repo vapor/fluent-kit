@@ -20,7 +20,7 @@ public extension Database {
         try await self.execute(enum: `enum`).get()
     }
 
-    func transaction<T>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T {
+    func transaction<T: Sendable>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T {
         try await self.transaction { db in
             self.eventLoop.makeFutureWithTask {
                 try await closure(db)
@@ -28,7 +28,7 @@ public extension Database {
         }.get()
     }
 
-    func withConnection<T>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T {
+    func withConnection<T: Sendable>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T {
         try await self.withConnection { db in
             self.eventLoop.makeFutureWithTask {
                 try await closure(db)
