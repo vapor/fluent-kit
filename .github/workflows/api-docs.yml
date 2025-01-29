@@ -11,4 +11,4 @@ jobs:
      with:
        package_name: fluent-kit
        modules: FluentKit,FluentSQL,XCTFluent
-       pathsToInvalidate: /fluentkit/*
+       pathsToInvalidate: /fluentkit/* /fluentsql/* /xctfluent/*
