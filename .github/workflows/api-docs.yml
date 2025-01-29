@@ -10,5 +10,5 @@ jobs:
      secrets: inherit
      with:
        package_name: fluent-kit
-       modules: FluentKit
+       modules: FluentKit,FluentSQL,XCTFluent
        pathsToInvalidate: /fluentkit/*
