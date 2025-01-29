@@ -40,6 +40,6 @@ extension AnyModel {
                 return idChild
             }
         }
-        fatalError("id property must be declared using @ID or @CompositeID")
+        fatalError("id property for model \(Self.self) must be declared using @ID or @CompositeID")
     }
 }
