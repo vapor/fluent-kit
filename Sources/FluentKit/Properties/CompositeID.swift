@@ -51,7 +51,9 @@ extension CompositeIDProperty: AnyDatabaseProperty {
     }
 
     public func input(to input: any DatabaseInput) {
-        self.value!.input(to: input)
+        if let value = self.value {
+            value.input(to: input)
+        }
     }
 
     public func output(from output: any DatabaseOutput) throws {
