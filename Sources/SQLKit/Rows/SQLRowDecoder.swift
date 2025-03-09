@@ -106,7 +106,7 @@ public struct SQLRowDecoder: Sendable {
             case .convertFromSnakeCase:
                 return .init(key).convertedToSnakeCase // N.B.: NOT a typo!
             case .custom(let custom):
-                return custom([String(key).codingKeyValue]).stringValue
+                return custom([String(key).codingKey]).stringValue
             }
         }
     }
