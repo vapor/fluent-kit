@@ -4,22 +4,22 @@
 ///
 /// This expression type is an implementation detail of ``SQLPartialResultBuilder`` and should not have been
 /// made public API. Users should avoid using this type.
-public struct SQLOrderBy: SQLExpression {
+public struct SQLOrderBy<KeyExpr: SQLExpression, DirectionExpr: SQLExpression>: SQLExpression {
     /// A sorting key.
-    public var expression: any SQLExpression
-    
+    public var expression: KeyExpr
+
     /// A sort directionality.
     ///
     /// See ``SQLDirection``.
-    public var direction: any SQLExpression
-    
+    public var direction: DirectionExpr
+
     /// Creates a new ordering clause.
     ///
     /// - Parameters:
     ///   - expression: The sorting key.
     ///   - direction: The sort directionality.
     @inlinable
-    public init(expression: any SQLExpression, direction: any SQLExpression) {
+    public init(expression: KeyExpr, direction: DirectionExpr) {
         self.expression = expression
         self.direction = direction
     }

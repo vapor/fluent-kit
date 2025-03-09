@@ -1,17 +1,17 @@
 /// An expression representing the combination of a constraint name and algorithm for table constraints.
 ///
 /// See ``SQLTableConstraintAlgorithm``.
-public struct SQLConstraint: SQLExpression {
+public struct SQLConstraint<NameExpr: SQLExpression, AlgExpr: SQLExpression>: SQLExpression {
     /// The constraint's name, if any.
     ///
     /// It is pointless to use ``SQLConstraint`` in the absence of a ``name``, but the optionality is part of
     /// preexisting public API and cannot be changed.
-    public var name: (any SQLExpression)?
+    public var name: NameExpr?
 
     /// The constraint's algorithm.
     ///
     /// See ``SQLTableConstraintAlgorithm``.
-    public var algorithm: any SQLExpression
+    public var algorithm: AlgExpr
 
     /// Create an ``SQLConstraint``.
     ///
@@ -19,7 +19,7 @@ public struct SQLConstraint: SQLExpression {
     ///   - algorithm: The constraint algorithm.
     ///   - name: The optional constraint name.
     @inlinable
-    public init(algorithm: any SQLExpression, name: (any SQLExpression)? = nil) {
+    public init(algorithm: AlgExpr, name: NameExpr? = nil) {
         self.name = name
         self.algorithm = algorithm
     }

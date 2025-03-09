@@ -51,7 +51,7 @@ public enum SQLLiteral: SQLExpression {
             /// See ``SQLObjectIdentifier/serialize(to:)`` for a discussion on why this is written the way it is.
             let rawQuote = serializer.dialect.literalStringQuote
 
-            serializer.write("\(rawQuote)\(string.sqlkit_replacing(rawQuote, with: "\(rawQuote)\(rawQuote)"))\(rawQuote)")
+            serializer.write("\(rawQuote)\(string.replacing(rawQuote, with: "\(rawQuote)\(rawQuote)"))\(rawQuote)")
         }
     }
 }

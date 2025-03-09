@@ -28,7 +28,7 @@ public struct SQLObjectIdentifier: SQLExpression {
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {
         let rawQuote = serializer.dialect.objectIdentifierQuote
-        let escapedString = self.string.sqlkit_replacing(rawQuote, with: "\(rawQuote)\(rawQuote)")
+        let escapedString = self.string.replacing(rawQuote, with: "\(rawQuote)\(rawQuote)")
 
         serializer.write("\(rawQuote)\(escapedString)\(rawQuote)")
     }

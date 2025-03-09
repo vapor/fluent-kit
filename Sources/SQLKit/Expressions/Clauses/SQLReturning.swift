@@ -14,7 +14,7 @@ public struct SQLReturning: SQLExpression {
     ///
     /// - Parameter column: A single column to return from a query.
     @inlinable
-    public init(_ column: SQLColumn) {
+    public init(_ column: SQLColumn<some SQLExpression, some SQLExpression>) {
         self.init([column])
     }
 

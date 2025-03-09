@@ -30,36 +30,45 @@ public enum SQLDataType: SQLExpression {
     /// by time zone calculations.
     case timestamp
 
+    /// Translates to the type specification for an enumeration, depending on the support expressed by the dialect,
+    /// unless separately overridden by the dialect. See ``SQLEnumSyntax`` for details of possible support. For inline
+    /// support, the resulting type is `ENUM(case1[, case2[, ...]])`. For typename support, the resulting type is the
+    /// given name. If enums are unsupported, the resulting type is ``SQLDataType/text``.
+    case enumeration(name: String, cases: [String])
+
     /// Translates to the given string, unless overridden by dialect.
     case custom(String)
 
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {
-        let sql: String
-
         if let dialect = serializer.dialect.customDataType(for: self) {
-            sql = dialect
+            serializer.write(dialect)
         } else {
             switch self {
             case .smallint:
-                sql = "SMALLINT"
+                SQLTypeIdentifier("SMALLINT").serialize(to: &serializer)
             case .int:
-                sql = "INTEGER"
+                SQLTypeIdentifier("INTEGER").serialize(to: &serializer)
             case .bigint:
-                sql = "BIGINT"
+                SQLTypeIdentifier("BIGINT").serialize(to: &serializer)
             case .text:
-                sql = "TEXT"
+                SQLTypeIdentifier("TEXT").serialize(to: &serializer)
             case .real:
-                sql = "REAL"
+                SQLTypeIdentifier("REAL").serialize(to: &serializer)
             case .blob:
-                sql = "BLOB"
+                SQLTypeIdentifier("BLOB").serialize(to: &serializer)
             case .timestamp:
-                sql = "TIMESTAMP"
+                SQLTypeIdentifier("TIMESTAMP").serialize(to: &serializer)
+            case .enumeration(let name, let cases):
+                switch serializer.dialect.enumSyntax {
+                case .typeName: SQLTypeIdentifier(name).serialize(to: &serializer)
+                case .inline: SQLTypeIdentifier("ENUM(\(cases.joined(separator: ",")))").serialize(to: &serializer)
+                case .unsupported: SQLDataType.text.serialize(to: &serializer)
+                }
             case .custom(let str):
-                sql = str
+                SQLTypeIdentifier(str).serialize(to: &serializer)
             }
         }
-        serializer.write(sql)
     }
 }

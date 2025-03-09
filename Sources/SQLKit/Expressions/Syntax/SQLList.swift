@@ -18,16 +18,16 @@ public struct SQLList: SQLExpression {
     /// The list of subexpressions to join.
     public var expressions: [any SQLExpression]
     
-    /// The expression with which to join the list of subexpressions.
-    public var separator: any SQLExpression
-    
-    /// Create a list from a list of expressions and an optional separator expression.
+    /// The string with which to join the list of subexpressions.
+    public var separator: String
+
+    /// Create a list from a list of expressions and an optional separator.
     ///
     /// - Parameters:
     ///   - expressions: The list of expressions.
-    ///   - separator: A separator expression. If not given, defaults to `SQLUnsafeRaw(", ")`.
+    ///   - separator: A separator. If not given, defaults to `", "`.
     @inlinable
-    public init(_ expressions: [any SQLExpression], separator: any SQLExpression = SQLUnsafeRaw(", ")) {
+    public init(_ expressions: [any SQLExpression], separator: String = ", ") {
         self.expressions = expressions
         self.separator = separator
     }
@@ -38,7 +38,7 @@ public struct SQLList: SQLExpression {
         
         iter.next()?.serialize(to: &serializer)
         while let item = iter.next() {
-            self.separator.serialize(to: &serializer)
+            serializer.write(self.separator)
             item.serialize(to: &serializer)
         }
     }

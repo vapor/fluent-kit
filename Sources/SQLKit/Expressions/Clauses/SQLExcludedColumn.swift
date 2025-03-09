@@ -12,19 +12,19 @@
 /// > function is used unconditionally, which will throw warnings starting from MySQL 8.0.20.
 /// > If this affects your usage, use a raw query or manually construct the necessary expressions
 /// > to specify and use the alias for now.
-public struct SQLExcludedColumn: SQLExpression {
+public struct SQLExcludedColumn<NameExpr: SQLExpression>: SQLExpression {
     /// The excluded column's name.
-    public var name: any SQLExpression
-    
+    public var name: NameExpr
+
     /// Create an excluded column specifier.
     @inlinable
-    public init(_ name: String) {
+    public init(_ name: String) where NameExpr == SQLColumn<SQLObjectIdentifier, SQLObjectIdentifier> {
         self.init(SQLColumn(name))
     }
     
     /// Create an excluded column specifier.
     @inlinable
-    public init(_ name: any SQLExpression) {
+    public init(_ name: NameExpr) {
         self.name = name
     }
     

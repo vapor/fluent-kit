@@ -5,17 +5,17 @@
 /// left side is part of a `FROM` or other non-join clause.
 ///
 /// See ``SQLJoinBuilder``.
-public struct SQLJoin: SQLExpression {
+public struct SQLJoin<MethodExpr: SQLExpression, TableExpr: SQLExpression, CondExpr: SQLExpression>: SQLExpression {
     /// The join method.
     ///
     /// See ``SQLJoinMethod``.
-    public var method: any SQLExpression
+    public var method: MethodExpr
 
     /// The table with which to join.
-    public var table: any SQLExpression
-    
+    public var table: TableExpr
+
     /// The join condition.
-    public var expression: any SQLExpression
+    public var expression: CondExpr
 
     /// Create a new `SQLJoin`.
     ///
@@ -24,7 +24,7 @@ public struct SQLJoin: SQLExpression {
     ///   - table: The table to join.
     ///   - expression: The join condition.
     @inlinable
-    public init(method: any SQLExpression, table: any SQLExpression, expression: any SQLExpression) {
+    public init(method: MethodExpr, table: TableExpr, expression: CondExpr) {
         self.method = method
         self.table = table
         self.expression = expression

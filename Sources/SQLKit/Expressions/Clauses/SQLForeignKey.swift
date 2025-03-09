@@ -1,21 +1,21 @@
 /// A complete `FOREIGN KEY` constraint specification.
 ///
 /// Does not include the constraint name (if any); see ``SQLConstraint``.
-public struct SQLForeignKey: SQLExpression {
+public struct SQLForeignKey<TableExpr: SQLExpression, DelActionExpr: SQLExpression, UpdActionExpr: SQLExpression>: SQLExpression {
     /// The table referenced by the foreign key.
-    public let table: any SQLExpression
-    
+    public let table: TableExpr
+
     /// The key column or columns referenced by the foreign key.
     ///
     /// At least one column must be specified.
     public let columns: [any SQLExpression]
     
     /// An action to take when one or more referenced rows are deleted from the referenced table.
-    public let onDelete: (any SQLExpression)?
-    
+    public let onDelete: DelActionExpr?
+
     /// An action to take when one or more referenced rows are updated in the referenced table.
-    public let onUpdate: (any SQLExpression)?
-    
+    public let onUpdate: UpdActionExpr?
+
     /// Create a foreign key specification.
     ///
     /// - Parameters:
@@ -25,10 +25,10 @@ public struct SQLForeignKey: SQLExpression {
     ///   - onUpdate: An optional action to take when referenced rows are updated.
     @inlinable
     public init(
-        table: any SQLExpression,
+        table: TableExpr,
         columns: [any SQLExpression],
-        onDelete: (any SQLExpression)?,
-        onUpdate: (any SQLExpression)?
+        onDelete: DelActionExpr?,
+        onUpdate: UpdActionExpr?
     ) {
         self.table = table
         self.columns = columns
