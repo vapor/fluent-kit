@@ -20,8 +20,8 @@ public struct SQLObjectIdentifier: SQLExpression {
 
     /// Create an identifier with a string.
     @inlinable
-    public init(_ string: String) {
-        self.string = string
+    public init(_ string: some StringProtocol) {
+        self.string = String(string)
     }
     
     // See `SQLExpression.serialize(to:)`.

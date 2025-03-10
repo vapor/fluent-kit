@@ -87,14 +87,14 @@ public enum SQLColumnConstraintAlgorithm: SQLExpression {
 
     /// Equivalent to `.collate(name: SQLObjectIdentifier(name))`.
     @inlinable
-    public static func collate(name: String) -> SQLColumnConstraintAlgorithm {
+    public static func collate(name: some StringProtocol) -> SQLColumnConstraintAlgorithm {
         .collate(name: SQLObjectIdentifier(name))
     }
 
     /// Equivalent to `.default(SQLLiteral.string(value))`.
     @inlinable
-    public static func `default`(_ value: String) -> SQLColumnConstraintAlgorithm {
-        .default(SQLLiteral.string(value))
+    public static func `default`(_ value: some StringProtocol) -> SQLColumnConstraintAlgorithm {
+        .default(SQLLiteral.string(String(value)))
     }
 
     /// Equivalent to `.default(SQLLiteral.numeric("\(value)"))`.
@@ -125,8 +125,8 @@ public enum SQLColumnConstraintAlgorithm: SQLExpression {
     /// - Returns: A configured ``SQLColumnConstraintAlgorithm``.
     @inlinable
     public static func references(
-        _ table: String,
-        _ column: String,
+        _ table: some StringProtocol,
+        _ column: some StringProtocol,
         onDelete: SQLForeignKeyAction? = nil,
         onUpdate: SQLForeignKeyAction? = nil
     ) -> SQLColumnConstraintAlgorithm {

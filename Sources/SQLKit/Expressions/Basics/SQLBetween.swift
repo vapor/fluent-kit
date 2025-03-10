@@ -117,7 +117,7 @@ extension SQLBetween {
     /// Create a ``SQLBetween`` expression from a column name and two bindable values.
     @inlinable
     public init(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some Encodable & Sendable
     ) where T == SQLObjectIdentifier, U == SQLBind, V == SQLBind {
@@ -127,7 +127,7 @@ extension SQLBetween {
     /// Create a ``SQLBetween`` expression from a column name, a bindable value, and an ``SQLExpression``.
     @inlinable
     public init(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: V
     ) where T == SQLObjectIdentifier, U == SQLBind {
@@ -137,7 +137,7 @@ extension SQLBetween {
     /// Create a ``SQLBetween`` expression from a column name, an ``SQLExpression``, and a bindable value.
     @inlinable
     public init(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: U,
         and upperBound: some Encodable & Sendable
     ) where T == SQLObjectIdentifier, V == SQLBind {
@@ -147,7 +147,7 @@ extension SQLBetween {
     /// Create a ``SQLBetween`` expression from a column name and two ``SQLExpression``s.
     @inlinable
     public init(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: U,
         and upperBound: V
     ) where T == SQLObjectIdentifier {
@@ -250,7 +250,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func `where`(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -261,7 +261,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func `where`(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -272,7 +272,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func `where`(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -283,7 +283,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func `where`(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -382,7 +382,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func orWhere(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -393,7 +393,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func orWhere(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -404,7 +404,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func orWhere(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -415,7 +415,7 @@ extension SQLPredicateBuilder {
     @discardableResult
     @inlinable
     public func orWhere(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -518,7 +518,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func having(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -529,7 +529,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func having(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -540,7 +540,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func having(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -551,7 +551,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func having(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -650,7 +650,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func orHaving(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -661,7 +661,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func orHaving(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some Encodable & Sendable,
         and upperBound: some SQLExpression
     ) -> Self {
@@ -672,7 +672,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func orHaving(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some Encodable & Sendable
     ) -> Self {
@@ -683,7 +683,7 @@ extension SQLSecondaryPredicateBuilder {
     @discardableResult
     @inlinable
     public func orHaving(
-        column: String,
+        column: some StringProtocol,
         between lowerBound: some SQLExpression,
         and upperBound: some SQLExpression
     ) -> Self {

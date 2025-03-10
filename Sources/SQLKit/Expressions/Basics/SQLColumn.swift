@@ -16,7 +16,7 @@ public struct SQLColumn: SQLExpression {
     /// actual name consists of a sole asterisk (probably not a good idea to have one of those in the first place),
     /// use ``init(_:table:)-77d24`` and `SQLIdentifier("*")`.
     @inlinable
-    public init(_ name: String, table: String? = nil) {
+    public init(_ name: some StringProtocol, table: (some StringProtocol)? = String?.none) {
         self.init(SQLObjectIdentifier(name), table: table.flatMap(SQLObjectIdentifier.init(_:)))
     }
     

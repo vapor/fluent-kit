@@ -41,7 +41,7 @@ public struct SQLColumnDefinition: SQLExpression {
     ///   - constraints: The constraints to apply to the column, if any.
     @inlinable
     public init(
-        _ name: String,
+        _ name: some StringProtocol,
         dataType: SQLDataType,
         constraints: [SQLColumnConstraintAlgorithm] = []
     ) {

@@ -27,9 +27,9 @@ public struct SQLList: SQLExpression {
     ///   - expressions: The list of expressions.
     ///   - separator: A separator. If not given, defaults to `", "`.
     @inlinable
-    public init(_ expressions: [any SQLExpression], separator: String = ", ") {
+    public init(_ expressions: [any SQLExpression], separator: some StringProtocol = String(", ")) {
         self.expressions = expressions
-        self.separator = separator
+        self.separator = String(separator)
     }
 
     // See `SQLExpression.serialize(to:)`.

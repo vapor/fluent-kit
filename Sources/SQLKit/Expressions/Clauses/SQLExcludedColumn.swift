@@ -18,7 +18,7 @@ public struct SQLExcludedColumn: SQLExpression {
     
     /// Create an excluded column specifier.
     @inlinable
-    public init(_ name: String) {
+    public init(_ name: some StringProtocol) {
         self.init(SQLColumn(name))
     }
     

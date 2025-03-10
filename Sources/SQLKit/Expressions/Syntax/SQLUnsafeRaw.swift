@@ -15,8 +15,8 @@ public struct SQLUnsafeRaw: SQLExpression {
     ///
     /// - Parameter sql: The raw SQL text to serialize.
     @inlinable
-    public init(_ sql: String) {
-        self.sql = sql
+    public init(_ sql: some StringProtocol) {
+        self.sql = String(sql)
     }
 
     // See `SQLExpression.serialize(to:)`.

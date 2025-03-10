@@ -12,7 +12,7 @@ public struct SQLQualifiedTable: SQLExpression {
     
     /// Usually an ``SQLObjectIdentifier`` if not `nil`.
     /// Create an ``SQLQualifiedTable`` from a name and optional second-level namespace.
-    public init(_ table: String, space: String? = nil) {
+    public init(_ table: some StringProtocol, space: (some StringProtocol)? = nil) {
         self.init(SQLObjectIdentifier(table), space: space.flatMap(SQLObjectIdentifier.init(_:)))
     }
     

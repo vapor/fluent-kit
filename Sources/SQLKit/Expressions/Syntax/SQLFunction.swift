@@ -30,7 +30,7 @@ public struct SQLFunction: SQLExpression {
     ///   - name: The function name.
     ///   - args: The list of arguments.
     @inlinable
-    public init(_ name: String, args: String...) {
+    public init(_ name: some StringProtocol, args: String...) {
         self.init(name, args: args.map { SQLObjectIdentifier($0) })
     }
     
@@ -42,7 +42,7 @@ public struct SQLFunction: SQLExpression {
     ///   - name: The function name.
     ///   - args: The list of arguments.
     @inlinable
-    public init(_ name: String, args: [String]) {
+    public init(_ name: some StringProtocol, args: [String]) {
         self.init(name, args: args.map { SQLObjectIdentifier($0) })
     }
     
@@ -52,7 +52,7 @@ public struct SQLFunction: SQLExpression {
     ///   - name: The function name.
     ///   - args: The list of arguments.
     @inlinable
-    public init(_ name: String, args: any SQLExpression...) {
+    public init(_ name: some StringProtocol, args: any SQLExpression...) {
         self.init(name, args: args)
     }
     
@@ -62,8 +62,8 @@ public struct SQLFunction: SQLExpression {
     ///   - name: The function name.
     ///   - args: The list of arguments.
     @inlinable
-    public init(_ name: String, args: [any SQLExpression] = []) {
-        self.name = name
+    public init(_ name: some StringProtocol, args: [any SQLExpression] = []) {
+        self.name = String(name)
         self.args = args
     }
     

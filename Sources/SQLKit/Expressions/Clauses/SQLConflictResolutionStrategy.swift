@@ -19,8 +19,8 @@ public struct SQLConflictResolutionStrategy: SQLExpression {
     
     /// Create a resolution strategy over the given column name and an action.
     @inlinable
-    public init(target targetColumn: String, action: SQLConflictAction) {
-        self.init(targets: [targetColumn], action: action)
+    public init(target targetColumn: some StringProtocol, action: SQLConflictAction) {
+        self.init(targets: [String(targetColumn)], action: action)
     }
 
     /// Create a resolution strategy over the given column names and an action.

@@ -25,13 +25,13 @@ public struct SQLColumnAssignment: SQLExpression {
 
     /// Create a column assignment from a column name and value binding.
     @inlinable
-    public init(setting columnName: String, to value: any Encodable & Sendable) {
+    public init(setting columnName: some StringProtocol, to value: any Encodable & Sendable) {
         self.init(setting: columnName, to: SQLBind(value))
     }
 
     /// Create a column assignment from a column name and value expression.
     @inlinable
-    public init(setting columnName: String, to value: any SQLExpression) {
+    public init(setting columnName: some StringProtocol, to value: any SQLExpression) {
         self.init(setting: SQLColumn(columnName), to: value)
     }
     
@@ -40,7 +40,7 @@ public struct SQLColumnAssignment: SQLExpression {
     ///
     /// See ``SQLExcludedColumn`` for additional details about excluded values.
     @inlinable
-    public init(settingExcludedValueFor columnName: String) {
+    public init(settingExcludedValueFor columnName: some StringProtocol) {
         self.init(settingExcludedValueFor: SQLColumn(columnName))
     }
 
