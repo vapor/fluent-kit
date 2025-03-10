@@ -83,7 +83,7 @@ extension SQLJoinBuilder {
         // TODO: Make ``SQLJoin`` aware of the `USING` syntax; this method is hacky and somewhat driver-specific.
         self.joins.append(SQLList([
             method, SQLUnsafeRaw("JOIN"), table, SQLUnsafeRaw("USING"), SQLGroupExpression(columns)
-        ], separator: SQLUnsafeRaw(" ")))
+        ], separator: " "))
         return self
     }
 }

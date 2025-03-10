@@ -180,7 +180,7 @@ extension SQLQueryString {
     /// ```
     @inlinable
     public mutating func appendInterpolation(literals: [String], joinedBy joiner: String) {
-        self.fragments.append(SQLList(literals.map { SQLLiteral.string($0) }, separator: SQLUnsafeRaw(joiner)))
+        self.fragments.append(SQLList(literals.map { SQLLiteral.string($0) }, separator: joiner))
     }
 
     /// Embed a `String` as an identifier, as if via ``SQLObjectIdentifier``.
@@ -210,7 +210,7 @@ extension SQLQueryString {
     /// ```
     @inlinable
     public mutating func appendInterpolation(idents: [String], joinedBy joiner: String) {
-        self.fragments.append(SQLList(idents.map { SQLObjectIdentifier($0) }, separator: SQLUnsafeRaw(joiner)))
+        self.fragments.append(SQLList(idents.map { SQLObjectIdentifier($0) }, separator: joiner))
     }
 
     /// Embed an arbitary ``SQLExpression`` in the string.
