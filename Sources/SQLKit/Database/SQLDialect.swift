@@ -172,8 +172,8 @@ public protocol SQLDialect: Sendable {
     /// See ``SQLUnionFeatures`` for the possible flags and more information.
     ///
     /// Defaults to `[.union, .unionAll]`.
-    var unionFeatures: SQLUnionFeatures { get }
-    
+    var unionFeatures: Set<SQLUnionFeatures> { get }
+
     /// A serialization for ``SQLLockingClause/share``.
     ///
     /// Represents a request for a shared "reader" lock on rows retrieved by a `SELECT` query. A
@@ -182,7 +182,7 @@ public protocol SQLDialect: Sendable {
     ///
     /// Defaults to `nil`.
     var sharedSelectLockExpression: (any SQLExpression)? { get }
-    
+
     /// A serialization for ``SQLLockingClause/update``.
     /// 
     /// Represents a request for an exclusive "writer" lock on rows retrieved by a `SELECT`
@@ -241,7 +241,7 @@ public struct SQLAlterTableSyntax: Sendable {
 }
 
 /// Possible values for a dialect's strongly-typed enumeration support.
-public enum SQLEnumSyntax: Sendable {
+public enum SQLEnumSyntax: CaseIterable, Hashable, Sendable {
     /// MySQL's "inline" enumerations.
     ///
     /// MySQL defines an `ENUM` field type, which contains a listing of its individual cases
@@ -295,106 +295,66 @@ public enum SQLEnumSyntax: Sendable {
 /// Encapsulates a dialect's support for `CREATE TRIGGER` and `DROP TRIGGER` syntax.
 public struct SQLTriggerSyntax: Sendable {
     /// Describes specific feature support for `CREATE TRIGGER` syntax.
-    public struct Create: OptionSet, Sendable {
-        // See `RawRepresentable.rawValue`.
-        public var rawValue = 0
-        
-        // See `OptionSet.init(rawValue:)`.
-        public init(rawValue: Int) {
-            self.rawValue = rawValue
-        }
-
+    public enum Create: CaseIterable, Hashable, Sendable {
         /// Indicates that the `FOR EACH ROW` clause is syntactically required for trigger creation.
-        public static var requiresForEachRow: Self {
-            .init(rawValue: 1 << 0)
-        }
+        case requiresForEachRow
 
         /// Indicates support for specifying a trigger's implementation as an inline sequence of statements.
-        public static var supportsBody: Self {
-            .init(rawValue: 1 << 1)
-        }
+        case supportsBody
 
         /// Indicates support for a conditional predicate controlling invocation of the trigger.
-        public static var supportsCondition: Self {
-            .init(rawValue: 1 << 2)
-        }
+        case supportsCondition
 
         /// Indicates support for specifying a `DEFINER` clause for the purposes of access control.
-        public static var supportsDefiner: Self {
-            .init(rawValue: 1 << 3)
-        }
+        case supportsDefiner
 
         /// Indicates support for the `FOR EACH ROW` and `FOR EACH STATEMENT` syntax.
-        public static var supportsForEach: Self {
-            .init(rawValue: 1 << 4)
-        }
+        case supportsForEach
 
         /// `Indicates support for ordering triggers relative to one another.
-        public static var supportsOrder: Self {
-            .init(rawValue: 1 << 5)
-        }
+        case supportsOrder
 
         /// Indicates support for an `OF` clause on `UPDATE` triggers specifying that only a subset of columns should
         /// invoke the trigger.
-        public static var supportsUpdateColumns: Self {
-            .init(rawValue: 1 << 6)
-        }
+        case supportsUpdateColumns
 
         /// Indicates support for the `CONSTRAINT` trigger type.
-        public static var supportsConstraints: Self {
-            .init(rawValue: 1 << 7)
-        }
+        case supportsConstraints
 
         /// Indicates that PostgreSQL-specific syntax correctness checks should be made at runtime.
         ///
         /// > Important: The checks in question are implemented as logging statements with the `.warning` level;
         /// > invalid SQL syntax may still be generated.
-        public static var postgreSQLChecks: Self {
-            .init(rawValue: 1 << 8)
-        }
+        case postgreSQLChecks
 
         /// When ``supportsCondition`` is also set, indicates that the condition must be wrapped by parenthesis.
-        public static var conditionRequiresParentheses: Self {
-            .init(rawValue: 1 << 9)
-        }
+        case conditionRequiresParentheses
     }
 
     /// Describes specific feature support for `CREATE TRIGGER` syntax.
-    public struct Drop: OptionSet, Sendable {
-        // See `RawRepresentable.rawValue`.
-        public var rawValue = 0
-        
-        // See `OptionSet.init(rawValue:)`.
-        public init(rawValue: Int) {
-            self.rawValue = rawValue
-        }
-
+    public enum Drop: CaseIterable, Hashable, Sendable {
         /// Indicates support for an `OF` clause indicating which table the trigger to be dropped is attached to.
-        public static var supportsTableName: Self {
-            .init(rawValue: 1 << 0)
-        }
+        case supportsTableName
         
         /// Indicates support for the `CASCADE` modifier; see ``SQLDropBehavior`` for details.
-        public static var supportsCascade: Self {
-            .init(rawValue: 1 << 1)
-        }
+        case supportsCascade
     }
 
     /// Syntax options for `CREATE TRIGGER`.
-    public var create: Create
-    
+    public var create: Set<Create>
+
     /// Syntax options for `DROP TRIGGER`.
-    public var drop: Drop
+    public var drop: Set<Drop>
 
     /// Memberwise initializer.
-    public init(create: Create = [], drop: Drop = []) {
+    public init(create: Set<Create> = [], drop: Set<Drop> = []) {
         self.create = create
         self.drop = drop
     }
 }
 
 /// The supported syntax variants which a SQL dialect can use to to specify conflict resolution clauses.
-public enum SQLUpsertSyntax: Equatable, CaseIterable, Sendable {
+public enum SQLUpsertSyntax: CaseIterable, Hashable, Sendable {
     /// Indicates support for the SQL-standard `ON CONFLICT ...` syntax, including index and update
     /// predicates, the `excluded.` pseudo-table name, and the `DO NOTHING` action for "ignore
     /// conflicts".
@@ -414,54 +374,30 @@ public enum SQLUpsertSyntax: Equatable, CaseIterable, Sendable {
 /// > Note: The `union` and `unionAll` flags are a bit redundant, since every dialect SQLKit
 /// > supports at the time of this writing supports them. Still, there are SQL dialects in the
 /// > wild that do not, such as mSQL, so the flags are here for completeness' sake.
-public struct SQLUnionFeatures: OptionSet, Sendable {
-    // See `RawRepresentable.rawValue`.
-    public var rawValue = 0
-    
-    // See `OptionSet.init(rawValue:)`.
-    public init(rawValue: Int) {
-        self.rawValue = rawValue
-    }
-    
+public enum SQLUnionFeatures: CaseIterable, Hashable, Sendable {
     /// Indicates support for `UNION DISTINCT` unions.
-    public static var union: Self {
-        .init(rawValue: 1 << 0)
-    }
+    case union
     
     /// Indicates support for `UNION ALL` unions.
-    public static var unionAll: Self {
-        .init(rawValue: 1 << 1)
-    }
+    case unionAll
     
     /// Indicates support for `INTERSECT DISTINCT` unions.
-    public static var intersect: Self {
-        .init(rawValue: 1 << 2)
-    }
+    case intersect
     
     /// Indicates support for `INTERSECT ALL` unions.
-    public static var intersectAll: Self {
-        .init(rawValue: 1 << 3)
-    }
+    case intersectAll
     
     /// Indicates support for `EXCEPT DISTINCT` unions.
-    public static var except: Self {
-        .init(rawValue: 1 << 4)
-    }
+    case except
     
     /// Indicates support for `EXCEPT ALL` unions.
-    public static var exceptAll: Self {
-        .init(rawValue: 1 << 5)
-    }
+    case exceptAll
     
     /// Indicates that the `DISTINCT` modifier must be explicitly specified for the relevant union types.
-    public static var explicitDistinct: Self {
-        .init(rawValue: 1 << 6)
-    }
+    case explicitDistinct
     
     /// Indicates that the individual `SELECT` queries in a union must be parenthesized.
-    public static var parenthesizedSubqueries: Self {
-        .init(rawValue: 1 << 7)
-    }
+    case parenthesizedSubqueries
 }
 
 /// Provides defaults for many of the ``SQLDialect`` properties. The defaults are chosen to
@@ -543,7 +479,7 @@ extension SQLDialect {
 
     /// Default implementation of ``unionFeatures-473tk``.
     @inlinable
-    public var unionFeatures: SQLUnionFeatures {
+    public var unionFeatures: Set<SQLUnionFeatures> {
         [.union, .unionAll]
     }
 
