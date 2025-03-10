@@ -12,12 +12,12 @@
 /// ```
 ///
 /// Users should not use this expression. It is an oversight that it is public API; it will eventually be removed.
-public struct SQLAlterColumnDefinitionType<ColExpr: SQLExpression, TypeExpr: SQLExpression>: SQLExpression {
+public struct SQLAlterColumnDefinitionType: SQLExpression {
     /// The column to alter.
-    public var column: ColExpr
-
+    public var column: any SQLExpression
+    
     /// The new data type.
-    public var dataType: TypeExpr
+    public var dataType: any SQLExpression
 
     /// Create a new ``SQLAlterColumnDefinitionType`` expression.
     ///
@@ -25,7 +25,7 @@ public struct SQLAlterColumnDefinitionType<ColExpr: SQLExpression, TypeExpr: SQL
     ///   - column: The column to alter.
     ///   - dataType: The new data type.
     @inlinable
-    public init(column: SQLObjectIdentifier, dataType: SQLDataType) where ColExpr == SQLObjectIdentifier, TypeExpr == SQLDataType {
+    public init(column: SQLObjectIdentifier, dataType: SQLDataType) {
         self.column = column
         self.dataType = dataType
     }
@@ -36,7 +36,7 @@ public struct SQLAlterColumnDefinitionType<ColExpr: SQLExpression, TypeExpr: SQL
     ///   - column: The column to alter.
     ///   - dataType: The new data type.
     @inlinable
-    public init(column: ColExpr, dataType: TypeExpr) {
+    public init(column: any SQLExpression, dataType: any SQLExpression) {
         self.column = column
         self.dataType = dataType
     }

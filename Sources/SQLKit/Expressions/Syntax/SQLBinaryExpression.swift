@@ -22,16 +22,16 @@
 ///     )
 /// )
 /// ```
-public struct SQLBinaryExpression<LeftExpr: SQLExpression, OperExpr: SQLExpression, RightExpr: SQLExpression>: SQLExpression {
+public struct SQLBinaryExpression: SQLExpression {
     /// The left-side operand of the expression.
-    public let left: LeftExpr
-
+    public let left: any SQLExpression
+    
     /// The operator joining the left and right operands.
-    public let op: OperExpr
-
+    public let op: any SQLExpression
+    
     /// The right-side operand of the expression.
-    public let right: RightExpr
-
+    public let right: any SQLExpression
+    
     /// Create an ``SQLBinaryExpression`` from component expressions.
     ///
     /// - Parameters:
@@ -40,9 +40,9 @@ public struct SQLBinaryExpression<LeftExpr: SQLExpression, OperExpr: SQLExpressi
     ///   - right: The right-side operand.
     @inlinable
     public init(
-        left: LeftExpr,
-        op: OperExpr,
-        right: RightExpr
+        left: any SQLExpression,
+        op: any SQLExpression,
+        right: any SQLExpression
     ) {
         self.left = left
         self.op = op
@@ -57,10 +57,10 @@ public struct SQLBinaryExpression<LeftExpr: SQLExpression, OperExpr: SQLExpressi
     ///   - right: The right-side operand.
     @inlinable
     public init(
-        _ left: LeftExpr,
+        _ left: any SQLExpression,
         _ op: SQLBinaryOperator,
-        _ right: RightExpr
-    ) where OperExpr == SQLBinaryOperator {
+        _ right: any SQLExpression
+    ) {
         self.init(left: left, op: op, right: right)
     }
 

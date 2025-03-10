@@ -5,10 +5,10 @@
 /// which is defined as providing an expression for descending specifically into JSON values only. As a
 /// result, the more "general" usage of applying a nested subpath to _any_ non-scalar value is not
 /// available via this interface.
-public struct SQLNestedSubpathExpression<ColExpr: SQLExpression>: SQLExpression {
+public struct SQLNestedSubpathExpression: SQLExpression {
     /// The expression to which the nested subpath is applied.
-    public var column: ColExpr
-
+    public var column: any SQLExpression
+    
     /// The subpath itself. **Must** always contain at least one element.
     public var path: [String]
     
@@ -17,7 +17,7 @@ public struct SQLNestedSubpathExpression<ColExpr: SQLExpression>: SQLExpression 
     /// - Parameters:
     ///   - column: The expression to which the nested subpath applies.
     ///   - path: The subpath itself. If this array is empty, a runtime error occurs.
-    public init(column: ColExpr, path: [String]) {
+    public init(column: any SQLExpression, path: [String]) {
         assert(!path.isEmpty)
         
         self.column = column
@@ -29,7 +29,7 @@ public struct SQLNestedSubpathExpression<ColExpr: SQLExpression>: SQLExpression 
     /// - Parameters:
     ///   - column: A string to treat as an identifier to which the nested subpath applies.
     ///   - path: The subpath itself. If this array is empty, a runtime error occurs.
-    public init(column: String, path: [String]) where ColExpr == SQLObjectIdentifier {
+    public init(column: String, path: [String]) {
         self.init(column: SQLObjectIdentifier(column), path: path)
     }
 

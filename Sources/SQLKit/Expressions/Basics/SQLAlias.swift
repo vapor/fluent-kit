@@ -1,19 +1,19 @@
 ///  Encapsulates SQL's `<expression> [AS] <name>` syntax, most often used to declare aliaed names
 ///  for columns and tables.
-public struct SQLAlias<Expr: SQLExpression, AliasExpr: SQLExpression>: SQLExpression {
+public struct SQLAlias: SQLExpression {
     /// The ``SQLExpression`` to alias.
-    public let expression: Expr
-
+    public var expression: any SQLExpression
+    
     /// The alias itself.
-    public let alias: AliasExpr
-
+    public var alias: any SQLExpression
+    
     /// Create an alias expression from an expression and an alias expression.
     ///
     /// - Parameters:
     ///   - expression: The expression to alias.
     ///   - alias: The alias itself.
     @inlinable
-    public init(_ expression: Expr, as alias: AliasExpr) {
+    public init(_ expression: any SQLExpression, as alias: any SQLExpression) {
         self.expression = expression
         self.alias = alias
     }
@@ -24,7 +24,7 @@ public struct SQLAlias<Expr: SQLExpression, AliasExpr: SQLExpression>: SQLExpres
     ///   - expression: The expression to alias.
     ///   - alias: The aliased name.
     @inlinable
-    public init(_ expression: Expr, as alias: String) where AliasExpr == SQLObjectIdentifier {
+    public init(_ expression: any SQLExpression, as alias: String) {
         self.init(expression, as: SQLObjectIdentifier(alias))
     }
 
@@ -34,7 +34,7 @@ public struct SQLAlias<Expr: SQLExpression, AliasExpr: SQLExpression>: SQLExpres
     ///   - name: The name to alias.
     ///   - alias: The aliased name.
     @inlinable
-    public init(_ name: String, as alias: String) where Expr == SQLObjectIdentifier, AliasExpr == SQLObjectIdentifier {
+    public init(_ name: String, as alias: String) {
         self.init(SQLObjectIdentifier(name), as: SQLObjectIdentifier(alias))
     }
 

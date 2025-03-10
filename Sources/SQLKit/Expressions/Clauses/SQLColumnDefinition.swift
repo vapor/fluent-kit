@@ -1,16 +1,16 @@
 /// A clause expressing a column definition, for use when creating and altering tables.
 ///
 /// See ``SQLCreateTable``, ``SQLCreateTableBuilder``, ``SQLAlterTable``, and ``SQLAlterTableBuilder``.
-public struct SQLColumnDefinition<ColExpr: SQLExpression, TypeExpr: SQLExpression>: SQLExpression {
+public struct SQLColumnDefinition: SQLExpression {
     /// The name of the column to create or alter.
-    public var column: ColExpr
-
+    public var column: any SQLExpression
+    
     /// The desired data type of the column.
     ///
     /// Usually valid only when creating a table. When altering an existing column, ``SQLAlterColumnDefinitionType``
     /// should be used to ensure correct behavior between dialects.
-    public var dataType: TypeExpr
-
+    public var dataType: any SQLExpression
+    
     /// A list of column-level constraints to apply to the column.
     ///
     /// See ``SQLColumnConstraintAlgorithm``. Do not add table-level constraints to this list.
@@ -24,8 +24,8 @@ public struct SQLColumnDefinition<ColExpr: SQLExpression, TypeExpr: SQLExpressio
     ///   - constraints: The constraints to apply to the column, if any.
     @inlinable
     public init(
-        column: ColExpr,
-        dataType: TypeExpr,
+        column: any SQLExpression,
+        dataType: any SQLExpression,
         constraints: [any SQLExpression] = []
     ) {
         self.column = column
@@ -44,7 +44,7 @@ public struct SQLColumnDefinition<ColExpr: SQLExpression, TypeExpr: SQLExpressio
         _ name: String,
         dataType: SQLDataType,
         constraints: [SQLColumnConstraintAlgorithm] = []
-    ) where ColExpr == SQLObjectIdentifier, TypeExpr == SQLDataType {
+    ) {
         self.init(column: SQLObjectIdentifier(name), dataType: dataType, constraints: constraints)
     }
 
