@@ -168,12 +168,8 @@ public enum SQLColumnConstraintAlgorithm: SQLExpression {
         serializer.statement {
             switch self {
             case .primaryKey(let autoIncrement):
-                if autoIncrement, $0.dialect.supportsAutoIncrement {
-                    if let function = $0.dialect.autoIncrementFunction {
-                        $0.append("DEFAULT", function, "PRIMARY KEY")
-                    } else {
-                        $0.append("PRIMARY KEY", $0.dialect.autoIncrementClause)
-                    }
+                if autoIncrement, let autoIncrementClause = $0.dialect.autoIncrementClause {
+                    $0.append("PRIMARY KEY", autoIncrementClause)
                 } else {
                     $0.append("PRIMARY KEY")
                 }

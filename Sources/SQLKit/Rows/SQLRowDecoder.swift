@@ -276,7 +276,7 @@ public struct SQLRowDecoder: Sendable {
                     ))
                 }
                 do {
-                    return try self.decoder.row.decode(column: column)
+                    return try self.decoder.row.decode(column: column, as: T.self)
                 } catch let error as DecodingError {
                     /// Ensure that errors contain complete coding paths.
                     throw error.under(path: self.codingPath + [key])
@@ -358,7 +358,7 @@ public struct SQLRowDecoder: Sendable {
                 /// technically required for a fully correct Codable implementation.)
                 if let key = self.codingPath.last {
                     do {
-                        return try self.decoder.row.decode(column: self.decoder.column(for: key.stringValue))
+                        return try self.decoder.row.decode(column: self.decoder.column(for: key.stringValue), as: T.self)
                     } catch let error as DecodingError {
                         /// Ensure that errors contain complete coding paths.
                         throw error.under(path: self.codingPath + [key])
