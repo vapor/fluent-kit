@@ -150,7 +150,7 @@ public struct SQLStatement: SQLExpression {
     ///
     /// This is shorthand for `if let expr { statement.append(expr) }`.
     @inlinable
-    public mutating func append(_ maybePart: (some SQLExpression)?) {
+    public mutating func append(_ maybePart: (any SQLExpression)?) {
         maybePart.map { self.append($0) }
     }
 
@@ -164,7 +164,7 @@ public struct SQLStatement: SQLExpression {
 
     /// Add raw text and an unserialized ``SQLExpression`` to the statement output, in that order.
     @inlinable
-    public mutating func append(_ raw: String, _ part: some SQLExpression) {
+    public mutating func append(_ raw: String, _ part: any SQLExpression) {
         self.parts.append(contentsOf: [SQLUnsafeRaw(raw), part])
     }
 
@@ -174,19 +174,19 @@ public struct SQLStatement: SQLExpression {
     /// > source compatibility requires that this version must be declared separately, rather than allowing the
     /// > compiler to infer the optionality as needed as with, for example, ``append(_:_:)-4g2tf``.
     @inlinable
-    public mutating func append(_ raw: String, _ part: (some SQLExpression)?) {
+    public mutating func append(_ raw: String, _ part: (any SQLExpression)?) {
         self.parts.append(contentsOf: [SQLUnsafeRaw(raw), part].compactMap { $0 })
     }
 
     /// Add an optional unserialized ``SQLExpression`` and raw text to the statement output, in that order.
     @inlinable
-    public mutating func append(_ part: (some SQLExpression)?, _ raw: String) {
+    public mutating func append(_ part: (any SQLExpression)?, _ raw: String) {
         self.parts.append(contentsOf: [part, SQLUnsafeRaw(raw)].compactMap { $0 })
     }
 
     /// Add two optional unserialized ``SQLExpression``s to the statement output.
     @inlinable
-    public mutating func append(_ part1: (some SQLExpression)?, _ part2: (some SQLExpression)?) {
+    public mutating func append(_ part1: (any SQLExpression)?, _ part2: (any SQLExpression)?) {
         self.parts.append(contentsOf: [part1, part2].compactMap { $0 })
     }
 
@@ -200,43 +200,43 @@ public struct SQLStatement: SQLExpression {
     
     /// Add an optional unserialized ``SQLExpression`` and two raw text strings to the statement output.
     @inlinable
-    public mutating func append(_ p1: (some SQLExpression)?, _ p2: String, _ p3: String) {
+    public mutating func append(_ p1: (any SQLExpression)?, _ p2: String, _ p3: String) {
         self.parts.append(contentsOf: [p1, SQLUnsafeRaw(p2), SQLUnsafeRaw(p3)].compactMap { $0 })
     }
 
     /// Add raw text, an optional unserialized ``SQLExpression``, and more raw text to the statement output.
     @inlinable
-    public mutating func append(_ p1: String, _ p2: (some SQLExpression)?, _ p3: String) {
+    public mutating func append(_ p1: String, _ p2: (any SQLExpression)?, _ p3: String) {
         self.parts.append(contentsOf: [SQLUnsafeRaw(p1), p2, SQLUnsafeRaw(p3)].compactMap { $0 })
     }
 
     /// Add two optional unserialized ``SQLExpression``s and raw text to the statement output.
     @inlinable
-    public mutating func append(_ p1: (some SQLExpression)?, _ p2: (some SQLExpression)?, _ p3: String) {
+    public mutating func append(_ p1: (any SQLExpression)?, _ p2: (any SQLExpression)?, _ p3: String) {
         self.parts.append(contentsOf: [p1, p2, SQLUnsafeRaw(p3)].compactMap { $0 })
     }
 
     /// Add two raw texts strings and an optional unserialized ``SQLExpression`` to the statement output, in that order.
     @inlinable
-    public mutating func append(_ p1: String, _ p2: String, _ p3: (some SQLExpression)?) {
+    public mutating func append(_ p1: String, _ p2: String, _ p3: (any SQLExpression)?) {
         self.parts.append(contentsOf: [SQLUnsafeRaw(p1), SQLUnsafeRaw(p2), p3].compactMap { $0 })
     }
 
     /// Add raw text and two optional unserialized ``SQLExpression``s to the statement output.
     @inlinable
-    public mutating func append(_ p1: String, _ p2: (some SQLExpression)?, _ p3: (some SQLExpression)?) {
+    public mutating func append(_ p1: String, _ p2: (any SQLExpression)?, _ p3: (any SQLExpression)?) {
         self.parts.append(contentsOf: [SQLUnsafeRaw(p1), p2, p3].compactMap { $0 })
     }
 
     /// Add an optional unserialized ``SQLExpression``, raw text, and an optional unserialized ``SQLExpression`` to the statement output.
     @inlinable
-    public mutating func append(_ p1: (some SQLExpression)?, _ p2: String, _ p3: (some SQLExpression)?) {
+    public mutating func append(_ p1: (any SQLExpression)?, _ p2: String, _ p3: (any SQLExpression)?) {
         self.parts.append(contentsOf: [p1, SQLUnsafeRaw(p2), p3].compactMap { $0 })
     }
 
     /// Add three optional unserialized ``SQLExpression``s to the statement output.
     @inlinable
-    public mutating func append(_ p1: (some SQLExpression)?, _ p2: (some SQLExpression)?, _ p3: (some SQLExpression)?) {
+    public mutating func append(_ p1: (any SQLExpression)?, _ p2: (any SQLExpression)?, _ p3: (any SQLExpression)?) {
         self.parts.append(contentsOf: [p1, p2, p3].compactMap { $0 })
     }
 }
