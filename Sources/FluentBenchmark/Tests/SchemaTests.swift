@@ -35,7 +35,7 @@ extension FluentBenchmarker {
             do {
                 try Category(name: "a").create(on: self.database).wait()
                 XCTFail("Duplicate save should have errored")
-            } catch let error as DatabaseError where error.isConstraintFailure {
+            } catch let error as any DatabaseError where error.isConstraintFailure {
                 // pass
             }
 
@@ -61,7 +61,7 @@ extension FluentBenchmarker {
             do {
                 try Category(name: "a").create(on: self.database).wait()
                 XCTFail("Duplicate save should have errored")
-            } catch let error as DatabaseError where error.isConstraintFailure {
+            } catch let error as any DatabaseError where error.isConstraintFailure {
                 // pass
             }
 

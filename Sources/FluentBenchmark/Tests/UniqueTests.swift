@@ -18,7 +18,7 @@ extension FluentBenchmarker {
             do {
                 try Foo(bar: "a", baz: 1).save(on: self.database).wait()
                 XCTFail("should have failed")
-            } catch let error where error is DatabaseError {
+            } catch let error where error is any DatabaseError {
                 // pass
             }
         }
