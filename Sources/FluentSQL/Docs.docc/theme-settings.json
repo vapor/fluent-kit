@@ -8,6 +8,9 @@
       "fluentkit": { "dark": "hsl(200, 75%, 85%)", "light": "hsl(200, 75%, 75%)" },
       "documentation-intro-fill": "radial-gradient(circle at top, var(--color-fluentkit) 30%, #000 100%)",
       "documentation-intro-accent": "var(--color-fluentkit)",
+      "documentation-intro-eyebrow": "white",
+      "documentation-intro-figure": "white",
+      "documentation-intro-title": "white",
       "logo-base":  { "dark": "#fff", "light": "#000" },
       "logo-shape": { "dark": "#000", "light": "#fff" },
       "fill":       { "dark": "#000", "light": "#fff" }
