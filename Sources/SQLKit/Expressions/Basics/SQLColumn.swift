@@ -3,12 +3,12 @@ public struct SQLColumn: SQLExpression {
     /// The column name.
     ///
     public var name: any SQLExpression
-    
+
     /// Usually an ``SQLObjectIdentifier``.
     /// If specified, the table to which the column belongs.
     ///
     public var table: (any SQLExpression)?
-    
+
     /// Usually an ``SQLObjectIdentifier`` or ``SQLQualifiedTable`` when not `nil`.
     /// Create an ``SQLColumn`` from a name and optional table name.
     ///
@@ -19,14 +19,14 @@ public struct SQLColumn: SQLExpression {
     public init(_ name: some StringProtocol, table: (some StringProtocol)? = String?.none) {
         self.init(SQLObjectIdentifier(name), table: table.flatMap(SQLObjectIdentifier.init(_:)))
     }
-    
+
     /// Create an ``SQLColumn`` from an identifier and optional table expression.
     @inlinable
     public init(_ name: any SQLExpression, table: (any SQLExpression)? = nil) {
         self.name = name
         self.table = table
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

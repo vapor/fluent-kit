@@ -8,7 +8,7 @@
 public struct SQLSubquery: SQLExpression {
     /// The (sub)query.
     public var subquery: SQLSelect
-    
+
     /// Create a new subquery expression from a select query.
     ///
     /// - Parameter subquery: A ``SQLSelect`` query to use as a subquery.
@@ -35,7 +35,7 @@ public struct SQLSubquery: SQLExpression {
 public struct SQLUnionSubquery: SQLExpression {
     /// The (sub)query.
     public var subquery: SQLUnion
-    
+
     /// Create a new subquery expression from a select query.
     ///
     /// - Parameter subquery: A ``SQLUnion`` query to use as a subquery.

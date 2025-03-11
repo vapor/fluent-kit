@@ -26,7 +26,7 @@ extension SQLQueryFetcher {
 
     /// Configure a new ``SQLRowDecoder`` as specified and use it to decode and return the first output row, if any,
     /// as a given type.
-    /// 
+    ///
     /// - Parameters:
     ///   - type: The type of the desired value.
     ///   - prefix: See ``SQLRowDecoder/prefix``.
@@ -55,7 +55,7 @@ extension SQLQueryFetcher {
     }
 
     /// Returns the first output row, if any.
-    /// 
+    ///
     /// If `self` conforms to ``SQLPartialResultBuilder``, ``SQLPartialResultBuilder/limit(_:)`` is used to avoid
     /// loading more rows than necessary from the database.
     ///
@@ -91,10 +91,10 @@ extension SQLQueryFetcher {
     public func all<D: Decodable>(decoding type: D.Type) async throws -> [D] {
         try await self.all(decoding: D.self, with: .init())
     }
-    
+
     /// Configure a new ``SQLRowDecoder`` as specified and use it to decode and return the output rows, if any,
     /// as a given type.
-    /// 
+    ///
     /// - Parameters:
     ///   - type: The type of the desired values.
     ///   - prefix: See ``SQLRowDecoder/prefix``.
@@ -144,10 +144,10 @@ extension SQLQueryFetcher {
     ///   - handler: A closure which receives the result of each decoding operation, row by row.
     /// - Returns: A completion future.
     @inlinable
-    public func run<D: Decodable>(decoding type: D.Type, _ handler: @escaping @Sendable (Result<D, any Error>) -> ()) async throws {
+    public func run<D: Decodable>(decoding type: D.Type, _ handler: @escaping @Sendable (Result<D, any Error>) -> Void) async throws {
         try await self.run(decoding: D.self, with: .init(), handler)
     }
-    
+
     /// Configure a new ``SQLRowDecoder`` as specified, use it to to decode each output row, if any, as a given type,
     /// and call the provided handler closure with each decoding result.
     ///
@@ -164,7 +164,7 @@ extension SQLQueryFetcher {
         prefix: String? = nil,
         keyDecodingStrategy: SQLRowDecoder.KeyDecodingStrategy = .useDefaultKeys,
         userInfo: [CodingUserInfoKey: any Sendable] = [:],
-        _ handler: @escaping @Sendable (Result<D, any Error>) -> ()
+        _ handler: @escaping @Sendable (Result<D, any Error>) -> Void
     ) async throws {
         try await self.run(decoding: D.self, with: .init(prefix: prefix, keyDecodingStrategy: keyDecodingStrategy, userInfo: userInfo), handler)
     }
@@ -181,7 +181,7 @@ extension SQLQueryFetcher {
     public func run<D: Decodable>(
         decoding type: D.Type,
         with decoder: SQLRowDecoder,
-        _ handler: @escaping @Sendable (Result<D, any Error>) -> ()
+        _ handler: @escaping @Sendable (Result<D, any Error>) -> Void
     ) async throws {
         try await self.run { row in handler(.init { try row.decode(model: D.self, with: decoder) }) }
     }
@@ -192,7 +192,7 @@ extension SQLQueryFetcher {
     /// - Parameter handler: A closure which receives each output row one at a time.
     /// - Returns: A completion future.
     @inlinable
-    public func run(_ handler: @escaping @Sendable (any SQLRow) -> ()) async throws {
+    public func run(_ handler: @escaping @Sendable (any SQLRow) -> Void) async throws {
         try await self.database.execute(sql: self.query, handler)
     }
 }

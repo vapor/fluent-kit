@@ -4,14 +4,14 @@
 public final class SQLSubqueryBuilder: SQLSubqueryClauseBuilder {
     /// The ``SQLSubquery`` built by this builder.
     public var query: SQLSubquery
-    
+
     // See `SQLSubqueryClauseBuilder.select`.
     @inlinable
     public var select: SQLSelect {
         get { self.query.subquery }
         set { self.query.subquery = newValue }
     }
-    
+
     /// Create a new ``SQLSubqueryBuilder``.
     @inlinable
     public init() {
@@ -40,7 +40,7 @@ extension SQLSubquery {
         _ build: (any SQLSubqueryClauseBuilder) throws -> any SQLSubqueryClauseBuilder
     ) rethrows -> some SQLExpression {
         let builder = SQLSubqueryBuilder()
-        
+
         _ = try build(builder)
         return builder.query
     }
@@ -50,19 +50,19 @@ extension SQLSubquery {
 public final class SQLUnionSubqueryBuilder: SQLCommonUnionBuilder {
     /// The union subquery built by this builder.
     public var subquery: SQLUnionSubquery
-    
+
     // See `SQLCommonUnionBuilder.union`.
     public var union: SQLUnion {
         get { self.subquery.subquery }
         set { self.subquery.subquery = newValue }
     }
-    
+
     /// Create a new ``SQLUnionSubqueryBuilder``.
     @inlinable
     public init(initialQuery: SQLSelect) {
         self.subquery = .init(.init(initialQuery: initialQuery))
     }
-    
+
     /// Render the builder's combined unions into an ``SQLExpression`` which may be used as a subquery.
     ///
     /// The same effect can be achieved by writing `.union` instead of `.finish()`, but providing an

@@ -2,7 +2,7 @@
 public final class SQLCreateTableBuilder: SQLQueryBuilder {
     /// ``SQLCreateTable`` query being built.
     public var createTable: SQLCreateTable
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
 
@@ -18,42 +18,42 @@ public final class SQLCreateTableBuilder: SQLQueryBuilder {
         get { self.createTable.columns }
         set { self.createTable.columns = newValue }
     }
-    
+
     /// Create a new ``SQLCreateTableBuilder``.
     @inlinable
     public init(_ createTable: SQLCreateTable, on database: any SQLDatabase) {
         self.createTable = createTable
         self.database = database
     }
-    
+
     /// Add a new column by name, type, and constraints.
     @inlinable
     @discardableResult
     public func column(_ column: String, type dataType: SQLDataType, _ constraints: SQLColumnConstraintAlgorithm...) -> Self {
         self.column(column, type: dataType, constraints)
     }
-    
+
     /// Add a new column by name, type, and constraints.
     @inlinable
     @discardableResult
     public func column(_ column: String, type dataType: SQLDataType, _ constraints: [SQLColumnConstraintAlgorithm]) -> Self {
         self.column(SQLObjectIdentifier(column), type: dataType, constraints)
     }
-    
+
     /// Add a new column by name, type, and constraints.
     @inlinable
     @discardableResult
     public func column(_ column: any SQLExpression, type dataType: any SQLExpression, _ constraints: any SQLExpression...) -> Self {
         self.column(column, type: dataType, constraints)
     }
-    
+
     /// Add a new column by name, type, and constraints.
     @inlinable
     @discardableResult
     public func column(_ column: any SQLExpression, type dataType: any SQLExpression, _ constraints: [any SQLExpression]) -> Self {
         self.column(SQLColumnDefinition(column: column, dataType: dataType, constraints: constraints))
     }
-    
+
     /// Add a new column definition.
     @inlinable
     @discardableResult
@@ -61,7 +61,7 @@ public final class SQLCreateTableBuilder: SQLQueryBuilder {
         self.columns.append(columnDefinition)
         return self
     }
-    
+
     /// Add multiple column definitions.
     @inlinable
     @discardableResult
@@ -77,7 +77,7 @@ public final class SQLCreateTableBuilder: SQLQueryBuilder {
         self.createTable.temporary = true
         return self
     }
-    
+
     /// It is usually an error to attempt to create a new table in a database that already contains a table, index or view of the
     /// same name. However, if the "IF NOT EXISTS" clause is specified as part of the CREATE TABLE statement and a table or view
     /// of the same name already exists, the CREATE TABLE command simply has no effect (and no error message is returned). An
@@ -89,7 +89,7 @@ public final class SQLCreateTableBuilder: SQLQueryBuilder {
         self.createTable.ifNotExists = true
         return self
     }
-    
+
     /// Specify a `SELECT` query to be used to populate the new table.
     ///
     /// If called more than once, each subsequent invocation overwrites the query from the one before.
@@ -227,8 +227,10 @@ extension SQLCreateTableBuilder {
     ) -> Self {
         self.foreignKey(
             columns.map(SQLObjectIdentifier.init(_:)),
-            references: SQLObjectIdentifier(foreignTable), foreignColumns.map(SQLObjectIdentifier.init(_:)),
-            onDelete: onDelete, onUpdate: onUpdate,
+            references: SQLObjectIdentifier(foreignTable),
+            foreignColumns.map(SQLObjectIdentifier.init(_:)),
+            onDelete: onDelete,
+            onUpdate: onUpdate,
             named: constraintName.map(SQLObjectIdentifier.init(_:))
         )
     }
@@ -271,7 +273,7 @@ extension SQLDatabase {
     public func create(table: String) -> SQLCreateTableBuilder {
         self.create(table: SQLObjectIdentifier(table))
     }
-    
+
     /// Create a new ``SQLCreateTableBuilder``.
     @inlinable
     public func create(table: any SQLExpression) -> SQLCreateTableBuilder {

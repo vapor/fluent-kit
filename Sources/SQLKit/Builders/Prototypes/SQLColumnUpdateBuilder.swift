@@ -79,7 +79,7 @@ extension SQLColumnUpdateBuilder {
     public func set(_ column: String, to bind: any Encodable & Sendable) -> Self {
         self.set(SQLColumn(column), to: SQLBind(bind))
     }
-    
+
     /// Add an assignment setting the named column to the provided expression.
     ///
     /// The column name is left unqualified.
@@ -92,7 +92,7 @@ extension SQLColumnUpdateBuilder {
     public func set(_ column: String, to value: any SQLExpression) -> Self {
         self.set(SQLColumn(column), to: value)
     }
-    
+
     /// Add an assignment setting the given column to the provided `Encodable` value.
     ///
     /// The column name is left unqualified.
@@ -105,7 +105,7 @@ extension SQLColumnUpdateBuilder {
     public func set(_ column: any SQLExpression, to bind: any Encodable & Sendable) -> Self {
         self.set(column, to: SQLBind(bind))
     }
-    
+
     /// Add an assignment setting the given column to the provided expression.
     ///
     /// The column name is left unqualified.

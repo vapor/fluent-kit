@@ -2,15 +2,15 @@
 public final class SQLDropIndexBuilder: SQLQueryBuilder {
     /// ``SQLDropIndex`` query being built.
     public var dropIndex: SQLDropIndex
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
-    
+
     // See `SQLQueryBuilder.query`.
     public var query: any SQLExpression {
         self.dropIndex
     }
-    
+
     /// Create a new ``SQLDropIndexBuilder``.
     public init(_ dropIndex: SQLDropIndex, on database: any SQLDatabase) {
         self.dropIndex = dropIndex
@@ -25,7 +25,7 @@ public final class SQLDropIndexBuilder: SQLQueryBuilder {
         self.dropIndex.ifExists = true
         return self
     }
-    
+
     /// Convenience method for specifying an owning object using a `String`. See
     /// ``on(_:)-84xo2`` for details.
     @inlinable
@@ -80,7 +80,7 @@ extension SQLDatabase {
     public func drop(index name: String) -> SQLDropIndexBuilder {
         self.drop(index: SQLObjectIdentifier(name))
     }
-    
+
     /// Create a new ``SQLDropIndexBuilder``.
     @inlinable
     public func drop(index name: any SQLExpression) -> SQLDropIndexBuilder {

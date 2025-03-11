@@ -15,7 +15,7 @@
 public struct SQLAlterColumnDefinitionType: SQLExpression {
     /// The column to alter.
     public var column: any SQLExpression
-    
+
     /// The new data type.
     public var dataType: any SQLExpression
 

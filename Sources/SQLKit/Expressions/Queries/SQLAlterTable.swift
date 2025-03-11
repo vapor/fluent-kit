@@ -19,35 +19,35 @@
 public struct SQLAlterTable: SQLExpression {
     /// The name of the table to alter.
     public var name: any SQLExpression
-    
+
     /// If not `nil`, a new name for the table (rename table operation).
     public var renameTo: (any SQLExpression)? = nil
-    
+
     /// A list of zero or more new column definitions (add column operation).
     public var addColumns: [any SQLExpression] = []
-    
+
     /// A list of zero or more column alteration specifications (modify column operation).
     public var modifyColumns: [any SQLExpression] = []
-    
+
     /// A list of zero or more columns to remove (drop column operation).
     public var dropColumns: [any SQLExpression] = []
-    
+
     /// A list of zero or more new table constraints (add table constraint operation).
     public var addTableConstraints: [any SQLExpression] = []
-    
+
     /// A list of zero or more table constraint names to remove (drop table constraint operation).
     public var dropTableConstraints: [any SQLExpression] = []
-    
+
     /// Create a table alteration query for a given table, with no operations specified to start with.
     @inlinable
     public init(name: any SQLExpression) {
         self.name = name
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         let syntax = serializer.dialect.alterTableSyntax
-        
+
         if !syntax.allowsBatch,
            [self.addColumns, self.modifyColumns, self.dropColumns, self.addTableConstraints, self.dropTableConstraints].map(\.count).reduce(0, +) > 1
         {
@@ -70,9 +70,9 @@ public struct SQLAlterTable: SQLExpression {
             if let renameTo = self.renameTo {
                 $0.append("RENAME TO", renameTo)
             }
-            
+
             var iter = alterations.makeIterator()
-            
+
             if let firstAlter = iter.next() {
                 $0.append(firstAlter.verb, firstAlter.definition)
             }

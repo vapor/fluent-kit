@@ -46,7 +46,7 @@ extension SQLSerializer {
     /// > Note: While doing so is not especially useful, this method can be called more than once within the same
     /// > context; each invocation immediately serializes the statement upon return from the provided closure.
     @inlinable
-    public mutating func statement(_ closure: (inout SQLStatement) -> ()) {
+    public mutating func statement(_ closure: (inout SQLStatement) -> Void) {
         var sql = SQLStatement(database: self.database)
         closure(&sql)
         sql.serialize(to: &self)
@@ -69,7 +69,7 @@ public struct SQLStatement: SQLExpression {
     /// The serialization of a given ``SQLStatement`` is that of each element of its ``parts`` array, with a
     /// single space character placed between the SQL text of each element.
     public var parts: [any SQLExpression] = []
-    
+
     /// The ``SQLDatabase`` obtained from the original ``SQLSerializer``.
     @usableFromInline
     let database: any SQLDatabase
@@ -112,28 +112,28 @@ public struct SQLStatement: SQLExpression {
         /// `swift-algorithms` package, an entire additional dependency which adds insult to injury in the form of
         /// increased overall compile time.
         var iter = self.parts.makeIterator()
-        
+
         iter.next()?.serialize(to: &serializer)
         while let part = iter.next() {
             var temp = SQLSerializer(database: serializer.database)
             temp.binds = serializer.binds
-            
+
             part.serialize(to: &temp)
             if !temp.sql.isEmpty {
                 serializer.sql += " \(temp.sql)"
             }
-            serializer.binds = temp.binds//.append(contentsOf: temp.binds) // Can't just append because we need to keep numbers in sync
+            serializer.binds = temp.binds  // Can't just append because we need to keep numbers in sync
         }
     }
 
     // MARK: - Append methods, cardinality 1
-    
+
     /// Add raw text to the statement output.
     @inlinable
     public mutating func append(_ raw: String) {
         self.append(SQLUnsafeRaw(raw))
     }
-    
+
     /// Add an unserialized ``SQLExpression`` to the statement output.
     ///
     /// > Warning: Unlike the ``SQLSerializer`` API, in which serializing an expression is the only way to include it
@@ -145,7 +145,7 @@ public struct SQLStatement: SQLExpression {
     public mutating func append(_ part: some SQLExpression) {
         self.parts.append(part)
     }
-    
+
     /// Add an optional unserialized ``SQLExpression`` of any kind to the output.
     ///
     /// This is shorthand for `if let expr { statement.append(expr) }`.
@@ -155,7 +155,7 @@ public struct SQLStatement: SQLExpression {
     }
 
     // MARK: - Append methods, cardinality 2
-    
+
     /// Add two raw text strings to the statement output.
     @inlinable
     public mutating func append(_ raw1: String, _ raw2: String) {
@@ -191,13 +191,13 @@ public struct SQLStatement: SQLExpression {
     }
 
     // MARK: - Append methods, cardinality 3
-    
+
     /// Add three raw text strings to the statement.
     @inlinable
     public mutating func append(_ p1: String, _ p2: String, _ p3: String) {
         self.parts.append(contentsOf: [SQLUnsafeRaw(p1), SQLUnsafeRaw(p2), SQLUnsafeRaw(p3)])
     }
-    
+
     /// Add an optional unserialized ``SQLExpression`` and two raw text strings to the statement output.
     @inlinable
     public mutating func append(_ p1: (any SQLExpression)?, _ p2: String, _ p3: String) {

@@ -4,18 +4,18 @@
 public struct SQLColumnDefinition: SQLExpression {
     /// The name of the column to create or alter.
     public var column: any SQLExpression
-    
+
     /// The desired data type of the column.
     ///
     /// Usually valid only when creating a table. When altering an existing column, ``SQLAlterColumnDefinitionType``
     /// should be used to ensure correct behavior between dialects.
     public var dataType: any SQLExpression
-    
+
     /// A list of column-level constraints to apply to the column.
     ///
     /// See ``SQLColumnConstraintAlgorithm``. Do not add table-level constraints to this list.
     public var constraints: [any SQLExpression]
-    
+
     /// Create a new columm definition from a name, data type, and zero or more constraints.
     ///
     /// - Parameters:
@@ -32,7 +32,7 @@ public struct SQLColumnDefinition: SQLExpression {
         self.dataType = dataType
         self.constraints = constraints
     }
-    
+
     /// Create a new columm definition from a name, data type, and zero or more constraints.
     ///
     /// - Parameters:

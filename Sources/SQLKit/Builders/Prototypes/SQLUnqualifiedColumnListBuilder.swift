@@ -16,7 +16,7 @@ extension SQLUnqualifiedColumnListBuilder {
     public func column(_ column: String) -> Self {
         self.column(SQLColumn(column))
     }
-    
+
     /// Specify a single column to be included in the list of columns for the query.
     @inlinable
     @discardableResult
@@ -24,7 +24,7 @@ extension SQLUnqualifiedColumnListBuilder {
         self.columnList.append(column)
         return self
     }
-    
+
     /// Specify mutiple columns to be included in the list of columns for the query.
     @inlinable
     @discardableResult

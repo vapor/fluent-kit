@@ -25,13 +25,13 @@
 public struct SQLBinaryExpression: SQLExpression {
     /// The left-side operand of the expression.
     public let left: any SQLExpression
-    
+
     /// The operator joining the left and right operands.
     public let op: any SQLExpression
-    
+
     /// The right-side operand of the expression.
     public let right: any SQLExpression
-    
+
     /// Create an ``SQLBinaryExpression`` from component expressions.
     ///
     /// - Parameters:
@@ -48,7 +48,7 @@ public struct SQLBinaryExpression: SQLExpression {
         self.op = op
         self.right = right
     }
-    
+
     /// Create an ``SQLBinaryExpression`` from two operand expressions and a predefined binary operator.
     ///
     /// - Parameters:

@@ -21,23 +21,23 @@ extension StringProtocol where Self: RangeReplaceableCollection, Self.Element: E
         guard !self.isEmpty, let firstNonUnderscore = self.firstIndex(where: { $0 != "_" }) else {
             return .init(self)
         }
-        
+
         var lastNonUnderscore = self.endIndex
         repeat {
             self.formIndex(before: &lastNonUnderscore)
         } while lastNonUnderscore > firstNonUnderscore && self[lastNonUnderscore] == "_"
 
         let keyRange = self[firstNonUnderscore...lastNonUnderscore]
-        let leading  = self[self.startIndex..<firstNonUnderscore]
+        let leading = self[self.startIndex..<firstNonUnderscore]
         let trailing = self[self.index(after: lastNonUnderscore)..<self.endIndex]
-        let words    = keyRange.split(separator: "_")
-        
+        let words = keyRange.split(separator: "_")
+
         guard words.count > 1 else {
             return "\(leading)\(keyRange)\(trailing)"
         }
         return "\(leading)\(([words[0].decapitalized] + words[1...].map(\.encapitalized)).joined())\(trailing)"
     }
-    
+
     /// Returns the string with any `camelCase` converted to `snake_case`.
     ///
     /// This is a modified version of Foundation's implementation:
@@ -50,7 +50,8 @@ extension StringProtocol where Self: RangeReplaceableCollection, Self.Element: E
         }
 
         var words: [Range<String.Index>] = []
-        var wordStart = self.startIndex, searchIndex = self.index(after: wordStart)
+        var wordStart = self.startIndex
+        var searchIndex = self.index(after: wordStart)
 
         while let upperCaseIndex = self[searchIndex...].firstIndex(where: \.isUppercase) {
             words.append(wordStart..<upperCaseIndex)
@@ -68,7 +69,7 @@ extension StringProtocol where Self: RangeReplaceableCollection, Self.Element: E
         words.append(wordStart..<self.endIndex)
         return words.map { self[$0].decapitalized }.joined(separator: "_")
     }
-    
+
     /// Remove the given optional prefix from the string, if present.
     ///
     /// - Parameter prefix: The prefix to remove, if non-`nil`.

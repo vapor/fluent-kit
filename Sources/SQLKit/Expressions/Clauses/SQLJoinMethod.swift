@@ -14,20 +14,20 @@ public enum SQLJoinMethod: SQLExpression {
     /// Most often, this type of join is what's meant when saying simply, "a join". An inner join is the result of
     /// filtering the Cartesian product (a cross join) of all rows in both tables with the join condition/predicate.
     case inner
-    
+
     /// A left (outer) join.
     ///
     /// A left join is the result of performing an inner join, followed by adding additional result rows for every row
     /// of the left-side table which has no match in the right-side table with `NULL` values for any columns belonging
     /// to the right-side table.
     case left
-    
+
     /// A right (outer) join.
     ///
     /// A right join is simply the mirror version of a left join; additional result rows are for missing matches in the
     /// left-side table etc.
     case right
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

@@ -2,52 +2,52 @@
 public enum SQLBinaryOperator: SQLExpression {
     /// Equality. `=` or `==` in most dialects.
     case equal
-    
+
     /// Inequality. `!=` or `<>` in most dialects.
     case notEqual
-    
+
     /// Arranged in descending order, or `>`.
     case greaterThan
-    
+
     /// Arranged in ascending order, or `<`.
     case lessThan
-    
+
     /// Not arranged in ascending order, or `>=`.
     case greaterThanOrEqual
-    
+
     /// Not arranged in descending order, or `<=`.
     case lessThanOrEqual
-    
+
     /// SQL pattern match, or `LIKE`.
     case like
-    
+
     /// SQL pattern mismatch, or `NOT LIKE`.
     case notLike
-    
+
     /// Set membership, or `IN`.
     case `in`
-    
+
     /// Set exclusion, or `NOT IN`.
     case `notIn`
-    
+
     /// Logical conjunction, or `AND`.
     case and
-    
+
     /// Logical disjunction, or `OR`.
     case or
-    
+
     /// Arithmetic multiplication, or `*`.
     case multiply
-    
+
     /// Arithmetic division, or `/`.
     case divide
-    
+
     /// Arithmetic remainder, or `%`.
     case modulo
-    
+
     /// Arithmetic addition, or `+`.
     case add
-    
+
     /// Arithmetic subtraction, or `-`.
     case subtract
 
@@ -56,7 +56,7 @@ public enum SQLBinaryOperator: SQLExpression {
 
     /// Typed dissimilarity, or `IS NOT`.
     case isNot
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

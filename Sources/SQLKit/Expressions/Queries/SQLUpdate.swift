@@ -18,15 +18,15 @@
 public struct SQLUpdate: SQLExpression {
     /// An optional common table expression group.
     public var tableExpressionGroup: SQLCommonTableExpressionGroup?
-    
+
     /// The table containing the row(s) to be updated.
     public var table: any SQLExpression
-    
+
     /// One or more column assignment expressions describing how to update the value in each affected row.
     ///
     /// See ``SQLColumnAssignment`` and ``SQLColumnUpdateBuilder``.
     public var values: [any SQLExpression] = []
-    
+
     /// If not `nil`, a predicate which describes the row(s) to be updated.
     ///
     /// If no predicate if given, all rows in the table are implicitly eligible for updating.
@@ -34,7 +34,7 @@ public struct SQLUpdate: SQLExpression {
 
     /// An optional ``SQLReturning`` clause specifying data to return from the updated rows.
     public var returning: SQLReturning? = nil
-    
+
     /// Create a new row modification query.
     ///
     /// - Parameter table: The table containing the row(s) to update.
@@ -42,7 +42,7 @@ public struct SQLUpdate: SQLExpression {
     public init(table: any SQLExpression) {
         self.table = table
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

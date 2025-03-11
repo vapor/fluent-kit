@@ -6,16 +6,16 @@
 public final class SQLSelectBuilder: SQLQueryBuilder, SQLQueryFetcher, SQLSubqueryClauseBuilder {
     // See `SQLSubqueryClauseBuilder.select`.
     public var select: SQLSelect
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
-    
+
     // See `SQLQueryBuilder.query`.
     @inlinable
     public var query: any SQLExpression {
         self.select
     }
-    
+
     /// Create a new ``SQLSelectBuilder``.
     @inlinable
     public init(on database: any SQLDatabase) {
@@ -31,4 +31,3 @@ extension SQLDatabase {
         .init(on: self)
     }
 }
-

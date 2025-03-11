@@ -16,7 +16,7 @@ public protocol SQLDialect: Sendable {
     ///
     /// No default is provided.
     var name: String { get }
-    
+
     /// A string giving the character(s) used to quote SQL object identifiers, such as table and column names.
     ///
     /// The object identifier quote is placed immediately preceding and following each object identifier. Occurrences
@@ -75,7 +75,7 @@ public protocol SQLDialect: Sendable {
     ///
     /// No default is provided.
     var autoIncrementClause: (any SQLExpression)? { get }
-    
+
     /// A function which returns an expression to be used as the placeholder for the `position`th
     /// bound parameter in a query.
     ///
@@ -87,7 +87,7 @@ public protocol SQLDialect: Sendable {
     /// - Parameter position: Indicates which bound parameter to create a placeholder for, where
     ///   the first parameter has position `1`. This value is guaranteed to be greater than zero.
     func bindPlaceholder(at position: Int) -> any SQLExpression
-    
+
     /// `true` if the dialect supports the `IF EXISTS` modifier for all types of `DROP` queries
     /// (such as ``SQLDropEnum``, ``SQLDropIndex``, ``SQLDropTable``, and ``SQLDropTrigger``) and
     /// the `IF NOT EXISTS` modifier for ``SQLCreateTable`` queries.
@@ -96,21 +96,21 @@ public protocol SQLDialect: Sendable {
     ///
     /// Defaults to `true`.
     var supportsIfExists: Bool { get }
-    
+
     /// The syntax the dialect supports for strongly-typed enumerations.
     ///
     /// See ``SQLEnumSyntax`` for possible values.
     ///
     /// Defaults to ``SQLEnumSyntax/unsupported``.
     var enumSyntax: SQLEnumSyntax { get }
-    
+
     /// `true` if the dialect supports the `behavior modifiers for `DROP` queries, `false` if not.
     ///
     /// See ``SQLDropBehavior`` for more information.
     ///
     /// Defauls to `false`.
     var supportsDropBehavior: Bool { get }
-    
+
     /// `true` if the dialect supports `RETURNING` syntax for retrieving output values from
     /// DML queries (`INSERT`, `UPDATE`, `DELETE`).
     ///
@@ -118,7 +118,7 @@ public protocol SQLDialect: Sendable {
     ///
     /// Defaults to `false`.
     var supportsReturning: Bool { get }
-    
+
     /// Various flags describing the dialect's support for specific features of
     /// ``SQLCreateTrigger`` and ``SQLDropTrigger`` queries.
     ///
@@ -126,14 +126,14 @@ public protocol SQLDialect: Sendable {
     ///
     /// Defaults to no feature flags set.
     var triggerSyntax: SQLTriggerSyntax { get }
-    
+
     /// A description of the syntax the dialect supports for ``SQLAlterTable`` queries.
     ///
     /// See ``SQLAlterTableSyntax`` for more information.
     ///
     /// Defaults to indicating no support at all.
     var alterTableSyntax: SQLAlterTableSyntax { get }
-    
+
     /// A function which is consulted whenever an ``SQLDataType`` will be serialized into a
     /// query. The dialect may return a string which will replace the default representation
     /// of the given type. Returning `nil` causes the default to be used.
@@ -158,14 +158,14 @@ public protocol SQLDialect: Sendable {
     ///
     /// Defaults to returning the input identifier unchanged.
     func normalizeSQLConstraint(identifier: any SQLExpression) -> any SQLExpression
-    
+
     /// The type of `UPSERT` syntax supported by the dialect.
     ///
     /// See ``SQLUpsertSyntax`` for possible values and more information.
     ///
     /// Defaults to ``SQLUpsertSyntax/unsupported``.
     var upsertSyntax: SQLUpsertSyntax { get }
-    
+
     /// A set of feature flags describing the dialect's support for various forms of `UNION` with
     /// `SELECT` queries.
     ///
@@ -184,14 +184,14 @@ public protocol SQLDialect: Sendable {
     var sharedSelectLockExpression: (any SQLExpression)? { get }
 
     /// A serialization for ``SQLLockingClause/update``.
-    /// 
+    ///
     /// Represents a request for an exclusive "writer" lock on rows retrieved by a `SELECT`
     /// query. A `nil` value signals that the dialect doesn't support exclusive locking requests,
     /// in which case the locking clause is silently ignored.
     ///
     /// Defaults to `nil`.
     var exclusiveSelectLockExpression: (any SQLExpression)? { get }
-    
+
     /// Given a column name and a path consisting of one or more elements, return an expression
     /// appropriate for accessing a value at the given JSON path.
     ///
@@ -226,7 +226,7 @@ public struct SQLAlterTableSyntax: Sendable {
     ///
     /// If `false`, a separate `ALTER TABLE` statement must be executed for each desired change.
     public var allowsBatch: Bool
-    
+
     /// Memberwise initializer.
     @inlinable
     public init(
@@ -335,7 +335,7 @@ public struct SQLTriggerSyntax: Sendable {
     public enum Drop: CaseIterable, Hashable, Sendable {
         /// Indicates support for an `OF` clause indicating which table the trigger to be dropped is attached to.
         case supportsTableName
-        
+
         /// Indicates support for the `CASCADE` modifier; see ``SQLDropBehavior`` for details.
         case supportsCascade
     }
@@ -359,7 +359,7 @@ public enum SQLUpsertSyntax: CaseIterable, Hashable, Sendable {
     /// predicates, the `excluded.` pseudo-table name, and the `DO NOTHING` action for "ignore
     /// conflicts".
     case standard
-    
+
     /// Indicates support for the nonstandard `ON DUPLICATE KEY UPDATE ...` syntax, the `VALUES()`
     /// function, and `INSERT IGNORE` for "ignore conflicts". This syntax does not support
     /// conflict targets or update predicates.
@@ -377,25 +377,25 @@ public enum SQLUpsertSyntax: CaseIterable, Hashable, Sendable {
 public enum SQLUnionFeatures: CaseIterable, Hashable, Sendable {
     /// Indicates support for `UNION DISTINCT` unions.
     case union
-    
+
     /// Indicates support for `UNION ALL` unions.
     case unionAll
-    
+
     /// Indicates support for `INTERSECT DISTINCT` unions.
     case intersect
-    
+
     /// Indicates support for `INTERSECT ALL` unions.
     case intersectAll
-    
+
     /// Indicates support for `EXCEPT DISTINCT` unions.
     case except
-    
+
     /// Indicates support for `EXCEPT ALL` unions.
     case exceptAll
-    
+
     /// Indicates that the `DISTINCT` modifier must be explicitly specified for the relevant union types.
     case explicitDistinct
-    
+
     /// Indicates that the individual `SELECT` queries in a union must be parenthesized.
     case parenthesizedSubqueries
 }
@@ -434,7 +434,7 @@ extension SQLDialect {
     public var enumSyntax: SQLEnumSyntax {
         .unsupported
     }
-    
+
     /// Default implementation of ``supportsDropBehavior-6vvl0``.
     @inlinable
     public var supportsDropBehavior: Bool {

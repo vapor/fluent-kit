@@ -18,7 +18,7 @@ public struct SQLGroupExpression: SQLExpression {
     ///
     /// When there is more than one expression in the list, they are wrapped with an ``SQLList`` before serialization.
     public let expressions: [any SQLExpression]
-    
+
     /// Create a group expression with a single subexpresion.
     ///
     /// - Parameter expression: The subexpression to parenthesize.
@@ -26,7 +26,7 @@ public struct SQLGroupExpression: SQLExpression {
     public init(_ expression: any SQLExpression) {
         self.expressions = [expression]
     }
-    
+
     /// Create a group expression with a list of zero or more subexpressions.
     ///
     /// When more than one expression is provided, they are wrapped with a default ``SQLList`` before serialization,
@@ -37,7 +37,7 @@ public struct SQLGroupExpression: SQLExpression {
     public init(_ expressions: [any SQLExpression]) {
         self.expressions = expressions
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.write("(")

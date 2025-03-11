@@ -76,7 +76,7 @@ public protocol SQLDatabase: Sendable {
     /// be useful in practice; a dialect that differs based on database version should differentiate based on the
     /// ``version-22wnn`` property instead.
     var dialect: any SQLDialect { get }
-    
+
     /// The logging level used for reporting queries run on the given database to the database's logger.
     /// Defaults to `.debug`.
     ///
@@ -100,9 +100,9 @@ public protocol SQLDatabase: Sendable {
     ///   - onRow: A closure which is invoked once for each result row returned by the query (if any).
     func execute(
         sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> ()
+        _ onRow: @escaping @Sendable (any SQLRow) -> Void
     ) async throws
-    
+
     /// Requests the provided closure be called with a database which is guaranteed to represent a single
     /// "session", suitable for e.g. executing a series of queries representing a transaction.
     ///
@@ -136,7 +136,7 @@ extension SQLDatabase {
 extension SQLDatabase {
     /// Return a new ``SQLDatabase`` which is indistinguishable from the original save that its
     /// ``SQLDatabase/logger`` property is replaced by the given `Logger`.
-    /// 
+    ///
     /// This has the effect of redirecting logging performed on or by the original database to the
     /// provided `Logger`.
     ///
@@ -162,7 +162,7 @@ private struct CustomLoggerSQLDatabase<D: SQLDatabase>: SQLDatabase {
 
     // See `SQLDatabase.logger`.
     var logger: Logger
-    
+
     // See `SQLDatabase.version`.
     var version: (any SQLDatabaseReportedVersion)? {
         self.database.version
@@ -177,11 +177,11 @@ private struct CustomLoggerSQLDatabase<D: SQLDatabase>: SQLDatabase {
     var queryLogLevel: Logger.Level? {
         self.database.queryLogLevel
     }
-    
+
     // See `SQLDatabase.execute(sql:_:)`.
     func execute(
         sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> ()
+        _ onRow: @escaping @Sendable (any SQLRow) -> Void
     ) async throws {
         try await self.database.execute(sql: query, onRow)
     }

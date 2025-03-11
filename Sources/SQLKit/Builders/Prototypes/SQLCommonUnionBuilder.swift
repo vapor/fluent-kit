@@ -14,14 +14,14 @@ extension SQLCommonUnionBuilder {
         get { self.union.orderBys }
         set { self.union.orderBys = newValue }
     }
-    
+
     // See `SQLPartialResultBuilder.limit`.
     @inlinable
     public var limit: Int? {
         get { self.union.limit }
         set { self.union.limit = newValue }
     }
-    
+
     // See `SQLPartialResultBuilder.offset`.
     @inlinable
     public var offset: Int? {

@@ -9,19 +9,19 @@ public protocol SQLRow: Sendable {
     ///
     /// Corresponds to `KeyedDecodingContainer.allKeys`.
     var allColumns: [String] { get }
-    
+
     /// Returns `true` if the given column name is available in the row, `false `otherwise.
     ///
     /// Corresponds to `KeyedDecodingContainer.contains(key:)`.
     func contains(column: String) -> Bool
-    
+
     /// Must return `true` if the given column name is missing from the row **or** if it exists but has a
     /// value equivalent to an SQL `NULL`, or `false` if the column name exists with a non-`NULL` value.
     ///
     /// Corresponds to `KeyedDecodingContainer.decodeNil(forKey:)`, especially with respect to the treatment
     /// of "missing" keys.
     func decodeNil(column: String) throws -> Bool
-    
+
     /// If the given column name exists in the row, attempt to decode it as the given type and return the
     /// result if successful.
     ///
@@ -55,11 +55,11 @@ extension SQLRow {
     ) throws -> D {
         try self.decode(model: D.self, with: .init(prefix: prefix, keyDecodingStrategy: keyDecodingStrategy, userInfo: userInfo))
     }
-    
+
     /// Decode an entire `Decodable` "model" type at once using an explicit ``SQLRowDecoder``.
-    /// 
+    ///
     /// See ``SQLRowDecoder`` for additional details.
-    /// 
+    ///
     /// Most users should consider using ``SQLQueryFetcher/all(decoding:with:)-6n5ox`` and/or
     /// ``SQLQueryFetcher/first(decoding:with:)-58l9p`` instead.
     ///

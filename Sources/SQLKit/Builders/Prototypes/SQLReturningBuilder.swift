@@ -53,10 +53,10 @@ extension SQLReturningBuilder {
 public final class SQLReturningResultBuilder<QueryBuilder: SQLReturningBuilder>: SQLQueryFetcher {
     // See `SQLQueryBuilder.query`.
     public var query: any SQLExpression
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
-    
+
     /// Create a new last-in-chain fetching query wrapper.
     @usableFromInline
     init(_ builder: QueryBuilder) {

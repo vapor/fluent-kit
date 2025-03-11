@@ -13,7 +13,7 @@ public protocol SQLPredicateBuilder: AnyObject {
 
 extension SQLPredicateBuilder {
     // MARK: - Column/value comparison
-    
+
     /// Adds a column to encodable comparison to this builder's `WHERE` clause by `AND`ing.
     ///
     ///     builder.where("name", .equal, "Earth")
@@ -93,7 +93,7 @@ extension SQLPredicateBuilder {
     public func `where`(_ lhs: SQLObjectIdentifier, _ op: SQLBinaryOperator, column rhs: SQLObjectIdentifier) -> Self {
         self.where(SQLColumn(lhs), op, SQLColumn(rhs))
     }
-    
+
     // MARK: - Column/expression comparison
 
     /// Adds a column to expression comparison to this builder' `WHERE` clause by `AND`ing.
@@ -109,7 +109,7 @@ extension SQLPredicateBuilder {
     public func `where`(_ lhs: SQLObjectIdentifier, _ op: SQLBinaryOperator, _ rhs: any SQLExpression) -> Self {
         self.where(SQLColumn(lhs), op, rhs)
     }
-    
+
     // MARK: - Expressions
 
     /// Adds an expression to expression comparison to this builder's `WHERE` clause by `AND`ing.
@@ -144,7 +144,7 @@ extension SQLPredicateBuilder {
 
 extension SQLPredicateBuilder {
     // MARK: - Column/value comparison
-    
+
     /// Adds a column to encodable comparison to this builder's `WHERE` clause by `OR`ing.
     ///
     ///     builder.orWhere("name", .equal, "Earth")
@@ -206,7 +206,7 @@ extension SQLPredicateBuilder {
     public func orWhere(_ lhs: SQLObjectIdentifier, _ op: SQLBinaryOperator, column rhs: SQLObjectIdentifier) -> Self {
         self.orWhere(SQLColumn(lhs), op, SQLColumn(rhs))
     }
-    
+
     // MARK: - Column/expression comparison
 
     /// Adds a column to expression comparison to the `WHERE` clause by `OR`ing.
@@ -215,7 +215,7 @@ extension SQLPredicateBuilder {
     public func orWhere(_ lhs: String, _ op: SQLBinaryOperator, _ rhs: any SQLExpression) -> Self {
         self.orWhere(SQLObjectIdentifier(lhs), op, rhs)
     }
-    
+
     /// Adds a column to expression comparison to the `WHERE` clause by `OR`ing.
     @inlinable
     @discardableResult

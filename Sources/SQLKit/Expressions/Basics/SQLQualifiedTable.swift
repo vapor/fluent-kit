@@ -6,22 +6,22 @@
 public struct SQLQualifiedTable: SQLExpression {
     /// The table name, usually an ``SQLIdentifier``.
     public var table: any SQLExpression
-    
+
     /// If specified, the second-level namespace to which the table belongs.
     public var space: (any SQLExpression)?
-    
+
     /// Usually an ``SQLObjectIdentifier`` if not `nil`.
     /// Create an ``SQLQualifiedTable`` from a name and optional second-level namespace.
     public init(_ table: some StringProtocol, space: (some StringProtocol)? = nil) {
         self.init(SQLObjectIdentifier(table), space: space.flatMap(SQLObjectIdentifier.init(_:)))
     }
-    
+
     /// Create an ``SQLQualifiedTable`` from an identifier and optional second-level identifier.
     public init(_ table: any SQLExpression, space: (any SQLExpression)? = nil) {
         self.table = table
         self.space = space
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         if let space = self.space {

@@ -15,34 +15,33 @@
 public struct SQLExcludedColumn: SQLExpression {
     /// The excluded column's name.
     public var name: any SQLExpression
-    
+
     /// Create an excluded column specifier.
     @inlinable
     public init(_ name: some StringProtocol) {
         self.init(SQLColumn(name))
     }
-    
+
     /// Create an excluded column specifier.
     @inlinable
     public init(_ name: any SQLExpression) {
         self.name = name
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {
         switch serializer.dialect.upsertSyntax {
-            case .standard:
-                /// The `excluded` table name is a context-specific keyword, _not_ an identifier.
-                /// Accordingly, we must add the separating `.` between the keyword and the column
-                /// name manually, since `SQLColumn` would do the wrong thing here.
-                serializer.write("EXCLUDED.")
-                self.name.serialize(to: &serializer)
-            case .mysqlLike:
-                SQLFunction("VALUES", args: self.name).serialize(to: &serializer)
-            case .unsupported:
-                break // A warning logged from here would either be annoyingly noisy or never appear at all.
+        case .standard:
+            /// The `excluded` table name is a context-specific keyword, _not_ an identifier.
+            /// Accordingly, we must add the separating `.` between the keyword and the column
+            /// name manually, since `SQLColumn` would do the wrong thing here.
+            serializer.write("EXCLUDED.")
+            self.name.serialize(to: &serializer)
+        case .mysqlLike:
+            SQLFunction("VALUES", args: self.name).serialize(to: &serializer)
+        case .unsupported:
+            break  // A warning logged from here would either be annoyingly noisy or never appear at all.
         }
     }
 }
-

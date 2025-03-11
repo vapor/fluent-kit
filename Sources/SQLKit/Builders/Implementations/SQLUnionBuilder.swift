@@ -18,7 +18,7 @@ public final class SQLUnionBuilder: SQLQueryBuilder, SQLQueryFetcher, SQLCommonU
         get { self.union.tableExpressionGroup }
         set { self.union.tableExpressionGroup = newValue }
     }
-    
+
     /// Create a new ``SQLUnionBuilder``.
     @inlinable
     public init(on database: any SQLDatabase, initialQuery: SQLSelect) {
@@ -47,7 +47,7 @@ extension SQLSelectBuilder {
     public func union(all predicate: (any SQLSubqueryClauseBuilder) throws -> any SQLSubqueryClauseBuilder) rethrows -> SQLUnionBuilder {
         try .init(on: self.database, initialQuery: self.select).union(all: predicate)
     }
-    
+
     // See `SQLCommonUnionBuilder.union(_:)`.
     @inlinable
     public func union(_ predicate: (any SQLSubqueryClauseBuilder) throws -> any SQLSubqueryClauseBuilder) rethrows -> SQLUnionBuilder {
@@ -65,7 +65,7 @@ extension SQLSelectBuilder {
     public func intersect(all predicate: (any SQLSubqueryClauseBuilder) throws -> any SQLSubqueryClauseBuilder) rethrows -> SQLUnionBuilder {
         try .init(on: self.database, initialQuery: self.select).intersect(all: predicate)
     }
-    
+
     // See `SQLCommonUnionBuilder.intersect(_:)`.
     @inlinable
     public func intersect(_ predicate: (any SQLSubqueryClauseBuilder) throws -> any SQLSubqueryClauseBuilder) rethrows -> SQLUnionBuilder {

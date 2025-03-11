@@ -3,10 +3,10 @@
 public struct SQLAlias: SQLExpression {
     /// The ``SQLExpression`` to alias.
     public var expression: any SQLExpression
-    
+
     /// The alias itself.
     public var alias: any SQLExpression
-    
+
     /// Create an alias expression from an expression and an alias expression.
     ///
     /// - Parameters:
@@ -17,7 +17,7 @@ public struct SQLAlias: SQLExpression {
         self.expression = expression
         self.alias = alias
     }
-    
+
     /// Create an alias expression from an expression and an alias name.
     ///
     /// - Parameters:

@@ -7,12 +7,12 @@
 public struct SQLOrderBy: SQLExpression {
     /// A sorting key.
     public var expression: any SQLExpression
-    
+
     /// A sort directionality.
     ///
     /// See ``SQLDirection``.
     public var direction: any SQLExpression
-    
+
     /// Creates a new ordering clause.
     ///
     /// - Parameters:
@@ -23,7 +23,7 @@ public struct SQLOrderBy: SQLExpression {
         self.expression = expression
         self.direction = direction
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

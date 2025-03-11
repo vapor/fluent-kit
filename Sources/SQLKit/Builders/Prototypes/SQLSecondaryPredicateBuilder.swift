@@ -13,7 +13,7 @@ public protocol SQLSecondaryPredicateBuilder: AnyObject {
 
 extension SQLSecondaryPredicateBuilder {
     // MARK: - Column/value comparison
-    
+
     /// Adds a column to encodable comparison to this builder's `HAVING` clause by `AND`ing.
     ///
     ///     builder.having("name", .equal, "Earth")
@@ -144,7 +144,7 @@ extension SQLSecondaryPredicateBuilder {
 
 extension SQLSecondaryPredicateBuilder {
     // MARK: - Column/value comparison
-    
+
     /// Adds a column to encodable comparison to this builder's `HAVING` clause by `OR`ing.
     @inlinable
     @discardableResult
@@ -194,7 +194,7 @@ extension SQLSecondaryPredicateBuilder {
     public func orHaving(_ lhs: SQLObjectIdentifier, _ op: SQLBinaryOperator, column rhs: SQLObjectIdentifier) -> Self {
         self.orHaving(SQLColumn(lhs), op, SQLColumn(rhs))
     }
-    
+
     // MARK: - Column/expression comparison
 
     /// Adds a column to expression comparison to the `HAVING` clause by `OR`ing.
@@ -203,7 +203,7 @@ extension SQLSecondaryPredicateBuilder {
     public func orHaving(_ lhs: String, _ op: SQLBinaryOperator, _ rhs: any SQLExpression) -> Self {
         self.orHaving(SQLColumn(lhs), op, rhs)
     }
-    
+
     /// Adds a column to expression comparison to the `HAVING` clause by `OR`ing.
     @inlinable
     @discardableResult

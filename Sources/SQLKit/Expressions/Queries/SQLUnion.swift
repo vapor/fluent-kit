@@ -19,10 +19,10 @@
 public struct SQLUnion: SQLExpression {
     /// An optional common table expression group.
     public var tableExpressionGroup: SQLCommonTableExpressionGroup?
-    
+
     /// The required first query of the union.
     public var initialQuery: SQLSelect
-    
+
     /// Zero or more additional queries whose results are to be combined with that of the initial query and
     /// associated joiner expressions describing the combining operation.
     ///
@@ -31,17 +31,17 @@ public struct SQLUnion: SQLExpression {
     ///
     /// See ``SQLSelect`` and ``SQLUnionJoiner``.
     public var unions: [(SQLUnionJoiner, SQLSelect)]
-    
+
     /// Zero or more columns or expressions specifying sort keys and directionalities for the overall result rows.
     ///
     /// See ``SQLDirection``.
     public var orderBys: [any SQLExpression] = []
-    
+
     /// If not `nil`, limits the number of result rows returned. Applies _after_ ``offset`` (if specified).
     ///
     /// Although the type of this property is `Int`, it is invalid to specify a negative value.
     public var limit: Int? = nil
-    
+
     /// If not `nil`, skips the given number of result rows before starting to return results.
     ///
     /// Although the type of this property is `Int`, it is invalid to specify a negative value.
@@ -69,7 +69,7 @@ public struct SQLUnion: SQLExpression {
     public mutating func add(_ query: SQLSelect, all: Bool) {
         self.add(query, joiner: .init(type: all ? .unionAll : .union))
     }
-    
+
     /// Add an additional query to the union using the provided joiner.
     ///
     /// - Parameters:
@@ -84,13 +84,13 @@ public struct SQLUnion: SQLExpression {
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement { stmt in
             stmt.append(self.tableExpressionGroup)
-            
+
             guard !self.unions.isEmpty else {
                 /// If no unions are specified, serialize as a plain query even if the dialect would otherwise
                 /// specify the use of parenthesized subqueries. Ignores orderBys, limit, and offset.
                 return stmt.append(self.initialQuery)
             }
-            
+
             let parenthesize = stmt.dialect.unionFeatures.contains(.parenthesizedSubqueries)
 
             stmt.append(parenthesize ? SQLGroupExpression(self.initialQuery) : self.initialQuery)
@@ -123,36 +123,36 @@ public struct SQLUnionJoiner: SQLExpression {
         ///
         /// Returns all result rows from both sides of the union, de-duplicating the combined set.
         case union
-        
+
         /// The `UNION ALL` operation.
         ///
         /// Returns all result rows from both sides of the union, including duplicates.
         case unionAll
-        
+
         /// The `INTERSECT` or `INTERSECT DISTINCT` operation.
         ///
         /// Returns all result rows which occur on both sides of the union, de-duplicating the results.
         case intersect
-        
+
         /// The `INTERSECT ALL` operation.
         ///
         /// Returns all result rows which occur on both sides of the union, including duplicates.
         case intersectAll
-        
+
         /// The `EXCEPT` or `EXCEPT DISTINCT` operation.
         ///
         /// Returns all result rows which occur _only_ on the left side of the union, de-duplcating the results.
         case except
-        
+
         /// The `EXCEPT ALL` operation.
         ///
         /// Returns all result rows which occur _only_ on the left side of the union, including duplicates.
         case exceptAll
     }
-    
+
     /// The operation this joiner describes.
     public var type: `Type`
-    
+
     /// Create a new union joiner expression.
     ///
     /// - Parameter type: The operation the joiner describes.
@@ -160,7 +160,7 @@ public struct SQLUnionJoiner: SQLExpression {
     public init(type: `Type`) {
         self.type = type
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement { statement in
@@ -176,12 +176,12 @@ public struct SQLUnionJoiner: SQLExpression {
                 }
             }
             switch self.type {
-            case .union:        write(keyword: "UNION",     if: .union,        uniqued: true)
-            case .unionAll:     write(keyword: "UNION",     if: .unionAll,     uniqued: false)
-            case .intersect:    write(keyword: "INTERSECT", if: .intersect,    uniqued: true)
+            case .union: write(keyword: "UNION", if: .union, uniqued: true)
+            case .unionAll: write(keyword: "UNION", if: .unionAll, uniqued: false)
+            case .intersect: write(keyword: "INTERSECT", if: .intersect, uniqued: true)
             case .intersectAll: write(keyword: "INTERSECT", if: .intersectAll, uniqued: false)
-            case .except:       write(keyword: "EXCEPT",    if: .except,       uniqued: true)
-            case .exceptAll:    write(keyword: "EXCEPT",    if: .exceptAll,    uniqued: false)
+            case .except: write(keyword: "EXCEPT", if: .except, uniqued: true)
+            case .exceptAll: write(keyword: "EXCEPT", if: .exceptAll, uniqued: false)
             }
         }
     }

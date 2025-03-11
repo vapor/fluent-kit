@@ -10,33 +10,33 @@ public enum SQLForeignKeyAction: SQLExpression {
     ///
     /// This is the default action.
     case noAction
-    
+
     /// The `RESTRICT` behavior.
     ///
     /// `RESTRICT` triggers an SQL error indicating that the operation in progress has violated a foreign
     /// key constraint. The error is raised immediately, regardless of the deferred status of the constraint.
     case restrict
-    
+
     /// The `CASCADE` behavior.
     ///
     /// `CASCADE` specifies that the action which triggered the constraint violation shall be forwarded to
     /// the referenced foreign row(s) (causing them to be deleted or updated as appropriate). Cascading foreign
     /// key behaviors are recursive.
     case cascade
-    
+
     /// The `SET NULL` behavior.
     ///
     /// `SET NULL` specifies that a violation of a foreign key constraint shall result in setting the values of
     /// the columns comprising the constraint to `NULL`.
     case setNull
-    
+
     /// The `SET DEFAULT` behavior.
     ///
     /// `SET DEFAULT` specifies that a violation of a foreign key constraint shall result in setting the values of
     /// the columns comprising the constraint to their respective default values. The resulting contents of the
     /// updated row must comprise a valid reference to the foreign table.
     case setDefault
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

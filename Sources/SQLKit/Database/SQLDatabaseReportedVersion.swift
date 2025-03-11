@@ -16,7 +16,7 @@
 public protocol SQLDatabaseReportedVersion: Comparable, Sendable {
     /// The version represented as a `String`.
     var stringValue: String { get }
-    
+
     /// Returns `true` if the provided version is the same version as `self`.
     ///
     /// Implementations of this method must check that the provided version and `self` represent the same type.
@@ -30,7 +30,7 @@ public protocol SQLDatabaseReportedVersion: Comparable, Sendable {
     ///   - otherVersion: The version to compare against.
     /// - Returns: `true` if both versions are equal, `false` otherwise.
     func isEqual(to otherVersion: any SQLDatabaseReportedVersion) -> Bool
-    
+
     /// Returns `true` if the provided version is newer than the version represented by `self`.
     ///
     /// Implementations of this method must check that the provided version and `self` represent the same type.
@@ -52,13 +52,13 @@ extension SQLDatabaseReportedVersion {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.isEqual(to: rhs)
     }
-    
+
     // See `Equatable.!=(_:_:)`
     @inlinable
     public static func != (lhs: Self, rhs: Self) -> Bool {
         !lhs.isEqual(to: rhs)
     }
-    
+
     // See `Comparable.<(_:_:)`
     @inlinable
     public static func < (lhs: Self, rhs: Self) -> Bool {

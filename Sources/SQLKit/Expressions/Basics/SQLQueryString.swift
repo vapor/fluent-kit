@@ -58,7 +58,7 @@
 public struct SQLQueryString: SQLExpression, ExpressibleByStringInterpolation, StringInterpolationProtocol {
     @usableFromInline
     var fragments: [any SQLExpression]
-    
+
     /// Create a query string from a plain string containing raw SQL.
     @inlinable
     public init(_ string: String) {
@@ -94,7 +94,7 @@ extension SQLQueryString {
         self.fragments = []
         self.fragments.reserveCapacity(literalCapacity + interpolationCount)
     }
-    
+
     // See `StringInterpolationProtocol.appendLiteral(_:)`.
     @inlinable
     public mutating func appendLiteral(_ literal: String) {
@@ -130,7 +130,7 @@ extension SQLQueryString {
     public mutating func appendInterpolation(binds values: [some Encodable & Sendable]) {
         self.fragments.append(SQLList(values.map { SQLBind($0) }))
     }
-    
+
     /// Embed a `Bool` as a literal value, as if via ``SQLLiteral/boolean(_:)``.
     @inlinable
     public mutating func appendInterpolation(_ value: Bool) {
@@ -227,7 +227,7 @@ extension SQLQueryString {
     public static func + (lhs: Self, rhs: Self) -> Self {
         "\(lhs)\(rhs)"
     }
-    
+
     /// Append one ``SQLQueryString`` to another in-place.
     @inlinable
     public static func += (lhs: inout Self, rhs: Self) {
@@ -257,7 +257,7 @@ extension Sequence<SQLQueryString> {
     public func joined(separator: some SQLExpression) -> SQLQueryString {
         var iter = self.makeIterator()
         var result = iter.next() ?? ""
-        
+
         while let str = iter.next() {
             result.fragments.append(separator)
             result.fragments.append(contentsOf: str.fragments)

@@ -6,7 +6,7 @@ public protocol SQLCommonTableExpressionBuilder: AnyObject {
 
 extension SQLCommonTableExpressionBuilder {
     // MARK: - String name, string columns
-    
+
     /// Specify a subquery to include as a common table expression, for use elsewhere in the overall query.
     ///
     /// Example usage:
@@ -74,7 +74,7 @@ extension SQLCommonTableExpressionBuilder {
     }
 
     // MARK: - String name, expression columns
-    
+
     /// Specify a subquery to include as a common table expression, for use elsewhere in the overall query.
     ///
     /// Example usage:
@@ -142,7 +142,7 @@ extension SQLCommonTableExpressionBuilder {
     }
 
     // MARK: - Expression name, string columns
-    
+
     /// Specify a subquery to include as a common table expression, for use elsewhere in the overall query.
     ///
     /// Example usage:
@@ -210,7 +210,7 @@ extension SQLCommonTableExpressionBuilder {
     }
 
     // MARK: - Expression name, expression columns
-    
+
     /// Specify a subquery to include as a common table expression, for use elsewhere in the overall query.
     ///
     /// Example usage:
@@ -312,7 +312,7 @@ extension SQLCommonTableExpressionBuilder {
         var expression = SQLCommonTableExpression(alias: name, query: query)
         expression.isRecursive = isRecursive
         expression.columns = columns
-        
+
         if self.tableExpressionGroup != nil {
             self.tableExpressionGroup?.tableExpressions.append(expression)
         } else {

@@ -2,7 +2,7 @@
 public final class SQLUpdateBuilder: SQLQueryBuilder, SQLPredicateBuilder, SQLReturningBuilder, SQLColumnUpdateBuilder, SQLCommonTableExpressionBuilder {
     /// An ``SQLUpdate`` containing the complete current state of the builder.
     public var update: SQLUpdate
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
 
@@ -11,7 +11,7 @@ public final class SQLUpdateBuilder: SQLQueryBuilder, SQLPredicateBuilder, SQLRe
     public var query: any SQLExpression {
         self.update
     }
-    
+
     // See `SQLColumnUpdateBuilder.values`.
     @inlinable
     public var values: [any SQLExpression] {
@@ -32,14 +32,14 @@ public final class SQLUpdateBuilder: SQLQueryBuilder, SQLPredicateBuilder, SQLRe
         get { self.update.returning }
         set { self.update.returning = newValue }
     }
-    
+
     // See `SQLCommonTableExpressionBuilder.tableExpressionGroup`.
     @inlinable
     public var tableExpressionGroup: SQLCommonTableExpressionGroup? {
         get { self.update.tableExpressionGroup }
         set { self.update.tableExpressionGroup = newValue }
     }
-    
+
     /// Create a new ``SQLUpdateBuilder``.
     ///
     /// Use this API directly only if you need to have control over the builder's initial update query. Prefer using
@@ -57,14 +57,14 @@ public final class SQLUpdateBuilder: SQLQueryBuilder, SQLPredicateBuilder, SQLRe
 
 extension SQLDatabase {
     /// Create a new ``SQLUpdateBuilder`` associated with this database.
-    /// 
+    ///
     /// - Parameter table: A table to specify for the builder's update query.
     /// - Returns: A new builder.
     @inlinable
     public func update(_ table: String) -> SQLUpdateBuilder {
         self.update(SQLObjectIdentifier(table))
     }
-    
+
     /// Create a new ``SQLUpdateBuilder`` associated with this database.
     ///
     /// - Parameter table: An expression used as the target of the builder's update query.

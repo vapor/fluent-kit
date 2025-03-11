@@ -13,7 +13,7 @@ public struct SQLJoin: SQLExpression {
 
     /// The table with which to join.
     public var table: any SQLExpression
-    
+
     /// The join condition.
     public var expression: any SQLExpression
 

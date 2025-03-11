@@ -24,7 +24,7 @@ public enum SQLCodingError: Error, CustomStringConvertible, Sendable {
     /// - `KeyedEncodingContainer.superEncoder(forKey:)`
     /// - `KeyedDecodingContainer.superDecoder(forKey:)`
     case unsupportedOperation(String, codingPath: [any CodingKey])
-    
+
     // See `CustomStringConvertible.description`.
     public var description: String {
         switch self {
@@ -49,15 +49,15 @@ extension Error where Self == SQLCodingError {
 public struct NeverKey: CodingKey {
     // See `CodingKey.stringValue`.
     public let stringValue: String = ""
-    
+
     // See `CodingKey.intValue`.
     public let intValue: Int? = nil
-    
+
     // See `CodingKey.init(stringValue:)`.
     public init?(stringValue: String) {
         nil
     }
-    
+
     // See `CodingKey.init?(intValue:)`.
     public init?(intValue: Int) {
         nil
@@ -72,25 +72,26 @@ public struct NeverKey: CodingKey {
 ///
 /// > Besides: It's still better than calling `fatalError()`.
 @_spi(CodableUtilities)
-public struct FailureEncoder<K: CodingKey>: Encoder, KeyedEncodingContainerProtocol, UnkeyedEncodingContainer, SingleValueEncodingContainer {
+public struct FailureEncoder<K: CodingKey>: Encoder, KeyedEncodingContainerProtocol, UnkeyedEncodingContainer, SingleValueEncodingContainer
+{
     let error: any Error
-    public init(_ error: any Error)                         { self.error = error }
-    public init(_ error: any Error) where K == NeverKey     { self.error = error }
-    public var codingPath: [any CodingKey]                  { [] }
-    public var userInfo: [CodingUserInfoKey: Any]           { [:] }
-    public var count: Int                                   { 0 }
-    public func encodeNil() throws                          { throw self.error }
-    public func encodeNil(forKey: K) throws                 { throw self.error }
-    public func encode(_: some Encodable) throws            { throw self.error }
+    public init(_ error: any Error) { self.error = error }
+    public init(_ error: any Error) where K == NeverKey { self.error = error }
+    public var codingPath: [any CodingKey] { [] }
+    public var userInfo: [CodingUserInfoKey: Any] { [:] }
+    public var count: Int { 0 }
+    public func encodeNil() throws { throw self.error }
+    public func encodeNil(forKey: K) throws { throw self.error }
+    public func encode(_: some Encodable) throws { throw self.error }
     public func encode(_: some Encodable, forKey: K) throws { throw self.error }
-    public func superEncoder() -> any Encoder               { self }
-    public func superEncoder(forKey: K) -> any Encoder      { self }
-    public func unkeyedContainer() -> any UnkeyedEncodingContainer                { self }
-    public func nestedUnkeyedContainer() -> any UnkeyedEncodingContainer          { self }
+    public func superEncoder() -> any Encoder { self }
+    public func superEncoder(forKey: K) -> any Encoder { self }
+    public func unkeyedContainer() -> any UnkeyedEncodingContainer { self }
+    public func nestedUnkeyedContainer() -> any UnkeyedEncodingContainer { self }
     public func nestedUnkeyedContainer(forKey: K) -> any UnkeyedEncodingContainer { self }
-    public func singleValueContainer() -> any SingleValueEncodingContainer        { self }
-    public func container<N: CodingKey>(keyedBy: N.Type = N.self) -> KeyedEncodingContainer<N>         { .init(FailureEncoder<N>(self.error)) }
-    public func nestedContainer<N: CodingKey>(keyedBy: N.Type) -> KeyedEncodingContainer<N>            { self.container() }
+    public func singleValueContainer() -> any SingleValueEncodingContainer { self }
+    public func container<N: CodingKey>(keyedBy: N.Type = N.self) -> KeyedEncodingContainer<N> { .init(FailureEncoder<N>(self.error)) }
+    public func nestedContainer<N: CodingKey>(keyedBy: N.Type) -> KeyedEncodingContainer<N> { self.container() }
     public func nestedContainer<N: CodingKey>(keyedBy: N.Type, forKey: K) -> KeyedEncodingContainer<N> { self.container() }
 }
 
@@ -167,7 +168,7 @@ extension DecodingError.Context {
 public struct FakeSendableCodable<T>: @unchecked Sendable {
     /// The underlying non-`Sendable` value.
     public let value: T
-    
+
     /// Trivial initializer.
     @inlinable
     public init(_ value: T) {
@@ -185,7 +186,7 @@ extension FakeSendableCodable: Encodable where T: Encodable {
         /// the opportunity to intercept the value and its type. With `SQLQueryEncoder`, this makes the difference
         /// between ``FakeSendableCodable`` being fully transparent versus not.
         var container = encoder.singleValueContainer()
-        
+
         try container.encode(self.value)
     }
 }
@@ -197,7 +198,7 @@ extension FakeSendableCodable: Decodable where T: Decodable {
         /// As with the `Encodable` conformance, decode from a single-value container rather than directly so any
         /// type-specific logic in the decoder is able to take effect.
         let container = try decoder.singleValueContainer()
-        
+
         self.value = try container.decode(T.self)
     }
 }

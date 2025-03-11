@@ -11,10 +11,10 @@
 public enum SQLLockingClause: SQLExpression {
     /// Request an exclusive "writer" lock.
     case update
-    
+
     /// Request a shared "reader" lock.
     case share
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

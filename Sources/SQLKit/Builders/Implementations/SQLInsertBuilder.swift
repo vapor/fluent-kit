@@ -8,10 +8,10 @@
 public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQLUnqualifiedColumnListBuilder*/, SQLCommonTableExpressionBuilder {
     /// The ``SQLInsert`` query this builder builds.
     public var insert: SQLInsert
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
-    
+
     // See `SQLQueryBuilder.query`.
     @inlinable
     public var query: any SQLExpression {
@@ -24,21 +24,21 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
         get { self.insert.returning }
         set { self.insert.returning = newValue }
     }
-    
+
     // See `SQLCommonTableExpressionBuilder.tableExpressionGroup`.
     @inlinable
     public var tableExpressionGroup: SQLCommonTableExpressionGroup? {
         get { self.insert.tableExpressionGroup }
         set { self.insert.tableExpressionGroup = newValue }
     }
-    
+
     /// Creates a new `SQLInsertBuilder`.
     @inlinable
     public init(_ insert: SQLInsert, on database: any SQLDatabase) {
         self.insert = insert
         self.database = database
     }
-    
+
     /// Use an `Encodable` value to generate a row to insert and add that row to the query.
     ///
     /// Example usage:
@@ -157,9 +157,17 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
         nilEncodingStrategy: SQLQueryEncoder.NilEncodingStrategy = .default,
         userInfo: [CodingUserInfoKey: any Sendable] = [:]
     ) throws -> Self {
-        try self.models(models, with: .init(prefix: prefix, keyEncodingStrategy: keyEncodingStrategy, nilEncodingStrategy: nilEncodingStrategy, userInfo: userInfo))
+        try self.models(
+            models,
+            with: .init(
+                prefix: prefix,
+                keyEncodingStrategy: keyEncodingStrategy,
+                nilEncodingStrategy: nilEncodingStrategy,
+                userInfo: userInfo
+            )
+        )
     }
-    
+
     /// Use an array of `Encodable` values to generate rows to insert and add those rows to the query.
     ///
     /// Example usage:
@@ -193,7 +201,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
         with encoder: SQLQueryEncoder
     ) throws -> Self {
         var validColumns: [String] = []
-        
+
         for model in models {
             let row = try encoder.encode(model)
             if validColumns.isEmpty {
@@ -216,7 +224,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
         }
         return self
     }
-    
+
     /// Specify mutiple columns to be included in the list of columns for the query.
     ///
     /// Overwrites any previously specified column list.
@@ -225,7 +233,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     public func columns(_ columns: String...) -> Self {
         self.columns(columns)
     }
-    
+
     /// Specify mutiple columns to be included in the list of columns for the query.
     ///
     /// Overwrites any previously specified column list.
@@ -234,7 +242,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     public func columns(_ columns: [String]) -> Self {
         self.columns(columns.map(SQLObjectIdentifier.init(_:)))
     }
-    
+
     /// Specify mutiple columns to be included in the list of columns for the query.
     ///
     /// Overwrites any previously specified column list.
@@ -243,7 +251,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     public func columns(_ columns: any SQLExpression...) -> Self {
         self.columns(columns)
     }
-    
+
     /// Specify mutiple columns to be included in the list of columns for the query.
     ///
     /// Overwrites any previously specified column list.
@@ -253,7 +261,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
         self.insert.columns = columns
         return self
     }
-    
+
     /// Add a set of values to be inserted as a single row.
     @inlinable
     @discardableResult
@@ -261,21 +269,21 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     public func values(_ values: any Encodable & Sendable...) -> Self {
         self.values(values)
     }
-    
+
     /// Add a set of values to be inserted as a single row.
     @inlinable
     @discardableResult
     public func values(_ values: [any Encodable & Sendable]) -> Self {
         self.values(values.map { SQLBind($0) })
     }
-    
+
     /// Add a set of values to be inserted as a single row.
     @inlinable
     @discardableResult
     public func values(_ values: any SQLExpression...) -> Self {
         self.values(values)
     }
-    
+
     /// Add a set of values to be inserted as a single row.
     @inlinable
     @discardableResult
@@ -293,7 +301,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     {
         valueSets.reduce(self) { $0.values(Array($1)) }
     }
-    
+
     /// Specify a `SELECT` query to generate rows to insert.
     ///
     /// Example usage:
@@ -367,7 +375,7 @@ public final class SQLInsertBuilder: SQLQueryBuilder, SQLReturningBuilder/*, SQL
     ) rethrows -> Self {
         try self.onConflict(with: targetColumns.map(SQLObjectIdentifier.init(_:)), do: updatePredicate)
     }
-    
+
     /// Specify that constraint violations for the key over the given column should cause the conflicting
     /// row(s) to be updated as specified instead. See ``SQLConflictUpdateBuilder``.
     @inlinable
@@ -392,7 +400,7 @@ extension SQLDatabase {
     public func insert(into table: String) -> SQLInsertBuilder {
         self.insert(into: SQLObjectIdentifier(table))
     }
-    
+
     /// Create a new ``SQLInsertBuilder``.
     @inlinable
     public func insert(into table: any SQLExpression) -> SQLInsertBuilder {

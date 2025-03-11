@@ -17,7 +17,7 @@
 public struct SQLList: SQLExpression {
     /// The list of subexpressions to join.
     public var expressions: [any SQLExpression]
-    
+
     /// The string with which to join the list of subexpressions.
     public var separator: String
 
@@ -35,7 +35,7 @@ public struct SQLList: SQLExpression {
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         var iter = self.expressions.makeIterator()
-        
+
         iter.next()?.serialize(to: &serializer)
         while let item = iter.next() {
             serializer.write(self.separator)

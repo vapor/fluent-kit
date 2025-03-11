@@ -5,13 +5,13 @@ public enum SQLDirection: SQLExpression {
 
     /// Descending order (maximum to minimum), as defined by the sorting key's data type.
     case descending
-    
+
     /// `NULLS FIRST` order (`NULL` values followed by non-`NULL` valeus).
     case null
-    
+
     /// `NULLS LAST` order (non-`NULL` values followed by `NULL` values).
     case notNull
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

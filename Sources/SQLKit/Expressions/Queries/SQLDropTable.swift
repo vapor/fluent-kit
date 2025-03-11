@@ -1,14 +1,14 @@
 /// An expression representing a `DROP TABLE` query. Used to delete entire tables.
-/// 
+///
 /// ```sql
 /// DROP TEMPORARY TABLE IF EXISTS "table" CASCADE;
 /// ```
-/// 
+///
 /// See ``SQLDropTableBuilder``.
 public struct SQLDropTable: SQLExpression {
     /// The table to drop.
     public var table: any SQLExpression
-    
+
     /// If `true`, requests idempotent behavior (e.g. that no error be raised if the named table does not exist).
     ///
     /// Ignored if not supported by the dialect.
@@ -35,7 +35,7 @@ public struct SQLDropTable: SQLExpression {
         self.behavior = nil
         self.temporary = false
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

@@ -13,10 +13,10 @@ public struct SQLConflictResolutionStrategy: SQLExpression {
     /// should apply. The exact rules for how a matching constraint is found when an exact
     /// match is not found vary between databases. Not all database implement conflict targets.
     public var targetColumns: [any SQLExpression]
-    
+
     /// An action to take to resolve a conflict in the unique index.
     public var action: SQLConflictAction
-    
+
     /// Create a resolution strategy over the given column name and an action.
     @inlinable
     public init(target targetColumn: some StringProtocol, action: SQLConflictAction) {
@@ -28,20 +28,20 @@ public struct SQLConflictResolutionStrategy: SQLExpression {
     public init(targets targetColumns: [String], action: SQLConflictAction) {
         self.init(targets: targetColumns.map { SQLColumn($0) }, action: action)
     }
-    
+
     /// Create a resolution strategy over the given column and an action.
     @inlinable
     public init(target targetColumn: any SQLExpression, action: SQLConflictAction) {
         self.init(targets: [targetColumn], action: action)
     }
-    
+
     /// Create a resolution strategy over the given columns and an action.
     @inlinable
     public init(targets targetColumns: [any SQLExpression], action: SQLConflictAction) {
         self.targetColumns = targetColumns
         self.action = action
     }
-    
+
     /// An expression to be embedded into the same `INSERT` query as the strategy expression to
     /// work around MySQL's desire to make life difficult.
     @inlinable
@@ -76,25 +76,25 @@ public struct SQLConflictResolutionStrategy: SQLExpression {
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {
             switch ($0.dialect.upsertSyntax, self.action) {
-                case (.standard, .noAction):
-                    $0.append("ON CONFLICT")
-                    if !self.targetColumns.isEmpty {
-                        $0.append(SQLGroupExpression(self.targetColumns))
-                    }
-                    $0.append("DO NOTHING")
-                case (.standard, .update(let assignments, let predicate)):
-                    $0.append("ON CONFLICT")
-                    if !self.targetColumns.isEmpty {
-                        $0.append(SQLGroupExpression(self.targetColumns))
-                    }
-                    $0.append("DO UPDATE SET", SQLList(assignments))
-                    if let predicate = predicate { $0.append("WHERE", predicate) }
-                case (.mysqlLike, .noAction):
-                    break
-                case (.mysqlLike, .update(let assignments, _)):
-                    $0.append("ON DUPLICATE KEY UPDATE", SQLList(assignments))
-                case (.unsupported, _):
-                    break
+            case (.standard, .noAction):
+                $0.append("ON CONFLICT")
+                if !self.targetColumns.isEmpty {
+                    $0.append(SQLGroupExpression(self.targetColumns))
+                }
+                $0.append("DO NOTHING")
+            case (.standard, .update(let assignments, let predicate)):
+                $0.append("ON CONFLICT")
+                if !self.targetColumns.isEmpty {
+                    $0.append(SQLGroupExpression(self.targetColumns))
+                }
+                $0.append("DO UPDATE SET", SQLList(assignments))
+                if let predicate = predicate { $0.append("WHERE", predicate) }
+            case (.mysqlLike, .noAction):
+                break
+            case (.mysqlLike, .update(let assignments, _)):
+                $0.append("ON DUPLICATE KEY UPDATE", SQLList(assignments))
+            case (.unsupported, _):
+                break
             }
         }
     }
@@ -104,7 +104,7 @@ public struct SQLConflictResolutionStrategy: SQLExpression {
 public struct SQLInsertModifier: SQLExpression {
     @usableFromInline
     init() {}
-    
+
     // See `SQLSerializer.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

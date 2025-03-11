@@ -25,7 +25,7 @@ public final class SQLDropTriggerBuilder: SQLQueryBuilder {
     @discardableResult
     public func ifExists() -> Self {
         self.dropTrigger.ifExists = true
-        return self 
+        return self
     }
 
     /// The drop behavior clause specifies if objects that depend on a trigger
@@ -60,7 +60,7 @@ public final class SQLDropTriggerBuilder: SQLQueryBuilder {
     public func table(_ name: String) -> Self {
         self.table(SQLObjectIdentifier(name))
     }
-    
+
     /// Specify an associated table that owns the trigger to drop, for dialects that require it.
     @inlinable
     @discardableResult

@@ -31,10 +31,10 @@
 public struct SQLSelect: SQLExpression {
     /// An optional common table expression group.
     public var tableExpressionGroup: SQLCommonTableExpressionGroup?
-    
+
     /// One or more expessions describing the data to retrieve from the database.
     public var columns: [any SQLExpression] = []
-    
+
     /// One or more tables to include as sources for data to retrieve.
     ///
     /// This array rarely contains more than one element; when multiple tables are specified by this property, they
@@ -42,25 +42,25 @@ public struct SQLSelect: SQLExpression {
     /// product); if not filtered by the ``predicate``, this can result in extremely slow and expensive queries. It
     /// is almost always preferable to specify all but the first source table in the ``joins`` array.
     public var tables: [any SQLExpression] = []
-    
+
     /// If `true`, final result rows are deduplicated before being returned.
     ///
     /// `DISTINCT` processing occurs after all other processing, except `LIMIT`. Be aware that deduplication occurs
     /// across _entire_ rows, not any single field. There is no support for PostgreSQL's `DISTINCT ON` syntax at
     /// this time.
     public var isDistinct: Bool = false
-    
+
     /// Zero or more joins to apply to the overall data sources.
     ///
     /// These will almost ways be instances of ``SQLJoin``.
     public var joins: [any SQLExpression] = []
-    
+
     /// If not `nil`, an expression which filters the source data to determine the result rows.
     ///
     /// This corresponds to a `SELECT` query's `WHERE` clause and applies _before_ any `GROUP BY` clause(s). Most
     /// often the predicate will consist of one or more nested ``SQLBinaryExpression``s.
     public var predicate: (any SQLExpression)? = nil
-    
+
     /// Zero or more columns or expressions specifying grouping keys for the filtered result rows.
     ///
     /// This corresponds to a `SELECT` query's `GROUP BY` clause.
@@ -77,26 +77,26 @@ public struct SQLSelect: SQLExpression {
     ///
     /// See ``SQLDirection``.
     public var orderBy: [any SQLExpression] = []
-    
+
     /// If not `nil`, limits the number of result rows returned. Applies _after_ ``offset`` (if specified).
     ///
     /// Although the type of this property is `Int`, it is invalid to specify a negative value.
     public var limit: Int? = nil
-    
+
     /// If not `nil`, skips the given number of result rows before starting to return results.
     ///
     /// Although the type of this property is `Int`, it is invalid to specify a negative value.
     public var offset: Int? = nil
-    
+
     /// If not `nil`, specifies a locking clause which applies to the rows looked up by the query.
     ///
     /// See ``SQLLockingClause``.
     public var lockingClause: (any SQLExpression)? = nil
-    
+
     /// Create a new data retrieval query.
     @inlinable
     public init() {}
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

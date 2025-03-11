@@ -1,12 +1,12 @@
 /// Column-level data constraints.
-/// 
+///
 /// Most dialects of SQL support both column-level (specific to a single column) and table-level (applicable to a list
 /// of one or more columns within the table) constraints. While some constraints can be expressed either way, others
 /// are only allowed at the column level. See ``SQLTableConstraintAlgorithm`` for table-level constraints.
-/// 
+///
 /// Column-level constraints typically do not have separate constraint names, and are thus not used in concert with
 /// ``SQLConstraint`` expressions except in unusual cases.
-/// 
+///
 /// Column constraints are used primarily by ``SQLColumnDefinition``, and also appear directly in the APIs of
 /// ``SQLAlterTableBuilder``, ``SQLCreateIndexBuilder``, and ``SQLCreateTableBuilder``.
 public enum SQLColumnConstraintAlgorithm: SQLExpression {
@@ -162,7 +162,7 @@ public enum SQLColumnConstraintAlgorithm: SQLExpression {
             )
         )
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

@@ -2,23 +2,23 @@
 public final class SQLDropTableBuilder: SQLQueryBuilder {
     /// ``SQLDropTable`` query being built.
     public var dropTable: SQLDropTable
-    
+
     // See `SQLQueryBuilder.database`.
     public var database: any SQLDatabase
-    
+
     // See `SQLQueryBuilder.query`.
     @inlinable
     public var query: any SQLExpression {
         self.dropTable
     }
-    
+
     /// Create a new ``SQLDropTableBuilder``.
     @inlinable
     public init(_ dropTable: SQLDropTable, on database: any SQLDatabase) {
         self.dropTable = dropTable
         self.database = database
     }
-    
+
     /// The optional `IF EXISTS` clause suppresses the error that would normally
     /// result if the table does not exist.
     @inlinable
@@ -70,7 +70,7 @@ extension SQLDatabase {
     public func drop(table: String) -> SQLDropTableBuilder {
         self.drop(table: SQLObjectIdentifier(table))
     }
-    
+
     /// Create a new ``SQLDropTableBuilder``.
     @inlinable
     public func drop(table: any SQLExpression) -> SQLDropTableBuilder {

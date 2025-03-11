@@ -15,7 +15,7 @@ extension SQLJoinBuilder {
     @inlinable
     @discardableResult
     public func join(_ table: String, method: SQLJoinMethod = .inner, on expression: any SQLExpression) -> Self {
-         self.join(SQLObjectIdentifier(table), method: method, on: expression)
+        self.join(SQLObjectIdentifier(table), method: method, on: expression)
     }
 
     /// Include the given table in the list of those used by the query, performing an explicit join using the
@@ -46,7 +46,9 @@ extension SQLJoinBuilder {
     public func join(
         _ table: String,
         method: any SQLExpression = SQLJoinMethod.inner,
-        on left: any SQLExpression, _ op: SQLBinaryOperator, _ right: any SQLExpression
+        on left: any SQLExpression,
+        _ op: SQLBinaryOperator,
+        _ right: any SQLExpression
     ) -> Self {
         self.join(SQLObjectIdentifier(table), method: method, on: left, op, right)
     }
@@ -65,7 +67,9 @@ extension SQLJoinBuilder {
     public func join(
         _ table: any SQLExpression,
         method: any SQLExpression = SQLJoinMethod.inner,
-        on left: any SQLExpression, _ op: SQLBinaryOperator, _ right: any SQLExpression
+        on left: any SQLExpression,
+        _ op: SQLBinaryOperator,
+        _ right: any SQLExpression
     ) -> Self {
         self.join(table, method: method, on: SQLBinaryExpression(left: left, op: op, right: right))
     }

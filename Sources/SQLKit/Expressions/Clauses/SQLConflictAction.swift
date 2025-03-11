@@ -14,7 +14,7 @@ public enum SQLConflictAction: Sendable {
     /// Specifies that conflicts this action is applied to should be ignored, allowing the query to complete
     /// successfully without inserting any new rows or changing any existing rows.
     case noAction
-    
+
     /// Specifies that conflicts this action is applied to shall cause the `INSERT` to be converted to an `UPDATE`
     /// on the same schema which performs the column updates specified by the associated column assignments and,
     /// where supported by the database, constrained by the associated predicate. The column assignments may

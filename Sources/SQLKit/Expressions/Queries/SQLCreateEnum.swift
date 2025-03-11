@@ -1,14 +1,14 @@
 /// An expression representing a `CREATE TYPE` query. Used to create enumeration types.
-/// 
+///
 /// ```sql
 /// CREATE TYPE "name" AS ENUM ('value1', 'value2');
 /// ```
-/// 
+///
 /// This expression does _not_ check whether the current dialect supports separate enumeration types; users should
 /// take care not to use it with incompatible drivers.
-/// 
+///
 /// > Note: As with ``SQLAlterEnum``, the full range of the `CREATE TYPE` query is not supported by this expression.
-/// 
+///
 /// See ``SQLCreateEnumBuilder``.
 public struct SQLCreateEnum: SQLExpression {
     /// The name for the created type.

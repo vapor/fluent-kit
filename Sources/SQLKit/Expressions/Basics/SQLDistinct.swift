@@ -14,7 +14,7 @@
 public struct SQLDistinct: SQLExpression {
     /// Zero or more identifiers and/or expressions to treat as a combined uniquing key.
     public let args: [any SQLExpression]
-    
+
     /// Shorthand for `SQLDistinct(SQLLiteral.all)`.
     @inlinable
     public static var all: SQLDistinct {
@@ -26,19 +26,19 @@ public struct SQLDistinct: SQLExpression {
     public init(_ args: String...) {
         self.init(args)
     }
-    
+
     /// Create a `DISTINCT` expression with a list of string identifiers.
     @inlinable
     public init(_ args: [String]) {
         self.init(args.map(SQLObjectIdentifier.init(_:)))
     }
-    
+
     /// Create a `DISTINCT` expression with a list of expressions.
     @inlinable
     public init(_ args: any SQLExpression...) {
         self.init(args)
     }
-    
+
     /// Create a `DISTINCT` expression with a list of expressions.
     @inlinable
     public init(_ args: [any SQLExpression]) {

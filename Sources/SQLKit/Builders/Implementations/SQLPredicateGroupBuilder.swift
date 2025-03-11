@@ -2,7 +2,7 @@
 public final class SQLPredicateGroupBuilder: SQLPredicateBuilder {
     // See `SQLPredicateBuilder.predicate`.
     public var predicate: (any SQLExpression)?
-    
+
     /// Create a new ``SQLPredicateGroupBuilder``.
     @usableFromInline
     init() {}
@@ -29,7 +29,7 @@ extension SQLPredicateBuilder {
             return self
         }
     }
-    
+
     /// Builds a grouped `WHERE` expression by inclusive disjunction (`OR`).
     ///
     ///     builder.where("name", .equal, "Jupiter").orWhere {

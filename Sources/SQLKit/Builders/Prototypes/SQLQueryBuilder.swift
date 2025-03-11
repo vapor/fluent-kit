@@ -4,7 +4,7 @@
 public protocol SQLQueryBuilder: AnyObject {
     /// Query being built.
     var query: any SQLExpression { get }
-    
+
     /// Connection to execute query on.
     var database: any SQLDatabase { get }
 

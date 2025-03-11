@@ -15,7 +15,7 @@ public struct SQLBetween<T: SQLExpression, U: SQLExpression, V: SQLExpression>: 
     public let upperBound: V
 
     /// Create a ``SQLBetween`` expression from three ``SQLExpression``s.
-    /// 
+    ///
     /// - Parameters:
     ///   - operand: The value to evaluate the range against.
     ///   - lowerBound: The lower bound of the range.
@@ -36,7 +36,7 @@ public struct SQLBetween<T: SQLExpression, U: SQLExpression, V: SQLExpression>: 
         serializer.statement {
             $0.append(self.operand)
             $0.append("BETWEEN", self.lowerBound)
-            $0.append("AND",     self.upperBound)
+            $0.append("AND", self.upperBound)
         }
     }
 }
@@ -53,7 +53,7 @@ extension SQLBetween {
     ) where T == SQLBind, U == SQLBind, V == SQLBind {
         self.init(operand: .init(operand), lowerBound: .init(lowerBound), upperBound: .init(upperBound))
     }
-    
+
     /// Create an ``SQLBetween`` expression from a bindable value and two ``SQLExpression``s.
     @inlinable
     public init(
@@ -63,7 +63,7 @@ extension SQLBetween {
     ) where T == SQLBind {
         self.init(operand: .init(operand), lowerBound: lowerBound, upperBound: upperBound)
     }
-    
+
     /// Create an ``SQLBetween`` expression from an ``SQLExpression``, a bindable values, and another ``SQLExpression``.
     @inlinable
     public init(
@@ -73,7 +73,7 @@ extension SQLBetween {
     ) where U == SQLBind {
         self.init(operand: operand, lowerBound: .init(lowerBound), upperBound: upperBound)
     }
-    
+
     /// Create an ``SQLBetween`` expression from two ``SQLExpression``s and a bindable value.
     @inlinable
     public init(
@@ -83,7 +83,7 @@ extension SQLBetween {
     ) where V == SQLBind {
         self.init(operand: operand, lowerBound: lowerBound, upperBound: .init(upperBound))
     }
-    
+
     /// Create an ``SQLBetween`` expression from two bindable values and an ``SQLExpression``.
     @inlinable
     public init(
@@ -93,7 +93,7 @@ extension SQLBetween {
     ) where T == SQLBind, U == SQLBind {
         self.init(operand: .init(operand), lowerBound: .init(lowerBound), upperBound: upperBound)
     }
-    
+
     /// Create an ``SQLBetween`` expression from an ``SQLExpression`` and two bindable values.
     @inlinable
     public init(
@@ -103,7 +103,7 @@ extension SQLBetween {
     ) where U == SQLBind, V == SQLBind {
         self.init(operand: operand, lowerBound: .init(lowerBound), upperBound: .init(upperBound))
     }
-    
+
     /// Create an ``SQLBetween`` expression from a bindable value, an ``SQLExpression``, and a bindable value.
     @inlinable
     public init(
@@ -123,7 +123,7 @@ extension SQLBetween {
     ) where T == SQLObjectIdentifier, U == SQLBind, V == SQLBind {
         self.init(operand: .init(column), lowerBound: .init(lowerBound), upperBound: .init(upperBound))
     }
-    
+
     /// Create a ``SQLBetween`` expression from a column name, a bindable value, and an ``SQLExpression``.
     @inlinable
     public init(
@@ -133,7 +133,7 @@ extension SQLBetween {
     ) where T == SQLObjectIdentifier, U == SQLBind {
         self.init(operand: .init(column), lowerBound: .init(lowerBound), upperBound: upperBound)
     }
-    
+
     /// Create a ``SQLBetween`` expression from a column name, an ``SQLExpression``, and a bindable value.
     @inlinable
     public init(
@@ -143,7 +143,7 @@ extension SQLBetween {
     ) where T == SQLObjectIdentifier, V == SQLBind {
         self.init(operand: .init(column), lowerBound: lowerBound, upperBound: .init(upperBound))
     }
-    
+
     /// Create a ``SQLBetween`` expression from a column name and two ``SQLExpression``s.
     @inlinable
     public init(
@@ -256,7 +256,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.where(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `where(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -267,7 +267,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.where(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))
     }
-    
+
     /// Shorthand for `where(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))`.
     @discardableResult
     @inlinable
@@ -278,7 +278,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.where(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `where(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -289,7 +289,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.where(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: upperBound))
     }
-    
+
     /// Shorthand for `orWhere(SQLBetween(operand, lowerBound, upperBound))`.
     @discardableResult
     @inlinable
@@ -388,7 +388,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.orWhere(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `orWhere(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -399,7 +399,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.orWhere(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))
     }
-    
+
     /// Shorthand for `orWhere(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))`.
     @discardableResult
     @inlinable
@@ -410,7 +410,7 @@ extension SQLPredicateBuilder {
     ) -> Self {
         self.orWhere(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `orWhere(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -524,7 +524,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.having(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `having(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -535,7 +535,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.having(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))
     }
-    
+
     /// Shorthand for `having(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))`.
     @discardableResult
     @inlinable
@@ -546,7 +546,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.having(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `having(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -557,7 +557,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.having(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: upperBound))
     }
-    
+
     /// Shorthand for `orHaving(SQLBetween(operand, lowerBound, upperBound))`.
     @discardableResult
     @inlinable
@@ -656,7 +656,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.orHaving(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `orHaving(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))`.
     @discardableResult
     @inlinable
@@ -667,7 +667,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.orHaving(SQLBetween(operand: SQLColumn(column), lowerBound: SQLBind(lowerBound), upperBound: upperBound))
     }
-    
+
     /// Shorthand for `orHaving(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))`.
     @discardableResult
     @inlinable
@@ -678,7 +678,7 @@ extension SQLSecondaryPredicateBuilder {
     ) -> Self {
         self.orHaving(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: SQLBind(upperBound)))
     }
-    
+
     /// Shorthand for `orHaving(SQLBetween(operand: SQLColumn(column), lowerBound: lowerBound, upperBound: upperBound))`.
     @discardableResult
     @inlinable

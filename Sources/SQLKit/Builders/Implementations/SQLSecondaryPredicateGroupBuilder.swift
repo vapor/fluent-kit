@@ -2,7 +2,7 @@
 public final class SQLSecondaryPredicateGroupBuilder: SQLSecondaryPredicateBuilder {
     // See `SQLSecondaryPredicateBuilder.secondaryPredicate`.
     public var secondaryPredicate: (any SQLExpression)?
-    
+
     /// Create a new ``SQLSecondaryPredicateGroupBuilder``.
     @usableFromInline
     init() {}
@@ -29,7 +29,7 @@ extension SQLSecondaryPredicateBuilder {
             return self
         }
     }
-    
+
     /// Builds a grouped `HAVING` expression by inclusive disjunction ('OR').
     ///
     ///     builder.having("name", .equal, "Jupiter").orHaving {

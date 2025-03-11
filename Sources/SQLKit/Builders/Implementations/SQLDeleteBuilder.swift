@@ -25,14 +25,14 @@ public final class SQLDeleteBuilder: SQLQueryBuilder, SQLPredicateBuilder, SQLRe
         get { self.delete.returning }
         set { self.delete.returning = newValue }
     }
-    
+
     // See `SQLCommonTableExpressionBuilder.tableExpressionGroup`.
     @inlinable
     public var tableExpressionGroup: SQLCommonTableExpressionGroup? {
         get { self.delete.tableExpressionGroup }
         set { self.delete.tableExpressionGroup = newValue }
     }
-    
+
     /// Create a new ``SQLDeleteBuilder``.
     @inlinable
     public init(_ delete: SQLDelete, on database: any SQLDatabase) {
@@ -47,7 +47,7 @@ extension SQLDatabase {
     public func delete(from table: String) -> SQLDeleteBuilder {
         self.delete(from: SQLObjectIdentifier(table))
     }
-    
+
     /// Create a new ``SQLDeleteBuilder``.
     @inlinable
     public func delete(from table: any SQLExpression) -> SQLDeleteBuilder {

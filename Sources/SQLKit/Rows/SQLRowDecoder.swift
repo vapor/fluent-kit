@@ -92,7 +92,7 @@ public struct SQLRowDecoder: Sendable {
         ///   database column name.
         @preconcurrency
         case custom(@Sendable ([any CodingKey]) -> any CodingKey)
-        
+
         /// Apply the strategy to the given coding key, returning the transformed result.
         ///
         /// > Note: As noted elsewhere, although the strategy implies performing _backwards_ translations (converting
@@ -104,7 +104,7 @@ public struct SQLRowDecoder: Sendable {
             case .useDefaultKeys:
                 return .init(key)
             case .convertFromSnakeCase:
-                return .init(key).convertedToSnakeCase // N.B.: NOT a typo!
+                return .init(key).convertedToSnakeCase  // N.B.: NOT a typo!
             case .custom(let custom):
                 return custom([String(key).codingKey]).stringValue
             }
@@ -124,7 +124,7 @@ public struct SQLRowDecoder: Sendable {
     /// _nil_|``KeyDecodingStrategy-swift.enum/convertFromSnakeCase``|`FooBar`|`foo_bar`
     /// `p`|``KeyDecodingStrategy-swift.enum/convertFromSnakeCase``|`FooBar`|`pfoo_bar`
     public var prefix: String?
-    
+
     /// The key decoding strategy to use.
     ///
     /// The ``prefix``, if set, is applied _after_ the ``keyDecodingStrategy-swift.property``.
@@ -138,7 +138,7 @@ public struct SQLRowDecoder: Sendable {
     /// _nil_|``KeyDecodingStrategy-swift.enum/convertFromSnakeCase``|`FooBar`|`foo_bar`
     /// `p`|``KeyDecodingStrategy-swift.enum/convertFromSnakeCase``|`FooBar`|`pfoo_bar`
     public var keyDecodingStrategy: KeyDecodingStrategy
-    
+
     /// User info to provide to the underlying `Decoder`.
     public var userInfo: [CodingUserInfoKey: any Sendable]
 
@@ -174,13 +174,13 @@ public struct SQLRowDecoder: Sendable {
     private struct SQLRowDecoderImpl<Row: SQLRow>: Decoder {
         /// Holds configuration information for the decoding process.
         let configuration: SQLRowDecoder
-        
+
         /// The row containing the data to be decoded.
         let row: Row
-        
+
         // See `Decoder.codingPath`.
         var codingPath: [any CodingKey] = []
-        
+
         // See `Decoder.userInfo`.
         var userInfo: [CodingUserInfoKey: Any] {
             self.configuration.userInfo
@@ -193,11 +193,11 @@ public struct SQLRowDecoder: Sendable {
             guard self.codingPath.isEmpty else {
                 throw .invalid(at: self.codingPath)
             }
-            
+
             /// Otherwise, a keyed container request is valid.
             return .init(KeyedContainer(decoder: self))
         }
-        
+
         // See `Decoder.unkeyedContainer()`.
         func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
             /// It is never valid to request an unkeyed container in the current implementation. In a design having
@@ -205,7 +205,7 @@ public struct SQLRowDecoder: Sendable {
             /// of column indexes rather than column names.
             throw .invalid(at: self.codingPath)
         }
-        
+
         // See `Decoder.singleValueContainer()`.
         func singleValueContainer() throws -> any SingleValueDecodingContainer {
             SingleValueContainer(decoder: self)
@@ -222,7 +222,7 @@ public struct SQLRowDecoder: Sendable {
             var codingPath: [any CodingKey] {
                 self.decoder.codingPath
             }
-            
+
             /// The decoder which created this container.
             let decoder: SQLRowDecoderImpl
 
@@ -242,16 +242,16 @@ public struct SQLRowDecoder: Sendable {
                     case .convertFromSnakeCase:
                         return $0.convertedFromSnakeCase
                     case .custom(_):
-                        return $0 // this is inaccurate but there's little to be done about it
+                        return $0  // this is inaccurate but there's little to be done about it
                     }
                 }.compactMap(Key.init(stringValue:))
             }
-            
+
             // See `KeyedDecodingContainerProtocol.contains(_:)`.
             func contains(_ key: Key) -> Bool {
                 self.decoder.row.contains(column: self.decoder.column(for: key.stringValue))
             }
-            
+
             // See `KeyedDecodingContainerProtocol.decodeNil(forKey:)`.
             func decodeNil(forKey key: Key) throws -> Bool {
                 do {
@@ -264,11 +264,11 @@ public struct SQLRowDecoder: Sendable {
                     throw error.under(path: self.codingPath + [key])
                 }
             }
-            
+
             // See `KeyedDecodingContainerProtocol.decode(_:forKey:)`.
             func decode<T: Decodable>(_: T.Type, forKey key: Key) throws -> T {
                 let column = self.decoder.column(for: key.stringValue)
-                
+
                 guard self.decoder.row.contains(column: column) else {
                     throw DecodingError.keyNotFound(key, .init(
                         codingPath: self.codingPath,
@@ -282,7 +282,7 @@ public struct SQLRowDecoder: Sendable {
                     throw error.under(path: self.codingPath + [key])
                 }
             }
-            
+
             // See `KeyedDecodingContainerProtocol.superDecoder(forKey:)`.
             func superDecoder(forKey key: Key) throws -> any Decoder {
                 /// Return a valid decoder so that implementations which then decode scalar values from a
@@ -300,13 +300,13 @@ public struct SQLRowDecoder: Sendable {
                 /// Nested containers are never supported.
                 throw .invalid(at: self.codingPath + [key])
             }
-            
+
             // See `KeyedDecodingContainerProtocol.nestedUnkeyedContainer(forKey:)`.
             func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer {
                 /// Neither nested nor unkeyed containers are supported.
                 throw .invalid(at: self.codingPath + [key])
             }
-            
+
             // See `KeyedDecodingContainerProtocol.superDecoder()`.
             func superDecoder() throws -> any Decoder {
                 /// This method is ostensibly equivalent to `superDecoder(forKey: "super")`, but conceptually does not
@@ -321,10 +321,10 @@ public struct SQLRowDecoder: Sendable {
             var codingPath: [any CodingKey] {
                 self.decoder.codingPath
             }
-            
+
             /// The decoder which created this container.
             let decoder: SQLRowDecoderImpl
-            
+
             // See `SingleValueDecodingContainer.decodeNil()`.
             func decodeNil() -> Bool {
                 if let key = self.codingPath.last {
@@ -345,7 +345,7 @@ public struct SQLRowDecoder: Sendable {
                     return false
                 }
             }
-            
+
             // See `SingleValueDecodingContainer.decode(_:)`.
             func decode<T: Decodable>(_: T.Type) throws -> T {
                 /// If the coding path is not empty, we reached this point via a keyed container's
@@ -378,19 +378,19 @@ public struct SQLRowDecoder: Sendable {
             }
 
             /// See `decode<T>(_:)` above for why these are here.
-            
+
             // See `SingleValueDecodingContainer.decode(_:)`.
-            func decode(_: Bool.Type) throws -> Bool     { throw .invalid(at: self.codingPath) }
+            func decode(_: Bool.Type) throws -> Bool { throw .invalid(at: self.codingPath) }
             func decode(_: String.Type) throws -> String { throw .invalid(at: self.codingPath) }
-            func decode(_: Float.Type) throws -> Float   { throw .invalid(at: self.codingPath) }
+            func decode(_: Float.Type) throws -> Float { throw .invalid(at: self.codingPath) }
             func decode(_: Double.Type) throws -> Double { throw .invalid(at: self.codingPath) }
-            func decode(_: Int.Type) throws -> Int       { throw .invalid(at: self.codingPath) }
-            func decode(_: Int8.Type) throws -> Int8     { throw .invalid(at: self.codingPath) }
-            func decode(_: Int16.Type) throws -> Int16   { throw .invalid(at: self.codingPath) }
-            func decode(_: Int32.Type) throws -> Int32   { throw .invalid(at: self.codingPath) }
-            func decode(_: Int64.Type) throws -> Int64   { throw .invalid(at: self.codingPath) }
-            func decode(_: UInt.Type) throws -> UInt     { throw .invalid(at: self.codingPath) }
-            func decode(_: UInt8.Type) throws -> UInt8   { throw .invalid(at: self.codingPath) }
+            func decode(_: Int.Type) throws -> Int { throw .invalid(at: self.codingPath) }
+            func decode(_: Int8.Type) throws -> Int8 { throw .invalid(at: self.codingPath) }
+            func decode(_: Int16.Type) throws -> Int16 { throw .invalid(at: self.codingPath) }
+            func decode(_: Int32.Type) throws -> Int32 { throw .invalid(at: self.codingPath) }
+            func decode(_: Int64.Type) throws -> Int64 { throw .invalid(at: self.codingPath) }
+            func decode(_: UInt.Type) throws -> UInt { throw .invalid(at: self.codingPath) }
+            func decode(_: UInt8.Type) throws -> UInt8 { throw .invalid(at: self.codingPath) }
             func decode(_: UInt16.Type) throws -> UInt16 { throw .invalid(at: self.codingPath) }
             func decode(_: UInt32.Type) throws -> UInt32 { throw .invalid(at: self.codingPath) }
             func decode(_: UInt64.Type) throws -> UInt64 { throw .invalid(at: self.codingPath) }

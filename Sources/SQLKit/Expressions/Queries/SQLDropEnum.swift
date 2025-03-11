@@ -3,10 +3,10 @@
 /// ```sql
 /// DROP TYPE IF EXISTS "enum_type" CASCADE:
 /// ```
-/// 
+///
 /// This expression does _not_ check whether the current dialect supports separate enumeration types; users should
 /// take care not to use it with incompatible drivers.
-/// 
+///
 /// See ``SQLDropEnumBuilder``.
 public struct SQLDropEnum: SQLExpression {
     /// The name of the type to drop.

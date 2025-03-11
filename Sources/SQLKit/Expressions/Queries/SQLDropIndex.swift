@@ -13,12 +13,12 @@
 public struct SQLDropIndex: SQLExpression {
     /// The name of the index to drop.
     public var name: any SQLExpression
-    
+
     /// If `true`, requests idempotent behavior (e.g. that no error be raised if the named index does not exist).
     ///
     /// Ignored if not supported by the dialect.
     public var ifExists: Bool
-    
+
     /// The object (usually a table) on which the index exists.
     ///
     /// Not allowed by most dialects. Required by the MySQL dialect.
@@ -37,7 +37,7 @@ public struct SQLDropIndex: SQLExpression {
         self.name = name
         self.ifExists = false
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

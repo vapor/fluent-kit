@@ -14,7 +14,7 @@
 public struct SomeCodingKey: CodingKey, Hashable, Sendable {
     // See `CodingKey.stringValue`.
     public let stringValue: String
-    
+
     // See `CodingKey.intValue`.
     public let intValue: Int?
 

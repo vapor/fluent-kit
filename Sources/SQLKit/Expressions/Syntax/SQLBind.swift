@@ -2,13 +2,13 @@
 public struct SQLBind: SQLExpression {
     /// The actual bound value.
     public let encodable: any Encodable & Sendable
-    
+
     /// Create a binding to a value.
     @inlinable
     public init(_ encodable: any Encodable & Sendable) {
         self.encodable = encodable
     }
-    
+
     /// Create a list of bindings to an array of values, with the placeholders wrapped in an ``SQLGroupExpression``.
     @inlinable
     public static func group(_ items: [any Encodable & Sendable]) -> some SQLExpression {

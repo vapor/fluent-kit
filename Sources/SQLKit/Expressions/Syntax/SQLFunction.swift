@@ -18,10 +18,10 @@ public struct SQLFunction: SQLExpression {
     ///
     /// In this version of SQLKit, function names are always emitted as raw unquoted SQL.
     public let name: String
-    
+
     /// The list of function arguments. May be empty.
     public let args: [any SQLExpression]
-    
+
     /// Create a function from a name and list of arguments.
     ///
     /// Each argument is treated as a quotable identifier, _not_ raw SQL or a string literal.
@@ -33,7 +33,7 @@ public struct SQLFunction: SQLExpression {
     public init(_ name: some StringProtocol, args: String...) {
         self.init(name, args: args.map { SQLObjectIdentifier($0) })
     }
-    
+
     /// Create a function from a name and list of arguments.
     ///
     /// Each argument is treated as a quotable identifier, _not_ raw SQL or a string literal.
@@ -45,7 +45,7 @@ public struct SQLFunction: SQLExpression {
     public init(_ name: some StringProtocol, args: [String]) {
         self.init(name, args: args.map { SQLObjectIdentifier($0) })
     }
-    
+
     /// Create a function from a name and list of arguments.
     ///
     /// - Parameters:
@@ -55,7 +55,7 @@ public struct SQLFunction: SQLExpression {
     public init(_ name: some StringProtocol, args: any SQLExpression...) {
         self.init(name, args: args)
     }
-    
+
     /// Create a function from a name and list of arguments.
     ///
     /// - Parameters:
@@ -66,7 +66,7 @@ public struct SQLFunction: SQLExpression {
         self.name = String(name)
         self.args = args
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.write(self.name)

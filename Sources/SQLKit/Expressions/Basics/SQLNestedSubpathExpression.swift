@@ -8,10 +8,10 @@
 public struct SQLNestedSubpathExpression: SQLExpression {
     /// The expression to which the nested subpath is applied.
     public var column: any SQLExpression
-    
+
     /// The subpath itself. **Must** always contain at least one element.
     public var path: [String]
-    
+
     /// Create a nested subpath from an expression and an array of one or more path elements.
     ///
     /// - Parameters:
@@ -19,11 +19,11 @@ public struct SQLNestedSubpathExpression: SQLExpression {
     ///   - path: The subpath itself. If this array is empty, a runtime error occurs.
     public init(column: any SQLExpression, path: [String]) {
         assert(!path.isEmpty)
-        
+
         self.column = column
         self.path = path
     }
-    
+
     /// Create a nested subpath from an identifier string and an array of one or more path elements.
     ///
     /// - Parameters:

@@ -15,7 +15,7 @@
 public struct SQLAlterEnum: SQLExpression {
     /// The name of the type to alter.
     public var name: any SQLExpression
-    
+
     /// A new enumeration value to add to an existing type.
     ///
     /// > Warning: Although this property is optional, setting it to `nil` will result in invalid serialized SQL.

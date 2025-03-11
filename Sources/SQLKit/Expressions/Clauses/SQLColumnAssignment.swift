@@ -6,17 +6,17 @@
 public struct SQLColumnAssignment: SQLExpression {
     /// The name of the column to assign.
     public var columnName: any SQLExpression
-    
+
     /// The value to assign.
     public var value: any SQLExpression
-    
+
     /// Create a column assignment from a column identifier and value expression.
     @inlinable
     public init(setting columnName: any SQLExpression, to value: any SQLExpression) {
         self.columnName = columnName
         self.value = value
     }
-    
+
     /// Create a column assignment from a column identifier and value binding.
     @inlinable
     public init(setting columnName: any SQLExpression, to value: any Encodable & Sendable) {
@@ -34,7 +34,7 @@ public struct SQLColumnAssignment: SQLExpression {
     public init(setting columnName: some StringProtocol, to value: any SQLExpression) {
         self.init(setting: SQLColumn(columnName), to: value)
     }
-    
+
     /// Create a column assignment from a column name and using the excluded value
     /// from an upsert's values list.
     ///
@@ -52,7 +52,7 @@ public struct SQLColumnAssignment: SQLExpression {
     public init(settingExcludedValueFor column: any SQLExpression) {
         self.init(setting: column, to: SQLExcludedColumn(column))
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

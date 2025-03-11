@@ -140,22 +140,40 @@ public struct SQLCreateTrigger: SQLExpression {
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         let syntax = serializer.dialect.triggerSyntax.create
-        let when = self.when as? WhenSpecifier, event = self.event as? EventSpecifier, each = self.each as? EachSpecifier
-        
+        let when = self.when as? WhenSpecifier
+        let event = self.event as? EventSpecifier
+        let each = self.each as? EachSpecifier
+
         if syntax.contains(.postgreSQLChecks) {
-            if !(when != .instead || event != .update || (self.columns?.isEmpty ?? true)) { serializer.database.logger.debug("INSTEAD OF UPDATE events do not support lists of columns") }
+            if !(when != .instead || event != .update || (self.columns?.isEmpty ?? true)) {
+                serializer.database.logger.debug("INSTEAD OF UPDATE events do not support lists of columns")
+            }
             if !(when != .instead || each == .row) { serializer.database.logger.debug("INSTEAD OF triggers must be FOR EACH ROW") }
-            if !(!syntax.contains(.supportsUpdateColumns) || (self.columns?.isEmpty ?? true) || event == .update) { serializer.database.logger.debug("Only UPDATE triggers may specify a list of columns.") }
-            if !(!syntax.contains(.supportsCondition) || when != .instead || self.condition == nil) { serializer.database.logger.debug("INSTEAD OF triggers do not support WHEN conditions.") }
+            if !(!syntax.contains(.supportsUpdateColumns) || (self.columns?.isEmpty ?? true) || event == .update) {
+                serializer.database.logger.debug("Only UPDATE triggers may specify a list of columns.")
+            }
+            if !(!syntax.contains(.supportsCondition) || when != .instead || self.condition == nil) {
+                serializer.database.logger.debug("INSTEAD OF triggers do not support WHEN conditions.")
+            }
             if syntax.contains(.supportsConstraints) {
-                if !(!self.isConstraint || when == .after) { serializer.database.logger.debug("CONSTRAINT triggers may only be SQLTriggerWhen.after") }
-                if !(!self.isConstraint || each == .row) { serializer.database.logger.debug("CONSTRAINT triggers may only be specified FOR EACH ROW") }
-                if !(self.isConstraint || self.timing == nil) { serializer.database.logger.debug("May only specify SQLTriggerTiming on CONSTRAINT triggers.") }
+                if !(!self.isConstraint || when == .after) {
+                    serializer.database.logger.debug("CONSTRAINT triggers may only be SQLTriggerWhen.after")
+                }
+                if !(!self.isConstraint || each == .row) {
+                    serializer.database.logger.debug("CONSTRAINT triggers may only be specified FOR EACH ROW")
+                }
+                if !(self.isConstraint || self.timing == nil) {
+                    serializer.database.logger.debug("May only specify SQLTriggerTiming on CONSTRAINT triggers.")
+                }
             }
         }
-        if !(syntax.contains(.supportsDefiner) || self.definer == nil) { serializer.database.logger.debug("Must not specify a definer when dialect does not support it.") }
+        if !(syntax.contains(.supportsDefiner) || self.definer == nil) {
+            serializer.database.logger.debug("Must not specify a definer when dialect does not support it.")
+        }
         if !(!syntax.contains(.supportsBody) || self.body != nil) { serializer.database.logger.debug("Must define a trigger body.") }
-        if !(syntax.contains(.supportsBody) || self.procedure != nil) { serializer.database.logger.debug("Must define a trigger procedure.") }
+        if !(syntax.contains(.supportsBody) || self.procedure != nil) {
+            serializer.database.logger.debug("Must define a trigger procedure.")
+        }
 
         serializer.statement {
             $0.append("CREATE")
@@ -170,27 +188,27 @@ public struct SQLCreateTrigger: SQLExpression {
             if let columns = self.columns, !columns.isEmpty, syntax.contains(.supportsUpdateColumns) {
                 $0.append("OF", SQLList(columns))
             }
-            
+
             $0.append("ON", self.table)
-            
+
             if let referencedTable = self.referencedTable, syntax.contains(.supportsConstraints) {
                 $0.append("FROM", referencedTable)
             }
-            
+
             if let timing = self.timing, syntax.contains(.supportsConstraints) {
                 $0.append(timing)
             }
-            
+
             if syntax.contains(.requiresForEachRow) || (syntax.isSuperset(of: [.supportsForEach, .supportsConstraints]) && self.isConstraint) {
                 $0.append(EachSpecifier.row)
             } else if syntax.contains(.supportsForEach), let each = self.each {
                 $0.append(each)
             }
-            
+
             if let condition = self.condition, syntax.contains(.supportsCondition) {
                 $0.append("WHEN", syntax.contains(.conditionRequiresParentheses) ? SQLGroupExpression(condition) : condition)
             }
-            
+
             if let order = self.order, let orderTriggerName = self.orderTriggerName, syntax.contains(.supportsOrder) {
                 $0.append(order, orderTriggerName)
             }
@@ -209,10 +227,10 @@ extension SQLCreateTrigger {
     public enum WhenSpecifier: String, SQLExpression {
         /// Run the trigger before the event.
         case before = "BEFORE"
-        
+
         /// Run the trgger after the event.
         case after = "AFTER"
-        
+
         /// Replace the event with the trigger's execution.
         ///
         /// Not supported by all dialects.
@@ -229,17 +247,17 @@ extension SQLCreateTrigger {
     public enum EventSpecifier: String, SQLExpression {
         /// Execute the trigger when a row is inserted into the table.
         case insert = "INSERT"
-        
+
         /// Execute the trigger when one or more rows in the table are updated.
         ///
         /// If an `UPDATE` query runs without updating any rows, the trigger is _not_ executed.
         case update = "UPDATE"
-        
+
         /// Execute the trigger when one or more rows in the table are deleted.
         ///
         /// If a `DELETE` query runs without deleting any rows, the trigger is _not_ executed.
         case delete = "DELETE"
-        
+
         /// Execute the trigger when the table is truncated.
         case truncate = "TRUNCATE"
 
@@ -255,14 +273,14 @@ extension SQLCreateTrigger {
         /// The trigger's execution may be deferred until the end of the active transaction by
         /// `SET CONSTRAINTS ... DEFERRED`, but runs immediately by default.
         case deferrable = "DEFERRABLE INITIALLY IMMEDIATE"
-        
+
         /// The trigger's execution is deferred until the end of the active transaction unless
         /// changed by `SET CONSTRAINTS ... IMMEDIATE`.
         case deferredByDefault = "DEFERRABLE INITIALLY DEFERRED"
-        
+
         /// The trigger's execution may not be deferred; it always runs immediately.
         case notDeferrable = "NOT DEFERRABLE"
-        
+
         // See `SQLExpression.serialize(to:)`.
         @inlinable
         public func serialize(to serializer: inout SQLSerializer) {
@@ -274,7 +292,7 @@ extension SQLCreateTrigger {
     public enum EachSpecifier: String, SQLExpression {
         /// Execute the trigger once for each row affected by the statement which triggered it.
         case row = "FOR EACH ROW"
-        
+
         /// Execute the trigger once each time a statement triggers it.
         case statement = "FOR EACH STATEMENT"
 
@@ -289,7 +307,7 @@ extension SQLCreateTrigger {
     public enum OrderSpecifier: String, SQLExpression {
         /// The trigger will execute after the specified existing trigger.
         case follows = "FOLLOWS"
-        
+
         /// The trigger will execute before the specified existing trigger.
         case precedes = "PRECEDES"
 

@@ -43,10 +43,10 @@
 /// > Swift 5.9 and support for variadic generics.
 public protocol SQLExpression: Sendable {
     /// Invoked when a request is made to serialize the expression to raw SQL.
-    /// 
+    ///
     /// Implementations of this requirement should invoke various ``SQLSerializer`` methods as appropriate to
     /// convert its contents to raw SQL form, including inspecting ``SQLSerializer/dialect`` as needed.
-    /// 
+    ///
     /// > Important: Because this method is not throwing, an expression which encounters a serialization
     /// > failure has limited options to report it. Implementations are _STRONGLY_ discouraged from triggering a
     /// > runtime error (such as via `fatalError()`) or from using `print()` to inform the user; instead, the

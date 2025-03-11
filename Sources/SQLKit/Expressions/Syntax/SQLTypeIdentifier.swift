@@ -23,7 +23,7 @@ public struct SQLTypeIdentifier: SQLExpression {
     public init(_ string: some StringProtocol) {
         self.string = String(string)
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     @inlinable
     public func serialize(to serializer: inout SQLSerializer) {

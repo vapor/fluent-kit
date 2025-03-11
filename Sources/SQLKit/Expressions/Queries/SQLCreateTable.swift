@@ -11,17 +11,17 @@
 /// FROM
 ///     "other_table";
 /// ```
-/// 
+///
 /// Temporary tables and the `IF NOT EXISTS` modifier are ignored when not supported by the dialect
 ///
 /// See ``SQLCreateTableBuilder``.
 public struct SQLCreateTable: SQLExpression {
     /// The name of the new table.
     public var table: any SQLExpression
-    
+
     /// If `true`, the table is marked temporary, limiting its lifetime to that of the current database session.
     public var temporary: Bool
-    
+
     /// If `true`, requests idempotent behavior for table creation.
     ///
     /// In other words, this flag requests that the database ignore the entire query rather than raising an error if a
@@ -29,25 +29,25 @@ public struct SQLCreateTable: SQLExpression {
     ///
     /// This flag is ignored if not supported by the dialect.
     public var ifNotExists: Bool
-    
+
     /// A list of one or more column definitions to include in the new table.
     ///
     /// If ``asQuery`` is not `nil` and the dialect supports it, this list is allowed to be empty; in this case, the
     /// table's columns are inferred from the results of the subquery.
     public var columns: [any SQLExpression]
-    
+
     /// A list of zero or more table constraints to specify on the new table.
     ///
     /// These are usually ``SQLTableConstraintAlgorithm``s and/or ``SQLConstraint``s. Constraints may be specified for
     /// a table even if no column defintions are given (see ``columns``).
     public var tableConstraints: [any SQLExpression]
-    
+
     /// If not `nil`, a `SELECT` subquery which is used to populate the new table.
     ///
     /// In some dialects (most notable SQLite), it is forbidden to explicitly specify column definitions when providing
     /// a data query. There is no check for this at this time.
     public var asQuery: (any SQLExpression)?
-    
+
     /// Create a new table creation query.
     ///
     /// - Parameter name: The name of the new table.
@@ -60,7 +60,7 @@ public struct SQLCreateTable: SQLExpression {
         self.tableConstraints = []
         self.asQuery = nil
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

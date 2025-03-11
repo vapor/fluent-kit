@@ -1,5 +1,5 @@
 /// Represents a value's type in SQL.
-///  
+///
 /// In practice it is not generally possible to list all of the data types supported by any given database, nor
 /// to define a useful set of types with identical behaviors which are available across all databases, despite the
 /// attempted influence of ANSI SQL. As such, this type primarily functions as a front end for
@@ -7,20 +7,20 @@
 public enum SQLDataType: SQLExpression {
     /// Translates to `SMALLINT`, unless overriden by dialect. Usually an integer with at least 16-bit range.
     case smallint
-    
+
     /// Translates to `INTEGER`, unless overridden by dialect. Usually an integer with at least 32-bit range.
     case int
-    
+
     /// Translates to `BIGINT`, unless overridden by dialect. Almost always an integer with 64-bit range.
     case bigint
-    
+
     /// Translates to `REAL`, unless overridden by dialect. Usually a decimal value with at least 32-bit precision.
     case real
 
     /// Translates to `TEXT`, unless overridden by dialect. Represents non-binary textual data (i.e. human-readable
     /// text potentially having an explicit character set and collation).
     case text
-    
+
     /// Translates to `BLOB`, unless overridden by dialect. Represents binary non-textual data (i.e. an arbitrary
     /// byte string admitting of no particular format or representation).
     case blob

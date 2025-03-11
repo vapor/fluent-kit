@@ -42,13 +42,13 @@ public enum SQLTableConstraintAlgorithm: SQLExpression {
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {
             switch self {
-            case .primaryKey(columns: let columns):
+            case .primaryKey(let columns):
                 $0.append("PRIMARY KEY", SQLGroupExpression(columns))
-            case .unique(columns: let columns):
+            case .unique(let columns):
                 $0.append("UNIQUE", SQLGroupExpression(columns))
             case .check(let expression):
                 $0.append("CHECK", SQLGroupExpression(expression))
-            case .foreignKey(columns: let columns, let foreignKey):
+            case .foreignKey(let columns, let foreignKey):
                 $0.append("FOREIGN KEY", SQLGroupExpression(columns), foreignKey)
             }
         }

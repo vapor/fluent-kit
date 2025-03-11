@@ -13,18 +13,18 @@ public struct SQLCommonTableExpression: SQLExpression {
     /// > is not self-referential. It is the responsibility of the user to specify the flag accurately. Failure
     /// > to do so will result in generating invalid SQL.
     public var isRecursive: Bool = false
-    
+
     /// The name used to refer to the CTE's data.
     public var alias: any SQLExpression
-    
+
     /// A list of column names yielded by the CTE. May be empty.
     public var columns: [any SQLExpression] = []
-    
+
     /// The subquery which yields the CTE's data.
     public var query: any SQLExpression
-    
+
     /// Create a new Common Table Expression.
-    /// 
+    ///
     /// - Parameters:
     ///   - alias: Specifies the name to be used to refer to the CTE.
     ///   - query: The subquery which yields the CTE's data.
@@ -67,11 +67,11 @@ public struct SQLCommonTableExpressionGroup: SQLExpression {
     ///
     /// Must contain at least one expression. If the list is empty, invalid SQL will be generated.
     public var tableExpressions: [any SQLExpression]
-    
+
     public init(tableExpressions: [any SQLExpression]) {
         self.tableExpressions = tableExpressions
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

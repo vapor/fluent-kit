@@ -52,19 +52,19 @@ extension SQLSubqueryClauseBuilder {
         get { self.select.orderBy }
         set { self.select.orderBy = newValue }
     }
-    
+
     // See `SQLPartialResultBuilder.limit`.
     public var limit: Int? {
         get { self.select.limit }
         set { self.select.limit = newValue }
     }
-    
+
     // See `SQLPartialResultBuilder.offset`.
     public var offset: Int? {
         get { self.select.offset }
         set { self.select.offset = newValue }
     }
-    
+
     // See `SQLUnqualifiedColumnListBuilder.columnList`.
     public var columnList: [any SQLExpression] {
         get { self.select.columns }
@@ -99,7 +99,7 @@ extension SQLSubqueryClauseBuilder {
     public func distinct(on column: String, _ columns: String...) -> Self {
         self.distinct(on: ([column] + columns).map(SQLObjectIdentifier.init(_:)))
     }
-    
+
     /// Adds a `DISTINCT` clause to the select statement and explicitly specifies columns to select,
     /// overwriting any previously specified columns.
     ///
@@ -109,7 +109,7 @@ extension SQLSubqueryClauseBuilder {
     public func distinct(on column: any SQLExpression, _ columns: any SQLExpression...) -> Self {
         self.distinct(on: [column] + columns)
     }
-    
+
     /// Adds a `DISTINCT` clause to the select statement and explicitly specifies columns to select,
     /// overwriting any previously specified columns.
     ///
@@ -136,7 +136,7 @@ extension SQLSubqueryClauseBuilder {
     public func from(_ table: String) -> Self {
         self.from(SQLObjectIdentifier(table))
     }
-    
+
     /// Include the given table in the list of those used by the query, without performing an
     /// explicit join.
     ///
@@ -148,7 +148,7 @@ extension SQLSubqueryClauseBuilder {
         self.select.tables.append(table)
         return self
     }
-    
+
     /// Include the given table and an alias for it in the list of those used by the query, without
     /// performing an explicit join.
     @inlinable
@@ -156,7 +156,7 @@ extension SQLSubqueryClauseBuilder {
     public func from(_ table: String, as alias: String) -> Self {
         self.from(SQLObjectIdentifier(table), as: SQLObjectIdentifier(alias))
     }
-    
+
     /// Include the given table and an alias for it in the list of those used by the query, without
     /// performing an explicit join.
     @inlinable

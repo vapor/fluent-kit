@@ -24,13 +24,13 @@
 public struct SQLInsert: SQLExpression {
     /// An optional common table expression group.
     public var tableExpressionGroup: SQLCommonTableExpressionGroup?
-    
+
     /// The table to which rows are to be added.
     public var table: any SQLExpression
-    
+
     /// List of one or more columns which specify the ordering and count of the inserted values.
     public var columns: [any SQLExpression] = []
-    
+
     /// An array of arrays providing a list of rows to insert as lists of expressions.
     ///
     /// The outer array can be thought of as a list of rows, with each "row" being a list of values for each column.
@@ -42,7 +42,7 @@ public struct SQLInsert: SQLExpression {
     /// If ``values`` is not an empty array, it is always used, even if ``valueQuery`` is not `nil`. If ``values`` is
     /// empty and ``valueQuery`` is `nil`, invalid SQL is generated.
     public var values: [[any SQLExpression]] = []
-    
+
     /// If not `nil`, a subquery providing a `SELECT` statement which generates rows to insert.
     ///
     /// This will usually be a instance of ``SQLSelect``. Using ``SQLSubquery`` may result in syntax errors in
@@ -61,7 +61,7 @@ public struct SQLInsert: SQLExpression {
     ///
     /// Most often used to return a list of identifiers automatically generated for newly inserted rows.
     public var returning: SQLReturning? = nil
-    
+
     /// Create a new row insertion query.
     ///
     /// - Parameter table: The table to which rows are to be added.
@@ -69,7 +69,7 @@ public struct SQLInsert: SQLExpression {
     public init(table: any SQLExpression) {
         self.table = table
     }
-    
+
     // See `SQLExpression.serialize(to:)`.
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {

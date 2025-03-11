@@ -18,14 +18,14 @@ public final class SQLCreateEnumBuilder: SQLQueryBuilder {
         self.createEnum = .init(name: name, values: [])
         self.database = database
     }
-    
+
     /// Add an enum case to the built type.
     @inlinable
     @discardableResult
     public func value(_ value: String) -> Self {
         self.value(SQLLiteral.string(value))
     }
-    
+
     /// Add a enum case to the built type.
     @inlinable
     @discardableResult

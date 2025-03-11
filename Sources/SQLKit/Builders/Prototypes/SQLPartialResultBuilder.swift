@@ -5,7 +5,7 @@ public protocol SQLPartialResultBuilder: AnyObject {
 
     /// If set, limits the maximum number of results.
     var limit: Int? { get set }
-    
+
     /// If set, offsets the results.
     var offset: Int? { get set }
 }
@@ -49,7 +49,6 @@ extension SQLPartialResultBuilder {
     public func orderBy(_ column: String, _ direction: SQLDirection = .ascending) -> Self {
         self.orderBy(SQLColumn(column), direction)
     }
-
 
     /// Adds an `ORDER BY` clause to the query with the specifed expression and ordering.
     ///
