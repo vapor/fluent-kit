@@ -792,7 +792,9 @@ final class FluentKitTests: XCTestCase {
         XCTAssertEqual(db.sqlSerializers.count, 1)
         XCTAssertEqual(db.sqlSerializers.first?.sql, #"INSERT INTO "foos" ("id", "opt") VALUES ($1, DEFAULT), ($2, NULL), ($3, $4)"#)
     }
-    
+
+    // Disabled because it doesn't really tell much of anything useful.
+    /*
     func testFieldsPropertiesPerformance() throws {
         measure {
             let model = LotsOfFields()
@@ -801,6 +803,7 @@ final class FluentKitTests: XCTestCase {
             }
         }
     }
+    */
 }
 
 final class User: Model, @unchecked Sendable {
