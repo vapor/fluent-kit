@@ -116,5 +116,4 @@ jobs:
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@main
     secrets: inherit
     with:
-      with_musl: true
       with_android: true
