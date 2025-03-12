@@ -366,6 +366,10 @@ final class CompositeIDTests: XCTestCase {
         let moon3_1 = try unjsonString(#"{"id":\#(moonJId),"name":"B","orbiting":{"id":{"normalizedOrdinal":1,"solarSystem":{"id":\#(sysJId)}}},"planetoid":{"id":{"normalizedOrdinal":1,"solarSystem":{"id":\#(sysJId)}},"name":"A"},"progenitor":{"id":null}}"#, as: CompositeMoon.self)
         XCTAssertNilNil(moon3_1.$planetoid.value)
     }
+
+    func testCompositeOptionalParentNestedKeyPathFieldKey() {
+        XCTAssertEqual(CompositeMoon()[keyPath: \.$progenitor.$normalizedOrdinal!.queryablePath][0].description, "nrm_ord")
+    }
 }
 
 fileprivate func XCTAssertNilNil<V>(_ expression: @autoclosure () throws -> Optional<Optional<V>>, _ message: @autoclosure () -> String = "", file: StaticString = #filePath, line: UInt = #line) {
