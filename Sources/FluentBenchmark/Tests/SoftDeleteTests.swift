@@ -92,7 +92,7 @@ extension FluentBenchmarker {
             )
 
             // Delete all models
-            sleep(1)
+            Thread.sleep(forTimeInterval: 1.0)
             try Trash.query(on: self.database).delete().wait()
 
             // Make sure the `.deletedAt` value doesn't change.

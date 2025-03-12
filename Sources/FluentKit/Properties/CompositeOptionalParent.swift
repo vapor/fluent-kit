@@ -111,7 +111,7 @@ public final class CompositeOptionalParentProperty<From, To>: @unchecked Sendabl
     public subscript<Nested>(dynamicMember keyPath: KeyPath<To.IDValue, Nested>) -> Nested?
         where Nested: Property
     {
-        self.id?[keyPath: keyPath]
+        (self.id ?? To.IDValue())[keyPath: keyPath]
     }
 }
 
