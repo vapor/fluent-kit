@@ -14,9 +14,9 @@ extension DatabaseQuery.Limit: CustomStringConvertible {
     public var description: String {
         switch self {
         case .count(let count):
-            return "count(\(count))"
+            "count(\(count))"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }
@@ -25,9 +25,9 @@ extension DatabaseQuery.Offset: CustomStringConvertible {
     public var description: String {
         switch self {
         case .count(let count):
-            return "count(\(count))"
+            "count(\(count))"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }

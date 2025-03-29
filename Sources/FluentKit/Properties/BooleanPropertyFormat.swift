@@ -35,9 +35,9 @@ public struct IntegerBooleanPropertyFormat<T: FixedWidthInteger & Codable & Send
     
     public func parse(_ value: T) -> Bool? {
         switch value {
-        case .zero: return false
-        case .zero.advanced(by: 1): return true
-        default: return nil
+        case .zero: false
+        case .zero.advanced(by: 1): true
+        default: nil
         }
     }
     
@@ -56,9 +56,9 @@ public struct OneZeroBooleanPropertyFormat: BooleanPropertyFormat {
     
     public func parse(_ value: String) -> Bool? {
         switch value {
-        case "0": return false
-        case "1": return true
-        default: return nil
+        case "0": false
+        case "1": true
+        default: nil
         }
     }
     
@@ -77,9 +77,9 @@ public struct YNBooleanPropertyFormat: BooleanPropertyFormat {
     
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
-        case "n": return false
-        case "y": return true
-        default: return nil
+        case "n": false
+        case "y": true
+        default: nil
         }
     }
     
@@ -99,9 +99,9 @@ public struct YesNoBooleanPropertyFormat: BooleanPropertyFormat {
     
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
-        case "no": return false
-        case "yes": return true
-        default: return nil
+        case "no": false
+        case "yes": true
+        default: nil
         }
     }
     
@@ -120,9 +120,9 @@ public struct OnOffBooleanPropertyFormat: BooleanPropertyFormat {
 
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
-        case "off": return false
-        case "on": return true
-        default: return nil
+        case "off": false
+        case "on": true
+        default: nil
         }
     }
         
@@ -141,9 +141,9 @@ public struct TrueFalseBooleanPropertyFormat: BooleanPropertyFormat {
     
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
-        case "false": return false
-        case "true": return true
-        default: return nil
+        case "false": false
+        case "true": true
+        default: nil
         }
     }
     

@@ -180,7 +180,7 @@ public final class QueryBuilder<Model>
     }
 
     public func first() -> EventLoopFuture<Model?> {
-        return self.limit(1)
+        self.limit(1)
             .all()
             .map { $0.first }
     }

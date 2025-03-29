@@ -82,11 +82,11 @@ extension TimestampProperty: Property {
         get {
             switch self.$timestamp.value {
                 case .some(.some(let timestamp)):
-                    return .some(self.format.parse(timestamp))
+                    .some(self.format.parse(timestamp))
                 case .some(.none):
-                    return .some(.none)
+                    .some(.none)
                 case .none:
-                    return .none
+                    .none
             }
         }
         set {

@@ -24,7 +24,7 @@ public protocol Migration: Sendable {
 
 extension Migration {
     public var name: String {
-        return defaultName
+        self.defaultName
     }
 
     internal var defaultName: String {

@@ -1,5 +1,5 @@
 import SQLKit
-@_spi(FluentSQLSPI) import FluentKit
+import FluentKit
 
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> (any SQLExpression)?
@@ -27,13 +27,13 @@ public struct SQLSchemaConverter {
     public func convert(_ schema: DatabaseSchema) -> any SQLExpression {
         let schema = self.delegate.beforeConvert(schema)
         
-        switch schema.action {
+        return switch schema.action {
         case .create:
-            return self.create(schema)
+            self.create(schema)
         case .delete:
-            return self.delete(schema)
+            self.delete(schema)
         case .update:
-            return self.update(schema)
+            self.update(schema)
         }
     }
     
@@ -55,9 +55,7 @@ public struct SQLSchemaConverter {
     }
     
     private func delete(_ schema: DatabaseSchema) -> any SQLExpression {
-        let delete = SQLDropTable(table: self.name(schema.schema, space: schema.space))
-    
-        return delete
+        SQLDropTable(table: self.name(schema.schema, space: schema.space))
     }
     
     private func create(_ schema: DatabaseSchema) -> any SQLExpression {
@@ -157,24 +155,24 @@ public struct SQLSchemaConverter {
     private func foreignKeyAction(_ action: DatabaseSchema.ForeignKeyAction) -> SQLForeignKeyAction {
         switch action {
         case .noAction:
-            return .noAction
+            .noAction
         case .restrict:
-            return .restrict
+            .restrict
         case .cascade:
-            return .cascade
+            .cascade
         case .setNull:
-            return .setNull
+            .setNull
         case .setDefault:
-            return .setDefault
+            .setDefault
         }
     }
     
     private func fieldDefinition(_ fieldDefinition: DatabaseSchema.FieldDefinition) -> any SQLExpression {
         switch fieldDefinition {
         case .custom(let any):
-            return custom(any)
+            custom(any)
         case .definition(let name, let dataType, let constraints):
-            return SQLColumnDefinition(
+            SQLColumnDefinition(
                 column: self.fieldName(name),
                 dataType: self.dataType(dataType),
                 constraints: constraints.map(self.fieldConstraint)
@@ -185,9 +183,9 @@ public struct SQLSchemaConverter {
     private func fieldUpdate(_ fieldDefinition: DatabaseSchema.FieldUpdate) -> any SQLExpression {
         switch fieldDefinition {
         case .custom(let any):
-            return custom(any)
+            custom(any)
         case .dataType(let name, let dataType):
-            return SQLAlterColumnDefinitionType(
+            SQLAlterColumnDefinitionType(
                 column: self.fieldName(name),
                 dataType: self.dataType(dataType)
             )
@@ -197,9 +195,9 @@ public struct SQLSchemaConverter {
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> any SQLExpression {
         switch fieldName {
         case .key(let key):
-            return SQLIdentifier(self.key(key))
+            SQLIdentifier(self.key(key))
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
     
@@ -208,69 +206,68 @@ public struct SQLSchemaConverter {
             return custom
         }
         
-        switch dataType {
+        return switch dataType {
         case .bool:
-            return SQLDataType.int
+            SQLDataType.int
         case .data:
-            return SQLDataType.blob
+            SQLDataType.blob
         case .date:
-            return SQLRaw("DATE")
+            SQLRaw("DATE")
         case .datetime:
-            return SQLRaw("TIMESTAMP")
+            SQLRaw("TIMESTAMP")
         case .int64:
-            return SQLRaw("BIGINT")
+            SQLRaw("BIGINT")
         case .string:
-            return SQLDataType.text
+            SQLDataType.text
         case .dictionary, .array:
-            return SQLRaw("JSON")
+            SQLRaw("JSON")
         case .uuid:
-            return SQLRaw("UUID")
+            SQLRaw("UUID")
         case .int8:
-            return SQLDataType.int
+            SQLDataType.int
         case .int16:
-            return SQLDataType.int
+            SQLDataType.int
         case .int32:
-            return SQLDataType.int
+            SQLDataType.int
         case .uint8:
-            return SQLDataType.int
+            SQLDataType.int
         case .uint16:
-            return SQLDataType.int
+            SQLDataType.int
         case .uint32:
-            return SQLDataType.int
+            SQLDataType.int
         case .uint64:
-            return SQLDataType.int
+            SQLDataType.int
         case .enum(let value):
-            return SQLEnumDataType(cases: value.cases)
+            SQLEnumDataType(cases: value.cases)
         case .time:
-            return SQLRaw("TIME")
+            SQLRaw("TIME")
         case .float:
-            return SQLRaw("FLOAT")
+            SQLRaw("FLOAT")
         case .double:
-            return SQLRaw("DOUBLE")
+            SQLRaw("DOUBLE")
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
     
     private func fieldConstraint(_ fieldConstraint: DatabaseSchema.FieldConstraint) -> any SQLExpression {
         switch fieldConstraint {
         case .required:
-            return SQLColumnConstraintAlgorithm.notNull
+            SQLColumnConstraintAlgorithm.notNull
         case .identifier(let auto):
-            return SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
+            SQLColumnConstraintAlgorithm.primaryKey(autoIncrement: auto)
         case .foreignKey(let schema, let space, let field, let onDelete, let onUpdate):
-            return SQLColumnConstraintAlgorithm.references(
+            SQLColumnConstraintAlgorithm.references(
                 self.name(schema, space: space),
                 self.fieldName(field),
                 onDelete: self.foreignKeyAction(onDelete),
                 onUpdate: self.foreignKeyAction(onUpdate)
             )
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
 
-    @inline(__always)
     private func key(_ key: FieldKey) -> String { key.description }
 }
 

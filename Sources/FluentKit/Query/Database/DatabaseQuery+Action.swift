@@ -13,17 +13,17 @@ extension DatabaseQuery.Action: CustomStringConvertible {
     public var description: String {
         switch self {
         case .create:
-            return "create"
+            "create"
         case .read:
-            return "read"
+            "read"
         case .update:
-            return "update"
+            "update"
         case .delete:
-            return "delete"
+            "delete"
         case .aggregate(let aggregate):
-            return "aggregate(\(aggregate))"
+            "aggregate(\(aggregate))"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }

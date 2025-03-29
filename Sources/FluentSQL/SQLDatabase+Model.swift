@@ -66,15 +66,15 @@ extension DatabaseQuery.Value {
     /// really, but why add more fatal errors than we have to?).
     fileprivate var asSQLExpression: any SQLExpression {
         switch self {
-        case .bind(let value):   return SQLBind(value)
-        case .null:              return SQLLiteral.null
-        case .array(let values): return SQLGroupExpression(SQLKit.SQLList(values.map(\.asSQLExpression), separator: SQLRaw(",")))
-        case .default:           return SQLLiteral.default
-        case .enumCase(let str): return SQLLiteral.string(str)
+        case .bind(let value):   SQLBind(value)
+        case .null:              SQLLiteral.null
+        case .array(let values): SQLGroupExpression(SQLKit.SQLList(values.map(\.asSQLExpression), separator: SQLRaw(",")))
+        case .default:           SQLLiteral.default
+        case .enumCase(let str): SQLLiteral.string(str)
         case .custom(let any as any SQLExpression):
-                                 return any
+                                 any
         case .custom(let any as any CustomStringConvertible):
-                                 return SQLRaw(any.description)
+                                 SQLRaw(any.description)
         case .dictionary(_):     fatalError("Dictionary database values are unimplemented for SQL")
         case .custom(_):         fatalError("Unsupported custom database value")
         }

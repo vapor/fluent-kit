@@ -228,19 +228,19 @@ public struct TestOutput: DatabaseOutput {
         func unpack(_ dbValue: DatabaseQuery.Value) -> Any? {
             switch dbValue {
             case .null:
-                return nil
+                nil
             case .enumCase(let value):
-                return value
+                value
             case .custom(let value):
-                return value
+                value
             case .bind(let value):
-                return value
+                value
             case .array(let array):
-                return array.map(unpack)
+                array.map(unpack)
             case .dictionary(let dictionary):
-                return dictionary.mapValues(unpack)
+                dictionary.mapValues(unpack)
             case .default:
-                return ""
+                ""
             }
         }
 

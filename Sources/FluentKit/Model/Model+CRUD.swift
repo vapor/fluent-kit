@@ -4,9 +4,9 @@ import protocol SQLKit.SQLDatabase
 extension Model {
     public func save(on database: any Database) -> EventLoopFuture<Void> {
         if self._$idExists {
-            return self.update(on: database)
+            self.update(on: database)
         } else {
-            return self.create(on: database)
+            self.create(on: database)
         }
     }
 
@@ -47,7 +47,7 @@ extension Model {
     }
 
     public func update(on database: any Database) -> EventLoopFuture<Void> {
-        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
+        database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             try model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
@@ -97,7 +97,7 @@ extension Model {
     }
 
     public func restore(on database: any Database) -> EventLoopFuture<Void> {
-        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
+        database.configuration.middleware.chainingTo(Self.self) { event, model, db in
             try model.handle(event, on: db)
         }.handle(.restore, self, on: database)
     }
@@ -125,15 +125,15 @@ extension Model {
     private func handle(_ event: ModelEvent, on db: any Database) throws -> EventLoopFuture<Void> {
         switch event {
         case .create:
-            return _create(on: db)
+            _create(on: db)
         case .delete(let force):
-            return try _delete(force: force, on: db)
+            try _delete(force: force, on: db)
         case .restore:
-            return try _restore(on: db)
+            try _restore(on: db)
         case .softDelete:
-            return try _delete(force: false, on: db)
+            try _delete(force: false, on: db)
         case .update:
-            return try _update(on: db)
+            try _update(on: db)
         }
     }
 }
@@ -207,7 +207,7 @@ private struct SavedInput: DatabaseOutput {
     }
 
     func schema(_ schema: String) -> any DatabaseOutput {
-        return self
+        self
     }
     
     func contains(_ key: FieldKey) -> Bool {
@@ -253,6 +253,6 @@ private struct SavedInput: DatabaseOutput {
     }
 
     var description: String {
-        return self.input.description
+        self.input.description
     }
 }

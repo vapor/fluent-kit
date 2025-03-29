@@ -46,6 +46,6 @@ extension EagerLoadable {
         withDeleted: Bool,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From {
-        return Self.eagerLoad(relationKey, to: builder)
+        Self.eagerLoad(relationKey, to: builder)
     }
 }

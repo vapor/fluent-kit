@@ -2,21 +2,21 @@ extension QueryBuilder {
     // MARK: Filter
     
     @discardableResult
-    internal func filter(id: Model.IDValue) -> Self {
+    func filter(id: Model.IDValue) -> Self {
         if let fields = id as? any Fields {
-            return self.group(.and) { fields.input(to: QueryFilterInput(builder: $0)) }
+            self.group(.and) { fields.input(to: QueryFilterInput(builder: $0)) }
         } else {
-            return self.filter(\Model._$id == id)
+            self.filter(\Model._$id == id)
         }
     }
     
     @discardableResult
-    internal func filter(ids: [Model.IDValue]) -> Self {
+    func filter(ids: [Model.IDValue]) -> Self {
         guard let firstId = ids.first else { return self.limit(0) }
-        if firstId is any Fields {
-            return self.group(.or) { q in ids.forEach { id in q.group(.and) { (id as! any Fields).input(to: QueryFilterInput(builder: $0)) } } }
+        return if firstId is any Fields {
+            self.group(.or) { q in ids.forEach { id in q.group(.and) { (id as! any Fields).input(to: QueryFilterInput(builder: $0)) } } }
         } else {
-            return self.filter(\Model._$id ~~ ids)
+            self.filter(\Model._$id ~~ ids)
         }
     }
 

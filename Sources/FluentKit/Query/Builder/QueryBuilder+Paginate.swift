@@ -11,7 +11,7 @@ extension QueryBuilder {
     public func paginate(
         _ request: PageRequest
     ) -> EventLoopFuture<Page<Model>> {
-        page(withIndex: request.page, size: request.per)
+        self.page(withIndex: request.page, size: request.per)
     }
     
     /// Returns a single `Page` out of the complete result set.
@@ -95,9 +95,9 @@ public struct PageMetadata: Codable, Sendable {
     /// Creates a new `PageMetadata` instance.
     ///
     /// - Parameters:
-    ///.  - page: Current page number.
-    ///.  - per: Max items per page.
-    ///.  - total: Total number of items available.
+    ///   - page: Current page number.
+    ///   - per: Max items per page.
+    ///   - total: Total number of items available.
     public init(page: Int, per: Int, total: Int) {
         self.page = page
         self.per = per
@@ -113,19 +113,20 @@ public struct PageRequest: Decodable, Sendable {
     /// Max items per page.
     public let per: Int
 
-    enum CodingKeys: String, CodingKey {
-        case page = "page"
-        case per = "per"
+    private enum CodingKeys: String, CodingKey {
+        case page
+        case per
     }
 
-    /// `Decodable` conformance.
+    // See `Decodable.init(from:)`.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.page = try container.decodeIfPresent(Int.self, forKey: .page) ?? 1
         self.per = try container.decodeIfPresent(Int.self, forKey: .per) ?? 10
     }
 
-    /// Crates a new `PageRequest`
+    /// Crates a new `PageRequest`.
+    ///
     /// - Parameters:
     ///   - page: Page number to request. Starts at `1`.
     ///   - per: Max items per page.
