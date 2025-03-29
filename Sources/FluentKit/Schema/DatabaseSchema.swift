@@ -199,11 +199,9 @@ public struct DatabaseSchema: Sendable {
 extension DatabaseSchema.ConstraintDelete {
     /// For internal use only.
     ///
-    /// Do not use this type directly; it's only public because FluentSQL needs to be able to get at it.
-    /// The use of `@_spi` will be replaced with the `package` modifier once a suitable minimum version
-    /// of Swift becomes required.
-    @_spi(FluentSQLSPI)
-    public/*package*/ struct _ForeignKeyByNameExtension: Sendable {
-        public/*package*/ let name: String
+    /// This is used to signal FluentSQL's `SQLSchemaConverter` to apply additional syntax in the query. It is an
+    /// implementation detail of ``DatabaseSchema/ConstraintDelete/namedForeignKey(_:)``; see that method for details.
+    package struct _ForeignKeyByNameExtension: Sendable {
+        package let name: String
     }
 }

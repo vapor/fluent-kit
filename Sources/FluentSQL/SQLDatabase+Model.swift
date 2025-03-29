@@ -1,5 +1,5 @@
 import SQLKit
-@_spi(FluentSQLSPI) import FluentKit
+import FluentKit
 
 extension SQLQueryFetcher {
     @available(*, deprecated, renamed: "first(decodingFluent:)", message: "Renamed to first(decodingFluent:)")
