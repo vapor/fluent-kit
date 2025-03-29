@@ -16,8 +16,8 @@ let package = Package(
         .library(name: "XCTFluent", targets: ["XCTFluent"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.79.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.2"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.81.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.32.0"),
         .package(url: "https://github.com/vapor/async-kit.git", from: "1.20.0"),
     ],
@@ -26,7 +26,9 @@ let package = Package(
             name: "FluentKit",
             dependencies: [
                 .product(name: "NIO", package: "swift-nio"),
+                .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
                 .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "AsyncKit", package: "async-kit"),
                 .product(name: "SQLKit", package: "sql-kit"),
