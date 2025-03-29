@@ -39,38 +39,38 @@ extension DatabaseQuery.Join: CustomStringConvertible {
     public var description: String {
         switch self {
         case .join(let schema, let alias, let method, let foreign, let local):
-            return "\(self.schemaDescription(schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
+            "\(self.schemaDescription(schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
 
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            return "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
+            "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
 
         case .advancedJoin(let schema, let space, let alias, let method, let filters):
-            return "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(filters)"
+            "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(filters)"
 
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
         case .join(let schema, let alias, let method, let foreign, let local):
-            return .dictionary([
+            .dictionary([
                 "schema": "\(schema)", "alias": alias.map { "\($0)" }, "method": "\(method)",
                 "foreign": foreign.describedByLoggingMetadata, "local": local.describedByLoggingMetadata
             ].compactMapValues { $0 })
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            return .dictionary([
+            .dictionary([
                 "schema": "\(schema)", "space": space.map { "\($0)" }, "alias": alias.map { "\($0)" }, "method": "\(method)",
                 "foreign": foreign.describedByLoggingMetadata, "local": local.describedByLoggingMetadata
             ].compactMapValues { $0 })
         case .advancedJoin(let schema, let space, let alias, let method, let filters):
-            return .dictionary([
+            .dictionary([
                 "schema": "\(schema)", "space": space.map { "\($0)" }, "alias": alias.map { "\($0)" }, "method": "\(method)",
                 "filters": .array(filters.map(\.describedByLoggingMetadata))
             ].compactMapValues { $0 })
         case .custom:
-            return .stringConvertible(self)
+            .stringConvertible(self)
         }
     }
 
@@ -83,11 +83,11 @@ extension DatabaseQuery.Join.Method: CustomStringConvertible {
     public var description: String {
         switch self {
         case .inner:
-            return "inner"
+            "inner"
         case .left:
-            return "left"
+            "left"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }

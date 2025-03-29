@@ -27,9 +27,9 @@ extension Relation {
     /// - Returns: The loaded value.
     public func get(reload: Bool = false, on database: any Database) -> EventLoopFuture<RelatedValue> {
         if let value = self.value, !reload {
-            return database.eventLoop.makeSucceededFuture(value)
+            database.eventLoop.makeSucceededFuture(value)
         } else {
-            return self.load(on: database).flatMapThrowing {
+            self.load(on: database).flatMapThrowing {
                 guard let value = self.value else { // This should never actually happen, but just in case...
                     throw FluentError.relationNotLoaded(name: self.name)
                 }
@@ -54,8 +54,8 @@ public enum RelationParentKey<From, To>: Sendable
 extension RelationParentKey: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .optional(let keypath): return To.path(for: keypath.appending(path: \.$id)).description
-        case .required(let keypath): return To.path(for: keypath.appending(path: \.$id)).description
+        case .optional(let keypath): To.path(for: keypath.appending(path: \.$id)).description
+        case .required(let keypath): To.path(for: keypath.appending(path: \.$id)).description
         }
     }
 }
@@ -78,8 +78,8 @@ public enum CompositeRelationParentKey<From, To>: Sendable
     /// Use the stored key path to retrieve the appropriate parent ID from the given child model.
     internal func referencedId(in model: To) -> From.IDValue? {
         switch self {
-        case .required(let keypath): return model[keyPath: keypath].id
-        case .optional(let keypath): return model[keyPath: keypath].id
+        case .required(let keypath): model[keyPath: keypath].id
+        case .optional(let keypath): model[keyPath: keypath].id
         }
     }
     
@@ -109,8 +109,8 @@ public enum CompositeRelationParentKey<From, To>: Sendable
 extension CompositeRelationParentKey: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .required(let keypath): return To()[keyPath: keypath].prefix.description
-        case .optional(let keypath): return To()[keyPath: keypath].prefix.description
+        case .required(let keypath): To()[keyPath: keypath].prefix.description
+        case .optional(let keypath): To()[keyPath: keypath].prefix.description
         }
     }
 }

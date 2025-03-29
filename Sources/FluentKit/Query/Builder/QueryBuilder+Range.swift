@@ -8,7 +8,7 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     @discardableResult
     public func range(_ range: Range<Int>) -> Self {
-        return self.range(lower: range.lowerBound, upper: range.upperBound - 1)
+        self.range(lower: range.lowerBound, upper: range.upperBound - 1)
     }
 
     /// Limits the results of this query to the specified range.
@@ -18,7 +18,7 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     @discardableResult
     public func range(_ range: PartialRangeThrough<Int>) -> Self {
-        return self.range(upper: range.upperBound)
+        self.range(upper: range.upperBound)
     }
 
     /// Limits the results of this query to the specified range.
@@ -28,7 +28,7 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     @discardableResult
     public func range(_ range: PartialRangeUpTo<Int>) -> Self {
-        return self.range(upper: range.upperBound - 1)
+        self.range(upper: range.upperBound - 1)
     }
 
     /// Limits the results of this query to the specified range.
@@ -38,7 +38,7 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     @discardableResult
     public func range(_ range: PartialRangeFrom<Int>) -> Self {
-        return self.range(lower: range.lowerBound)
+        self.range(lower: range.lowerBound)
     }
 
     /// Limits the results of this query to the specified range.
@@ -48,7 +48,7 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     @discardableResult
     public func range(_ range: ClosedRange<Int>) -> Self {
-        return self.range(lower: range.lowerBound, upper: range.upperBound)
+        self.range(lower: range.lowerBound, upper: range.upperBound)
     }
 
     /// Limits the results of this query to the specified range.

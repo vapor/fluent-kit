@@ -160,8 +160,7 @@ extension Fields {
     ///
     /// Returns a dictionary of field keys and associated values representing all "pending"
     /// data - e.g. all fields (if any) which have been changed by something other than Fluent.
-    @_spi(FluentSQLSPI)
-    public/*package*/ func collectInput(withDefaultedValues defaultedValues: Bool = false) -> [FieldKey: DatabaseQuery.Value] {
+    package func collectInput(withDefaultedValues defaultedValues: Bool = false) -> [FieldKey: DatabaseQuery.Value] {
         let input = DictionaryInput(wantsUnmodifiedKeys: defaultedValues)
         self.input(to: input)
         return input.storage

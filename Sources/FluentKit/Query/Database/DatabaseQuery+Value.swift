@@ -15,30 +15,33 @@ extension DatabaseQuery.Value: CustomStringConvertible {
         switch self {
         case .bind(let encodable):
             if let convertible = encodable as? any CustomDebugStringConvertible {
-                return String(reflecting: convertible)
+                String(reflecting: convertible)
             } else {
-                return String(describing: encodable)
+                String(describing: encodable)
             }
         case .dictionary(let dictionary):
-            return String(describing: dictionary)
+            String(describing: dictionary)
         case .array(let array):
-            return String(describing: array)
+            String(describing: array)
         case .enumCase(let string):
-            return string
+            string
         case .null:
-            return "nil"
+            "nil"
         case .default:
-            return "default"
+            "default"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
-        case .dictionary(let d): return .dictionary(.init(uniqueKeysWithValues: d.map { ($0.description, $1.describedByLoggingMetadata) }))
-        case .array(let a): return .array(a.map(\.describedByLoggingMetadata))
-        default: return .stringConvertible(self)
+        case .dictionary(let d):
+            .dictionary(.init(uniqueKeysWithValues: d.map { ($0.description, $1.describedByLoggingMetadata) }))
+        case .array(let a):
+            .array(a.map(\.describedByLoggingMetadata))
+        default:
+            .stringConvertible(self)
         }
     }
 

@@ -12,17 +12,17 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
     public var description: String {
         switch self {
         case .idRequired:
-            return "ID required"
+            "ID required"
         case .missingField(let name):
-            return "field missing: \(name)"
+            "field missing: \(name)"
         case .relationNotLoaded(let name):
-            return "relation not loaded: \(name)"
+            "relation not loaded: \(name)"
         case .missingParent(let model, let parent, let key, let id):
-            return "parent missing: \(model).\(key): \(parent).\(id)"
+            "parent missing: \(model).\(key): \(parent).\(id)"
         case .invalidField(let name, let valueType, let error):
-            return "invalid field: '\(name)', type: \(valueType), error: \(String(describing: error))"
+            "invalid field: '\(name)', type: \(valueType), error: \(String(describing: error))"
         case .noResults:
-            return "Query returned no results"
+            "Query returned no results"
         }
     }
 
@@ -30,9 +30,9 @@ public enum FluentError: Error, LocalizedError, CustomStringConvertible, CustomD
     public var debugDescription: String {
         switch self {
         case .idRequired, .missingField(_), .relationNotLoaded(_), .missingParent(_, _, _, _), .noResults:
-            return self.description
+            self.description
         case .invalidField(let name, let valueType, let error):
-            return "invalid field: '\(name)', type: \(valueType), error: \(String(reflecting: error))"
+            "invalid field: '\(name)', type: \(valueType), error: \(String(reflecting: error))"
         }
     }
 
@@ -119,9 +119,9 @@ public enum SiblingsPropertyError: Error, LocalizedError, CustomStringConvertibl
     public var description: String {
         switch self {
         case .owningModelIdRequired(property: let property):
-            return "siblings relation \(property) is missing owning model's ID (owner likely unsaved)"
+            "siblings relation \(property) is missing owning model's ID (owner likely unsaved)"
         case .operandModelIdRequired(property: let property):
-            return "operant model for siblings relation \(property) has no ID (attach/detach/etc. model likely unsaved)"
+            "operant model for siblings relation \(property) has no ID (attach/detach/etc. model likely unsaved)"
         }
     }
     

@@ -14,18 +14,18 @@ extension DatabaseQuery.Sort: CustomStringConvertible {
     public var description: String {
         switch self {
         case .sort(let field, let direction):
-            return "\(field) \(direction)"
+            "\(field) \(direction)"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
         case .sort(let field, let direction):
-            return ["field": field.describedByLoggingMetadata, "direction": "\(direction)"]
+            ["field": field.describedByLoggingMetadata, "direction": "\(direction)"]
         case .custom:
-            return .stringConvertible(self)
+            .stringConvertible(self)
         }
     }
 }
@@ -34,11 +34,11 @@ extension DatabaseQuery.Sort.Direction: CustomStringConvertible {
     public var description: String {
         switch self {
         case .ascending:
-            return "ascending"
+            "ascending"
         case .descending:
-            return "descending"
+            "descending"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }

@@ -20,13 +20,13 @@ extension FieldKey: CustomStringConvertible {
     public var description: String {
         switch self {
         case .id:
-            return "id"
+            "id"
         case .string(let name):
-            return name
+            name
         case .aggregate:
-            return "aggregate"
+            "aggregate"
         case .prefix(let prefix, let key):
-            return prefix.description + key.description
+            prefix.description + key.description
         }
     }
 }

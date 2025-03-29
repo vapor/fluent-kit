@@ -28,7 +28,7 @@ extension DatabaseOutput {
     }
 
     public func cascading(to output: any DatabaseOutput) -> any DatabaseOutput {
-        return CombinedOutput(first: self, second: output)
+        CombinedOutput(first: self, second: output)
     }
 }
 

@@ -146,33 +146,36 @@ public struct SQLQueryConverter {
     private func sort(_ sort: DatabaseQuery.Sort) -> any SQLExpression {
         switch sort {
         case .sort(let field, let direction):
-            return SQLOrderBy(expression: self.field(field), direction: self.direction(direction))
+            SQLOrderBy(expression: self.field(field), direction: self.direction(direction))
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
 
     private func direction(_ direction: DatabaseQuery.Sort.Direction) -> any SQLExpression {
         switch direction {
-        case .ascending: return SQLDirection.ascending
-        case .descending: return SQLDirection.descending
-        case .custom(let any): return custom(any)
+        case .ascending:
+            SQLDirection.ascending
+        case .descending:
+            SQLDirection.descending
+        case .custom(let any):
+            custom(any)
         }
     }
     
     private func join(_ join: DatabaseQuery.Join) -> any SQLExpression {
         switch join {
         case .custom(let any):
-            return custom(any)
+            custom(any)
 
         case .join(let schema, let alias, let method, let foreign, let local):
-            return self.joinCondition(schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+            self.joinCondition(schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
 
         case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
+            self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
 
         case .advancedJoin(let schema, let space, let alias, let method, let filters):
-            return self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
+            self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         }
     }
     
@@ -192,21 +195,23 @@ public struct SQLQueryConverter {
     
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> any SQLExpression {
         switch method {
-        case .inner: return SQLJoinMethod.inner
-        case .left: return SQLJoinMethod.left
+        case .inner:
+            SQLJoinMethod.inner
+        case .left:
+            SQLJoinMethod.left
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
     
     private func field(_ field: DatabaseQuery.Field, aliased: Bool = false) -> any SQLExpression {
         switch field {
         case .custom(let any):
-            return custom(any)
+            custom(any)
         case .path(let path, let schema):
-            return self.fieldPath(path, schema: schema, aliased: aliased)
+            self.fieldPath(path, schema: schema, aliased: aliased)
         case .extendedPath(let path, let schema, let space):
-            return self.fieldPath(path, space: space, schema: schema, aliased: aliased)
+            self.fieldPath(path, space: space, schema: schema, aliased: aliased)
         }
     }
     
@@ -330,11 +335,11 @@ public struct SQLQueryConverter {
     private func relation(_ relation: DatabaseQuery.Filter.Relation) -> any SQLExpression {
         switch relation {
         case .and:
-            return SQLBinaryOperator.and
+            SQLBinaryOperator.and
         case .or:
-            return SQLBinaryOperator.or
+            SQLBinaryOperator.or
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
 
@@ -342,50 +347,49 @@ public struct SQLQueryConverter {
         switch value {
         case .bind(let encodable):
             if let optional = encodable as? any AnyOptionalType, optional.wrappedValue == nil {
-                return SQLLiteral.null
+                SQLLiteral.null
             } else {
-                return SQLBind(encodable)
+                SQLBind(encodable)
             }
         case .null:
-            return SQLLiteral.null
+            SQLLiteral.null
         case .array(let values):
-            return SQLGroupExpression(SQLKit.SQLList(values.map(self.value), separator: SQLRaw(",")))
+            SQLGroupExpression(SQLKit.SQLList(values.map(self.value), separator: SQLRaw(",")))
         case .dictionary(let dictionary):
-            return SQLBind(EncodableDatabaseInput(input: dictionary))
+            SQLBind(EncodableDatabaseInput(input: dictionary))
         case .default:
-            return SQLLiteral.default
+            SQLLiteral.default
         case .enumCase(let string):
-            return SQLLiteral.string(string)
+            SQLLiteral.string(string)
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
     
     private func method(_ method: DatabaseQuery.Filter.Method) -> any SQLExpression {
         switch method {
         case .equality(let inverse):
-            return inverse ? SQLBinaryOperator.notEqual : SQLBinaryOperator.equal
+            inverse ? SQLBinaryOperator.notEqual : SQLBinaryOperator.equal
         case .subset(let inverse):
-            return inverse ? SQLBinaryOperator.notIn : SQLBinaryOperator.in
+            inverse ? SQLBinaryOperator.notIn : SQLBinaryOperator.in
         case .order(let inverse, let equality):
             switch (inverse, equality) {
             case (false, false):
-                return SQLBinaryOperator.greaterThan
+                SQLBinaryOperator.greaterThan
             case (false, true):
-                return SQLBinaryOperator.greaterThanOrEqual
+                SQLBinaryOperator.greaterThanOrEqual
             case (true, false):
-                return SQLBinaryOperator.lessThan
+                SQLBinaryOperator.lessThan
             case (true, true):
-                return SQLBinaryOperator.lessThanOrEqual
+                SQLBinaryOperator.lessThanOrEqual
             }
         case .contains:
             fatalError("Contains filter method not supported at this scope.")
         case .custom(let any):
-            return custom(any)
+            custom(any)
         }
     }
 
-    @inline(__always)
     private func key(_ key: FieldKey) -> String { key.description }
 }
 

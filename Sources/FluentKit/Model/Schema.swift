@@ -11,7 +11,7 @@ extension Schema {
         self.alias ?? self.schema
     }
     
-    static var spaceIfNotAliased: String? {
-        return self.alias == nil ? self.space : nil
+    public static var spaceIfNotAliased: String? {
+        self.alias == nil ? self.space : nil
     }
 }

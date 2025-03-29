@@ -28,7 +28,7 @@ extension Database {
     public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
         where Model: FluentKit.Model
     {
-        return .init(database: self)
+        .init(database: self)
     }
 }
 

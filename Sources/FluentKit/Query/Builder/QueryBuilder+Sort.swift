@@ -83,8 +83,7 @@ extension QueryBuilder {
         _ field: DatabaseQuery.Field,
         _ direction: DatabaseQuery.Sort.Direction
     ) -> Self {
-        self.query.sorts.append(.sort(field, direction))
-        return self
+        self.sort(.sort(field, direction))
     }
 
     @discardableResult

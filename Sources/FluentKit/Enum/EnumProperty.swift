@@ -17,7 +17,7 @@ public final class EnumProperty<Model, Value>
     public let field: FieldProperty<Model, String>
 
     public var projectedValue: EnumProperty<Model, Value> {
-        return self
+        self
     }
 
     public var wrappedValue: Value {

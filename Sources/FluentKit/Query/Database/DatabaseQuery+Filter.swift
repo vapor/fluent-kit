@@ -2,27 +2,27 @@ extension DatabaseQuery {
     public enum Filter: Sendable {
         public enum Method: Sendable {
             public static var equal: Method {
-                return .equality(inverse: false)
+                .equality(inverse: false)
             }
 
             public static var notEqual: Method {
-                return .equality(inverse: true)
+                .equality(inverse: true)
             }
 
             public static var greaterThan: Method {
-                return .order(inverse: false, equality: false)
+                .order(inverse: false, equality: false)
             }
 
             public static var greaterThanOrEqual: Method {
-                return .order(inverse: false, equality: true)
+                .order(inverse: false, equality: true)
             }
 
             public static var lessThan: Method {
-                return .order(inverse: true, equality: false)
+                .order(inverse: true, equality: false)
             }
 
             public static var lessThanOrEqual: Method {
-                return .order(inverse: true, equality: true)
+                .order(inverse: true, equality: true)
             }
 
             /// LHS is equal/not equal to RHS
@@ -64,26 +64,26 @@ extension DatabaseQuery.Filter: CustomStringConvertible {
     public var description: String {
         switch self {
         case .value(let field, let method, let value):
-            return "\(field) \(method) \(value)"
+            "\(field) \(method) \(value)"
         case .field(let fieldA, let method, let fieldB):
-            return "\(fieldA) \(method) \(fieldB)"
+            "\(fieldA) \(method) \(fieldB)"
         case .group(let filters, let relation):
-            return filters.map { "(\($0))" }.joined(separator: " \(relation) ")
+            filters.map { "(\($0))" }.joined(separator: " \(relation) ")
         case .custom(let any):
-            return "custom(\(any))"
+            "custom(\(any))"
         }
     }
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
         case .value(let field, let method, let value):
-            return ["field": field.describedByLoggingMetadata, "method": "\(method)", "value": value.describedByLoggingMetadata]
+            ["field": field.describedByLoggingMetadata, "method": "\(method)", "value": value.describedByLoggingMetadata]
         case .field(let field, let method, let field2):
-            return ["field1": field.describedByLoggingMetadata, "method": "\(method)", "field2": field2.describedByLoggingMetadata]
+            ["field1": field.describedByLoggingMetadata, "method": "\(method)", "field2": field2.describedByLoggingMetadata]
         case .group(let array, let relation):
-            return ["group": .array(array.map(\.describedByLoggingMetadata)), "relation": "\(relation)"]
+            ["group": .array(array.map(\.describedByLoggingMetadata)), "relation": "\(relation)"]
         case .custom:
-            return .stringConvertible(self)
+            .stringConvertible(self)
         }
     }
 }
@@ -92,19 +92,19 @@ extension DatabaseQuery.Filter.Method: CustomStringConvertible {
     public var description: String {
         switch self {
         case .equality(let inverse):
-            return inverse ? "!=" : "="
+            inverse ? "!=" : "="
         case .order(let inverse, let equality):
             if equality {
-                return inverse ? "<=" : ">="
+                inverse ? "<=" : ">="
             } else {
-                return inverse ? "<" : ">"
+                inverse ? "<" : ">"
             }
         case .subset(let inverse):
-            return inverse ? "!~~" : "~~"
+            inverse ? "!~~" : "~~"
         case .contains(let inverse, let contains):
-            return inverse ? "!\(contains)" : "\(contains)"
+            inverse ? "!\(contains)" : "\(contains)"
         case .custom(let any):
-            return "custom(\(any))"
+            "custom(\(any))"
         }
     }
 }
@@ -113,11 +113,11 @@ extension DatabaseQuery.Filter.Method.Contains: CustomStringConvertible {
     public var description: String {
         switch self {
         case .prefix:
-            return "startswith"
+            "startswith"
         case .suffix:
-            return "endswith"
+            "endswith"
         case .anywhere:
-            return "contains"
+            "contains"
         }
     }
 }
@@ -126,11 +126,11 @@ extension DatabaseQuery.Filter.Relation: CustomStringConvertible {
     public var description: String {
         switch self {
         case .and:
-            return "and"
+            "and"
         case .or:
-            return "or"
+            "or"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }

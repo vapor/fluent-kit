@@ -10,22 +10,22 @@ extension DatabaseQuery.Field: CustomStringConvertible {
     public var description: String {
         switch self {
         case .path(let path, let schema):
-            return "\(schema)\(path)"
+            "\(schema)\(path)"
         case .extendedPath(let path, let schema, let space):
-            return "\(space.map { "\($0)." } ?? "")\(schema)\(path)"
+            "\(space.map { "\($0)." } ?? "")\(schema)\(path)"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
         case .path(let array, let schema):
-            return "\(schema).\(array.map(\.description).joined(separator: "->"))"
+            "\(schema).\(array.map(\.description).joined(separator: "->"))"
         case .extendedPath(let array, let schema, let space):
-            return "\(space.map { "\($0)." } ?? "")\(schema).\(array.map(\.description).joined(separator: "->"))"
+            "\(space.map { "\($0)." } ?? "")\(schema).\(array.map(\.description).joined(separator: "->"))"
         case .custom:
-            return .stringConvertible(self)
+            .stringConvertible(self)
         }
     }
 }

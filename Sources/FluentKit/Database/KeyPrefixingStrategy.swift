@@ -19,13 +19,13 @@ public enum KeyPrefixingStrategy: CustomStringConvertible, Sendable {
     public var description: String {
         switch self {
         case .none:
-            return ".useDefaultKeys"
+            ".useDefaultKeys"
         case .camelCase:
-            return ".camelCase"
+            ".camelCase"
         case .snakeCase:
-            return ".snakeCase"
+            ".snakeCase"
         case .custom(_):
-            return ".custom(...)"
+            ".custom(...)"
         }
     }
     
@@ -33,23 +33,23 @@ public enum KeyPrefixingStrategy: CustomStringConvertible, Sendable {
     public func apply(prefix: FieldKey, to key: FieldKey) -> FieldKey {
         switch self {
         case .none:
-            return .prefix(prefix, key)
+            .prefix(prefix, key)
         
         // This strategy converts `.id` and `.aggregate` keys (but not prefixes) into generic `.string()`s.
         case .camelCase:
             switch key {
             case .id, .aggregate, .string(_):
-                return .prefix(prefix, .string(key.description.withUppercasedFirstCharacter()))
+                .prefix(prefix, .string(key.description.withUppercasedFirstCharacter()))
 
             case .prefix(let originalPrefix, let originalSuffix):
-                return .prefix(self.apply(prefix: prefix, to: originalPrefix), originalSuffix)
+                .prefix(self.apply(prefix: prefix, to: originalPrefix), originalSuffix)
             }
 
         case .snakeCase:
-            return .prefix(.prefix(prefix, .string("_")), key)
+            .prefix(.prefix(prefix, .string("_")), key)
 
         case .custom(let closure):
-            return closure(prefix, key)
+            closure(prefix, key)
         }
     }
 }
