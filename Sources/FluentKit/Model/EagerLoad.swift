@@ -2,17 +2,17 @@ import NIOCore
 
 public protocol EagerLoader: AnyEagerLoader {
     associatedtype Model: FluentKit.Model
-    func run(models: [Model], on database: any Database) -> EventLoopFuture<Void>
+    func run(models: [Model], on database: any Database) async throws
 }
 
 extension EagerLoader {
-    func anyRun(models: [any AnyModel], on database: any Database) -> EventLoopFuture<Void> {
-        self.run(models: models.map { $0 as! Model }, on: database)
+    func anyRun(models: [any AnyModel], on database: any Database) async throws {
+        try await self.run(models: models.map { $0 as! Model }, on: database)
     }
 }
 
 public protocol AnyEagerLoader: Sendable {
-    func anyRun(models: [any AnyModel], on database: any Database) -> EventLoopFuture<Void>
+    func anyRun(models: [any AnyModel], on database: any Database) async throws
 }
 
 public protocol EagerLoadable {

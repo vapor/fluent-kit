@@ -76,6 +76,6 @@ extension StringProtocol where Self: RangeReplaceableCollection, Self.Element: E
     /// - Returns: The string with the prefix removed, if it exists. The string unmodified if not,
     ///   or if `prefix` is `nil`.
     func drop(prefix: (some StringProtocol)?) -> Self.SubSequence {
-        return prefix.map(self.trimmingPrefix(_:)) ?? self[...]
+        prefix.map(self.trimmingPrefix(_:)) ?? self[...]
     }
 }

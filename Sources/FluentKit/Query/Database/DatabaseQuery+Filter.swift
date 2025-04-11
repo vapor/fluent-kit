@@ -1,3 +1,5 @@
+import Logging
+
 extension DatabaseQuery {
     public enum Filter: Sendable {
         public enum Method: Sendable {

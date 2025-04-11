@@ -1,11 +1,11 @@
-import struct SQLKit.SomeCodingKey
+import enum SQLKit.BasicCodingKey
 
 extension Fields {
     public init(from decoder: any Decoder) throws {
         self.init()
         
-        let container = try decoder.container(keyedBy: SomeCodingKey.self)
-        
+        let container = try decoder.container(keyedBy: BasicCodingKey.self)
+
         for (key, property) in self.codableProperties {
             let propDecoder = try container.superDecoder(forKey: key)
             do {
@@ -21,8 +21,8 @@ extension Fields {
     }
 
     public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: SomeCodingKey.self)
-        
+        var container = encoder.container(keyedBy: BasicCodingKey.self)
+
         for (key, property) in self.codableProperties where !property.skipPropertyEncoding {
             do {
                 try property.encode(to: container.superEncoder(forKey: key))

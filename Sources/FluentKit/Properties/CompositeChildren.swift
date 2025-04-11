@@ -1,4 +1,4 @@
-import NIOCore
+import AsyncAlgorithms
 
 extension Model {
     /// A convenience alias for ``CompositeChildrenProperty``. It is strongly recommended that callers use this
@@ -159,7 +159,7 @@ extension CompositeChildrenProperty: AnyCodableProperty {
 
 extension CompositeChildrenProperty: Relation {
     public var name: String { "CompositeChildren<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: any Database) -> EventLoopFuture<Void> { self.query(on: database).all().map { self.value = $0 } }
+    public func load(on database: any Database) async throws { self.value = try await Array(self.query(on: database).all()) }
 }
 
 extension CompositeChildrenProperty: EagerLoadable {
@@ -188,10 +188,10 @@ extension CompositeChildrenProperty: EagerLoadable {
 private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, From.IDValue: Fields
 {
-    let relationKey: KeyPath<From, From.CompositeChildren<To>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.CompositeChildren<To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -199,16 +199,11 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
-        if self.withDeleted {
-            builder.withDeleted()
-        }
-        
-        return builder.all().map {
-            let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
-            
-            for model in models {
-                model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!] ?? []
-            }
+
+        let indexedResults = Dictionary(grouping: try await Array(builder.all()), by: { parentKey.referencedId(in: $0)! })
+
+        for model in models {
+            model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!] ?? []
         }
     }
 }
@@ -216,10 +211,10 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
 private struct ThroughCompositeChildrenEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, From.IDValue: Fields, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.CompositeChildren<Through>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.CompositeChildren<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        return self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database)
+    func run(models: [From], on database: any Database) async throws {
+        try await self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

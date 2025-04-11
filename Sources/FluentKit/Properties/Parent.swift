@@ -1,5 +1,6 @@
-import NIOCore
-import struct SQLKit.SomeCodingKey
+import AsyncAlgorithms
+import Logging
+import enum SQLKit.BasicCodingKey
 
 extension Model {
     public typealias Parent<To> = ParentProperty<Self, To>
@@ -58,10 +59,8 @@ extension ParentProperty: Relation {
         "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).first().map {
-            self.value = $0
-        }
+    public func load(on database: any Database) async throws {
+        self.value = try await self.query(on: database).first()
     }
 }
 
@@ -114,8 +113,8 @@ extension ParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: SomeCodingKey.self)
-        try self.$id.decode(from: container.superDecoder(forKey: .init(stringValue: "id")))
+        let container = try decoder.container(keyedBy: BasicCodingKey.self)
+        try self.$id.decode(from: container.superDecoder(forKey: .key("id")))
     }
 }
 
@@ -161,28 +160,23 @@ extension ParentProperty: EagerLoadable {
 private struct ParentEagerLoader<From, To>: EagerLoader
     where From: FluentKit.Model, To: FluentKit.Model
 {
-    let relationKey: KeyPath<From, ParentProperty<From, To>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, ParentProperty<From, To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
-        if self.withDeleted {
-            builder.withDeleted()
-        }
-        return builder.all().flatMapThrowing {
-            let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
+        let parents = Dictionary(uniqueKeysWithValues: try await Array(builder.all()).map { ($0.id!, $0) })
 
-            for (parentId, models) in sets {
-                guard let parent = parents[parentId] else {
-                    database.logger.debug(
-                        "Missing parent model in eager-load lookup results.",
-                        metadata: ["parent": .string("\(To.self)"), "id": .string("\(parentId)")]
-                    )
-                    throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
-                }
-                models.forEach { $0[keyPath: self.relationKey].value = parent }
+        for (parentId, models) in sets {
+            guard let parent = parents[parentId] else {
+                database.logger.debug(
+                    "Missing parent model in eager-load lookup results.",
+                    metadata: ["parent": .string("\(To.self)"), "id": .string("\(parentId)")]
+                )
+                throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
             }
+            models.forEach { $0[keyPath: self.relationKey].value = parent }
         }
     }
 }
@@ -190,13 +184,13 @@ private struct ParentEagerLoader<From, To>: EagerLoader
 private struct ThroughParentEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.Parent<Through>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.Parent<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let throughs = models.map {
             $0[keyPath: self.relationKey].value!
         }
-        return self.loader.run(models: throughs, on: database)
+        return try await self.loader.run(models: throughs, on: database)
     }
 }

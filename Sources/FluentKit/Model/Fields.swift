@@ -98,7 +98,7 @@ extension Fields {
     
     /// A wrapper around ``properties`` which returns only the properties which have database keys and can be
     /// input to and output from a database (corresponding to the ``AnyDatabaseProperty`` protocol).
-    internal var databaseProperties: [any AnyDatabaseProperty] {
+    var databaseProperties: [any AnyDatabaseProperty] {
         self.properties.compactMap { $0 as? any AnyDatabaseProperty }
     }
 
@@ -116,15 +116,15 @@ extension Fields {
     ///
     /// > Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
     /// > performance penalties.
-    internal var codableProperties: [SomeCodingKey: any AnyCodableProperty] {
+    var codableProperties: [BasicCodingKey: any AnyCodableProperty] {
         return .init(uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
             guard let value = $1 as? any AnyCodableProperty,
                   let nameC = $0, nameC[0] != 0, nameC[1] != 0,
-                  let name = String(utf8String: nameC + 1)
+                  let name = String(validatingCString: nameC + 1)
             else {
                 return nil
             }
-            return (.init(stringValue: name), value)
+            return (.key(name), value)
         })
     }
 }

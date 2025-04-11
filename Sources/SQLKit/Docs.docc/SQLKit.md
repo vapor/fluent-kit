@@ -142,7 +142,3 @@ SQLKit does _not_ provide facilities for creating or managing database connectio
 - ``SQLSelect``
 - ``SQLUnion``
 - ``SQLUpdate``
-
-### Miscellaneous
-
-- ``SomeCodingKey``

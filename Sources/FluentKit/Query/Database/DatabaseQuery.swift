@@ -1,3 +1,5 @@
+import Logging
+
 public struct DatabaseQuery: Sendable {
     public var schema: String
     public var space: String?
@@ -9,8 +11,8 @@ public struct DatabaseQuery: Sendable {
     public var input: [Value]
     public var joins: [Join]
     public var sorts: [Sort]
-    public var limits: [Limit]
-    public var offsets: [Offset]
+    public var limit: Int?
+    public var offset: Int?
 
     init(schema: String, space: String? = nil) {
         self.schema = schema
@@ -22,8 +24,8 @@ public struct DatabaseQuery: Sendable {
         self.input = []
         self.joins = []
         self.sorts = []
-        self.limits = []
-        self.offsets = []
+        self.limit = nil
+        self.offset = nil
     }
 }
 
@@ -52,11 +54,11 @@ extension DatabaseQuery: CustomStringConvertible {
         if !self.sorts.isEmpty {
             parts.append("sorts=\(self.sorts)")
         }
-        if !self.limits.isEmpty {
-            parts.append("limits=\(self.limits)")
+        if let limit = self.limit {
+            parts.append("limit=\(limit)")
         }
-        if !self.offsets.isEmpty {
-            parts.append("offsets=\(self.offsets)")
+        if let offset = self.offset {
+            parts.append("offset=\(offset)")
         }
         return parts.joined(separator: " ")
     }
@@ -79,8 +81,8 @@ extension DatabaseQuery: CustomStringConvertible {
         case .update, .delete:
             result["filters"] = .array(self.filters.map(\.describedByLoggingMetadata))
             result["sorts"] = .array(self.sorts.map(\.describedByLoggingMetadata))
-            result["limits"] = .array(self.limits.map { .stringConvertible($0) })
-            result["offsets"] = .array(self.offsets.map { .stringConvertible($0) })
+            result["limit"] = self.limit.map { .stringConvertible($0) }
+            result["offset"] = self.offset.map { .stringConvertible($0) }
         default: break
         }
         return result

@@ -36,7 +36,7 @@ extension QueryBuilder {
         _ path: [FieldKey],
         _ direction: DatabaseQuery.Sort.Direction = .ascending
     ) -> Self {
-        self.sort(.extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased), direction)
+        self.sort(.path(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased), direction)
     }
 
     @discardableResult
@@ -75,7 +75,7 @@ extension QueryBuilder {
     ) -> Self
         where Joined: Schema
     {
-        self.sort(.extendedPath(path, schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased), direction)
+        self.sort(.path(path, schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased), direction)
     }
 
     @discardableResult

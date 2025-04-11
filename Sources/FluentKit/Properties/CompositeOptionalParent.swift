@@ -1,5 +1,6 @@
-import NIOCore
-import struct SQLKit.SomeCodingKey
+import AsyncAlgorithms
+import Logging
+import enum SQLKit.BasicCodingKey
 
 extension Model {
     /// A convenience alias for ``CompositeOptionalParentProperty``. It is strongly recommended that callers
@@ -126,12 +127,8 @@ extension CompositeOptionalParentProperty: Relation {
         "CompositeOptionalParent<\(From.self), \(To.self)>(prefix: \(self.prefix), strategy: \(self.prefixingStrategy))"
     }
     
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database)
-            .first()
-            .map {
-                self.value = $0
-            }
+    public func load(on database: any Database) async throws {
+        self.value = try await self.query(on: database).first()
     }
 }
 
@@ -186,22 +183,16 @@ extension CompositeOptionalParentProperty: AnyCodableProperty {
     }
 
     public func decode(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: SomeCodingKey.self)
-        self.id = try container.decode(To.IDValue?.self, forKey: .init(stringValue: "id"))
+        let container = try decoder.container(keyedBy: BasicCodingKey.self)
+        self.id = try container.decode(To.IDValue?.self, forKey: .key("id"))
     }
 }
 
 extension CompositeOptionalParentProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, CompositeOptionalParentProperty<From, To>>, to builder: Builder)
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
-        self.eagerLoad(relationKey, withDeleted: false, to: builder)
-    }
-    
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalParent<To>>, withDeleted: Bool, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalParent<To>>, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        builder.add(loader: CompositeOptionalParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted))
+        builder.add(loader: CompositeOptionalParentEagerLoader(relationKey: relationKey))
     }
 
     public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeOptionalParent<To>>, to builder: Builder)
@@ -214,45 +205,39 @@ extension CompositeOptionalParentProperty: EagerLoadable {
 private struct CompositeOptionalParentEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, To.IDValue: Fields
 {
-    let relationKey: KeyPath<From, From.CompositeOptionalParent<To>>
-    let withDeleted: Bool
-    
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.CompositeOptionalParent<To>>
+
+    func run(models: [From], on database: any Database) async throws {
         var _sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let nilParentModels = _sets.removeValue(forKey: nil) ?? []
         let sets = _sets
 
         let builder = To.query(on: database)
             .group(.or) { _ = sets.keys.reduce($0) { query, id in query.group(.and) { id!.input(to: QueryFilterInput(builder: $0)) } } }
-        if self.withDeleted {
-            builder.withDeleted()
-        }
-        
-        return builder.all().flatMapThrowing {
-                let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-                for (parentId, models) in sets {
-                    guard let parent = parents[parentId!] else {
-                        database.logger.debug(
-                            "Missing parent model in eager-load lookup results.",
-                            metadata: ["parent": "\(To.self)", "id": "\(parentId!)"]
-                        )
-                        throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId!)
-                    }
-                    models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
-                }
-                nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
+        let parents = Dictionary(uniqueKeysWithValues: try await Array(builder.all()).map { ($0.id!, $0) })
+
+        for (parentId, models) in sets {
+            guard let parent = parents[parentId!] else {
+                database.logger.debug(
+                    "Missing parent model in eager-load lookup results.",
+                    metadata: ["parent": "\(To.self)", "id": "\(parentId!)"]
+                )
+                throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId!)
             }
+            models.forEach { $0[keyPath: self.relationKey].value = .some(.some(parent)) }
+        }
+        nilParentModels.forEach { $0[keyPath: self.relationKey].value = .some(.none) }
     }
 }
 
 private struct ThroughCompositeOptionalParentEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, Loader: EagerLoader, Loader.Model == Through, Through.IDValue: Fields
 {
-    let relationKey: KeyPath<From, From.CompositeOptionalParent<Through>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.CompositeOptionalParent<Through>>
     let loader: Loader
     
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
+    func run(models: [From], on database: any Database) async throws {
+        try await self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

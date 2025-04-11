@@ -12,10 +12,11 @@ public struct DatabaseConfigurationFactory: Sendable {
     }
 }
 
-public final class Databases: @unchecked Sendable { // @unchecked is safe here; mutable data is protected by lock
-    public let eventLoopGroup: any EventLoopGroup
-    public let threadPool: NIOThreadPool
+//public actor DatabaseManager {
+//    
+//}
 
+public final class Databases: @unchecked Sendable {
     private var configurations: [DatabaseID: any DatabaseConfiguration]
     private var defaultID: DatabaseID?
 
@@ -55,9 +56,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
         .init(databases: self)
     }
     
-    public init(threadPool: NIOThreadPool, on eventLoopGroup: any EventLoopGroup) {
-        self.eventLoopGroup = eventLoopGroup
-        self.threadPool = threadPool
+    public init() {
         self.configurations = [:]
         self.drivers = [:]
         self.lock = .init()
@@ -99,19 +98,17 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
     public func database(
         _ id: DatabaseID? = nil,
         logger: Logger,
-        on eventLoop: any EventLoop,
         history: QueryHistory? = nil,
         pageSizeLimit: Int? = nil
-    ) -> (any Database)? {
+    ) -> any Database {
         self.lock.withLock {
             let id = id ?? self._requireDefaultID()
             var logger = logger
-            logger[metadataKey: "database-id"] = .string(id.string)
+            logger[metadataKey: "database-id"] = .string(id.identifier)
             let configuration = self._requireConfiguration(for: id)
             let context = DatabaseContext(
                 configuration: configuration,
                 logger: logger,
-                eventLoop: eventLoop,
                 history: history,
                 pageSizeLimit: pageSizeLimit
             )
@@ -127,31 +124,23 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
         }
     }
 
-    public func reinitialize(_ id: DatabaseID? = nil) {
-        self.lock.withLockVoid {
+    public func reinitialize(_ id: DatabaseID? = nil) async {
+        let driver = self.lock.withLock { () -> (any DatabaseDriver)? in
             let id = id ?? self._requireDefaultID()
-            if let driver = self.drivers[id] {
-                self.drivers[id] = nil
-                driver.shutdown()
+            guard let foundDriver = self.drivers[id] else {
+                return nil
             }
+            self.drivers[id] = nil
+            return foundDriver
         }
+        await driver?.shutdown()
     }
 
     public func ids() -> Set<DatabaseID> {
         self.lock.withLock { Set(self.configurations.keys) }
     }
 
-    @available(*, noasync, message: "Drivers may call wait() and should not be used in an async context", renamed: "shutdownAsync()")
-    public func shutdown() {
-        self.lock.withLockVoid {
-            for driver in self.drivers.values {
-                driver.shutdown()
-            }
-            self.drivers = [:]
-        }
-    }
-    
-    public func shutdownAsync() async {
+    public func shutdown() async {
         var driversToShutdown: [any DatabaseDriver] = []
         
         self.lock.withLockVoid {
@@ -161,7 +150,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
             self.drivers = [:]
         }
         for driver in driversToShutdown {
-            await driver.shutdownAsync()
+            await driver.shutdown()
         }
     }
 

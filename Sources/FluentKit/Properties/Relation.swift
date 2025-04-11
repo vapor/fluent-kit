@@ -9,7 +9,7 @@ public protocol Relation: Sendable {
     associatedtype RelatedValue: Sendable
     var name: String { get }
     var value: RelatedValue? { get set }
-    func load(on database: any Database) -> EventLoopFuture<Void>
+    func load(on database: any Database) async throws
 }
 
 extension Relation {
@@ -25,16 +25,15 @@ extension Relation {
     ///     loaded value.
     ///   - database: The database to use if the value needs to be loaded.
     /// - Returns: The loaded value.
-    public func get(reload: Bool = false, on database: any Database) -> EventLoopFuture<RelatedValue> {
+    public func get(reload: Bool = false, on database: any Database) async throws -> RelatedValue {
         if let value = self.value, !reload {
-            database.eventLoop.makeSucceededFuture(value)
+            return value
         } else {
-            self.load(on: database).flatMapThrowing {
-                guard let value = self.value else { // This should never actually happen, but just in case...
-                    throw FluentError.relationNotLoaded(name: self.name)
-                }
-                return value
+            try await self.load(on: database)
+            guard let value = self.value else { // This should never actually happen, but just in case...
+                throw FluentError.relationNotLoaded(name: self.name)
             }
+            return value
         }
     }
 }
@@ -44,7 +43,9 @@ extension Relation {
 ///
 /// This type was extracted from its original definitions as a subtype of the property types. A typealias is
 /// provided on the property types to maintain public API compatibility.
-public enum RelationParentKey<From, To>: Sendable
+///
+/// Must use `@unchecked Sendable` because `KeyPath` still isn't `Sendable`.
+public enum RelationParentKey<From, To>: @unchecked Sendable
     where From: FluentKit.Model, To: FluentKit.Model
 {
     case required(KeyPath<To, To.Parent<From>>)
@@ -69,14 +70,14 @@ extension RelationParentKey: CustomStringConvertible {
 ///
 /// > Note: This type is public partly to allow FluentKit users to introspect model metadata, but mostly it's
 /// > to maintain parity with ``RelationParentKey``, which was public in its original definition.
-public enum CompositeRelationParentKey<From, To>: Sendable
+public enum CompositeRelationParentKey<From, To>: @unchecked Sendable
     where From: FluentKit.Model, To: FluentKit.Model, From.IDValue: Fields
 {
     case required(KeyPath<To, To.CompositeParent<From>>)
     case optional(KeyPath<To, To.CompositeOptionalParent<From>>)
     
     /// Use the stored key path to retrieve the appropriate parent ID from the given child model.
-    internal func referencedId(in model: To) -> From.IDValue? {
+    func referencedId(in model: To) -> From.IDValue? {
         switch self {
         case .required(let keypath): model[keyPath: keypath].id
         case .optional(let keypath): model[keyPath: keypath].id
@@ -91,7 +92,7 @@ public enum CompositeRelationParentKey<From, To>: Sendable
     /// using the `IN` operator, but `IN`  doesn't work with composite values).
     ///
     /// See ``QueryFilterInput`` for additional implementation details.
-    internal func queryFilterIds<C>(_ ids: C, in builder: QueryBuilder<To>) -> QueryBuilder<To>
+    func queryFilterIds<C>(_ ids: C, in builder: QueryBuilder<To>) -> QueryBuilder<To>
         where C: Collection, C.Element == From.IDValue
     {
         guard !ids.isEmpty else { return builder }

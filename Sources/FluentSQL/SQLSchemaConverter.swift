@@ -83,7 +83,7 @@ public struct SQLSchemaConverter {
             case .unique(let fields):
                 return SQLConstraint(
                     algorithm: SQLTableConstraintAlgorithm.unique(columns: fields.map(self.fieldName)),
-                    name: SQLIdentifier(name)
+                    name: SQLObjectIdentifier(name)
                 )
             case .foreignKey(let local, let schema, let space, let foreign, let onDelete, let onUpdate):
                 let reference = SQLForeignKey(
@@ -97,12 +97,12 @@ public struct SQLSchemaConverter {
                         columns: local.map(self.fieldName),
                         references: reference
                     ),
-                    name: SQLIdentifier(name)
+                    name: SQLObjectIdentifier(name)
                 )
             case .compositeIdentifier(let fields):
                 return SQLConstraint(algorithm: SQLTableConstraintAlgorithm.primaryKey(columns: fields.map(self.fieldName)), name: nil)
             case .custom(let any):
-                return SQLConstraint(algorithm: any as! any SQLExpression, name: customName.map(SQLIdentifier.init(_:)))
+                return SQLConstraint(algorithm: any as! any SQLExpression, name: customName.map(SQLObjectIdentifier.init(_:)))
             }
         case .custom(let any):
             return custom(any)
@@ -113,12 +113,12 @@ public struct SQLSchemaConverter {
         switch constraint {
         case .constraint(let algorithm):
             let name = self.constraintIdentifier(algorithm, table: table)
-            return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: algorithm)
+            return SQLDropTypedConstraint(name: SQLObjectIdentifier(name), algorithm: algorithm)
         case .name(let name):
-            return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: .custom(""))
+            return SQLDropTypedConstraint(name: SQLObjectIdentifier(name), algorithm: .custom(""))
         case .custom(let any):
             if let fkeyExt = any as? DatabaseSchema.ConstraintDelete._ForeignKeyByNameExtension {
-                return SQLDropTypedConstraint(name: SQLIdentifier(fkeyExt.name), algorithm: .foreignKey([], "", [], onDelete: .noAction, onUpdate: .noAction))
+                return SQLDropTypedConstraint(name: SQLObjectIdentifier(fkeyExt.name), algorithm: .foreignKey([], "", [], onDelete: .noAction, onUpdate: .noAction))
             }
             return custom(any)
         }
@@ -195,7 +195,7 @@ public struct SQLSchemaConverter {
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> any SQLExpression {
         switch fieldName {
         case .key(let key):
-            SQLIdentifier(self.key(key))
+            SQLObjectIdentifier(self.key(key))
         case .custom(let any):
             custom(any)
         }
@@ -212,17 +212,17 @@ public struct SQLSchemaConverter {
         case .data:
             SQLDataType.blob
         case .date:
-            SQLRaw("DATE")
+            SQLUnsafeRaw("DATE")
         case .datetime:
-            SQLRaw("TIMESTAMP")
+            SQLUnsafeRaw("TIMESTAMP")
         case .int64:
-            SQLRaw("BIGINT")
+            SQLUnsafeRaw("BIGINT")
         case .string:
             SQLDataType.text
         case .dictionary, .array:
-            SQLRaw("JSON")
+            SQLUnsafeRaw("JSON")
         case .uuid:
-            SQLRaw("UUID")
+            SQLUnsafeRaw("UUID")
         case .int8:
             SQLDataType.int
         case .int16:
@@ -238,13 +238,13 @@ public struct SQLSchemaConverter {
         case .uint64:
             SQLDataType.int
         case .enum(let value):
-            SQLEnumDataType(cases: value.cases)
+            SQLDataType.enumeration(name: "", cases: value.cases)
         case .time:
-            SQLRaw("TIME")
+            SQLUnsafeRaw("TIME")
         case .float:
-            SQLRaw("FLOAT")
+            SQLUnsafeRaw("FLOAT")
         case .double:
-            SQLRaw("DOUBLE")
+            SQLUnsafeRaw("DOUBLE")
         case .custom(let any):
             custom(any)
         }
@@ -272,18 +272,16 @@ public struct SQLSchemaConverter {
 }
 
 /// SQL drop constraint expression with awareness of foreign keys (for MySQL's broken sake).
-///
-/// > Warning: This is only public for the benefit of `FluentBenchmarks`. DO NOT USE THIS TYPE!
-public struct SQLDropTypedConstraint: SQLExpression {
-    public let name: any SQLExpression
-    public let algorithm: DatabaseSchema.ConstraintAlgorithm
-    
-    public init(name: any SQLExpression, algorithm: DatabaseSchema.ConstraintAlgorithm) {
+package struct SQLDropTypedConstraint: SQLExpression {
+    package let name: any SQLExpression
+    package let algorithm: DatabaseSchema.ConstraintAlgorithm
+
+    package init(name: any SQLExpression, algorithm: DatabaseSchema.ConstraintAlgorithm) {
         self.name = name
         self.algorithm = algorithm
     }
     
-    public func serialize(to serializer: inout SQLSerializer) {
+    package func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {
             if $0.dialect.name == "mysql" { // TODO: Add an SQLDialect setting for this branch
                 // MySQL 5.7 does not support the type-generic "DROP CONSTRAINT" syntax.
@@ -305,29 +303,5 @@ public struct SQLDropTypedConstraint: SQLExpression {
                 $0.append($0.dialect.normalizeSQLConstraint(identifier: self.name))
             }
         }
-    }
-}
-
-/// Obsolete form of SQL drop constraint expression.
-///
-///     `CONSTRAINT/KEY <name>`
-@available(*, deprecated, message: "Use SQLDropTypedConstraint instead")
-public struct SQLDropConstraint: SQLExpression {
-    public var name: any SQLExpression
-
-    public init(name: any SQLExpression) {
-        self.name = name
-    }
-
-    public func serialize(to serializer: inout SQLSerializer) {
-        if serializer.dialect.name == "mysql" {
-            serializer.write("KEY ")
-        } else {
-            serializer.write("CONSTRAINT ")
-        }
-
-        let normalizedName = serializer.dialect.normalizeSQLConstraint(identifier: name)
-
-        normalizedName.serialize(to: &serializer)
     }
 }

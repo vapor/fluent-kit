@@ -176,7 +176,7 @@ extension FluentBenchmarker {
     }
 }
 
-internal struct ErrorMigration: Migration {
+struct ErrorMigration: Migration {
     init() { }
 
     struct Error: Swift.Error { }

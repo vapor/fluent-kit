@@ -6,7 +6,7 @@ import NIOCore
 import SQLKit
 
 extension FluentBenchmarker {
-    internal func testPerformance_siblings() throws {
+    func testPerformance_siblings() throws {
         // we know database will outlive this test
         // so doing this is fine.
         // otherwise threading is a PITA

@@ -2,190 +2,140 @@ import NIOCore
 import protocol SQLKit.SQLDatabase
 
 extension Model {
-    public func save(on database: any Database) -> EventLoopFuture<Void> {
+    public func save(on database: any Database) async throws {
         if self._$idExists {
-            self.update(on: database)
+            try await self.update(on: database)
         } else {
-            self.create(on: database)
+            try await self.create(on: database)
         }
     }
 
-    public func create(on database: any Database) -> EventLoopFuture<Void> {
-        return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            try model.handle(event, on: db)
+    public func create(on database: any Database) async throws {
+        try await database.configuration.middleware.chainingTo(Self.self) { event, model, db in
+            try await model.handle(event, on: db)
         }.handle(.create, self, on: database)
     }
 
-    private func _create(on database: any Database) -> EventLoopFuture<Void> {
+    private func _create(on database: any Database) async throws {
         precondition(!self._$idExists)
         self.touchTimestamps(.create, .update)
         if self.anyID is any AnyQueryableProperty {
             self.anyID.generate()
-            let promise = database.eventLoop.makePromise(of: (any DatabaseOutput).self)
-            Self.query(on: database)
-                .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
-                .action(.create)
-                .run { promise.succeed($0) }
-                .cascadeFailure(to: promise)
-            return promise.futureResult.flatMapThrowing { output in
-                var input = self.collectInput()
-                if case .default = self._$id.inputValue {
-                    let idKey = Self()._$id.key
-                    input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
-                }
-                try self.output(from: SavedInput(input))
-            }
-        } else {
-            return Self.query(on: database)
+            var output: (any DatabaseOutput)?
+            for try await element in try await Self.query(on: database)
                 .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
                 .action(.create)
                 .run()
-                .flatMapThrowing {
-                    try self.output(from: SavedInput(self.collectInput()))
-                }
+            {
+                output = element
+                break
+            }
+            guard let output else {
+                throw FluentError.noResults
+            }
+
+            var input = self.collectInput()
+            if case .default = self._$id.inputValue {
+                let idKey = Self()._$id.key
+                input[idKey] = try .bind(output.decode(idKey, as: Self.IDValue.self))
+            }
+            try self.output(from: SavedInput(input))
+        } else {
+            _ = try await Self.query(on: database)
+                .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
+                .action(.create)
+                .run()
+            try self.output(from: SavedInput(self.collectInput()))
         }
     }
 
-    public func update(on database: any Database) -> EventLoopFuture<Void> {
-        database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            try model.handle(event, on: db)
+    public func update(on database: any Database) async throws {
+        try await database.configuration.middleware.chainingTo(Self.self) { event, model, db in
+            try await model.handle(event, on: db)
         }.handle(.update, self, on: database)
     }
 
-    private func _update(on database: any Database) throws -> EventLoopFuture<Void> {
+    private func _update(on database: any Database) async throws {
         precondition(self._$idExists)
         guard self.hasChanges else {
-            return database.eventLoop.makeSucceededFuture(())
+            return
         }
         self.touchTimestamps(.update)
         let input = self.collectInput()
         guard let id = self.id else { throw FluentError.idRequired }
-        return Self.query(on: database)
+        try await Self.query(on: database)
             .filter(id: id)
             .set(input)
             .update()
-            .flatMapThrowing
-        {
-            try self.output(from: SavedInput(input))
-        }
+        try self.output(from: SavedInput(input))
     }
 
-    public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
-        if !force, let timestamp = self.deletedTimestamp {
-            timestamp.touch()
-            return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-                try model.handle(event, on: db)
-            }.handle(.softDelete, self, on: database)
-        } else {
-            return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-                try model.handle(event, on: db)
-            }.handle(.delete(force), self, on: database)
-        }
+    public func delete(on database: any Database) async throws {
+        try await database.configuration.middleware.chainingTo(Self.self) { event, model, db in
+            try await model.handle(event, on: db)
+        }.handle(.delete, self, on: database)
     }
 
-    private func _delete(force: Bool = false, on database: any Database) throws -> EventLoopFuture<Void> {
+    private func _delete(on database: any Database) async throws {
         guard let id = self.id else { throw FluentError.idRequired }
-        return Self.query(on: database)
+        try await Self.query(on: database)
             .filter(id: id)
-            .delete(force: force)
-            .map
-        {
-            if force || self.deletedTimestamp == nil {
-                self._$idExists = false
-            }
-        }
+            .delete()
+        self._$idExists = false
     }
 
-    public func restore(on database: any Database) -> EventLoopFuture<Void> {
-        database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            try model.handle(event, on: db)
-        }.handle(.restore, self, on: database)
-    }
-
-    private func _restore(on database: any Database) throws -> EventLoopFuture<Void> {
-        guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
-            fatalError("no delete timestamp on this model")
-        }
-        timestamp.touch(date: nil)
-        precondition(self._$idExists)
-        guard let id = self.id else { throw FluentError.idRequired }
-        return Self.query(on: database)
-            .withDeleted()
-            .filter(id: id)
-            .set(self.collectInput())
-            .action(.update)
-            .run()
-            .flatMapThrowing
-        {
-            try self.output(from: SavedInput(self.collectInput()))
-            self._$idExists = true
-        }
-    }
-
-    private func handle(_ event: ModelEvent, on db: any Database) throws -> EventLoopFuture<Void> {
+    private func handle(_ event: ModelEvent, on db: any Database) async throws {
         switch event {
         case .create:
-            _create(on: db)
-        case .delete(let force):
-            try _delete(force: force, on: db)
-        case .restore:
-            try _restore(on: db)
-        case .softDelete:
-            try _delete(force: false, on: db)
+            try await self._create(on: db)
+        case .delete:
+            try await self._delete(on: db)
         case .update:
-            try _update(on: db)
+            try await self._update(on: db)
         }
     }
 }
 
 extension Collection where Element: FluentKit.Model, Self: Sendable {
-    public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
+    public func delete(on database: any Database) async throws {
         guard !self.isEmpty else {
-            return database.eventLoop.makeSucceededFuture(())
+            return
         }
         
         precondition(self.allSatisfy { $0._$idExists })
 
-        return EventLoopFuture<Void>.andAllSucceed(self.map { model in
-            database.configuration.middleware.chainingTo(Element.self) { event, model, db in
-                db.eventLoop.makeSucceededFuture(())
-            }.delete(model, force: force, on: database)
-        }, on: database.eventLoop).flatMap {
-            Element.query(on: database)
-                .filter(ids: self.map { $0.id! })
-                .delete(force: force)
-        }.map {
-            guard force else { return }
-            
-            for model in self where model.deletedTimestamp == nil {
-                model._$idExists = false
-            }
+        for model in self {
+            try await database.configuration.middleware.chainingTo(Element.self) { _, _, _ in }.delete(model, on: database)
+        }
+        try await Element.query(on: database)
+            .filter(ids: self.map { $0.id! })
+            .delete()
+
+        for model in self {
+            model._$idExists = false
         }
     }
 
-    public func create(on database: any Database) -> EventLoopFuture<Void> {
+    public func create(on database: any Database) async throws {
         guard !self.isEmpty else {
-            return database.eventLoop.makeSucceededFuture(())
+            return
         }
         
         precondition(self.allSatisfy { !$0._$idExists })
-        
-        return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
-            database.configuration.middleware.chainingTo(Element.self) { event, model, db in
+
+        for model in self {
+            try await database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 if model.anyID is any AnyQueryableProperty {
                     model._$id.generate()
                 }
                 model.touchTimestamps(.create, .update)
-                return db.eventLoop.makeSucceededFuture(())
             }.create(model, on: database)
-        }, on: database.eventLoop).flatMap {
-            Element.query(on: database)
-                .set(self.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
-                .create()
-        }.map {
-            for model in self {
-                model._$idExists = true
-            }
+        }
+        try await Element.query(on: database)
+            .set(self.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
+            .create()
+        for model in self {
+            model._$idExists = true
         }
     }
 }

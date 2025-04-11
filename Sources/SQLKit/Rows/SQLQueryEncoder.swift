@@ -104,7 +104,6 @@ public struct SQLQueryEncoder: Sendable {
         ///
         /// If the result of the conversion is a duplicate key, then only one value will be present in
         /// the result.
-        @preconcurrency
         case custom(@Sendable (_ codingPath: [any CodingKey]) -> any CodingKey)
 
         /// Apply the strategy to the given coding key, returning the transformed result.

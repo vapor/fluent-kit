@@ -1,3 +1,5 @@
+import Logging
+
 /// An expression representing two or more `SELECT` queries joined by `UNION` clauses. Used to merge the results of
 /// multiple queries into a single result set.
 ///

@@ -6,57 +6,52 @@ public protocol AnyModelMiddleware: Sendable {
         _ model: any AnyModel,
         on db: any Database,
         chainingTo next: any AnyModelResponder
-    ) -> EventLoopFuture<Void>
+    ) async throws
 }
 
 public protocol ModelMiddleware: AnyModelMiddleware {
     associatedtype Model: FluentKit.Model
-    
-    func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
-    func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
-    func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
-    func softDelete(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
-    func restore(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
+
+    func create(model: Model, on db: any Database, next: any AnyModelResponder) async throws
+    func update(model: Model, on db: any Database, next: any AnyModelResponder) async throws
+    func delete(model: Model, on db: any Database, next: any AnyModelResponder) async throws
 }
 
 extension ModelMiddleware {
-    public func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database, chainingTo next: any AnyModelResponder) -> EventLoopFuture<Void> {
+    public func handle(
+        _ event: ModelEvent,
+        _ model: any AnyModel,
+        on db: any Database,
+        chainingTo next: any AnyModelResponder
+    ) async throws {
         guard let modelType = model as? Model else {
-            return next.handle(event, model, on: db)
+            return try await next.handle(event, model, on: db)
         }
-        
+
+        let responder = BasicModelResponder<Model> { responderEvent, responderModel, responderDB in
+            try await next.handle(responderEvent, responderModel, on: responderDB)
+        }
+
         switch event {
         case .create:
-            return create(model: modelType, on: db, next: next)
+            try await self.create(model: modelType, on: db, next: responder)
         case .update:
-            return update(model: modelType, on: db, next: next)
-        case .delete(let force):
-            return delete(model: modelType, force: force, on: db, next: next)
-        case .softDelete:
-            return softDelete(model: modelType, on: db, next: next)
-        case .restore:
-            return restore(model: modelType, on: db, next: next)
+            try await self.update(model: modelType, on: db, next: responder)
+        case .delete:
+            try await self.delete(model: modelType, on: db, next: responder)
         }
     }
-    
-    public func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        next.create(model, on: db)
+
+    public func create(model: Model, on db: any Database, next: any AnyModelResponder) async throws {
+        try await next.create(model, on: db)
     }
-    
-    public func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        next.update(model, on: db)
+
+    public func update(model: Model, on db: any Database, next: any AnyModelResponder) async throws {
+        try await next.update(model, on: db)
     }
-    
-    public func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        next.delete(model, force: force, on: db)
-    }
-    
-    public func softDelete(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        next.softDelete(model, on: db)
-    }
-    
-    public func restore(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
-        next.restore(model, on: db)
+
+    public func delete(model: Model, on db: any Database, next: any AnyModelResponder) async throws {
+        try await next.delete(model, on: db)
     }
 }
 
@@ -67,9 +62,9 @@ extension AnyModelMiddleware {
 }
 
 extension Array where Element == any AnyModelMiddleware {
-    internal func chainingTo<Model>(
+    func chainingTo<Model>(
         _ type: Model.Type,
-        closure: @escaping @Sendable (ModelEvent, Model, any Database) throws -> EventLoopFuture<Void>
+        closure: @escaping @Sendable (ModelEvent, Model, any Database) async throws -> ()
     ) -> any AnyModelResponder where Model: FluentKit.Model {
         var responder: any AnyModelResponder = BasicModelResponder(handle: closure)
         for middleware in reversed() {
@@ -83,15 +78,13 @@ private struct ModelMiddlewareResponder: AnyModelResponder {
     var middleware: any AnyModelMiddleware
     var responder: any AnyModelResponder
     
-    func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
-        self.middleware.handle(event, model, on: db, chainingTo: responder)
+    func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) async throws {
+        try await self.middleware.handle(event, model, on: db, chainingTo: responder)
     }
 }
 
 public enum ModelEvent: Sendable {
     case create
     case update
-    case delete(Bool)
-    case restore
-    case softDelete
+    case delete
 }

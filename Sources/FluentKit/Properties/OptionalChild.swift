@@ -1,4 +1,4 @@
-import NIOCore
+import AsyncAlgorithms
 
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
@@ -65,17 +65,15 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
         return builder
     }
 
-    public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
+    public func create(_ to: To, on database: any Database) async throws {
         guard let id = self.idValue else {
             fatalError("Cannot save child in \(self.name) to unsaved model in.")
         }
         switch self.parentKey {
-        case .required(let keyPath):
-            to[keyPath: keyPath].id = id
-        case .optional(let keyPath):
-            to[keyPath: keyPath].id = id
+        case .required(let keyPath): to[keyPath: keyPath].id = id
+        case .optional(let keyPath): to[keyPath: keyPath].id = id
         }
-        return to.create(on: database)
+        try await to.create(on: database)
     }
 }
 
@@ -136,49 +134,27 @@ extension OptionalChildProperty: AnyCodableProperty {
 
 extension OptionalChildProperty: Relation {
     public var name: String {
-        "Child<\(From.self), \(To.self)>(for: \(self.parentKey))"
+        "OptionalChild<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
 
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).first().map {
-            self.value = $0
-        }
+    public func load(on database: any Database) async throws {
+        self.value = try await self.query(on: database).first()
     }
 }
 
 // MARK: Eager Loadable
 
 extension OptionalChildProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, OptionalChildProperty<From, To>>,
-        to builder: Builder
-    )
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
-        self.eagerLoad(relationKey, withDeleted: false, to: builder)
-    }
-    
-    public static func eagerLoad<Builder>(
-        _ relationKey: KeyPath<From, From.OptionalChild<To>>,
-        withDeleted: Bool,
-        to builder: Builder
-    )
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.OptionalChild<To>>, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = OptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
+        let loader = OptionalChildEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
 
 
-    public static func eagerLoad<Loader, Builder>(
-        _ loader: Loader,
-        through: KeyPath<From, From.OptionalChild<To>>,
-        to builder: Builder
-    ) where
-        Loader: EagerLoader,
-        Loader.Model == To,
-        Builder: EagerLoadBuilder,
-        Builder.Model == From
+    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.OptionalChild<To>>, to builder: Builder)
+        where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
     {
         let loader = ThroughChildEagerLoader(relationKey: through, loader: loader)
         builder.add(loader: loader)
@@ -188,37 +164,29 @@ extension OptionalChildProperty: EagerLoadable {
 private struct OptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
-    let relationKey: KeyPath<From, From.OptionalChild<To>>
-    let withDeleted: Bool
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.OptionalChild<To>>
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let ids = models.compactMap { $0.id! }
 
         let builder = To.query(on: database)
         let parentKey = From()[keyPath: self.relationKey].parentKey
         switch parentKey {
-        case .optional(let optional):
-            builder.filter(optional.appending(path: \.$id) ~~ Set(ids))
-        case .required(let required):
-            builder.filter(required.appending(path: \.$id) ~~ Set(ids))
-        }
-        if self.withDeleted {
-            builder.withDeleted()
+        case .optional(let optional): builder.filter(optional.appending(path: \.$id) ~~ Set(ids))
+        case .required(let required): builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
         let models = models
-        return builder.all().map {
-            for model in models {
-                let id = model[keyPath: self.relationKey].idValue!
-                let children = $0.filter { child in
-                    switch parentKey {
-                    case .optional(let optional):
-                        return child[keyPath: optional].id == id
-                    case .required(let required):
-                        return child[keyPath: required].id == id
-                    }
+
+        let results = try await Array(builder.all())
+        for model in models {
+            let id = model[keyPath: self.relationKey].idValue!
+            let children = results.filter { child in
+                switch parentKey {
+                case .optional(let optional): child[keyPath: optional].id == id
+                case .required(let required): child[keyPath: required].id == id
                 }
-                model[keyPath: self.relationKey].value = children.first
             }
+            model[keyPath: self.relationKey].value = children.first
         }
     }
 }
@@ -226,13 +194,10 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
 private struct ThroughChildEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.OptionalChild<Through>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.OptionalChild<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        let throughs = models.compactMap {
-            $0[keyPath: self.relationKey].value!
-        }
-        return self.loader.run(models: throughs, on: database)
+    func run(models: [From], on database: any Database) async throws {
+        try await self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

@@ -1,3 +1,5 @@
+import Logging
+
 extension DatabaseQuery {
     public enum Value: Sendable {
         case bind(any Encodable & Sendable)

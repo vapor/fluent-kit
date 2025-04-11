@@ -28,7 +28,7 @@ extension QueryBuilder {
     ) -> Self
         where Field: QueryableProperty, Field.Model == Model
     {
-        self.filter(.extendedPath(
+        self.filter(.path(
             Model.path(for: field),
             schema: Model.schemaOrAlias,
             space: Model.spaceIfNotAliased
@@ -44,7 +44,7 @@ extension QueryBuilder {
     ) -> Self
         where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
-        self.filter(.extendedPath(
+        self.filter(.path(
             Joined.path(for: field),
             schema: Joined.schemaOrAlias,
             space: Joined.spaceIfNotAliased
@@ -85,7 +85,7 @@ extension QueryBuilder {
         where Value: Codable & Sendable
     {
         self.filter(
-            .extendedPath(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+            .path(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
             .bind(value)
         )
@@ -107,9 +107,9 @@ extension QueryBuilder {
         _ rightPath: [FieldKey]
     ) -> Self {
         self.filter(
-            .extendedPath(leftPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+            .path(leftPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
-            .extendedPath(rightPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
+            .path(rightPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
         )
     }
 

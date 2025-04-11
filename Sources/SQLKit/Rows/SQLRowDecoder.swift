@@ -83,14 +83,13 @@ public struct SQLRowDecoder: Sendable {
         /// > ``SQLQueryEncoder/KeyEncodingStrategy-swift.enum/convertToSnakeCase``). Likewise, the closure provided to
         /// > the ``custom(_:)`` strategy is expected to perform a _forward_ translation, translating a Swift-side
         /// > `CodingKey` into the database-side column name found in a given query result row. Users are encouraged
-        /// > to consider the use of ``SomeCodingKey`` for returning results.
+        /// > to consider the use of ``BasicCodingKey`` for returning results.
         /// >
         /// > It is also worth noting that this behavior is inconsistent with how a `KeyDecodingStrategy` specified
         /// > on Foundation's `JSONDecoder` works.
         ///
         /// - Parameter closure: A closure which performs a _forward_ conversion of a `CodingKey` to the equivalent
         ///   database column name.
-        @preconcurrency
         case custom(@Sendable ([any CodingKey]) -> any CodingKey)
 
         /// Apply the strategy to the given coding key, returning the transformed result.

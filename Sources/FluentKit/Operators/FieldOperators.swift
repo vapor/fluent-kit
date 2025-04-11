@@ -2,9 +2,9 @@ extension QueryBuilder {
     @discardableResult
     public func filter(_ filter: ModelFieldFilter<Model, Model>) -> Self {
         self.filter(
-            .extendedPath(filter.lhsPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+            .path(filter.lhsPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             filter.method,
-            .extendedPath(filter.rhsPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
+            .path(filter.rhsPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)
         )
     }
 
@@ -13,9 +13,9 @@ extension QueryBuilder {
         where Left: Schema, Right: Schema
     {
         self.filter(
-            .extendedPath(filter.lhsPath, schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+            .path(filter.lhsPath, schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
             filter.method,
-            .extendedPath(filter.rhsPath, schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            .path(filter.rhsPath, schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
         )
     }
 }

@@ -12,16 +12,16 @@ import NIOCore
 public protocol TransactionControlDatabase: Database {
     /// Start the transaction on the current connection. This is equivalent to an SQL `BEGIN`
     /// - Returns: future `Void` when the transaction has been started
-    func beginTransaction() -> EventLoopFuture<Void>
+    func beginTransaction() async throws
 
     /// Commit the queries executed for the transaction and write them to the database
     /// This is equivalent to an SQL `COMMIT`
     /// - Returns: future `Void` when the transaction has been committed
-    func commitTransaction() -> EventLoopFuture<Void>
+    func commitTransaction() async throws
 
     /// Rollback the current transaction's queries. You may want to trigger this when handling an error
     /// when trying to create models.
     /// This is equivalent to an SQL `ROLLBACK`
     /// - Returns: future `Void` when the transaction has been rollbacked
-    func rollbackTransaction() -> EventLoopFuture<Void>
+    func rollbackTransaction() async throws
 }

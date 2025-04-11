@@ -10,7 +10,6 @@ extension Model {
 public enum TimestampTrigger {
     case create
     case update
-    case delete
     case none
 }
 
@@ -200,26 +199,5 @@ extension Fields {
                 timestamp.touch(date: date)
             }
         }
-    }
-
-    var deletedTimestamp: (any AnyTimestamp)? {
-        self.timestamps.filter { $0.trigger == .delete }.first
-    }
-}
-
-extension Schema {
-    static func excludeDeleted(from query: inout DatabaseQuery) {
-        guard let timestamp = self.init().deletedTimestamp else {
-            return
-        }
-        let deletedAtField = DatabaseQuery.Field.extendedPath(
-            [timestamp.key],
-            schema: self.schemaOrAlias,
-            space: self.space
-        )
-        query.filters.append(.group([
-            .value(deletedAtField, .equal, .null),
-            .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
-        ], .or))
     }
 }

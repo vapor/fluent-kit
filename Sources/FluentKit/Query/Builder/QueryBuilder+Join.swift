@@ -36,7 +36,7 @@ extension QueryBuilder {
     ) -> Self
         where Foreign: Schema
     {
-        self.join(Foreign.self, on: .advancedJoin(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
+        self.join(Foreign.self, on: .join(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
     }
     
     /// `.join(Foreign.self, on: databaseJoin)`
@@ -63,9 +63,7 @@ extension QueryBuilder {
     {
         #if DEBUG
         switch join {
-        case let .join(jschema, jalias, _, _, _):
-            assert(jschema == Foreign.schema && jalias == Foreign.alias, "Join specification does not match provided Model type \(Foreign.self)")
-        case let .extendedJoin(jschema, jspace, jalias, _, _, _), let .advancedJoin(jschema, jspace, jalias, _, _):
+        case let .join(jschema, jspace, jalias, _, _):
             assert(jspace == Foreign.space && jschema == Foreign.schema && jalias == Foreign.alias, "Join specification does not match provided Model type \(Foreign.self)")
         case.custom(_):
             break // We can't validate custom joins
@@ -186,7 +184,7 @@ public struct ComplexJoinFilter {
     
     init<Model: Schema>(_ filter: ModelValueFilter<Model>) {
         self.init(filter: .value(
-            .extendedPath(filter.path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+            .path(filter.path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             filter.method,
             filter.value
         ))
@@ -196,9 +194,9 @@ public struct ComplexJoinFilter {
         _ lhs: KeyPath<Left, LField>, _ method: DatabaseQuery.Filter.Method, _ rhs: KeyPath<Right, RField>
     ) where Left: Schema, Right: Schema, LField: QueryableProperty, RField: QueryableProperty, LField.Value == RField.Value {
         self.init(filter: .field(
-            .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+            .path(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
             method,
-            .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            .path(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
         ))
     }
 
@@ -206,9 +204,9 @@ public struct ComplexJoinFilter {
         _ lhs: KeyPath<Left, LField>, _ method: DatabaseQuery.Filter.Method, _ rhs: KeyPath<Right, RField>
     ) where Left: Schema, Right: Schema, LField: QueryableProperty, RField: QueryableProperty, LField.Value? == RField.Value {
         self.init(filter: .field(
-            .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+            .path(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
             method,
-            .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            .path(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
         ))
     }
 
@@ -216,9 +214,9 @@ public struct ComplexJoinFilter {
         _ lhs: KeyPath<Left, LField>, _ method: DatabaseQuery.Filter.Method, _ rhs: KeyPath<Right, RField>
     ) where Left: Schema, Right: Schema, LField: QueryableProperty, RField: QueryableProperty, LField.Value == RField.Value? {
         self.init(filter: .field(
-            .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+            .path(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
             method,
-            .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            .path(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
         ))
     }
 }
@@ -252,9 +250,9 @@ extension QueryBuilder {
         where Foreign: Schema, Local: Schema
     {
         self.join(Foreign.self, on: ComplexJoinFilter(filter: .field(
-            .extendedPath(filter.foreign, schema: Foreign.schemaOrAlias, space: Foreign.spaceIfNotAliased),
+            .path(filter.foreign, schema: Foreign.schemaOrAlias, space: Foreign.spaceIfNotAliased),
             .equal,
-            .extendedPath(filter.local, schema: Local.schemaOrAlias, space: Local.spaceIfNotAliased)
+            .path(filter.local, schema: Local.schemaOrAlias, space: Local.spaceIfNotAliased)
         )), method: method)
     }
 }

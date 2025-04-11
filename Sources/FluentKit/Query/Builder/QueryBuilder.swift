@@ -1,5 +1,58 @@
+import AsyncAlgorithms
 import AsyncKit
+import Logging
 import NIOCore
+
+public struct AsyncModelSequence<Model: FluentKit.Model>: AsyncSequence, Sendable {
+    public typealias Element = Model
+
+    private enum Backing {
+        case asyncMappedModels(AsyncThrowingMapSequence<AsyncDatabaseOutputSequence, Model>)
+        case collectedModels([Model])
+    }
+
+    private let backing: Backing
+
+    init(_ backing: AsyncThrowingMapSequence<AsyncDatabaseOutputSequence, Model>) { self.backing = .asyncMappedModels(backing) }
+    init(_ backing: [Model]) { self.backing = .collectedModels(backing) }
+
+    public func makeAsyncIterator() -> AsyncIterator {
+        switch self.backing {
+        case .asyncMappedModels(let backing): .init(backing: backing)
+        case .collectedModels(let backing): .init(backing: backing)
+        }
+    }
+
+    public struct AsyncIterator: AsyncIteratorProtocol {
+        public typealias Element = Model
+
+        private enum Backing {
+            case asyncMappedModels(AsyncThrowingMapSequence<AsyncDatabaseOutputSequence, Model>.AsyncIterator)
+            case collectedModels([Model].Iterator)
+        }
+
+        private var backing: Backing
+
+        init(backing: AsyncThrowingMapSequence<AsyncDatabaseOutputSequence, Model>) { self.backing = .asyncMappedModels(backing.makeAsyncIterator()) }
+        init(backing: [Model]) { self.backing = .collectedModels(backing.makeIterator()) }
+
+        public mutating func next() async throws -> Model? {
+            switch self.backing {
+            case .asyncMappedModels(var iterator):
+                let model = try await iterator.next()
+                self.backing = .asyncMappedModels(iterator)
+                return model
+            case .collectedModels(var iterator):
+                let model = iterator.next()
+                self.backing = .collectedModels(iterator)
+                return model
+            }
+        }
+    }
+}
+
+@available(*, unavailable)
+extension AsyncModelSequence.AsyncIterator: Sendable {}
 
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model
@@ -7,9 +60,7 @@ public final class QueryBuilder<Model>
     public var query: DatabaseQuery
 
     public let database: any Database
-    internal var includeDeleted: Bool
-    internal var shouldForceDelete: Bool
-    internal var models: [any Schema.Type]
+    var models: [any Schema.Type]
     public var eagerLoaders: [any AnyEagerLoader]
 
     public convenience init(database: any Database) {
@@ -24,16 +75,12 @@ public final class QueryBuilder<Model>
         query: DatabaseQuery,
         database: any Database,
         models: [any Schema.Type] = [],
-        eagerLoaders: [any AnyEagerLoader] = [],
-        includeDeleted: Bool = false,
-        shouldForceDelete: Bool = false
+        eagerLoaders: [any AnyEagerLoader] = []
     ) {
         self.query = query
         self.database = database
         self.models = models
         self.eagerLoaders = eagerLoaders
-        self.includeDeleted = includeDeleted
-        self.shouldForceDelete = shouldForceDelete
         // Pass through custom ID key for database if used.
         if Model().anyID is any AnyQueryableProperty {
             switch Model()._$id.key {
@@ -50,9 +97,7 @@ public final class QueryBuilder<Model>
             query: self.query,
             database: self.database,
             models: self.models,
-            eagerLoaders: self.eagerLoaders,
-            includeDeleted: self.includeDeleted,
-            shouldForceDelete: self.shouldForceDelete
+            eagerLoaders: self.eagerLoaders
         )
     }
 
@@ -66,9 +111,9 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    internal func addFields(for model: any (Schema & Fields).Type, to query: inout DatabaseQuery) {
+    func addFields(for model: any (Schema & Fields).Type, to query: inout DatabaseQuery) {
         query.fields += model.keys.map { path in
-            .extendedPath([path], schema: model.schemaOrAlias, space: model.spaceIfNotAliased)
+            .path([path], schema: model.schemaOrAlias, space: model.spaceIfNotAliased)
         }
     }
 
@@ -83,7 +128,7 @@ public final class QueryBuilder<Model>
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
         where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
-        self.query.fields.append(.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased))
+        self.query.fields.append(.path(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased))
         return self
     }
     
@@ -93,38 +138,28 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    // MARK: Soft Delete
-
-    @discardableResult
-    public func withDeleted() -> Self {
-        self.includeDeleted = true
-        return self
-    }
-
     // MARK: Actions
 
-    public func create() -> EventLoopFuture<Void> {
+    public func create() async throws {
         self.query.action = .create
-        return self.run()
+        _ = try await self.run()
     }
 
-    public func update() -> EventLoopFuture<Void> {
+    public func update() async throws {
         self.query.action = .update
-        return self.run()
+        _ = try await self.run()
     }
 
-    public func delete(force: Bool = false) -> EventLoopFuture<Void> {
-        self.includeDeleted = force
-        self.shouldForceDelete = force
+    public func delete() async throws {
         self.query.action = .delete
-        return self.run()
+        _ = try await self.run()
     }
 
     // MARK: Limit
     
     @discardableResult
     public func limit(_ count: Int) -> Self {
-        self.query.limits.append(.count(count))
+        self.query.limit = count
         return self
     }
 
@@ -132,7 +167,7 @@ public final class QueryBuilder<Model>
 
     @discardableResult
     public func offset(_ count: Int) -> Self {
-        self.query.offsets.append(.count(count))
+        self.query.offset = count
         return self
     }
 
@@ -146,52 +181,19 @@ public final class QueryBuilder<Model>
 
     // MARK: Fetch
 
-    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
-        #if swift(<5.10)
-        let partial: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
-        partial.wrappedValue.reserveCapacity(max)
-        return self.all { row in
-            partial.wrappedValue.append(row)
-            if partial.wrappedValue.count >= max {
-                closure(partial.wrappedValue)
-                partial.wrappedValue.removeAll(keepingCapacity: true)
-            }
-        }.flatMapThrowing { 
-            if !partial.wrappedValue.isEmpty {
-                closure(partial.wrappedValue)
-            }
+    public func first() async throws -> Model? {
+        for try await model in try await self.limit(1).all() {
+            return model
         }
-        #else
-        nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
-        partial.reserveCapacity(max)
-        
-        return self.all { row in
-            partial.append(row)
-            if partial.count >= max {
-                closure(partial)
-                partial.removeAll(keepingCapacity: true)
-            }
-        }.flatMapThrowing {
-            if !partial.isEmpty {
-                closure(partial)
-            }
-        }
-        #endif
+        return nil
     }
 
-    public func first() -> EventLoopFuture<Model?> {
-        self.limit(1)
-            .all()
-            .map { $0.first }
-    }
-
-    public func all<Field>(_ key: KeyPath<Model, Field>) async throws -> [Field.Value]
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+    public func all<Field>(_ key: KeyPath<Model, Field>) async throws -> AsyncMapSequence<AsyncModelSequence<Model>, Field.Value>
+        where Field: QueryableProperty, Field.Model == Model
     {
+        nonisolated(unsafe) let key = key
         let copy = self.copy()
-        copy.query.fields = [.extendedPath(Model.path(for: key), schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)]
+        copy.query.fields = [.path(Model.path(for: key), schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)]
         return try await copy.all().map {
             $0[keyPath: key].value!
         }
@@ -200,70 +202,46 @@ public final class QueryBuilder<Model>
     public func all<Joined, Field>(
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
-    ) async throws -> [Field.Value]
-        where
-            Joined: Schema,
-            Field: QueryableProperty,
-            Field.Model == Joined
+    ) async throws -> AsyncThrowingMapSequence<AsyncModelSequence<Model>, Field.Value>
+        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
     {
+        nonisolated(unsafe) let field = field
         let copy = self.copy()
-        copy.query.fields = [.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased)]
+        copy.query.fields = [.path(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased)]
         return try await copy.all().map {
             try $0.joined(Joined.self)[keyPath: field].value!
         }
     }
 
-    public func all() -> EventLoopFuture<[Model]> {
-        nonisolated(unsafe) var models: [Result<Model, any Error>] = []
+    public func all() async throws -> AsyncModelSequence<Model> {
+        let models = try await self.run().map { output in
+            let model = Model()
 
-        return self
-            .all { models.append($0) }
-            .flatMapThrowing { try models.map { try $0.get() } }
-    }
-
-    public func run() -> EventLoopFuture<Void> {
-        self.run { _ in }
-    }
-
-    public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
-        nonisolated(unsafe) var all: [Model] = []
-
-        let done = self.run { output in
-            onOutput(.init(catching: {
-                let model = Model()
-                try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
-                all.append(model)
-                return model
-            }))
+            try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
+            return model
         }
 
-        // if eager loads exist, run them, and update models
-        if !self.eagerLoaders.isEmpty {
-            let loaders = self.eagerLoaders
-            let db = self.database
-            
-            return done.flatMapWithEventLoop {
-                // don't run eager loads if result set was empty
-                guard !all.isEmpty else {
-                    return $1.makeSucceededFuture(())
-                }
-                // run eager loads
-                return loaders.sequencedFlatMapEach(on: $1) { loader in
-                    loader.anyRun(models: all.map { $0 }, on: db)
-                }
-            }
+        if self.eagerLoaders.isEmpty {
+            // If there are no eager loaders, we can directly stream the result set.
+            return .init(models)
         } else {
-            return done
+            // Otherwise we have to collect the result set, run the eager loaders against it, and turn it back into a fake async sequence.
+            let collectedModels = try await Array(models)
+
+            for loader in self.eagerLoaders {
+                try await loader.anyRun(models: collectedModels, on: self.database)
+            }
+            return .init(collectedModels)
         }
     }
 
     @discardableResult
-    internal func action(_ action: DatabaseQuery.Action) -> Self {
+    func action(_ action: DatabaseQuery.Action) -> Self {
         self.query.action = action
         return self
     }
 
-    public func run(_ onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run() async throws -> AsyncDatabaseOutputSequence {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -276,24 +254,7 @@ public final class QueryBuilder<Model>
             }
         }
 
-        // If deleted models aren't included, add filters
-        // to exclude them for each model being queried.
-        if !self.includeDeleted {
-            for model in self.models {
-                model.excludeDeleted(from: &query)
-            }
-        }
-
-        // TODO: combine this logic with model+crud timestamps
-        let forceDelete = Model.init().deletedTimestamp == nil
-            ? true : self.shouldForceDelete
         switch query.action {
-        case .delete:
-            if !forceDelete {
-                query.action = .update
-                query.input = [.dictionary([:])]
-                self.addTimestamps(triggers: [.update, .delete], to: &query)
-            }
         case .create:
             self.addTimestamps(triggers: [.create, .update], to: &query)
         case .update:
@@ -307,17 +268,7 @@ public final class QueryBuilder<Model>
         self.database.logger.debug("Running query", metadata: self.query.describedByLoggingMetadata)
         self.database.history?.add(self.query)
 
-        let loop = self.database.eventLoop
-        
-        let done = self.database.execute(query: query) { output in
-            loop.assertInEventLoop()
-            onOutput(output)
-        }
-
-        done.whenComplete { _ in
-            loop.assertInEventLoop()
-        }
-        return done
+        return try await self.database.execute(query: query)
     }
 
     private func addTimestamps(
@@ -338,5 +289,3 @@ public final class QueryBuilder<Model>
         query.input = data
     }
 }
-
-extension Swift.KeyPath: @unchecked Swift.Sendable {}

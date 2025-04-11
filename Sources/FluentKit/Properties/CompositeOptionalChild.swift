@@ -1,4 +1,4 @@
-import NIOCore
+import AsyncAlgorithms
 
 extension Model {
     /// A convenience alias for ``CompositeOptionalChildProperty``. It is strongly recommended that callers use this
@@ -144,20 +144,14 @@ extension CompositeOptionalChildProperty: AnyCodableProperty {
 
 extension CompositeOptionalChildProperty: Relation {
     public var name: String { "CompositeOptionalChild<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: any Database) -> EventLoopFuture<Void> { self.query(on: database).first().map { self.value = $0 } }
+    public func load(on database: any Database) async throws { self.value = try await self.query(on: database).first() }
 }
 
 extension CompositeOptionalChildProperty: EagerLoadable {
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, CompositeOptionalChildProperty<From, To>>, to builder: Builder)
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
-        self.eagerLoad(relationKey, withDeleted: false, to: builder)
-    }
-    
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, withDeleted: Bool, to builder: Builder)
+    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, to builder: Builder)
         where Builder: EagerLoadBuilder, Builder.Model == From
     {
-        let loader = CompositeOptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
+        let loader = CompositeOptionalChildEagerLoader(relationKey: relationKey)
         builder.add(loader: loader)
     }
 
@@ -173,10 +167,9 @@ extension CompositeOptionalChildProperty: EagerLoadable {
 private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model, From.IDValue: Fields
 {
-    let relationKey: KeyPath<From, From.CompositeOptionalChild<To>>
-    let withDeleted: Bool
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.CompositeOptionalChild<To>>
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -184,15 +177,11 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
-        if self.withDeleted {
-            builder.withDeleted()
-        }
-        return builder.all().map {
-            let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
-            
-            for model in models {
-                model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
-            }
+
+        let indexedResults = Dictionary(grouping: try await Array(builder.all()), by: { parentKey.referencedId(in: $0)! })
+
+        for model in models {
+            model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
         }
     }
 }
@@ -200,10 +189,10 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
 private struct ThroughCompositeOptionalChildEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, From.IDValue: Fields, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.CompositeOptionalChild<Through>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.CompositeOptionalChild<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        return self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
+    func run(models: [From], on database: any Database) async throws {
+        try await self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

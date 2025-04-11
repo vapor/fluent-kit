@@ -1,4 +1,4 @@
-import NIOCore
+import AsyncAlgorithms
 
 extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
@@ -10,8 +10,8 @@ extension QueryBuilder {
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
         _ request: PageRequest
-    ) -> EventLoopFuture<Page<Model>> {
-        self.page(withIndex: request.page, size: request.per)
+    ) async throws -> Page<Model> {
+        try await self.page(withIndex: request.page, size: request.per)
     }
     
     /// Returns a single `Page` out of the complete result set.
@@ -24,7 +24,7 @@ extension QueryBuilder {
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func page(
         withIndex page: Int,
-        size per: Int) -> EventLoopFuture<Page<Model>> {
+        size per: Int) async throws -> Page<Model> {
         let trimmedRequest: PageRequest = {
             guard let pageSizeLimit = database.context.pageSizeLimit else {
                 return .init(page: Swift.max(page, 1), per: Swift.max(per, 1))
@@ -34,18 +34,16 @@ extension QueryBuilder {
                 per: Swift.max(Swift.min(per, pageSizeLimit), 1)
             )
         }()
-        let count = self.count()
-        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all()
-        return items.and(count).map { (models, total) in
-            Page(
-                items: models,
-                metadata: .init(
-                    page: trimmedRequest.page,
-                    per: trimmedRequest.per,
-                    total: total
-                )
+        let count = try await self.count()
+        let items = try await Array(self.copy().range(trimmedRequest.start..<trimmedRequest.end).all())
+        return Page(
+            items: items,
+            metadata: .init(
+                page: trimmedRequest.page,
+                per: trimmedRequest.per,
+                total: count
             )
-        }
+        )
     }
 }
 

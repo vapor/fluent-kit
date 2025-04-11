@@ -1,7 +1,8 @@
+import Logging
+
 extension DatabaseQuery {
     public enum Field: Sendable {
-        case path([FieldKey], schema: String)
-        case extendedPath([FieldKey], schema: String, space: String?)
+        case path([FieldKey], schema: String, space: String?)
         case custom(any Sendable)
     }
 }
@@ -9,9 +10,7 @@ extension DatabaseQuery {
 extension DatabaseQuery.Field: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .path(let path, let schema):
-            "\(schema)\(path)"
-        case .extendedPath(let path, let schema, let space):
+        case .path(let path, let schema, let space):
             "\(space.map { "\($0)." } ?? "")\(schema)\(path)"
         case .custom(let custom):
             "custom(\(custom))"
@@ -20,9 +19,7 @@ extension DatabaseQuery.Field: CustomStringConvertible {
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
-        case .path(let array, let schema):
-            "\(schema).\(array.map(\.description).joined(separator: "->"))"
-        case .extendedPath(let array, let schema, let space):
+        case .path(let array, let schema, let space):
             "\(space.map { "\($0)." } ?? "")\(schema).\(array.map(\.description).joined(separator: "->"))"
         case .custom:
             .stringConvertible(self)

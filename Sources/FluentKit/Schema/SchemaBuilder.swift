@@ -166,18 +166,18 @@ public final class SchemaBuilder {
         return self
     }
 
-    public func create() -> EventLoopFuture<Void> {
+    public func create() async throws {
         self.schema.action = .create
-        return self.database.execute(schema: self.schema)
+        try await self.database.execute(schema: self.schema)
     }
 
-    public func update() -> EventLoopFuture<Void> {
+    public func update() async throws {
         self.schema.action = .update
-        return self.database.execute(schema: self.schema)
+        try await self.database.execute(schema: self.schema)
     }
 
-    public func delete() -> EventLoopFuture<Void> {
+    public func delete() async throws {
         self.schema.action = .delete
-        return self.database.execute(schema: self.schema)
+        try await self.database.execute(schema: self.schema)
     }
 }

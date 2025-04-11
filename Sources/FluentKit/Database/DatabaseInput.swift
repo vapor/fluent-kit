@@ -118,7 +118,7 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 /// > support for filters involving a ``CompositeIDProperty``. For example, using an instance of this type
 /// > as the input for a ``CompositeParentProperty`` filters the query according to the set of appropriately
 /// > prefixed field keys the property encapsulates.
-internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Schema>: DatabaseInput {
+struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Schema>: DatabaseInput {
     let builder: QueryBuilder<BuilderModel>
     let inverted: Bool
     
@@ -135,7 +135,7 @@ internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Sche
 
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.builder.filter(
-            .extendedPath([key], schema: InputModel.schemaOrAlias, space: InputModel.spaceIfNotAliased),
+            .path([key], schema: InputModel.schemaOrAlias, space: InputModel.spaceIfNotAliased),
             self.inverted ? .notEqual : .equal,
             value
         )
@@ -148,7 +148,7 @@ internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Sche
 /// The ``DatabaseInput/wantsUnmodifiedKeys-1qajw`` flag is always set regardless of what the
 /// "base" input requested, as the use case for this input is to easily specify an explicitly
 /// nil composite relation.
-internal struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
+struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
     let base: Base
     var wantsUnmodifiedKeys: Bool { true }
     
@@ -160,7 +160,7 @@ internal struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
 extension DatabaseInput {
     /// Returns `self` wrapped with a ``NullValueOverrideInput``. This is here primarily so the actual
     /// implementation be defined generically rather than using existentials.
-    internal func nullValueOveridden() -> any DatabaseInput {
+    func nullValueOveridden() -> any DatabaseInput {
         NullValueOverrideInput(base: self)
     }
 }

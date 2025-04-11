@@ -1,3 +1,5 @@
+import Logging
+
 extension DatabaseQuery {
     public enum Join: Sendable {
         public enum Method: Sendable {
@@ -7,23 +9,6 @@ extension DatabaseQuery {
         }
 
         case join(
-            schema: String,
-            alias: String?,
-            Method,
-            foreign: Field,
-            local: Field
-        )
-        
-        case extendedJoin(
-            schema: String,
-            space: String?,
-            alias: String?,
-            Method,
-            foreign: Field,
-            local: Field
-        )
-        
-        case advancedJoin(
             schema: String,
             space: String?,
             alias: String?,
@@ -38,13 +23,7 @@ extension DatabaseQuery {
 extension DatabaseQuery.Join: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .join(let schema, let alias, let method, let foreign, let local):
-            "\(self.schemaDescription(schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
-
-        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(foreign) == \(local)"
-
-        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+        case .join(let schema, let space, let alias, let method, let filters):
             "\(self.schemaDescription(space: space, schema: schema, alias: alias)) \(method) on \(filters)"
 
         case .custom(let custom):
@@ -54,17 +33,7 @@ extension DatabaseQuery.Join: CustomStringConvertible {
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
-        case .join(let schema, let alias, let method, let foreign, let local):
-            .dictionary([
-                "schema": "\(schema)", "alias": alias.map { "\($0)" }, "method": "\(method)",
-                "foreign": foreign.describedByLoggingMetadata, "local": local.describedByLoggingMetadata
-            ].compactMapValues { $0 })
-        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            .dictionary([
-                "schema": "\(schema)", "space": space.map { "\($0)" }, "alias": alias.map { "\($0)" }, "method": "\(method)",
-                "foreign": foreign.describedByLoggingMetadata, "local": local.describedByLoggingMetadata
-            ].compactMapValues { $0 })
-        case .advancedJoin(let schema, let space, let alias, let method, let filters):
+        case .join(let schema, let space, let alias, let method, let filters):
             .dictionary([
                 "schema": "\(schema)", "space": space.map { "\($0)" }, "alias": alias.map { "\($0)" }, "method": "\(method)",
                 "filters": .array(filters.map(\.describedByLoggingMetadata))

@@ -1,3 +1,4 @@
+import Logging
 /// An expression representing a `CREATE TRIGGER` query. Used to create new triggers for actions on a table.
 ///
 /// ```sql

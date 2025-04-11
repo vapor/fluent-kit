@@ -1,27 +1,23 @@
+import AsyncAlgorithms
 import Foundation
 import AsyncKit
 import Logging
-import NIOCore
+import NIOConcurrencyHelpers
 
 public struct Migrator: Sendable {
     public let databaseFactory: @Sendable (DatabaseID?) -> (any Database)
     public let migrations: Migrations
-    public let eventLoop: any EventLoop
     public let migrationLogLevel: Logger.Level
 
     public init(
         databases: Databases,
         migrations: Migrations,
         logger: Logger,
-        on eventLoop: any EventLoop,
         migrationLogLevel: Logger.Level = .info
     ) {
         self.init(
-            databaseFactory: {
-                databases.database($0, logger: logger, on: eventLoop)!
-            },
+            databaseFactory: { databases.database($0, logger: logger) },
             migrations: migrations,
-            on: eventLoop,
             migrationLogLevel: migrationLogLevel
         )
     }
@@ -29,83 +25,75 @@ public struct Migrator: Sendable {
     public init(
         databaseFactory: @escaping @Sendable (DatabaseID?) -> (any Database),
         migrations: Migrations,
-        on eventLoop: any EventLoop,
         migrationLogLevel: Logger.Level = .info
     ) {
         self.databaseFactory = databaseFactory
         self.migrations = migrations
-        self.eventLoop = eventLoop
         self.migrationLogLevel = migrationLogLevel
     }
     
     // MARK: Setup
     
-    public func setupIfNeeded() -> EventLoopFuture<Void> {
-        self.migrators() { $0.setupIfNeeded() }.transform(to: ())
+    public func setupIfNeeded() async throws {
+        _ = try await self.migrators() { try await $0.setupIfNeeded() }
     }
     
     // MARK: Prepare
     
-    public func prepareBatch() -> EventLoopFuture<Void> {
-        self.migrators() { $0.prepareBatch() }.transform(to: ())
+    public func prepareBatch() async throws {
+        _ = try await self.migrators() { try await $0.prepareBatch() }
     }
     
     // MARK: Revert
     
-    public func revertLastBatch() -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertLastBatch() }.transform(to: ())
+    public func revertLastBatch() async throws {
+        _ = try await self.migrators() { try await $0.revertLastBatch() }
     }
     
-    public func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertBatch(number: number) }.transform(to: ())
+    public func revertBatch(number: Int) async throws {
+        _ = try await self.migrators() { try await $0.revertBatch(number: number) }
     }
     
-    public func revertAllBatches() -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertAllBatches() }.transform(to: ())
+    public func revertAllBatches() async throws {
+        _ = try await self.migrators() { try await $0.revertAllBatches() }
     }
     
     // MARK: Preview
     
-    public func previewPrepareBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
-            migrator.previewPrepareBatch().and(value: migrator.id)
-        }.map {
-            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
-        }
+    public func previewPrepareBatch() async throws -> [(any Migration, DatabaseID?)] {
+        try await self.migrators() { migrator in
+            try await migrator.previewPrepareBatch().map { ($0, migrator.id) }
+        }.flatMap { $0 }
     }
     
-    public func previewRevertLastBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
-            migrator.previewRevertLastBatch().and(value: migrator.id)
-        }.map {
-            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
-        }
+    public func previewRevertLastBatch() async throws -> [(any Migration, DatabaseID?)] {
+        try await self.migrators() { migrator in
+            try await migrator.previewRevertLastBatch().map { ($0, migrator.id) }
+        }.flatMap { $0 }
     }
     
-    public func previewRevertBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
-            // This is not correct, but can't be fixed as it would require changing this API's parameters.
-            migrator.previewPrepareBatch().and(value: migrator.id)
-        }.map {
-            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
-        }
+    public func previewRevertBatch(number: Int) async throws -> [(any Migration, DatabaseID?)] {
+        try await self.migrators() { migrator in
+            try await migrator.previewRevertBatch(number: number).map { ($0, migrator.id) }
+        }.flatMap { $0 }
     }
     
-    public func previewRevertAllBatches() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
-            migrator.previewRevertAllBatches().and(value: migrator.id)
-        }.map {
-            $0.flatMap { migrations, id in migrations.map { ($0, id) } }
-        }
+    public func previewRevertAllBatches() async throws -> [(any Migration, DatabaseID?)] {
+        try await self.migrators() { migrator in
+            try await migrator.previewRevertAllBatches().map { ($0, migrator.id) }
+        }.flatMap { $0 }
     }
 
     private func migrators<Result>(
-        _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
-    ) -> EventLoopFuture<[Result]> {
-        self.migrations.storage.withLockedValue { $0 }.map {
-            handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLevel: self.migrationLogLevel))
+        _ handler: (DatabaseMigrator) async throws -> Result
+    ) async throws -> [Result] {
+        var results: [Result] = []
+
+        let migrations = self.migrations.storage.withLockedValue { $0 }
+        for (id, migration) in migrations {
+            results.append(try await handler(.init(id: id, database: self.databaseFactory(id), migrations: migration, migrationLogLevel: self.migrationLogLevel)))
         }
-        .flatten(on: self.eventLoop)
+        return results
     }
 }
 
@@ -124,9 +112,9 @@ private final class DatabaseMigrator: Sendable {
 
     // MARK: Setup
 
-    func setupIfNeeded() -> EventLoopFuture<Void> {
-        MigrationLog.migration.prepare(on: self.database)
-            .map { self.preventUnstableNames() }
+    func setupIfNeeded() async throws {
+        try await MigrationLog.migration.prepare(on: self.database)
+        self.preventUnstableNames()
     }
 
     /// An unstable name is a name that is not the same every time migrations
@@ -148,108 +136,105 @@ private final class DatabaseMigrator: Sendable {
 
     // MARK: Prepare
 
-    func prepareBatch() -> EventLoopFuture<Void> {
-        self.lastBatchNumber().flatMap { batch in
-            self.unpreparedMigrations().sequencedFlatMapEach { self.prepare($0, batch: batch + 1) }
+    func prepareBatch() async throws {
+        let lastBatchNumber = try await self.lastBatchNumber()
+        for migration in try await self.unpreparedMigrations() {
+            try await self.prepare(migration, batch: lastBatchNumber + 1)
         }
     }
 
     // MARK: Revert
 
-    func revertLastBatch() -> EventLoopFuture<Void> {
-        self.lastBatchNumber().flatMap { self.revertBatch(number: $0) }
+    func revertLastBatch() async throws {
+        try await self.revertBatch(number: self.lastBatchNumber())
     }
 
-    func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.preparedMigrations(batch: number).sequencedFlatMapEach { self.revert($0) }
+    func revertBatch(number: Int) async throws {
+        for migration in try await self.preparedMigrations(batch: number) {
+            try await self.revert(migration)
+        }
     }
 
-    func revertAllBatches() -> EventLoopFuture<Void> {
-        self.preparedMigrations().sequencedFlatMapEach { self.revert($0) }
+    func revertAllBatches() async throws {
+        for migration in try await self.preparedMigrations() {
+            try await self.revert(migration)
+        }
     }
 
     // MARK: Preview
 
-    func previewPrepareBatch() -> EventLoopFuture<[any Migration]> {
-        self.unpreparedMigrations()
+    func previewPrepareBatch() async throws -> [any Migration] {
+        try await self.unpreparedMigrations()
     }
 
-    func previewRevertLastBatch() -> EventLoopFuture<[any Migration]> {
-        self.lastBatchNumber().flatMap { batch in
-            self.preparedMigrations(batch: batch)
-        }
+    func previewRevertLastBatch() async throws -> [any Migration] {
+        try await self.preparedMigrations(batch: self.lastBatchNumber())
     }
 
-    func previewRevertBatch(number: Int) -> EventLoopFuture<[any Migration]> {
-        self.preparedMigrations(batch: number)
+    func previewRevertBatch(number: Int) async throws -> [any Migration] {
+        try await self.preparedMigrations(batch: number)
     }
 
-    func previewRevertAllBatches() -> EventLoopFuture<[any Migration]> {
-        self.preparedMigrations()
+    func previewRevertAllBatches() async throws -> [any Migration] {
+        try await self.preparedMigrations()
     }
 
     // MARK: Private
 
-    private func prepare(_ migration: any Migration, batch: Int) -> EventLoopFuture<Void> {
-        self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
-        
-        return migration.prepare(on: self.database).flatMap {
+    private func prepare(_ migration: any Migration, batch: Int) async throws {
+        do {
+            self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
+            try await migration.prepare(on: self.database)
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
-        
-            return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
-        }.flatMapErrorThrowing {
-            self.database.logger.error("[Migrator] Failed prepare", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
-        
-            throw $0
+        } catch {
+            self.database.logger.error("[Migrator] Failed prepare", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: error))])
+            throw error
         }
+        try await MigrationLog(name: migration.name, batch: batch).save(on: self.database)
     }
 
-    private func revert(_ migration: any Migration) -> EventLoopFuture<Void> {
-        self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
-        
-        return migration.revert(on: self.database).flatMap {
+    private func revert(_ migration: any Migration) async throws {
+        do {
+            self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
+            try await migration.revert(on: self.database)
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
-        
-            return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
-        }.flatMapErrorThrowing {
-            self.database.logger.error("[Migrator] Failed revert", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
-        
-            throw $0
+        } catch {
+            self.database.logger.error("[Migrator] Failed revert", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: error))])
+            throw error
         }
+        try await MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
     }
 
-    private func revertMigrationLog() -> EventLoopFuture<Void> {
-        MigrationLog.migration.revert(on: self.database)
+    private func revertMigrationLog() async throws {
+        try await MigrationLog.migration.revert(on: self.database)
     }
 
-    private func lastBatchNumber() -> EventLoopFuture<Int> {
-        MigrationLog.query(on: self.database).sort(\.$batch, .descending).first().map { log in
-            log?.batch ?? 0
-        }
+    private func lastBatchNumber() async throws -> Int {
+        try await MigrationLog.query(on: self.database).sort(\.$batch, .descending).first()?.batch ?? 0
     }
 
-    private func preparedMigrations() -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).all().map { logs in
-            self.migrations.filter { migration in
-                logs.contains(where: { $0.name == migration.name })
-            }.reversed()
-        }
+    private func preparedMigrations() async throws -> [any Migration] {
+        let logs = try await Array(MigrationLog.query(on: self.database).all())
+
+        return self.migrations.filter { migration in
+            logs.contains(where: { $0.name == migration.name })
+        }.reversed()
     }
 
-    private func preparedMigrations(batch: Int) -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).filter(\.$batch == batch).all().map { logs in
-            self.migrations.filter { migration in
-                logs.contains(where: { $0.name == migration.name })
-            }.reversed()
-        }
+    private func preparedMigrations(batch: Int) async throws -> [any Migration] {
+        let logs = try await Array(MigrationLog.query(on: self.database).filter(\.$batch == batch).all())
+
+        return self.migrations.filter { migration in
+            logs.contains(where: { $0.name == migration.name })
+        }.reversed()
     }
 
-    private func unpreparedMigrations() -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).all().map { logs in
-            self.migrations.compactMap { migration in
-                if logs.contains(where: { $0.name == migration.name }) { return nil }
-                return migration
-            }
+    private func unpreparedMigrations() async throws -> [any Migration] {
+        let logs = try await Array(MigrationLog.query(on: self.database).all())
+
+        return self.migrations.compactMap { migration in
+            if logs.contains(where: { $0.name == migration.name }) { return nil }
+            return migration
         }
     }
 }

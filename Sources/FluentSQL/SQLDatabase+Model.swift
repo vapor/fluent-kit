@@ -2,31 +2,16 @@ import SQLKit
 import FluentKit
 
 extension SQLQueryFetcher {
-    @available(*, deprecated, renamed: "first(decodingFluent:)", message: "Renamed to first(decodingFluent:)")
-    public func first<Model: FluentKit.Model>(decoding: Model.Type) -> EventLoopFuture<Model?> {
-        self.first(decodingFluent: Model.self)
-    }
-    
-    public func first<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<Model?> {
-        self.first().optionalFlatMapThrowing { row in try row.decode(fluentModel: Model.self) }
+    public func first<Model: FluentKit.Model>(decodingFluent: Model.Type) async throws -> Model? {
+        try await self.first().map { try $0.decode(fluentModel: Model.self) }
     }
 
-    @available(*, deprecated, renamed: "all(decodingFluent:)", message: "Renamed to all(decodingFluent:)")
-    public func all<Model: FluentKit.Model>(decoding: Model.Type) -> EventLoopFuture<[Model]> {
-        self.all(decodingFluent: Model.self)
-    }
-    
-    public func all<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<[Model]> {
-        self.all().flatMapEachThrowing { row in try row.decode(fluentModel: Model.self) }
+    public func all<Model: FluentKit.Model>(decodingFluent: Model.Type) async throws -> [Model] {
+        try await self.all().map { try $0.decode(fluentModel: Model.self) }
     }
 }
 
 extension SQLRow {
-    @available(*, deprecated, renamed: "decode(fluentModel:)", message: "Renamed to decode(fluentModel:)")
-    public func decode<Model: FluentKit.Model>(model: Model.Type) throws -> Model {
-        try self.decode(fluentModel: Model.self)
-    }
-    
     public func decode<Model: FluentKit.Model>(fluentModel: Model.Type) throws -> Model {
         let model = Model()
         try model.output(from: SQLDatabaseOutput(sql: self))
@@ -68,13 +53,13 @@ extension DatabaseQuery.Value {
         switch self {
         case .bind(let value):   SQLBind(value)
         case .null:              SQLLiteral.null
-        case .array(let values): SQLGroupExpression(SQLKit.SQLList(values.map(\.asSQLExpression), separator: SQLRaw(",")))
+        case .array(let values): SQLGroupExpression(SQLList(values.map(\.asSQLExpression), separator: ","))
         case .default:           SQLLiteral.default
         case .enumCase(let str): SQLLiteral.string(str)
         case .custom(let any as any SQLExpression):
                                  any
         case .custom(let any as any CustomStringConvertible):
-                                 SQLRaw(any.description)
+                                 SQLUnsafeRaw(any.description)
         case .dictionary(_):     fatalError("Dictionary database values are unimplemented for SQL")
         case .custom(_):         fatalError("Unsupported custom database value")
         }

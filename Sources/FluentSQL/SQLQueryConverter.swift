@@ -3,6 +3,7 @@ import SQLKit
 
 public struct SQLQueryConverter {
     let delegate: any SQLConverterDelegate
+
     public init(delegate: any SQLConverterDelegate) {
         self.delegate = delegate
     }
@@ -24,14 +25,14 @@ public struct SQLQueryConverter {
     // MARK: Private
     
     private func delete(_ query: DatabaseQuery) -> any SQLExpression {
-        var delete = SQLDelete(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
+        var delete = SQLDelete(table: SQLQualifiedTable(query.schema, space: query.space))
 
         delete.predicate = self.filters(query.filters)
         return delete
     }
     
     private func update(_ query: DatabaseQuery) -> any SQLExpression {
-        var update = SQLUpdate(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
+        var update = SQLUpdate(table: SQLQualifiedTable(query.schema, space: query.space))
 
         guard case .dictionary(let values) = query.input.first else {
             fatalError("Missing query input generating update query")
@@ -40,9 +41,7 @@ public struct SQLQueryConverter {
             let key: FieldKey
             
             switch field {
-            case let .path(path, schema) where schema == query.schema:
-                key = path[0]
-            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space:
+            case let .path(path, schema, space) where schema == query.schema && space == query.space:
                 key = path[0]
             default:
                 return nil
@@ -71,21 +70,11 @@ public struct SQLQueryConverter {
         select.predicate = self.filters(query.filters)
         select.joins = query.joins.map(self.join)
         select.orderBy = query.sorts.map(self.sort)
-        if let limit = query.limits.first {
-            switch limit {
-            case .count(let count):
-                select.limit = count
-            case .custom(let any):
-                fatalError("Unsupported limit \(any)")
-            }
+        if let limit = query.limit {
+            select.limit = limit
         }
-        if let offset = query.offsets.first {
-            switch offset {
-            case .count(let count):
-                select.offset = count
-            case .custom(let any):
-                fatalError("Unsupported offset \(any)")
-            }
+        if let offset = query.offset {
+            select.offset = offset
         }
         return select
     }
@@ -101,12 +90,10 @@ public struct SQLQueryConverter {
         // 2. Translate the list of fields from the query, which are given in a meaningful, deterministic order, into
         //    column designators.
         let keys = query.fields.compactMap { field -> FieldKey? in switch field {
-            case let .path(path, schema) where schema == query.schema:
-                return path[0]
-            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space:
-                return path[0]
+            case let .path(path, schema, space) where schema == query.schema && space == query.space:
+                path[0]
             default:
-                return nil
+                nil
         } }
         
         // 3. Filter the list of columns so that only those actually provided are specified to the insert query, since
@@ -133,14 +120,11 @@ public struct SQLQueryConverter {
     }
     
     private func filters(_ filters: [DatabaseQuery.Filter]) -> (any SQLExpression)? {
-        guard !filters.isEmpty else {
-            return nil
+        switch filters.count {
+        case 0: nil
+        case 1: self.filter(filters[0])
+        default: filters.dropFirst().reduce(self.filter(filters[0])) { SQLBinaryExpression($0, .and, self.filter($1)) }
         }
-
-        return SQLKit.SQLList(
-            filters.map(self.filter),
-            separator: " \(SQLBinaryOperator.and) " as SQLQueryString
-        )
     }
 
     private func sort(_ sort: DatabaseQuery.Sort) -> any SQLExpression {
@@ -165,17 +149,10 @@ public struct SQLQueryConverter {
     
     private func join(_ join: DatabaseQuery.Join) -> any SQLExpression {
         switch join {
+        case .join(let schema, let space, let alias, let method, let filters):
+            self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         case .custom(let any):
             custom(any)
-
-        case .join(let schema, let alias, let method, let foreign, let local):
-            self.joinCondition(schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
-
-        case .extendedJoin(let schema, let space, let alias, let method, let foreign, let local):
-            self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: [.field(foreign, .equal, local)])
-
-        case .advancedJoin(let schema, let space, let alias, let method, let filters):
-            self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         }
     }
     
@@ -186,9 +163,9 @@ public struct SQLQueryConverter {
         filters: [DatabaseQuery.Filter]
     ) -> any SQLExpression {
         let table: any SQLExpression = alias.map {
-            SQLAlias(SQLKit.SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0))
+            SQLAlias(SQLQualifiedTable(schema, space: space), as: SQLObjectIdentifier($0))
         } ??
-            SQLKit.SQLQualifiedTable(schema, space: space)
+            SQLQualifiedTable(schema, space: space)
         
         return SQLJoin(method: self.joinMethod(method), table: table, expression: self.filters(filters) ?? SQLLiteral.boolean(true))
     }
@@ -208,9 +185,7 @@ public struct SQLQueryConverter {
         switch field {
         case .custom(let any):
             custom(any)
-        case .path(let path, let schema):
-            self.fieldPath(path, schema: schema, aliased: aliased)
-        case .extendedPath(let path, let schema, let space):
+        case .path(let path, let schema, let space):
             self.fieldPath(path, space: space, schema: schema, aliased: aliased)
         }
     }
@@ -220,7 +195,7 @@ public struct SQLQueryConverter {
         
         switch path.count {
         case 1:
-            field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLKit.SQLQualifiedTable(schema, space: space))
+            field = SQLColumn(SQLObjectIdentifier(self.key(path[0])), table: SQLQualifiedTable(schema, space: space))
         case 2...:
             field = self.delegate.nestedFieldExpression(self.key(path[0]), path[1...].map(self.key))
         default:
@@ -257,7 +232,7 @@ public struct SQLQueryConverter {
                         ? [SQLDistinct(self.field(field))]
                         : [self.field(field)]
                 ),
-                as: SQLIdentifier(FieldKey.aggregate.description)
+                as: SQLObjectIdentifier(FieldKey.aggregate.description)
             )
         }
     }
@@ -323,23 +298,19 @@ public struct SQLQueryConverter {
             return custom(any)
         case .group(let filters, let relation):
             // <item> OR <item> OR <item>
-            let expression = SQLKit.SQLList(
-                filters.map(self.filter),
-                separator: " \(self.relation(relation)) " as SQLQueryString
-            )
-            // ( <expr> )
-            return SQLGroupExpression(expression)
+            return switch filters.count {
+            case 0: SQLGroupExpression(SQLLiteral.boolean(true))
+            case 1: SQLGroupExpression(self.filter(filters[0]))
+            default: SQLGroupExpression(filters.dropFirst().reduce(self.filter(filters[0])) { SQLBinaryExpression(left: $0, op: self.relation(relation), right: self.filter($1)) })
+            }
         }
     }
     
     private func relation(_ relation: DatabaseQuery.Filter.Relation) -> any SQLExpression {
         switch relation {
-        case .and:
-            SQLBinaryOperator.and
-        case .or:
-            SQLBinaryOperator.or
-        case .custom(let any):
-            custom(any)
+        case .and: SQLBinaryOperator.and
+        case .or: SQLBinaryOperator.or
+        case .custom(let any): custom(any)
         }
     }
 
@@ -354,7 +325,7 @@ public struct SQLQueryConverter {
         case .null:
             SQLLiteral.null
         case .array(let values):
-            SQLGroupExpression(SQLKit.SQLList(values.map(self.value), separator: SQLRaw(",")))
+            SQLGroupExpression(SQLList(values.map(self.value), separator: ","))
         case .dictionary(let dictionary):
             SQLBind(EncodableDatabaseInput(input: dictionary))
         case .default:
@@ -397,10 +368,10 @@ private struct EncodableDatabaseInput: Encodable {
     let input: [FieldKey: DatabaseQuery.Value]
 
     func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: SomeCodingKey.self)
+        var container = encoder.container(keyedBy: BasicCodingKey.self)
 
         for (key, value) in self.input {
-            try container.encode(EncodableDatabaseValue(value: value), forKey: SomeCodingKey(stringValue: key.description))
+            try container.encode(EncodableDatabaseValue(value: value), forKey: .key(key.description))
         }
     }
 }

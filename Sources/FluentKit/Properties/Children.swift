@@ -1,3 +1,4 @@
+import AsyncAlgorithms
 import NIOCore
 
 extension Model {
@@ -65,7 +66,7 @@ public final class ChildrenProperty<From, To>: @unchecked Sendable
         return builder
     }
 
-    public func create(_ to: [To], on database: any Database) -> EventLoopFuture<Void> {
+    public func create(_ to: [To], on database: any Database) async throws {
         guard let id = self.idValue else {
             fatalError("Cannot save child in relation \(self.name) to unsaved model.")
         }
@@ -77,10 +78,10 @@ public final class ChildrenProperty<From, To>: @unchecked Sendable
                 $0[keyPath: keyPath].id = id
             }
         }
-        return to.create(on: database)
+        try await to.create(on: database)
     }
 
-    public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
+    public func create(_ to: To, on database: any Database) async throws {
         guard let id = self.idValue else {
             fatalError("Cannot save child in relation \(self.name) to unsaved model.")
         }
@@ -90,7 +91,7 @@ public final class ChildrenProperty<From, To>: @unchecked Sendable
         case .optional(let keyPath):
             to[keyPath: keyPath].id = id
         }
-        return to.create(on: database)
+        try await to.create(on: database)
     }
 }
 
@@ -154,10 +155,8 @@ extension ChildrenProperty: Relation {
         "Children<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
 
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).all().map {
-            self.value = $0
-        }
+    public func load(on database: any Database) async throws {
+        self.value = try await Array(self.query(on: database).all())
     }
 }
 
@@ -203,10 +202,10 @@ extension ChildrenProperty: EagerLoadable {
 private struct ChildrenEagerLoader<From, To>: EagerLoader
     where From: Model, To: Model
 {
-    let relationKey: KeyPath<From, From.Children<To>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.Children<To>>
     let withDeleted: Bool
     
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let ids = models.map { $0.id! }
 
         let builder = To.query(on: database)
@@ -217,19 +216,13 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         case .required(let required):
             builder.filter(required.appending(path: \.$id) ~~ Set(ids))
         }
-        if (self.withDeleted) {
-            builder.withDeleted()
-        }
-        return builder.all().map {
-            for model in models {
-                let id = model[keyPath: self.relationKey].idValue!
-                model[keyPath: self.relationKey].value = $0.filter { child in
-                    switch parentKey {
-                    case .optional(let optional):
-                        return child[keyPath: optional].id == id
-                    case .required(let required):
-                        return child[keyPath: required].id == id
-                    }
+        let results = try await Array(builder.all())
+        for model in models {
+            let id = model[keyPath: self.relationKey].idValue!
+            model[keyPath: self.relationKey].value = results.filter { child in
+                switch parentKey {
+                case .optional(let optional): child[keyPath: optional].id == id
+                case .required(let required): child[keyPath: required].id == id
                 }
             }
         }
@@ -239,13 +232,13 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
 private struct ThroughChildrenEagerLoader<From, Through, Loader>: EagerLoader
     where From: Model, Loader: EagerLoader, Loader.Model == Through
 {
-    let relationKey: KeyPath<From, From.Children<Through>>
+    nonisolated(unsafe) let relationKey: KeyPath<From, From.Children<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database) async throws {
         let throughs = models.flatMap {
             $0[keyPath: self.relationKey].value!
         }
-        return self.loader.run(models: throughs, on: database)
+        try await self.loader.run(models: throughs, on: database)
     }
 }

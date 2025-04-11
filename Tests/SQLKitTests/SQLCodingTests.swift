@@ -71,7 +71,7 @@ final class SQLCodingTests: XCTestCase {
         
         @Sendable
         func handleSuperCase(_ path: [any CodingKey]) -> any CodingKey {
-            SomeCodingKey(stringValue: path.last!.stringValue.decapitalized.convertedToSnakeCase)
+            BasicCodingKey.key(path.last!.stringValue.decapitalized.convertedToSnakeCase)
         }
         
         let snakeEncoder = SQLQueryEncoder(keyEncodingStrategy: .convertToSnakeCase, nilEncodingStrategy: .asNil)
@@ -184,7 +184,7 @@ final class SQLCodingTests: XCTestCase {
         
         @Sendable
         func handleSuperCase(_ path: [any CodingKey]) -> any CodingKey {
-            SomeCodingKey(stringValue: path.last!.stringValue.decapitalized.convertedToSnakeCase)
+            BasicCodingKey.key(path.last!.stringValue.decapitalized.convertedToSnakeCase)
         }
         
         let snakeEncoder = SQLQueryEncoder(keyEncodingStrategy: .convertToSnakeCase, nilEncodingStrategy: .asNil)
@@ -226,25 +226,25 @@ final class SQLCodingTests: XCTestCase {
         XCTAssert(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).userInfo.isEmpty)
         XCTAssertEqual(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).count, 0)
         XCTAssertThrowsError(try FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).encodeNil())
-        XCTAssertThrowsError(try FailureEncoder<SomeCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).encodeNil(forKey: .init(stringValue: "")))
+        XCTAssertThrowsError(try FailureEncoder<BasicCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).encodeNil(forKey: .key("")))
         XCTAssertNotNil(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).superEncoder())
-        XCTAssertNotNil(FailureEncoder<SomeCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).superEncoder(forKey: .init(stringValue: "")))
+        XCTAssertNotNil(FailureEncoder<BasicCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).superEncoder(forKey: .key("")))
         XCTAssertNotNil(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).unkeyedContainer())
         XCTAssertNotNil(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).nestedUnkeyedContainer())
-        XCTAssertNotNil(FailureEncoder<SomeCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).nestedUnkeyedContainer(forKey: .init(stringValue: "")))
+        XCTAssertNotNil(FailureEncoder<BasicCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).nestedUnkeyedContainer(forKey: .key("")))
         XCTAssertNotNil(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).container(keyedBy: NeverKey.self))
         XCTAssertNotNil(FailureEncoder(SQLCodingError.unsupportedOperation("", codingPath: [])).nestedContainer(keyedBy: NeverKey.self))
-        XCTAssertNotNil(FailureEncoder<SomeCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).nestedContainer(keyedBy: NeverKey.self, forKey: .init(stringValue: "")))
+        XCTAssertNotNil(FailureEncoder<BasicCodingKey>(SQLCodingError.unsupportedOperation("", codingPath: [])).nestedContainer(keyedBy: NeverKey.self, forKey: .key("")))
         XCTAssertNotNil(DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "")).under(path: []))
         XCTAssertNotNil(DecodingError.typeMismatch(Void.self, .init(codingPath: [], debugDescription: "")).under(path: []))
-        XCTAssertNotNil(DecodingError.keyNotFound(SomeCodingKey(stringValue: ""), .init(codingPath: [], debugDescription: "")).under(path: []))
+        XCTAssertNotNil(DecodingError.keyNotFound(BasicCodingKey.key(""), .init(codingPath: [], debugDescription: "")).under(path: []))
         XCTAssertNoThrow(try JSONDecoder().decode(FakeSendableCodable<Bool>.self, from: JSONEncoder().encode(FakeSendableCodable(true))))
         XCTAssertNotEqual(FakeSendableCodable(true), FakeSendableCodable(false))
         XCTAssertFalse(Set([FakeSendableCodable(true)]).isEmpty)
         XCTAssertEqual(FakeSendableCodable(true).description, true.description)
         XCTAssertEqual(FakeSendableCodable("").debugDescription, "".debugDescription)
-        XCTAssertFalse(SQLCodingError.unsupportedOperation("", codingPath: [SomeCodingKey(stringValue: "")]).description.isEmpty)
-        XCTAssertEqual(SomeCodingKey(intValue: 0).intValue, 0)
+        XCTAssertFalse(SQLCodingError.unsupportedOperation("", codingPath: [BasicCodingKey.key("")]).description.isEmpty)
+        XCTAssertEqual(BasicCodingKey.index(0).intValue, 0)
     }
 }
 
@@ -262,7 +262,7 @@ struct Foo: Codable {
 }
 
 func superCase(_ path: [any CodingKey]) -> any CodingKey {
-    SomeCodingKey(stringValue: path.last!.stringValue.encapitalized)
+    BasicCodingKey.key(path.last!.stringValue.encapitalized)
 }
 
 extension SQLKit.SQLLiteral: Swift.Equatable {

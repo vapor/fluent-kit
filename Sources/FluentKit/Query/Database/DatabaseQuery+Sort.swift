@@ -1,3 +1,5 @@
+import Logging
+
 extension DatabaseQuery {
     public enum Sort: Sendable {
         public enum Direction: Sendable {

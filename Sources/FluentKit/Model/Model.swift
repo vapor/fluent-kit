@@ -13,11 +13,12 @@ extension Model {
     public static func find(
         _ id: Self.IDValue?,
         on database: any Database
-    ) -> EventLoopFuture<Self?> {
-        guard let id = id else {
-            return database.eventLoop.makeSucceededFuture(nil)
+    ) async throws -> Self? {
+        guard let id else {
+            return nil
         }
-        return Self.query(on: database)
+
+        return try await Self.query(on: database)
             .filter(id: id)
             .first()
     }

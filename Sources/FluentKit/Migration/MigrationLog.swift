@@ -1,5 +1,5 @@
-import NIOCore
 import Foundation
+import NIOCore
 
 /// Stores information about `Migration`s that have been run.
 public final class MigrationLog: Model, @unchecked Sendable {
@@ -36,8 +36,8 @@ public final class MigrationLog: Model, @unchecked Sendable {
 }
 
 private struct MigrationLogMigration: Migration {
-    func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        database.schema(MigrationLog.schema)
+    func prepare(on database: any Database) async throws {
+        try await database.schema(MigrationLog.schema)
             .field(.id, .uuid, .identifier(auto: false))
             .field("name", .string, .required)
             .field("batch", .int, .required)
@@ -48,7 +48,7 @@ private struct MigrationLogMigration: Migration {
             .create()
     }
 
-    func revert(on database: any Database) -> EventLoopFuture<Void> {
-        database.schema(MigrationLog.schema).delete()
+    func revert(on database: any Database) async throws {
+        try await database.schema(MigrationLog.schema).delete()
     }
 }

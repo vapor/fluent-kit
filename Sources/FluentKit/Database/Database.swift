@@ -1,27 +1,51 @@
 import NIOCore
 import Logging
 
+public struct AsyncDatabaseOutputSequence: AsyncSequence, Sendable {
+    public typealias Element = any DatabaseOutput
+
+    init() {
+    }
+
+    public func makeAsyncIterator() -> AsyncIterator {
+        AsyncIterator()
+    }
+
+    public struct AsyncIterator: AsyncIteratorProtocol {
+        public typealias Element = any DatabaseOutput
+
+        init() {
+        }
+
+        public mutating func next() async throws -> (any DatabaseOutput)? {
+            nil
+        }
+    }
+}
+
+@available(*, unavailable)
+extension AsyncDatabaseOutputSequence.AsyncIterator: Sendable {}
+
 public protocol Database: Sendable {
     var context: DatabaseContext { get }
     
     func execute(
-        query: DatabaseQuery,
-        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
-    ) -> EventLoopFuture<Void>
+        query: DatabaseQuery
+    ) async throws -> AsyncDatabaseOutputSequence
 
     func execute(
         schema: DatabaseSchema
-    ) -> EventLoopFuture<Void>
+    ) async throws
 
     func execute(
         enum: DatabaseEnum
-    ) -> EventLoopFuture<Void>
+    ) async throws
 
     var inTransaction: Bool { get }
 
-    func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
-    
-    func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+    func transaction<T>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T
+
+    func withConnection<T>(_ closure: @escaping @Sendable (any Database) async throws -> T) async throws -> T
 }
 
 extension Database {
@@ -41,10 +65,6 @@ extension Database {
         self.context.logger
     }
     
-    public var eventLoop: any EventLoop {
-        self.context.eventLoop
-    }
-
     public var history: QueryHistory? {
         self.context.history
     }
@@ -56,14 +76,7 @@ extension Database {
 
 public protocol DatabaseDriver: Sendable {
     func makeDatabase(with context: DatabaseContext) -> any Database
-    func shutdown()
-    func shutdownAsync() async
-}
-
-public extension DatabaseDriver {
-    func shutdownAsync() async {
-        shutdown()
-    }
+    func shutdown() async
 }
 
 public protocol DatabaseConfiguration: Sendable {
@@ -74,20 +87,17 @@ public protocol DatabaseConfiguration: Sendable {
 public struct DatabaseContext: Sendable {
     public let configuration: any DatabaseConfiguration
     public let logger: Logger
-    public let eventLoop: any EventLoop
     public let history: QueryHistory?
     public let pageSizeLimit: Int?
     
     public init(
         configuration: any DatabaseConfiguration,
         logger: Logger,
-        eventLoop: any EventLoop,
         history: QueryHistory? = nil,
         pageSizeLimit: Int? = nil
     ) {
         self.configuration = configuration
         self.logger = logger
-        self.eventLoop = eventLoop
         self.history = history
         self.pageSizeLimit = pageSizeLimit
     }

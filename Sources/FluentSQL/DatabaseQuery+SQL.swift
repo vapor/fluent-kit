@@ -3,81 +3,79 @@ import SQLKit
 
 extension DatabaseQuery.Action {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Aggregate {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Aggregate.Method {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Field {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
-    public static func sql(raw: String) -> Self {
-        .sql(unsafeRaw: raw)
-    }
-
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(_ identifier: String) -> Self {
-        .sql(SQLIdentifier(identifier))
+        .sql(SQLObjectIdentifier(identifier))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
+    }
+
+    public static func sql(json column: String, _ path: String...) -> Self {
+        .sql(json: column, path)
+    }
+
+    public static func sql(json column: String, _ path: [String]) -> Self {
+        .sql(SQLNestedSubpathExpression(column: column, path: path))
     }
 }
 
 extension DatabaseQuery.Filter {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
-    public static func sql(raw: String) -> Self {
-        .sql(unsafeRaw: raw)
-    }
-
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(
-        _ left: SQLIdentifier,
+        _ left: SQLObjectIdentifier,
         _ op: SQLBinaryOperator,
         _ right: any Encodable & Sendable
     ) -> Self {
@@ -85,17 +83,17 @@ extension DatabaseQuery.Filter {
     }
 
     public static func sql(
-        _ left: SQLIdentifier,
+        _ left: SQLObjectIdentifier,
         _ op: SQLBinaryOperator,
-        _ right: SQLIdentifier
+        _ right: SQLObjectIdentifier
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
     }
 
     public static func sql(
-        _ left: any SQLExpression,
-        _ op: any SQLExpression,
-        _ right: any SQLExpression
+        _ left: some SQLExpression,
+        _ op: some SQLExpression,
+        _ right: some SQLExpression
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
     }
@@ -104,68 +102,63 @@ extension DatabaseQuery.Filter {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Filter.Method {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Filter.Relation {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Join {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
-    public static func sql(raw: String) -> Self {
-        .sql(unsafeRaw: raw)
-    }
-
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Join.Method {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
@@ -174,17 +167,12 @@ extension DatabaseQuery.Join.Method {
 // of the `.custom()` cases of these types triggers a `fatalError()` in `SQLQueryConverter`.
 
 extension DatabaseQuery.Sort {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
-    public static func sql(raw: String) -> Self {
-        .sql(unsafeRaw: raw)
-    }
-
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(
-        _ left: SQLIdentifier,
+        _ left: SQLObjectIdentifier,
         _ op: SQLBinaryOperator,
         _ right: any Encodable & Sendable
     ) -> Self {
@@ -192,17 +180,17 @@ extension DatabaseQuery.Sort {
     }
 
     public static func sql(
-        _ left: SQLIdentifier,
+        _ left: SQLObjectIdentifier,
         _ op: SQLBinaryOperator,
-        _ right: SQLIdentifier
+        _ right: SQLObjectIdentifier
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
     }
 
     public static func sql(
-        _ left: any SQLExpression,
-        _ op: any SQLExpression,
-        _ right: any SQLExpression
+        _ left: some SQLExpression,
+        _ op: some SQLExpression,
+        _ right: some SQLExpression
     ) -> Self {
         .sql(SQLBinaryExpression(left: left, op: op, right: right))
     }
@@ -211,40 +199,35 @@ extension DatabaseQuery.Sort {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Sort.Direction {
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }
 
 extension DatabaseQuery.Value {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
-    public static func sql(raw: String) -> Self {
-        .sql(unsafeRaw: raw)
-    }
-
     public static func sql(unsafeRaw: String) -> Self {
-        .sql(SQLRaw(unsafeRaw))
+        .sql(SQLUnsafeRaw(unsafeRaw))
     }
 
     public static func sql(embed: SQLQueryString) -> Self {
         .sql(embed)
     }
 
-    public static func sql(_ expression: any SQLExpression) -> Self {
+    public static func sql(_ expression: some SQLExpression) -> Self {
         .custom(expression)
     }
 }

@@ -1,3 +1,5 @@
+import Logging
+
 /// An expression representing an `ALTER TABLE` query. Used to modify the structure of existing tables.
 ///
 /// This expression is partially dialect-aware and will respect specific settings under ``SQLAlterTableSyntax``.

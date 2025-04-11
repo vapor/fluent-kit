@@ -59,9 +59,9 @@ extension QueryBuilder {
     /// - returns: Query builder for chaining.
     @discardableResult
     public func range(lower: Int = 0, upper: Int? = nil) -> Self {
-        self.query.offsets.append(.count(lower))
+        self.query.offset = lower
         upper.flatMap { upper in
-            self.query.limits.append(.count((upper - lower) + 1))
+            self.query.limit = upper - lower + 1
         }
         return self
     }
