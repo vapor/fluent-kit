@@ -84,7 +84,8 @@ public struct Migrator: Sendable {
     
     public func previewRevertBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
         self.migrators() { migrator in
-            return migrator.previewPrepareBatch().and(value: migrator.id)
+            // This is not correct, but can't be fixed as it would require changing this API's parameters.
+            migrator.previewPrepareBatch().and(value: migrator.id)
         }.map {
             $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }

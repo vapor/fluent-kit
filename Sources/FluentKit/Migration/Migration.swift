@@ -24,11 +24,11 @@ public protocol Migration: Sendable {
 
 extension Migration {
     public var name: String {
-        return defaultName
+        self.defaultName
     }
 
     internal var defaultName: String {
-        #if compiler(<6)
+        #if compiler(<6.1)
         /// `String.init(reflecting:)` creates a `Mirror` unconditionally, but
         /// when the parameter is a metatype (such as is the case here), that
         /// mirror is never actually used for anything. Unfortunately, just

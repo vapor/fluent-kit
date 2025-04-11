@@ -52,18 +52,18 @@ extension FieldProperty: Property {
             if let value = self.inputValue {
                 switch value {
                 case .bind(let bind):
-                    return bind as? Value
+                    (bind as? Value) ?? nil
                 case .enumCase(let string):
-                    return string as? Value
+                    (string as? Value) ?? nil
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 default:
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
-                return value
+                value
             } else {
-                return nil
+                nil
             }
         }
         set {

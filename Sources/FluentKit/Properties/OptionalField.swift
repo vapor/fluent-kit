@@ -39,20 +39,20 @@ extension OptionalFieldProperty: Property {
             if let value = self.inputValue {
                 switch value {
                 case .bind(let bind):
-                    return .some(bind as? WrappedValue)
+                    .some(bind as? WrappedValue)
                 case .enumCase(let string):
-                    return .some(string as? WrappedValue)
+                    .some(string as? WrappedValue)
                 case .default:
                     fatalError("Cannot access default field for '\(Model.self).\(key)' before it is initialized or fetched")
                 case .null:
-                    return .some(.none)
+                    .some(.none)
                 default:
                     fatalError("Unexpected input value type for '\(Model.self).\(key)': \(value)")
                 }
             } else if let value = self.outputValue {
-                return .some(value)
+                .some(value)
             } else {
-                return .none
+                .none
             }
         }
         set {

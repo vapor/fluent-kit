@@ -17,7 +17,7 @@ public final class OptionalEnumProperty<Model, WrappedValue>
     public let field: OptionalFieldProperty<Model, String>
 
     public var projectedValue: OptionalEnumProperty<Model, WrappedValue> {
-        return self
+        self
     }
 
     public var wrappedValue: WrappedValue? {

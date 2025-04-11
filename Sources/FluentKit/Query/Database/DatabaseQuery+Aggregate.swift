@@ -17,9 +17,9 @@ extension DatabaseQuery.Aggregate: CustomStringConvertible {
     public var description: String {
         switch self {
         case .field(let field, let method):
-            return "\(method)(\(field))"
+            "\(method)(\(field))"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }
@@ -28,17 +28,17 @@ extension DatabaseQuery.Aggregate.Method: CustomStringConvertible {
     public var description: String {
         switch self {
         case .count:
-            return "count"
+            "count"
         case .sum:
-            return "sum"
+            "sum"
         case .average:
-            return "average"
+            "average"
         case .minimum:
-            return "minimum"
+            "minimum"
         case .maximum:
-            return "maximum"
+            "maximum"
         case .custom(let custom):
-            return "custom(\(custom))"
+            "custom(\(custom))"
         }
     }
 }

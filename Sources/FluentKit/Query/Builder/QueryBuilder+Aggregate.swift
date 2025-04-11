@@ -5,9 +5,9 @@ extension QueryBuilder {
 
     public func count() -> EventLoopFuture<Int> {
         if Model().anyID is any AnyQueryableProperty {
-            return self.count(\._$id)
+            self.count(\._$id)
         } else if let fieldsIDType = Model.IDValue.self as? any Fields.Type {
-            return self.aggregate(.count, fieldsIDType.keys.first!)
+            self.aggregate(.count, fieldsIDType.keys.first!)
         } else {
             fatalError("Model '\(Model.self)' has neither @ID nor @CompositeID, this is not valid.")
         }
