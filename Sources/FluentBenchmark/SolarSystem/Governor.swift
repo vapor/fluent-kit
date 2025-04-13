@@ -57,7 +57,7 @@ public struct GovernorSeed: Migration {
                 case "Earth":
                     governor = .init(name: "Jane Doe")
                 default:
-                    return database.eventLoop.future(())
+                    return database.eventLoop.makeSucceededVoidFuture()
                 }
                 return planet.$governor.create(governor!, on: database)
             }, on: database.eventLoop)

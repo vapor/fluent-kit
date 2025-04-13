@@ -1,6 +1,6 @@
 import Foundation
-import AsyncKit
 import Logging
+import NIOConcurrencyHelpers
 import NIOCore
 
 public struct Migrator: Sendable {
@@ -41,27 +41,27 @@ public struct Migrator: Sendable {
     // MARK: Setup
     
     public func setupIfNeeded() -> EventLoopFuture<Void> {
-        self.migrators() { $0.setupIfNeeded() }.transform(to: ())
+        self.migrators() { $0.setupIfNeeded() }.map { _ in }
     }
     
     // MARK: Prepare
     
     public func prepareBatch() -> EventLoopFuture<Void> {
-        self.migrators() { $0.prepareBatch() }.transform(to: ())
+        self.migrators() { $0.prepareBatch() }.map { _ in }
     }
     
     // MARK: Revert
     
     public func revertLastBatch() -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertLastBatch() }.transform(to: ())
+        self.migrators() { $0.revertLastBatch() }.map { _ in }
     }
     
     public func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertBatch(number: number) }.transform(to: ())
+        self.migrators() { $0.revertBatch(number: number) }.map { _ in }
     }
     
     public func revertAllBatches() -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertAllBatches() }.transform(to: ())
+        self.migrators() { $0.revertAllBatches() }.map { _ in }
     }
     
     // MARK: Preview
@@ -99,13 +99,12 @@ public struct Migrator: Sendable {
         }
     }
 
-    private func migrators<Result>(
+    private func migrators<Result: Sendable>(
         _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
     ) -> EventLoopFuture<[Result]> {
-        self.migrations.storage.withLockedValue { $0 }.map {
+        EventLoopFuture.whenAllSucceed(self.migrations.storage.withLockedValue { $0 }.map {
             handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLevel: self.migrationLogLevel))
-        }
-        .flatten(on: self.eventLoop)
+        }, on: self.eventLoop)
     }
 }
 
@@ -150,7 +149,11 @@ private final class DatabaseMigrator: Sendable {
 
     func prepareBatch() -> EventLoopFuture<Void> {
         self.lastBatchNumber().flatMap { batch in
-            self.unpreparedMigrations().sequencedFlatMapEach { self.prepare($0, batch: batch + 1) }
+            self.unpreparedMigrations().flatMapWithEventLoop {
+                $0.reduce($1.makeSucceededVoidFuture()) { future, migration in
+                    future.flatMap { self.prepare(migration, batch: batch + 1) }
+                }
+            }
         }
     }
 
@@ -161,11 +164,11 @@ private final class DatabaseMigrator: Sendable {
     }
 
     func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.preparedMigrations(batch: number).sequencedFlatMapEach { self.revert($0) }
+        self.preparedMigrations(batch: number).flatMapWithEventLoop { $0.reduce($1.makeSucceededVoidFuture()) { f, m in f.flatMap { self.revert(m) } } }
     }
 
     func revertAllBatches() -> EventLoopFuture<Void> {
-        self.preparedMigrations().sequencedFlatMapEach { self.revert($0) }
+        self.preparedMigrations().flatMapWithEventLoop { $0.reduce($1.makeSucceededVoidFuture()) { f, m in f.flatMap { self.revert(m) } } }
     }
 
     // MARK: Preview

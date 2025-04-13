@@ -232,7 +232,7 @@ struct DeleteTableMigration: Migration {
     let name: String
     
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        database.eventLoop.future()
+        database.eventLoop.makeSucceededVoidFuture()
     }
     
     func revert(on database: any Database) -> EventLoopFuture<Void> {

@@ -28,7 +28,7 @@ extension Migration {
     }
 
     internal var defaultName: String {
-        #if compiler(<6.1)
+        #if compiler(<6.2)
         /// `String.init(reflecting:)` creates a `Mirror` unconditionally, but
         /// when the parameter is a metatype (such as is the case here), that
         /// mirror is never actually used for anything. Unfortunately, just

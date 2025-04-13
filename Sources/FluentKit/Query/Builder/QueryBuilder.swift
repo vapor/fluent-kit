@@ -1,4 +1,3 @@
-import AsyncKit
 import NIOCore
 
 public final class QueryBuilder<Model>
@@ -237,20 +236,8 @@ public final class QueryBuilder<Model>
         self.run { _ in }
     }
 
-    #if swift(<5.10)
-    private final class AllWrapper: @unchecked Sendable {
-        var all: [Model] = []
-        var isEmpty: Bool { self.all.isEmpty }
-        func append(_ value: Model) { self.all.append(value) }
-    }
-    #endif
-
     public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
-        #if swift(>=5.10)
         nonisolated(unsafe) var all: [Model] = []
-        #else
-        let all: AllWrapper = .init()
-        #endif
 
         let done = self.run { output in
             onOutput(.init(catching: {
@@ -272,12 +259,10 @@ public final class QueryBuilder<Model>
                     return $1.makeSucceededFuture(())
                 }
                 // run eager loads
-                return loaders.sequencedFlatMapEach(on: $1) { loader in
-                    #if swift(>=5.10)
-                    loader.anyRun(models: all.map { $0 }, on: db)
-                    #else
-                    loader.anyRun(models: all.all.map { $0 }, on: db)
-                    #endif
+                return loaders.reduce($1.makeSucceededVoidFuture()) { future, loader in
+                    future.flatMap {
+                        loader.anyRun(models: all.map { $0 }, on: db)
+                    }
                 }
             }
         } else {

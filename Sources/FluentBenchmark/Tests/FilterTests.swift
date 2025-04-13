@@ -289,7 +289,7 @@ private struct FooEnumMigration: Migration {
             .case("bar")
             .case("baz")
             .create()
-            .transform(to: ())
+            .map { _ in }
     }
 
     func revert(on database: any Database) -> EventLoopFuture<Void> {

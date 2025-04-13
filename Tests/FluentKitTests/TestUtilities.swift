@@ -1,5 +1,6 @@
-import XCTest
 import Logging
+import SQLKit
+import XCTest
 
 class DbQueryTestCase: XCTestCase {
     var db = DummyDatabaseForTestSQLSerializer()

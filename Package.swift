@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.10
 import PackageDescription
 
 let package = Package(
@@ -19,7 +19,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.81.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.32.0"),
-        .package(url: "https://github.com/vapor/async-kit.git", from: "1.20.0"),
     ],
     targets: [
         .target(
@@ -30,7 +29,6 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
-                .product(name: "AsyncKit", package: "async-kit"),
                 .product(name: "SQLKit", package: "sql-kit"),
             ],
             swiftSettings: swiftSettings
@@ -78,5 +76,6 @@ var swiftSettings: [SwiftSetting] { [
     .enableUpcomingFeature("ConciseMagicFile"),
     .enableUpcomingFeature("ForwardTrailingClosures"),
     .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableUpcomingFeature("MemberImportVisibility"),
     .enableExperimentalFeature("StrictConcurrency=complete"),
 ] }
