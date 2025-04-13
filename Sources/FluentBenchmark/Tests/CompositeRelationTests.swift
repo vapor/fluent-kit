@@ -216,11 +216,11 @@ final class CompositeIDParentModel: Model, @unchecked Sendable {
 
     struct ModelSeed: Migration {
         func prepare(on database: any Database) -> EventLoopFuture<Void> {
-            [
+            EventLoopFuture.andAllSucceed([
                 CompositeIDParentModel(name: "A", dimensions: 1),
                 CompositeIDParentModel(name: "B", dimensions: 1),
                 CompositeIDParentModel(name: "C", dimensions: 1),
-            ].map { $0.create(on: database) }.flatten(on: database.eventLoop)
+            ].map { $0.create(on: database) }, on: database.eventLoop)
         }
         
         func revert(on database: any Database) -> EventLoopFuture<Void> {

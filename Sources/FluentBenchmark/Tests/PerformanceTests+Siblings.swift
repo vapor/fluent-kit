@@ -106,8 +106,8 @@ private struct ExpeditionPeopleSeed: Migration {
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
         if let sqlDatabase = database as? any SQLDatabase {
             return
-                sqlDatabase.select().column("id").from(Expedition.schema).all().flatMapEachThrowing { try $0.decode(column: "id", as: UUID.self) }
-                .and(sqlDatabase.select().column("id").from(Person.schema).all().flatMapEachThrowing { try $0.decode(column: "id", as: UUID.self) })
+                sqlDatabase.select().column("id").from(Expedition.schema).all().flatMapThrowing { try $0.map { try $0.decode(column: "id", as: UUID.self) } }
+                .and(sqlDatabase.select().column("id").from(Person.schema).all().flatMapThrowing { try $0.map { try $0.decode(column: "id", as: UUID.self) } })
                 .flatMap { expeditions, people in
                     struct DTO: Codable { let id: UUID, expedition_id: UUID, person_id: UUID }
                     var officers: [DTO] = [], scientists: [DTO] = [], doctors: [DTO] = []
@@ -117,7 +117,7 @@ private struct ExpeditionPeopleSeed: Migration {
                         scientists.append(contentsOf: people.pickRandomly(5).map { DTO(id: UUID(), expedition_id: expedition, person_id: $0) })
                         doctors.append(contentsOf: people.pickRandomly(3).map { DTO(id: UUID(), expedition_id: expedition, person_id: $0) })
                     }
-                    return .andAllSucceed([
+                    return EventLoopFuture.andAllSucceed([
                         try! sqlDatabase.insert(into: ExpeditionOfficer.schema).models(officers).run(),
                         try! sqlDatabase.insert(into: ExpeditionScientist.schema).models(scientists).run(),
                         try! sqlDatabase.insert(into: ExpeditionDoctor.schema).models(doctors).run(),

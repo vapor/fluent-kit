@@ -1,4 +1,3 @@
-import AsyncKit
 import NIOCore
 
 public final class QueryBuilder<Model>
@@ -260,8 +259,10 @@ public final class QueryBuilder<Model>
                     return $1.makeSucceededFuture(())
                 }
                 // run eager loads
-                return loaders.sequencedFlatMapEach(on: $1) { loader in
-                    loader.anyRun(models: all.map { $0 }, on: db)
+                return loaders.reduce($1.makeSucceededVoidFuture()) { future, loader in
+                    future.flatMap {
+                        loader.anyRun(models: all.map { $0 }, on: db)
+                    }
                 }
             }
         } else {

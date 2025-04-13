@@ -8,7 +8,7 @@ extension SQLQueryFetcher {
     }
     
     public func first<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<Model?> {
-        self.first().optionalFlatMapThrowing { row in try row.decode(fluentModel: Model.self) }
+        self.first().flatMapThrowing { row in try row?.decode(fluentModel: Model.self) }
     }
 
     @available(*, deprecated, renamed: "all(decodingFluent:)", message: "Renamed to all(decodingFluent:)")
@@ -17,7 +17,7 @@ extension SQLQueryFetcher {
     }
     
     public func all<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<[Model]> {
-        self.all().flatMapEachThrowing { row in try row.decode(fluentModel: Model.self) }
+        self.all().flatMapThrowing { rows in try rows.map { row in try row.decode(fluentModel: Model.self) } }
     }
 }
 

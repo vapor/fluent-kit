@@ -84,12 +84,14 @@ public struct GalacticJurisdictionSeed: Migration {
                 ("Messier 82", "None", 0),
                 ("Messier 82", "Military", 1),
             ]
-            .sequencedFlatMapEach(on: database.eventLoop) { galaxyName, jurisdictionName, rank in
-                GalacticJurisdiction.init(id: try! .init(
-                    galaxy: galaxies.first(where: { $0.name == galaxyName })!,
-                    jurisdiction: jurisdictions.first(where: { $0.title == jurisdictionName })!,
-                    rank: rank
-                )).create(on: database)
+            .reduce(database.eventLoop.makeSucceededVoidFuture()) { future, data in
+                future.flatMap {
+                    GalacticJurisdiction.init(id: try! .init(
+                        galaxy: galaxies.first(where: { $0.name == data.0 })!,
+                        jurisdiction: jurisdictions.first(where: { $0.title == data.1 })!,
+                        rank: data.2
+                    )).create(on: database)
+                }
             }
         }
     }
