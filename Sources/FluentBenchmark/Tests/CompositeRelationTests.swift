@@ -1,6 +1,7 @@
-import XCTest
-import SQLKit
 import FluentKit
+import FluentSQL
+import SQLKit
+import XCTest
 
 extension FluentBenchmarker {
     public func testCompositeRelations() throws {

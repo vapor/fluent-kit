@@ -1,6 +1,7 @@
 import Foundation
 import AsyncKit
 import Logging
+import NIOConcurrencyHelpers
 import NIOCore
 
 public struct Migrator: Sendable {

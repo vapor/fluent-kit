@@ -78,5 +78,6 @@ var swiftSettings: [SwiftSetting] { [
     .enableUpcomingFeature("ConciseMagicFile"),
     .enableUpcomingFeature("ForwardTrailingClosures"),
     .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableUpcomingFeature("MemberImportVisibility"),
     .enableExperimentalFeature("StrictConcurrency=complete"),
 ] }

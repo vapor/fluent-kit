@@ -1,8 +1,9 @@
 import FluentKit
 import FluentBenchmark
-import XCTest
 import Foundation
+import SQLKit
 import XCTFluent
+import XCTest
 
 final class AsyncQueryBuilderTests: XCTestCase {
     override class func setUp() {

@@ -1,10 +1,11 @@
 import FluentKit
+import FluentSQL
 import Foundation
 import NIOCore
 import NIOPosix
-import XCTest
 import SQLKit
 import SQLKitBenchmark
+import XCTest
 
 extension FluentBenchmarker {
     public func testSQL() throws {
