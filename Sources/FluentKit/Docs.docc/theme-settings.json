@@ -15,7 +15,7 @@
       "logo-shape": { "dark": "#000", "light": "#fff" },
       "fill":       { "dark": "#000", "light": "#fff" }
     },
-    "icons": { "technology": "/fluentkit/images/vapor-fluentkit-logo.svg" }
+    "icons": { "technology": "/fluentkit/images/FluentKit/vapor-fluentkit-logo.svg" }
   },
   "features": {
     "quickNavigation": { "enable": true },
