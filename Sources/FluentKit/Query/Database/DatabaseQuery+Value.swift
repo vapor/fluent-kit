@@ -36,10 +36,23 @@ extension DatabaseQuery.Value: CustomStringConvertible {
 
     var describedByLoggingMetadata: Logger.MetadataValue {
         switch self {
+        case .bind(let encodable):
+            // N.B.: `is` is used instead of `as?` here because the latter irreversibly loses the `Sendable`-ness of the value.
+            if encodable is any CustomStringConvertible {
+                .stringConvertible(encodable as! any CustomStringConvertible & Sendable)
+            } else {
+                .string(String(describing: encodable))
+            }
         case .dictionary(let d):
             .dictionary(.init(uniqueKeysWithValues: d.map { ($0.description, $1.describedByLoggingMetadata) }))
         case .array(let a):
             .array(a.map(\.describedByLoggingMetadata))
+        case .enumCase(let string):
+            .string(string)
+        case .null:
+            "nil"
+        case .default:
+            "<default>"
         default:
             .stringConvertible(self)
         }

@@ -72,15 +72,15 @@ extension DatabaseQuery: CustomStringConvertible {
         }
         switch self.action {
         case .read, .aggregate, .custom:
-            result["unique"] = "\(self.isUnique)"
+            result["unique"] = .stringConvertible(self.isUnique)
             result["fields"] = .array(self.fields.map(\.describedByLoggingMetadata))
             result["joins"] = .array(self.joins.map(\.describedByLoggingMetadata))
             fallthrough
         case .update, .delete:
             result["filters"] = .array(self.filters.map(\.describedByLoggingMetadata))
             result["sorts"] = .array(self.sorts.map(\.describedByLoggingMetadata))
-            result["limits"] = .array(self.limits.map { .stringConvertible($0) })
-            result["offsets"] = .array(self.offsets.map { .stringConvertible($0) })
+            result["limits"] = .array(self.limits.map(\.describedByLoggingMetadata))
+            result["offsets"] = .array(self.offsets.map(\.describedByLoggingMetadata))
         default: break
         }
         return result

@@ -31,6 +31,15 @@ extension DatabaseQuery.Limit: CustomStringConvertible {
     }
 }
 
+extension DatabaseQuery.Limit {
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .count(let count): .stringConvertible(count)
+        default: "custom"
+        }
+    }
+}
+
 extension DatabaseQuery.Offset: CustomStringConvertible {
     public var description: String {
         switch self {
@@ -38,6 +47,15 @@ extension DatabaseQuery.Offset: CustomStringConvertible {
             "count(\(count))"
         case .custom(let custom):
             "custom(\(custom))"
+        }
+    }
+}
+
+extension DatabaseQuery.Offset {
+    var describedByLoggingMetadata: Logger.MetadataValue {
+        switch self {
+        case .count(let count): .stringConvertible(count)
+        default: "custom"
         }
     }
 }
