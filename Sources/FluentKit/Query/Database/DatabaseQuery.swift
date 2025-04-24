@@ -74,7 +74,7 @@ extension DatabaseQuery: CustomStringConvertible {
         }
         switch self.action {
         case .read, .aggregate, .custom:
-            result["unique"] = "\(self.isUnique)"
+            result["unique"] = .stringConvertible(self.isUnique)
             result["fields"] = .array(self.fields.map(\.describedByLoggingMetadata))
             result["joins"] = .array(self.joins.map(\.describedByLoggingMetadata))
             fallthrough

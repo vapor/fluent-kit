@@ -242,11 +242,11 @@ public struct CompositeIDModelSeed: Migration {
     public init() {}
     
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        [
+        EventLoopFuture.andAllSucceed([
             CompositeIDModel(name: "A", dimensions: 1, additionalInfo: nil),
             CompositeIDModel(name: "A", dimensions: 2, additionalInfo: nil),
             CompositeIDModel(name: "B", dimensions: 1, additionalInfo: nil),
-        ].map { $0.create(on: database) }.flatten(on: database.eventLoop)
+        ].map { $0.create(on: database) }, on: database.eventLoop)
     }
     
     public func revert(on database: any Database) -> EventLoopFuture<Void> {

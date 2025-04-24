@@ -1,4 +1,3 @@
-import AsyncKit
 import FluentKit
 import NIOCore
 
@@ -36,7 +35,7 @@ public struct SolarSystem: Migration {
             all = migrations
         }
 
-        return all.sequencedFlatMapEach(on: database.eventLoop) { $0.prepare(on: database) }
+        return all.reduce(database.eventLoop.makeSucceededVoidFuture()) { f, m in f.flatMap { m.prepare(on: database) } }
     }
 
     public func revert(on database: any Database) -> EventLoopFuture<Void> {
@@ -47,6 +46,6 @@ public struct SolarSystem: Migration {
             all = migrations
         }
 
-        return all.reversed().sequencedFlatMapEach(on: database.eventLoop) { $0.revert(on: database) }
+        return all.reversed().reduce(database.eventLoop.makeSucceededVoidFuture()) { f, m in f.flatMap { m.revert(on: database) } }
     }
 }

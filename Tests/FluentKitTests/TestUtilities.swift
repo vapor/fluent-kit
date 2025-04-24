@@ -1,5 +1,6 @@
-import XCTest
 import Logging
+import SQLKit
+import XCTest
 
 class DbQueryTestCase: XCTestCase {
     var db = DummyDatabaseForTestSQLSerializer()
@@ -38,7 +39,7 @@ func assertLastQuery(
 }
 
 func env(_ name: String) -> String? {
-    return ProcessInfo.processInfo.environment[name]
+    ProcessInfo.processInfo.environment[name]
 }
 
 let isLoggingConfigured: Bool = {

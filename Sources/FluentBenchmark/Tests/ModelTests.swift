@@ -1,8 +1,9 @@
 import FluentKit
+import FluentSQL
 import Foundation
 import NIOCore
-import XCTest
 import SQLKit
+import XCTest
 
 extension FluentBenchmarker {
     public func testModel() throws {
