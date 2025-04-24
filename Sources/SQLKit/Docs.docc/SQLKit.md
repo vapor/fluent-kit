@@ -32,7 +32,6 @@ SQLKit does _not_ provide facilities for creating or managing database connectio
 ### Drivers
 
 - ``SQLDialect``
-- ``SQLDatabaseReportedVersion``
 - ``SQLAlterTableSyntax``
 - ``SQLTriggerSyntax``
 - ``SQLUnionFeatures``
