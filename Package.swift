@@ -42,7 +42,6 @@ let package = Package(
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
-                .product(name: "AsyncKit", package: "async-kit"),
             ],
             swiftSettings: swiftSettings
         ),
