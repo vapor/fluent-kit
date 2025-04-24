@@ -4,7 +4,13 @@ public enum SQLLiteral: SQLExpression {
     /// meaning "all columns".
     case all
 
-    /// A literal expression representing the current dialect's equivalent of the `DEFAULT` keyword.
+    /// A literal expression representing the `DEFAULT` keyword in the context of a value in an `INSERT`
+    /// value list for the current dialect.
+    ///
+    /// Expressions should prefer to explicitly spell out the keyword when it is used in other contexts.
+    ///
+    /// > Warning: This case does **not** currently respect the ``SQLDialect/supportsExplicitDefaultValues-86p94``
+    /// > dialect flag, as its alternative expression if the flag is set to `false` would be nothing at all.
     case `default`
 
     /// A literal expression representing a `NULL` SQL value  in the current dialect.
@@ -18,7 +24,7 @@ public enum SQLLiteral: SQLExpression {
     /// A literal expression representing a numeric literal in the current dialect.
     ///
     /// Because the range of supported numeric types between SQL dialects is extremely wide, and that range rarely
-    /// at best overlaps cleanyl with Swift's numeric type support, numeric literals are specified using their
+    /// at best overlaps cleanly with Swift's numeric type support, numeric literals are specified using their
     /// stringified representations.
     case numeric(String)
 
@@ -36,19 +42,18 @@ public enum SQLLiteral: SQLExpression {
             serializer.write("*")
 
         case .default:
-            serializer.write(serializer.dialect.literalDefault)
+            serializer.write("DEFAULT")
 
         case .null:
             serializer.write("NULL")
 
         case .boolean(let bool):
-            serializer.write(serializer.dialect.literalBoolean(bool))
+            serializer.write("\(bool)")
 
         case .numeric(let numeric):
             serializer.write(numeric)
 
         case .string(let string):
-            /// See ``SQLObjectIdentifier/serialize(to:)`` for a discussion on why this is written the way it is.
             let rawQuote = serializer.dialect.literalStringQuote
 
             serializer.write("\(rawQuote)\(string.replacing(rawQuote, with: "\(rawQuote)\(rawQuote)"))\(rawQuote)")

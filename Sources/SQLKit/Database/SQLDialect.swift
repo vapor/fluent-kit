@@ -5,7 +5,7 @@
 /// expose database-specific details as much as possible. While SQL dialects in the wild vary too
 /// widely in practice for this to ever be 100% effective, they also have enough in common to avoid
 /// having to rewrite every line of serialization logic for each database driver.
-public protocol SQLDialect: Sendable {
+public protocol SQLDialect {
     /// The name of the dialect.
     ///
     /// Dialect names were intended to just be human-readable strings, but in reality there are several code
@@ -50,20 +50,11 @@ public protocol SQLDialect: Sendable {
     /// No default is provided.
     var literalStringQuote: String { get }
 
-    /// A function which returns a string representing the given literal boolean value.
+    /// `true` if the dialect supports using the `DEFAULT` keyword in place of explicit values in the
+    /// value lists of `INSERT` statements, `false` otherwise (e.g. SQLite).
     ///
-    /// No default is provided.
-    ///
-    /// - Parameter value: The boolean value to represent.
-    func literalBoolean(_ value: Bool) -> String
-
-    /// An string giving the syntax used to express both "use this as the default value" in a
-    /// column definition and "use the default value for this column" in a value list.
-    ///
-    /// ``SQLLiteral/default`` always serializes to this expression.
-    ///
-    /// Defaults to `"DEFAULT"`.
-    var literalDefault: String { get }
+    /// Defaults to `true`.
+    var supportsExplicitDefaultValues: Bool { get }
 
     /// An expression inserted in a column definition when a `.primaryKey(autoincrement: true)`
     /// constraint is specified for the column.
@@ -411,16 +402,10 @@ extension SQLDialect {
         "'"
     }
 
-    /// Default implementation of ``autoIncrementFunction-1ktxy``.
+    /// Default implementation of ``supportsExplicitDefaultValues-3rtkg``.
     @inlinable
-    public var autoIncrementFunction: (any SQLExpression)? {
-        nil
-    }
-
-    /// Default implementation of ``literalDefault-7nz7t``.
-    @inlinable
-    public var literalDefault: String {
-        "DEFAULT"
+    public var supportsExplicitDefaultValues: Bool {
+        true
     }
 
     /// Default implementation of ``supportsIfExists-5dxcu``.
@@ -459,9 +444,9 @@ extension SQLDialect {
         .init()
     }
 
-    /// Default implementation of ``customDataType(for:)-2firt``.
+    /// Default implementation of ``customDataType(for:)-3o1ts``.
     @inlinable
-    public func customDataType(for: SQLDataType) -> (any SQLExpression)? {
+    public func customDataType(for: SQLDataType) -> String? {
         nil
     }
 

@@ -4,7 +4,7 @@
 /// `KeyedDecodingContainerProtocol`, in order to provide a `Codable`-like interface for generic row access.
 /// The additional logic which covers the gap between `Decodable` types and ``SQLRow``s is provided by
 /// ``SQLRowDecoder``; see that type for additional discussion and further detail.
-public protocol SQLRow: Sendable {
+public protocol SQLRow {
     /// The list of all column names available in the row, in no particular order.
     ///
     /// Corresponds to `KeyedDecodingContainer.allKeys`.

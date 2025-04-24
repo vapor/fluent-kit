@@ -50,32 +50,27 @@ import struct Logging.Logger
 ///     .where("z", .equal, 1)
 ///     .all(decodingColumn: "x", as: Int.self)
 /// ```
-public protocol SQLDatabase: Sendable {
-    /// The `Logger` used for logging all operations relating to a given database.
-    var logger: Logger { get set }
+public protocol SQLDatabase {
+    /// The type of an `AsyncSequence` whose elements conform to ``SQLRow`` and which throws `any Error`, used by
+    /// this database to stream query results.
+    ///
+    /// > Note: The `Failure == any Error` requirement is not enforced due to the restrictive availability of the
+    /// > `AsyncSequence.Failure` associated type.
+    associatedtype AsyncRowSequence: AsyncSequence
+        where AsyncRowSequence.Element: SQLRow
 
-    /// The version number the database reports for itself.
-    ///
-    /// The version must be provided via a type conforming to the ``SQLDatabaseReportedVersion`` protocol. If the
-    /// version number is not applicable (such as for a connection pool dispatch wrapper) or not yet known, `nil` may
-    /// be returned. Version numbers may also change at runtime (for example, if a connection is auto-reconnected
-    /// after a remote update), or even become unknown again after being known.
-    ///
-    /// > Note: This version number has nothing to do with SQLKit or the driver implementation for the
-    /// > database, nor does it represent any data stored within the database; it is the version of the
-    /// > database to which the ``SQLDatabase`` object represents a connection (such as a MySQL server, or
-    /// > a linked `libsqlite3` library). The primary motivation for finally adding this property stemmed
-    /// > from the desire to enable customizing ``SQLDialect`` configurations based on the actual feature set
-    /// > available at runtime, rather than the old solution of hardcoding a "safe" (but limited) baseline.
-    var version: (any SQLDatabaseReportedVersion)? { get }
+    /// A type which conforms to ``SQLDialect``, returned by this database when its dialect is requested.
+    associatedtype Dialect: SQLDialect
+
+    /// The `Logger` used for logging all operations relating to this database.
+    var logger: Logger { get }
 
     /// The descriptor for the dialect of SQL supported by the given database.
     ///
     /// The dialect must be provided via a type conforming to the ``SQLDialect`` protocol. It is permitted for
     /// different connections to the same database to report different dialects, although it's unclear how this would
-    /// be useful in practice; a dialect that differs based on database version should differentiate based on the
-    /// ``version-22wnn`` property instead.
-    var dialect: any SQLDialect { get }
+    /// be useful in practice.
+    var dialect: Dialect { get }
 
     /// The logging level used for reporting queries run on the given database to the database's logger.
     /// Defaults to `.debug`.
@@ -92,16 +87,14 @@ public protocol SQLDatabase: Sendable {
     /// > it's unavoidable, as there are no direct entry points to SQLKit without a driver.
     var queryLogLevel: Logger.Level? { get }
 
-    /// Requests that the given generic SQL query be serialized and executed on the database, and that
-    /// the `onRow` closure be invoked once for each result row the query returns (if any).
+    /// Requests that the given generic SQL query be serialized and executed on the database.
     ///
     /// - Parameters:
     ///   - query: An ``SQLExpression`` representing a complete query to execute.
-    ///   - onRow: A closure which is invoked once for each result row returned by the query (if any).
+    /// - Returns: An `AsyncRowSequence` containing the query's results, if any.
     func execute(
-        sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> Void
-    ) async throws
+        sql query: some SQLExpression
+    ) async throws -> AsyncRowSequence
 
     /// Requests the provided closure be called with a database which is guaranteed to represent a single
     /// "session", suitable for e.g. executing a series of queries representing a transaction.
@@ -126,69 +119,9 @@ extension SQLDatabase {
     ///
     /// 1. A string containing raw SQL text rendered in the database's dialect, and,
     /// 2. A potentially empty array of values for any bound parameters referenced by the query.
-    public func serialize(_ expression: any SQLExpression) -> (sql: String, binds: [any Encodable & Sendable]) {
+    public func serialize(_ expression: some SQLExpression) -> (sql: String, binds: [any Encodable & Sendable]) {
         var serializer = SQLSerializer(database: self)
         expression.serialize(to: &serializer)
         return (serializer.sql, serializer.binds)
-    }
-}
-
-extension SQLDatabase {
-    /// Return a new ``SQLDatabase`` which is indistinguishable from the original save that its
-    /// ``SQLDatabase/logger`` property is replaced by the given `Logger`.
-    ///
-    /// This has the effect of redirecting logging performed on or by the original database to the
-    /// provided `Logger`.
-    ///
-    /// > Warning: The log redirection applies only to the new ``SQLDatabase`` that is returned from
-    /// > this method; logging operations performed on the original (i.e. `self`) are unaffected.
-    ///
-    /// > Note: Because this method returns a generic ``SQLDatabase``, the type it returns need not be public
-    /// > API. Unfortunately, this also means that no inlining or static dispatch of the implementation is
-    /// > possible, thus imposing a performance penalty on the use of this otherwise trivial utility.
-    ///
-    /// - Parameter logger: The new `Logger` to use.
-    /// - Returns: A database object which logs to the new `Logger`.
-    public func logging(to logger: Logger) -> any SQLDatabase {
-        CustomLoggerSQLDatabase(database: self, logger: logger)
-    }
-}
-
-/// Replaces the `Logger` of an existing ``SQLDatabase`` while forwarding all other properties and methods
-/// to the original.
-private struct CustomLoggerSQLDatabase<D: SQLDatabase>: SQLDatabase {
-    /// The underlying database.
-    let database: D
-
-    // See `SQLDatabase.logger`.
-    var logger: Logger
-
-    // See `SQLDatabase.version`.
-    var version: (any SQLDatabaseReportedVersion)? {
-        self.database.version
-    }
-
-    // See `SQLDatabase.dialect`.
-    var dialect: any SQLDialect {
-        self.database.dialect
-    }
-
-    // See `SQLDatabase.queryLogLevel`.
-    var queryLogLevel: Logger.Level? {
-        self.database.queryLogLevel
-    }
-
-    // See `SQLDatabase.execute(sql:_:)`.
-    func execute(
-        sql query: any SQLExpression,
-        _ onRow: @escaping @Sendable (any SQLRow) -> Void
-    ) async throws {
-        try await self.database.execute(sql: query, onRow)
-    }
-
-    func withSession<R>(
-        _ closure: @escaping @Sendable (any SQLDatabase) async throws -> R
-    ) async throws -> R {
-        try await self.database.withSession(closure)
     }
 }
