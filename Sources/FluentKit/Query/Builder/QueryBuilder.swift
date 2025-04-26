@@ -288,7 +288,7 @@ public final class QueryBuilder<Model>
                 self.addFields(for: model, to: &query)
             }
         }
-
+        
         // If deleted models aren't included, add filters
         // to exclude them for each model being queried.
         if !self.includeDeleted {
