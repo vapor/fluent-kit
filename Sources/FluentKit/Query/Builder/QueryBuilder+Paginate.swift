@@ -136,10 +136,10 @@ public struct PageRequest: Decodable, Sendable {
     }
 
     var start: Int {
-        (self.page - 1) * self.per
+        (self.page - 1).multipliedReportingOverflow(by: self.per).partialValue
     }
 
     var end: Int {
-        self.page * self.per
+        self.page.multipliedReportingOverflow(by: self.per).partialValue
     }
 }
