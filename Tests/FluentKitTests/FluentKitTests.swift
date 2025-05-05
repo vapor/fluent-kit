@@ -717,16 +717,16 @@ final class FluentKitTests: XCTestCase {
             .wait())
     }
     
-    func testPaginationDoesntCrashOnOverflow() throws {
+    func testPaginationDoesntCrashOnOverflow() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
         let pageRequest1 = PageRequest(page: 1184467440737095516, per: 1184467440737095516)
         db.fakedRows.append([.init(["aggregate": 1])])
-        // This would crash on `Swift runtime failure: arithmetic overflow` if not handled
-        // so no point trying any XCTAssert
-        _ = try Planet2
+        let result = try await Planet2
             .query(on: db)
             .paginate(pageRequest1)
-            .wait()
+        XCTAssertEqual(result.metadata.page, 1184467440737095516)
+        XCTAssertEqual(result.metadata.per, 1184467440737095516)
+        XCTAssertEqual(result.metadata.total, 1)
     }
     
     func testModelsWithSpacesSpecified() throws {
