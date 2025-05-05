@@ -140,6 +140,6 @@ public struct PageRequest: Decodable, Sendable {
     }
 
     var end: Int {
-        self.page.multipliedReportingOverflow(by: self.per).partialValue
+        self.page &* self.per
     }
 }
