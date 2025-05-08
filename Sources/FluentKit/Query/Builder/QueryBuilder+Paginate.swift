@@ -136,10 +136,10 @@ public struct PageRequest: Decodable, Sendable {
     }
 
     var start: Int {
-        (self.page - 1) * self.per
+        (self.page - 1) &* self.per
     }
 
     var end: Int {
-        self.page * self.per
+        self.page &* self.per
     }
 }

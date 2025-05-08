@@ -717,6 +717,18 @@ final class FluentKitTests: XCTestCase {
             .wait())
     }
     
+    func testPaginationDoesntCrashOnOverflow() async throws {
+        let db = DummyDatabaseForTestSQLSerializer()
+        let pageRequest1 = PageRequest(page: 1184467440737095516, per: 1184467440737095516)
+        db.fakedRows.append([.init(["aggregate": 1])])
+        let result = try await Planet2
+            .query(on: db)
+            .paginate(pageRequest1)
+        XCTAssertEqual(result.metadata.page, 1184467440737095516)
+        XCTAssertEqual(result.metadata.per, 1184467440737095516)
+        XCTAssertEqual(result.metadata.total, 1)
+    }
+    
     func testModelsWithSpacesSpecified() throws {
         let db = DummyDatabaseForTestSQLSerializer()
         try db.schema(AltPlanet.schema, space: AltPlanet.space)
