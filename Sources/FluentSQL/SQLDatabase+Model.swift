@@ -3,21 +3,21 @@ import FluentKit
 
 extension SQLQueryFetcher {
     @available(*, deprecated, renamed: "first(decodingFluent:)", message: "Renamed to first(decodingFluent:)")
-    public func first<Model: FluentKit.Model>(decoding: Model.Type) -> EventLoopFuture<Model?> {
-        self.first(decodingFluent: Model.self)
+    public func first<Model: FluentKit.Model>(decoding: Model.Type, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Model?> {
+        self.first(decodingFluent: Model.self, annotationContext: annotationContext)
     }
     
-    public func first<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<Model?> {
-        self.first().flatMapThrowing { row in try row?.decode(fluentModel: Model.self) }
+    public func first<Model: FluentKit.Model>(decodingFluent: Model.Type, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Model?> {
+        self.first(annotationContext: annotationContext).flatMapThrowing { row in try row?.decode(fluentModel: Model.self) }
     }
 
     @available(*, deprecated, renamed: "all(decodingFluent:)", message: "Renamed to all(decodingFluent:)")
-    public func all<Model: FluentKit.Model>(decoding: Model.Type) -> EventLoopFuture<[Model]> {
-        self.all(decodingFluent: Model.self)
+    public func all<Model: FluentKit.Model>(decoding: Model.Type, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<[Model]> {
+        self.all(decodingFluent: Model.self, annotationContext: annotationContext)
     }
     
-    public func all<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<[Model]> {
-        self.all().flatMapThrowing { rows in try rows.map { row in try row.decode(fluentModel: Model.self) } }
+    public func all<Model: FluentKit.Model>(decodingFluent: Model.Type, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<[Model]> {
+        self.all(annotationContext: annotationContext).flatMapThrowing { rows in try rows.map { row in try row.decode(fluentModel: Model.self) } }
     }
 }
 

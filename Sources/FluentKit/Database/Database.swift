@@ -1,11 +1,13 @@
 import NIOCore
 import Logging
+import SQLKit
 
 public protocol Database: Sendable {
     var context: DatabaseContext { get }
     
     func execute(
         query: DatabaseQuery,
+        annotationContext: SQLAnnotationContext?,
         onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void>
 

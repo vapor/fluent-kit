@@ -1,5 +1,5 @@
 import NIOCore
-import struct SQLKit.SomeCodingKey
+import SQLKit
 
 extension Model {
     public typealias Parent<To> = ParentProperty<Self, To>
@@ -58,8 +58,8 @@ extension ParentProperty: Relation {
         "Parent<\(From.self), \(To.self)>(key: \(self.$id.key))"
     }
 
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).first().map {
+    public func load(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
+        self.query(on: database).first(annotationContext: annotationContext).map {
             self.value = $0
         }
     }
@@ -164,13 +164,13 @@ private struct ParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, ParentProperty<From, To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
         let builder = To.query(on: database).filter(\._$id ~~ Set(sets.keys))
         if self.withDeleted {
             builder.withDeleted()
         }
-        return builder.all().flatMapThrowing {
+        return builder.all(annotationContext: annotationContext).flatMapThrowing {
             let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
             for (parentId, models) in sets {
@@ -193,10 +193,10 @@ private struct ThroughParentEagerLoader<From, Through, Loader>: EagerLoader
     let relationKey: KeyPath<From, From.Parent<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let throughs = models.map {
             $0[keyPath: self.relationKey].value!
         }
-        return self.loader.run(models: throughs, on: database)
+        return self.loader.run(models: throughs, on: database, annotationContext: annotationContext)
     }
 }

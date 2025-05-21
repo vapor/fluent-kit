@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 extension QueryBuilder {
     /// Returns a single `Page` out of the complete result set according to the supplied `PageRequest`.
@@ -9,9 +10,10 @@ extension QueryBuilder {
     ///     - request: Describes which page should be fetched.
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func paginate(
-        _ request: PageRequest
+        _ request: PageRequest,
+        annotationContext: SQLAnnotationContext?
     ) -> EventLoopFuture<Page<Model>> {
-        self.page(withIndex: request.page, size: request.per)
+        self.page(withIndex: request.page, size: request.per, annotationContext: annotationContext)
     }
     
     /// Returns a single `Page` out of the complete result set.
@@ -24,7 +26,8 @@ extension QueryBuilder {
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func page(
         withIndex page: Int,
-        size per: Int) -> EventLoopFuture<Page<Model>> {
+        size per: Int,
+        annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Page<Model>> {
         let trimmedRequest: PageRequest = {
             guard let pageSizeLimit = database.context.pageSizeLimit else {
                 return .init(page: Swift.max(page, 1), per: Swift.max(per, 1))
@@ -34,8 +37,8 @@ extension QueryBuilder {
                 per: Swift.max(Swift.min(per, pageSizeLimit), 1)
             )
         }()
-        let count = self.count()
-        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all()
+        let count = self.count(annotationContext: annotationContext)
+        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all(annotationContext: annotationContext)
         return items.and(count).map { (models, total) in
             Page(
                 items: models,

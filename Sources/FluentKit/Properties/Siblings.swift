@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 extension Model {
     public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
@@ -78,12 +79,12 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     /// - Parameters:
     ///     - to: The model to check whether it is attached through a pivot.
     ///     - database: The database to perform check on.
-    public func isAttached(to: To, on database: any Database) -> EventLoopFuture<Bool> {
+    public func isAttached(to: To, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Bool> {
         guard let toID = to.id else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
         }
 
-        return self.isAttached(toID: toID, on: database)
+        return self.isAttached(toID: toID, on: database, annotationContext: annotationContext)
     }
 
     /// Check whether a specific model ID is already attached through a sibling relationship.
@@ -91,7 +92,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     /// - Parameters:
     ///     - toID: The ID of the model to check whether it is attached through a pivot.
     ///     - database: The database to perform the check on.
-    public func isAttached(toID: To.IDValue, on database: any Database) -> EventLoopFuture<Bool> {
+    public func isAttached(toID: To.IDValue, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Bool> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
@@ -99,7 +100,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .filter(self.to.appending(path: \.$id) == toID)
-            .count()
+            .count(annotationContext: annotationContext)
             .map { $0 > 0 }
     }
 
@@ -114,6 +115,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     public func attach(
         _ tos: [To],
         on database: any Database,
+        annotationContext: SQLAnnotationContext?,
         _ edit: (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
@@ -134,7 +136,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
             edit(pivot)
             pivots.append(pivot)
         }
-        return pivots.create(on: database)
+        return pivots.create(on: database, annotationContext: annotationContext)
     }
 
     /// Attach a single model by creating a pivot model and specifying the attachment method.
@@ -148,18 +150,19 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         _ to: To,
         method: AttachMethod,
         on database: any Database,
+        annotationContext: SQLAnnotationContext?,
         _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         switch method {
         case .always:
-            return self.attach(to, on: database, edit)
+            return self.attach(to, on: database, annotationContext: annotationContext, edit)
         case .ifNotExists:
-            return self.isAttached(to: to, on: database).flatMap { alreadyAttached in
+            return self.isAttached(to: to, on: database, annotationContext: annotationContext).flatMap { alreadyAttached in
                 if alreadyAttached {
                     return database.eventLoop.makeSucceededFuture(())
                 }
 
-                return self.attach(to, on: database, edit)
+                return self.attach(to, on: database, annotationContext: annotationContext, edit)
             }
         }
     }
@@ -173,6 +176,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     public func attach(
         _ to: To,
         on database: any Database,
+        annotationContext: SQLAnnotationContext?,
         _ edit: @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
@@ -187,7 +191,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         pivot[keyPath: self.to].id = toID
         pivot[keyPath: self.to].value = to
         edit(pivot)
-        return pivot.save(on: database)
+        return pivot.save(on: database, annotationContext: annotationContext)
     }
 
     /// Detaches an array of models from this model by deleting each pivot.
@@ -195,7 +199,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     /// - Parameters:
     ///     - tos: An array of models to detach from this model.
     ///     - database: The database to perform the attachment on.
-    public func detach(_ tos: [To], on database: any Database) -> EventLoopFuture<Void> {
+    public func detach(_ tos: [To], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
@@ -213,7 +217,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .filter(self.to.appending(path: \.$id) ~~ toIDs)
-            .delete()
+            .delete(annotationContext: annotationContext)
     }
 
     /// Detach a single model by deleting the pivot.
@@ -221,7 +225,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     /// - Parameters:
     ///     - to: The model to detach from this model.
     ///     - database: The database to perform the attachment on.
-    public func detach(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
+    public func detach(_ to: To, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
@@ -232,18 +236,18 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .filter(self.to.appending(path: \.$id) == toID)
-            .delete()
+            .delete(annotationContext: annotationContext)
     }
     
     /// Detach all models by deleting all pivots from this model.
-    public func detachAll(on database: any Database) -> EventLoopFuture<Void> {
+    public func detachAll(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
         
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
-            .delete()
+            .delete(annotationContext: annotationContext)
     }
 
     // MARK: Query
@@ -324,8 +328,8 @@ extension SiblingsProperty: Relation {
         return "Siblings<\(From.self), \(To.self), \(Through.self)>(from: \(fromKey), to: \(toKey))"
     }
 
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).all().map {
+    public func load(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
+        self.query(on: database).all(annotationContext: annotationContext).map {
             self.value = $0
         }
     }
@@ -377,7 +381,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
     let relationKey: KeyPath<From, From.Siblings<To, Through>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let ids = models.map { $0.id! }
 
         let from = From()[keyPath: self.relationKey].from
@@ -388,7 +392,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         if self.withDeleted {
             builder.withDeleted()
         }
-        return builder.all().flatMapThrowing {
+        return builder.all(annotationContext: annotationContext).flatMapThrowing {
             var map: [From.IDValue: [To]] = [:]
             for to in $0 {
                 let fromID = try to.joined(Through.self)[keyPath: from].id
@@ -408,10 +412,10 @@ private struct ThroughSiblingsEagerLoader<From, To, Through, Loader>: EagerLoade
     let relationKey: KeyPath<From, From.Siblings<To, Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let throughs = models.flatMap {
             $0[keyPath: self.relationKey].value!
         }
-        return self.loader.run(models: throughs, on: database)
+        return self.loader.run(models: throughs, on: database, annotationContext: annotationContext)
     }
 }

@@ -199,7 +199,7 @@ private final class DatabaseMigrator: Sendable {
         return migration.prepare(on: self.database).flatMap {
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
         
-            return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
+            return MigrationLog(name: migration.name, batch: batch).save(on: self.database, annotationContext: nil)
         }.flatMapErrorThrowing {
             self.database.logger.error("[Migrator] Failed prepare", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
         
@@ -213,7 +213,7 @@ private final class DatabaseMigrator: Sendable {
         return migration.revert(on: self.database).flatMap {
             self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
         
-            return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
+            return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete(annotationContext: nil)
         }.flatMapErrorThrowing {
             self.database.logger.error("[Migrator] Failed revert", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
         
@@ -226,13 +226,13 @@ private final class DatabaseMigrator: Sendable {
     }
 
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        MigrationLog.query(on: self.database).sort(\.$batch, .descending).first().map { log in
+        MigrationLog.query(on: self.database).sort(\.$batch, .descending).first(annotationContext: nil).map { log in
             log?.batch ?? 0
         }
     }
 
     private func preparedMigrations() -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).all().map { logs in
+        MigrationLog.query(on: self.database).all(annotationContext: nil).map { logs in
             self.migrations.filter { migration in
                 logs.contains(where: { $0.name == migration.name })
             }.reversed()
@@ -240,7 +240,7 @@ private final class DatabaseMigrator: Sendable {
     }
 
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).filter(\.$batch == batch).all().map { logs in
+        MigrationLog.query(on: self.database).filter(\.$batch == batch).all(annotationContext: nil).map { logs in
             self.migrations.filter { migration in
                 logs.contains(where: { $0.name == migration.name })
             }.reversed()
@@ -248,7 +248,7 @@ private final class DatabaseMigrator: Sendable {
     }
 
     private func unpreparedMigrations() -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).all().map { logs in
+        MigrationLog.query(on: self.database).all(annotationContext: nil).map { logs in
             self.migrations.compactMap { migration in
                 if logs.contains(where: { $0.name == migration.name }) { return nil }
                 return migration

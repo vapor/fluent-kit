@@ -1,22 +1,22 @@
 import NIOCore
-import protocol SQLKit.SQLDatabase
+import SQLKit
 
 extension Model {
-    public func save(on database: any Database) -> EventLoopFuture<Void> {
+    public func save(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         if self._$idExists {
-            self.update(on: database)
+            self.update(on: database, annotationContext: annotationContext)
         } else {
-            self.create(on: database)
+            self.create(on: database, annotationContext: annotationContext)
         }
     }
 
-    public func create(on database: any Database) -> EventLoopFuture<Void> {
+    public func create(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            try model.handle(event, on: db)
+            try model.handle(event, on: db, annotationContext: annotationContext)
         }.handle(.create, self, on: database)
     }
 
-    private func _create(on database: any Database) -> EventLoopFuture<Void> {
+    private func _create(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         precondition(!self._$idExists)
         self.touchTimestamps(.create, .update)
         if self.anyID is any AnyQueryableProperty {
@@ -25,7 +25,7 @@ extension Model {
             Self.query(on: database)
                 .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
                 .action(.create)
-                .run { promise.succeed($0) }
+                .run(annotationContext: annotationContext) { promise.succeed($0) }
                 .cascadeFailure(to: promise)
             return promise.futureResult.flatMapThrowing { output in
                 var input = self.collectInput()
@@ -39,20 +39,20 @@ extension Model {
             return Self.query(on: database)
                 .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
                 .action(.create)
-                .run()
+                .run(annotationContext: annotationContext)
                 .flatMapThrowing {
                     try self.output(from: SavedInput(self.collectInput()))
                 }
         }
     }
 
-    public func update(on database: any Database) -> EventLoopFuture<Void> {
+    public func update(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            try model.handle(event, on: db)
+            try model.handle(event, on: db, annotationContext: annotationContext)
         }.handle(.update, self, on: database)
     }
 
-    private func _update(on database: any Database) throws -> EventLoopFuture<Void> {
+    private func _update(on database: any Database, annotationContext: SQLAnnotationContext?) throws -> EventLoopFuture<Void> {
         precondition(self._$idExists)
         guard self.hasChanges else {
             return database.eventLoop.makeSucceededFuture(())
@@ -63,31 +63,31 @@ extension Model {
         return Self.query(on: database)
             .filter(id: id)
             .set(input)
-            .update()
+            .update(annotationContext: annotationContext)
             .flatMapThrowing
         {
             try self.output(from: SavedInput(input))
         }
     }
 
-    public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
+    public func delete(force: Bool = false, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         if !force, let timestamp = self.deletedTimestamp {
             timestamp.touch()
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-                try model.handle(event, on: db)
+                try model.handle(event, on: db, annotationContext: annotationContext)
             }.handle(.softDelete, self, on: database)
         } else {
             return database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-                try model.handle(event, on: db)
+                try model.handle(event, on: db, annotationContext: annotationContext)
             }.handle(.delete(force), self, on: database)
         }
     }
 
-    private func _delete(force: Bool = false, on database: any Database) throws -> EventLoopFuture<Void> {
+    private func _delete(force: Bool = false, on database: any Database, annotationContext: SQLAnnotationContext?) throws -> EventLoopFuture<Void> {
         guard let id = self.id else { throw FluentError.idRequired }
         return Self.query(on: database)
             .filter(id: id)
-            .delete(force: force)
+            .delete(force: force, annotationContext: annotationContext)
             .map
         {
             if force || self.deletedTimestamp == nil {
@@ -96,13 +96,13 @@ extension Model {
         }
     }
 
-    public func restore(on database: any Database) -> EventLoopFuture<Void> {
+    public func restore(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         database.configuration.middleware.chainingTo(Self.self) { event, model, db in
-            try model.handle(event, on: db)
+            try model.handle(event, on: db, annotationContext: annotationContext)
         }.handle(.restore, self, on: database)
     }
 
-    private func _restore(on database: any Database) throws -> EventLoopFuture<Void> {
+    private func _restore(on database: any Database, annotationContext: SQLAnnotationContext?) throws -> EventLoopFuture<Void> {
         guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
             fatalError("no delete timestamp on this model")
         }
@@ -114,7 +114,7 @@ extension Model {
             .filter(id: id)
             .set(self.collectInput())
             .action(.update)
-            .run()
+            .run(annotationContext: annotationContext)
             .flatMapThrowing
         {
             try self.output(from: SavedInput(self.collectInput()))
@@ -122,24 +122,24 @@ extension Model {
         }
     }
 
-    private func handle(_ event: ModelEvent, on db: any Database) throws -> EventLoopFuture<Void> {
+    private func handle(_ event: ModelEvent, on db: any Database, annotationContext: SQLAnnotationContext?) throws -> EventLoopFuture<Void> {
         switch event {
         case .create:
-            _create(on: db)
+            _create(on: db, annotationContext: annotationContext)
         case .delete(let force):
-            try _delete(force: force, on: db)
+            try _delete(force: force, on: db, annotationContext: annotationContext)
         case .restore:
-            try _restore(on: db)
+            try _restore(on: db, annotationContext: annotationContext)
         case .softDelete:
-            try _delete(force: false, on: db)
+            try _delete(force: false, on: db, annotationContext: annotationContext)
         case .update:
-            try _update(on: db)
+            try _update(on: db, annotationContext: annotationContext)
         }
     }
 }
 
 extension Collection where Element: FluentKit.Model, Self: Sendable {
-    public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
+    public func delete(force: Bool = false, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
@@ -153,7 +153,7 @@ extension Collection where Element: FluentKit.Model, Self: Sendable {
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
                 .filter(ids: self.map { $0.id! })
-                .delete(force: force)
+                .delete(force: force, annotationContext: annotationContext)
         }.map {
             guard force else { return }
             
@@ -163,7 +163,7 @@ extension Collection where Element: FluentKit.Model, Self: Sendable {
         }
     }
 
-    public func create(on database: any Database) -> EventLoopFuture<Void> {
+    public func create(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
@@ -181,7 +181,7 @@ extension Collection where Element: FluentKit.Model, Self: Sendable {
         }, on: database.eventLoop).flatMap {
             Element.query(on: database)
                 .set(self.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
-                .create()
+                .create(annotationContext: annotationContext)
         }.map {
             for model in self {
                 model._$idExists = true

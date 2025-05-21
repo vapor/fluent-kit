@@ -1,5 +1,5 @@
 import NIOCore
-import struct SQLKit.SomeCodingKey
+import SQLKit
 
 extension Model {
     /// A convenience alias for ``CompositeParentProperty``. It is strongly recommended that callers use this
@@ -118,9 +118,9 @@ extension CompositeParentProperty: Relation {
         "CompositeParent<\(From.self), \(To.self)>(prefix: \(self.prefix), strategy: \(self.prefixingStrategy))"
     }
     
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
+    public func load(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         self.query(on: database)
-            .first()
+            .first(annotationContext: annotationContext)
             .map {
                 self.value = $0
             }
@@ -193,7 +193,7 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.CompositeParent<To>>
     let withDeleted: Bool
     
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
         let builder = To.query(on: database)
@@ -203,7 +203,7 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
         if self.withDeleted {
             builder.withDeleted()
         }
-        return builder.all()
+        return builder.all(annotationContext: annotationContext)
             .flatMapThrowing {
                 let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
@@ -229,9 +229,9 @@ private struct ThroughCompositeParentEagerLoader<From, Through, Loader>: EagerLo
     let relationKey: KeyPath<From, From.CompositeParent<Through>>
     let loader: Loader
     
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         self.loader.run(models: models.map {
             $0[keyPath: self.relationKey].value!
-        }, on: database)
+        }, on: database, annotationContext: annotationContext)
     }
 }

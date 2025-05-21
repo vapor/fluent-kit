@@ -1,11 +1,13 @@
 import NIOCore
+import SQLKit
 
 public extension Database {
     func execute(
         query: DatabaseQuery,
+        annotationContext: SQLAnnotationContext?,
         onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) async throws {
-        try await self.execute(query: query, onOutput: onOutput).get()
+        try await self.execute(query: query, annotationContext: annotationContext, onOutput: onOutput).get()
     }
 
     func execute(

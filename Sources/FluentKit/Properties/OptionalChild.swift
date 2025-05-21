@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
@@ -65,7 +66,7 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
         return builder
     }
 
-    public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
+    public func create(_ to: To, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         guard let id = self.idValue else {
             fatalError("Cannot save child in \(self.name) to unsaved model in.")
         }
@@ -75,7 +76,7 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
         case .optional(let keyPath):
             to[keyPath: keyPath].id = id
         }
-        return to.create(on: database)
+        return to.create(on: database, annotationContext: annotationContext)
     }
 }
 
@@ -139,8 +140,8 @@ extension OptionalChildProperty: Relation {
         "Child<\(From.self), \(To.self)>(for: \(self.parentKey))"
     }
 
-    public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).first().map {
+    public func load(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
+        self.query(on: database).first(annotationContext: annotationContext).map {
             self.value = $0
         }
     }
@@ -191,7 +192,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.OptionalChild<To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let ids = models.compactMap { $0.id! }
 
         let builder = To.query(on: database)
@@ -206,7 +207,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
             builder.withDeleted()
         }
         let models = models
-        return builder.all().map {
+        return builder.all(annotationContext: annotationContext).map {
             for model in models {
                 let id = model[keyPath: self.relationKey].idValue!
                 let children = $0.filter { child in
@@ -229,10 +230,10 @@ private struct ThroughChildEagerLoader<From, Through, Loader>: EagerLoader
     let relationKey: KeyPath<From, From.OptionalChild<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let throughs = models.compactMap {
             $0[keyPath: self.relationKey].value!
         }
-        return self.loader.run(models: throughs, on: database)
+        return self.loader.run(models: throughs, on: database, annotationContext: annotationContext)
     }
 }

@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 extension Model {
     /// A convenience alias for ``CompositeChildrenProperty``. It is strongly recommended that callers use this
@@ -159,7 +160,7 @@ extension CompositeChildrenProperty: AnyCodableProperty {
 
 extension CompositeChildrenProperty: Relation {
     public var name: String { "CompositeChildren<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: any Database) -> EventLoopFuture<Void> { self.query(on: database).all().map { self.value = $0 } }
+    public func load(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> { self.query(on: database).all(annotationContext: annotationContext).map { self.value = $0 } }
 }
 
 extension CompositeChildrenProperty: EagerLoadable {
@@ -191,7 +192,7 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
     let relationKey: KeyPath<From, From.CompositeChildren<To>>
     let withDeleted: Bool
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -203,7 +204,7 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
             builder.withDeleted()
         }
         
-        return builder.all().map {
+        return builder.all(annotationContext: annotationContext).map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
             
             for model in models {
@@ -219,7 +220,7 @@ private struct ThroughCompositeChildrenEagerLoader<From, Through, Loader>: Eager
     let relationKey: KeyPath<From, From.CompositeChildren<Through>>
     let loader: Loader
 
-    func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        return self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database)
+    func run(models: [From], on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
+        return self.loader.run(models: models.flatMap { $0[keyPath: self.relationKey].value! }, on: database, annotationContext: annotationContext)
     }
 }

@@ -64,7 +64,7 @@ public final class EnumBuilder: Sendable {
             self.updateMetadata()
         }.flatMap { _ in
             // Fetch the latest cases.
-            EnumMetadata.query(on: self.database).filter(\.$name == self.enum.name).all()
+            EnumMetadata.query(on: self.database).filter(\.$name == self.enum.name).all(annotationContext: nil)
         }.map { cases in
             // Convert latest cases to usable DataType.
             .enum(.init(
@@ -78,12 +78,12 @@ public final class EnumBuilder: Sendable {
         // Create all new enum cases.
         let create = self.enum.createCases.map {
             EnumMetadata(name: self.enum.name, case: $0)
-        }.create(on: self.database)
+        }.create(on: self.database, annotationContext: nil)
         // Delete all old enum cases.
         let delete = EnumMetadata.query(on: self.database)
             .filter(\.$name == self.enum.name)
             .filter(\.$case ~~ self.enum.deleteCases)
-            .delete()
+            .delete(annotationContext: nil)
         return create.and(delete).map { _ in }
     }
 
@@ -91,10 +91,10 @@ public final class EnumBuilder: Sendable {
         // Delete all cases for this enum.
         EnumMetadata.query(on: self.database)
             .filter(\.$name == self.enum.name)
-            .delete()
+            .delete(annotationContext: nil)
             .flatMap
         { _ in
-            EnumMetadata.query(on: self.database).count()
+            EnumMetadata.query(on: self.database).count(annotationContext: nil)
         }.flatMap { count in
             // If no enums are left, remove table.
             if count == 0 {

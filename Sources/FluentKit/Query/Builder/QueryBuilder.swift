@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 public final class QueryBuilder<Model>
     where Model: FluentKit.Model
@@ -102,21 +103,21 @@ public final class QueryBuilder<Model>
 
     // MARK: Actions
 
-    public func create() -> EventLoopFuture<Void> {
+    public func create(annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         self.query.action = .create
-        return self.run()
+        return self.run(annotationContext: annotationContext)
     }
 
-    public func update() -> EventLoopFuture<Void> {
+    public func update(annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         self.query.action = .update
-        return self.run()
+        return self.run(annotationContext: annotationContext)
     }
 
-    public func delete(force: Bool = false) -> EventLoopFuture<Void> {
+    public func delete(force: Bool = false, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
         self.includeDeleted = force
         self.shouldForceDelete = force
         self.query.action = .delete
-        return self.run()
+        return self.run(annotationContext: annotationContext)
     }
 
     // MARK: Limit
@@ -145,7 +146,7 @@ public final class QueryBuilder<Model>
 
     // MARK: Fetch
 
-    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
+    public func chunk(max: Int, annotationContext: SQLAnnotationContext?, closure: @escaping @Sendable ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
         #if swift(<5.10)
         let partial: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
         partial.wrappedValue.reserveCapacity(max)
@@ -164,7 +165,7 @@ public final class QueryBuilder<Model>
         nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
         
-        return self.all { row in
+        return self.all(annotationContext: annotationContext) { row in
             partial.append(row)
             if partial.count >= max {
                 closure(partial)
@@ -178,20 +179,20 @@ public final class QueryBuilder<Model>
         #endif
     }
 
-    public func first() -> EventLoopFuture<Model?> {
+    public func first(annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Model?> {
         self.limit(1)
-            .all()
+            .all(annotationContext: annotationContext)
             .map { $0.first }
     }
 
-    public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
+    public func all<Field>(_ key: KeyPath<Model, Field>, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<[Field.Value]>
         where
             Field: QueryableProperty,
             Field.Model == Model
     {
         let copy = self.copy()
         copy.query.fields = [.extendedPath(Model.path(for: key), schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)]
-        return copy.all().map {
+        return copy.all(annotationContext: annotationContext).map {
             $0.map {
                 $0[keyPath: key].value!
             }
@@ -200,7 +201,8 @@ public final class QueryBuilder<Model>
 
     public func all<Joined, Field>(
         _ joined: Joined.Type,
-        _ field: KeyPath<Joined, Field>
+        _ field: KeyPath<Joined, Field>,
+        annotationContext: SQLAnnotationContext?
     ) -> EventLoopFuture<[Field.Value]>
         where
             Joined: Schema,
@@ -209,14 +211,14 @@ public final class QueryBuilder<Model>
     {
         let copy = self.copy()
         copy.query.fields = [.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased)]
-        return copy.all().flatMapThrowing {
+        return copy.all(annotationContext: annotationContext).flatMapThrowing {
             try $0.map {
                 try $0.joined(Joined.self)[keyPath: field].value!
             }
         }
     }
 
-    public func all() -> EventLoopFuture<[Model]> {
+    public func all(annotationContext: SQLAnnotationContext?) -> EventLoopFuture<[Model]> {
         #if swift(<5.10)
         let models: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
         
@@ -227,19 +229,19 @@ public final class QueryBuilder<Model>
         nonisolated(unsafe) var models: [Result<Model, any Error>] = []
 
         return self
-            .all { models.append($0) }
+            .all(annotationContext: annotationContext) { models.append($0) }
             .flatMapThrowing { try models.map { try $0.get() } }
         #endif
     }
 
-    public func run() -> EventLoopFuture<Void> {
-        self.run { _ in }
+    public func run(annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void> {
+        self.run(annotationContext: annotationContext) { _ in }
     }
 
-    public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
+    public func all(annotationContext: SQLAnnotationContext?, _ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
         nonisolated(unsafe) var all: [Model] = []
 
-        let done = self.run { output in
+        let done = self.run(annotationContext: annotationContext) { output in
             onOutput(.init(catching: {
                 let model = Model()
                 try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
@@ -261,7 +263,7 @@ public final class QueryBuilder<Model>
                 // run eager loads
                 return loaders.reduce($1.makeSucceededVoidFuture()) { future, loader in
                     future.flatMap {
-                        loader.anyRun(models: all.map { $0 }, on: db)
+                        loader.anyRun(models: all.map { $0 }, on: db, annotationContext: annotationContext)
                     }
                 }
             }
@@ -276,7 +278,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    public func run(_ onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run(annotationContext: SQLAnnotationContext?, _ onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -322,7 +324,7 @@ public final class QueryBuilder<Model>
 
         let loop = self.database.eventLoop
         
-        let done = self.database.execute(query: query) { output in
+        let done = self.database.execute(query: query, annotationContext: annotationContext) { output in
             loop.assertInEventLoop()
             onOutput(output)
         }

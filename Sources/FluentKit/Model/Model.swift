@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 public protocol Model: AnyModel {
     associatedtype IDValue: Codable, Hashable, Sendable
@@ -12,14 +13,15 @@ extension Model {
 
     public static func find(
         _ id: Self.IDValue?,
-        on database: any Database
+        on database: any Database,
+        annotationContext: SQLAnnotationContext?
     ) -> EventLoopFuture<Self?> {
         guard let id = id else {
             return database.eventLoop.makeSucceededFuture(nil)
         }
         return Self.query(on: database)
             .filter(id: id)
-            .first()
+            .first(annotationContext: annotationContext)
     }
 
     public func requireID() throws -> IDValue {

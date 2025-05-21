@@ -1,4 +1,5 @@
 import NIOCore
+import SQLKit
 
 /// A protocol which designates a conforming type as representing a database relation of any kind. Intended
 /// for use only by FluentKit property wrappers.
@@ -9,7 +10,7 @@ public protocol Relation: Sendable {
     associatedtype RelatedValue: Sendable
     var name: String { get }
     var value: RelatedValue? { get set }
-    func load(on database: any Database) -> EventLoopFuture<Void>
+    func load(on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<Void>
 }
 
 extension Relation {
@@ -25,11 +26,11 @@ extension Relation {
     ///     loaded value.
     ///   - database: The database to use if the value needs to be loaded.
     /// - Returns: The loaded value.
-    public func get(reload: Bool = false, on database: any Database) -> EventLoopFuture<RelatedValue> {
+    public func get(reload: Bool = false, on database: any Database, annotationContext: SQLAnnotationContext?) -> EventLoopFuture<RelatedValue> {
         if let value = self.value, !reload {
             database.eventLoop.makeSucceededFuture(value)
         } else {
-            self.load(on: database).flatMapThrowing {
+            self.load(on: database, annotationContext: annotationContext).flatMapThrowing {
                 guard let value = self.value else { // This should never actually happen, but just in case...
                     throw FluentError.relationNotLoaded(name: self.name)
                 }

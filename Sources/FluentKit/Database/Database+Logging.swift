@@ -25,9 +25,10 @@ extension LoggingOverrideDatabase: Database {
     
     func execute(
         query: DatabaseQuery,
+        annotationContext: SQLAnnotationContext?,
         onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
-        self.database.execute(query: query, onOutput: onOutput)
+        self.database.execute(query: query, annotationContext: annotationContext, onOutput: onOutput)
     }
 
     func execute(
@@ -56,11 +57,11 @@ extension LoggingOverrideDatabase: Database {
 }
 
 extension LoggingOverrideDatabase: SQLDatabase where D: SQLDatabase {
-    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
-        self.database.execute(sql: query, onRow)
+    func execute(sql query: any SQLExpression, annotationContext: SQLAnnotationContext?, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
+        self.database.execute(sql: query, annotationContext: annotationContext, onRow)
     }
-    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) async throws {
-        try await self.database.execute(sql: query, onRow)
+    func execute(sql query: any SQLExpression, annotationContext: SQLAnnotationContext?, _ onRow: @escaping @Sendable (any SQLRow) -> ()) async throws {
+        try await self.database.execute(sql: query, annotationContext: annotationContext, onRow)
     }
     func withSession<R>(_ closure: @escaping @Sendable (any SQLDatabase) async throws -> R) async throws -> R {
         try await self.database.withSession(closure)
