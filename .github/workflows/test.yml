@@ -119,3 +119,4 @@ jobs:
     secrets: inherit
     with:
       with_android: true
+      with_linting: true
