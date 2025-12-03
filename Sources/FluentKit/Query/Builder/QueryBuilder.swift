@@ -146,21 +146,6 @@ public final class QueryBuilder<Model>
     // MARK: Fetch
 
     public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
-        #if swift(<5.10)
-        let partial: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
-        partial.wrappedValue.reserveCapacity(max)
-        return self.all { row in
-            partial.wrappedValue.append(row)
-            if partial.wrappedValue.count >= max {
-                closure(partial.wrappedValue)
-                partial.wrappedValue.removeAll(keepingCapacity: true)
-            }
-        }.flatMapThrowing { 
-            if !partial.wrappedValue.isEmpty {
-                closure(partial.wrappedValue)
-            }
-        }
-        #else
         nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
         
@@ -175,7 +160,6 @@ public final class QueryBuilder<Model>
                 closure(partial)
             }
         }
-        #endif
     }
 
     public func first() -> EventLoopFuture<Model?> {
@@ -217,19 +201,11 @@ public final class QueryBuilder<Model>
     }
 
     public func all() -> EventLoopFuture<[Model]> {
-        #if swift(<5.10)
-        let models: UnsafeMutableTransferBox<[Result<Model, any Error>]> = .init([])
-        
-        return self
-            .all { models.wrappedValue.append($0) }
-            .flatMapThrowing { try models.wrappedValue.map { try $0.get() } }
-        #else
         nonisolated(unsafe) var models: [Result<Model, any Error>] = []
 
         return self
             .all { models.append($0) }
             .flatMapThrowing { try models.map { try $0.get() } }
-        #endif
     }
 
     public func run() -> EventLoopFuture<Void> {
@@ -352,6 +328,4 @@ public final class QueryBuilder<Model>
     }
 }
 
-#if swift(<6) || !$InferSendableFromCaptures
-extension Swift.KeyPath: @unchecked Swift.Sendable {}
-#endif
+extension KeyPath: @unchecked @retroactive Sendable {}

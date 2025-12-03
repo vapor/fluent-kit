@@ -4,6 +4,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build-and-deploy:
      uses: vapor/api-docs/.github/workflows/build-and-deploy-docs-workflow.yml@main

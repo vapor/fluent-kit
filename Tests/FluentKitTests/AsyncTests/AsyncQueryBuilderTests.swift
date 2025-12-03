@@ -1,5 +1,5 @@
-import FluentKit
 import FluentBenchmark
+import FluentKit
 import Foundation
 import SQLKit
 import XCTFluent
@@ -27,7 +27,7 @@ final class AsyncQueryBuilderTests: XCTestCase {
             TestOutput([
                 "id": planet.id as any Sendable,
                 "name": planet.name,
-                "star_id": UUID()
+                "star_id": UUID(),
             ])
         ])
 
@@ -44,13 +44,13 @@ final class AsyncQueryBuilderTests: XCTestCase {
             TestOutput([
                 "id": planet.id as any Sendable,
                 "name": planet.name,
-                "star_id": UUID()
+                "star_id": UUID(),
             ]),
             TestOutput([
                 "id": UUID(),
                 "name": "Nupeter",
-                "star_id": UUID()
-            ])
+                "star_id": UUID(),
+            ]),
         ])
 
         let retrievedPlanet = try await Planet.query(on: test.db).first()
@@ -64,7 +64,7 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let planets = [
             Planet(id: UUID(), name: "P1", starId: starId),
             Planet(id: UUID(), name: "P2", starId: starId),
-            Planet(id: UUID(), name: "P3", starId: starId)
+            Planet(id: UUID(), name: "P3", starId: starId),
         ]
         let test = ArrayTestDatabase()
         test.append(planets.map(TestOutput.init))
@@ -80,10 +80,11 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let planets = [
             Planet(id: UUID(), name: "P1", starId: starId),
             Planet(id: UUID(), name: "P2", starId: starId),
-            Planet(id: UUID(), name: "P3", starId: starId)
+            Planet(id: UUID(), name: "P3", starId: starId),
         ]
         let test = ArrayTestDatabase()
-        let db = test.database(context: .init(configuration: test.configuration, logger: test.db.logger, eventLoop: test.db.eventLoop, history: .init()))
+        let db = test.database(
+            context: .init(configuration: test.configuration, logger: test.db.logger, eventLoop: test.db.eventLoop, history: .init()))
         test.append(planets.map(TestOutput.init))
 
         let retrievedPlanets = try await Planet.query(on: db).all()
@@ -105,11 +106,10 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let test = CallbackTestDatabase { query in
             XCTAssertEqual(query.schema, "planets")
             let result: [TestOutput]
-            if
-                let limit = query.limits.first,
-                case let DatabaseQuery.Limit.count(limitValue) = limit,
+            if let limit = query.limits.first,
+                case DatabaseQuery.Limit.count(let limitValue) = limit,
                 let offset = query.offsets.first,
-                case let DatabaseQuery.Offset.count(offsetValue) = offset
+                case DatabaseQuery.Offset.count(let offsetValue) = offset
             {
                 result = [TestOutput](rows[min(offsetValue, rows.count - 1)..<min(offsetValue + limitValue, rows.count)])
             } else {
@@ -140,9 +140,9 @@ final class AsyncQueryBuilderTests: XCTestCase {
         XCTAssertEqual(retrievedPlanets.items.count, pageSizeLimit, "Page size limit should be respected.")
         XCTAssertEqual(retrievedPlanets.items.first?.name, "c", "Page size limit should determine offset")
     }
-    
+
     func testPaginationInvalidLowerPageBoundary() async throws {
-        
+
         // Given - a dataset with 5 items
         let starId = UUID()
         let rows = [
@@ -156,11 +156,10 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let test = CallbackTestDatabase { query in
             XCTAssertEqual(query.schema, "planets")
             let result: [TestOutput]
-            if
-                let limit = query.limits.first,
-                case let DatabaseQuery.Limit.count(limitValue) = limit,
+            if let limit = query.limits.first,
+                case DatabaseQuery.Limit.count(let limitValue) = limit,
                 let offset = query.offsets.first,
-                case let DatabaseQuery.Offset.count(offsetValue) = offset
+                case DatabaseQuery.Offset.count(let offsetValue) = offset
             {
                 result = [TestOutput](rows[min(offsetValue, rows.count - 1)..<min(offsetValue + limitValue, rows.count)])
             } else {
@@ -186,17 +185,17 @@ final class AsyncQueryBuilderTests: XCTestCase {
                 pageSizeLimit: pageSizeLimit
             )
         )
-        
+
         // When - query for invalid lower boundary page index
         let retrievedPlanets = try await Planet.query(on: db).page(withIndex: -1, size: 2)
-        
+
         // Then - the first page should be retrieved
         XCTAssertEqual(retrievedPlanets.items.first?.name, "a", "First page should be minimum.")
         XCTAssertEqual(retrievedPlanets.items.count, 2, "Expecting first page to have a two items.")
     }
-    
+
     func testPaginationInvalidUpperPageBoundary() async throws {
-        
+
         // Given - a dataset with 5 items
         let starId = UUID()
         let rows = [
@@ -210,11 +209,10 @@ final class AsyncQueryBuilderTests: XCTestCase {
         let test = CallbackTestDatabase { query in
             XCTAssertEqual(query.schema, "planets")
             let result: [TestOutput]
-            if
-                let limit = query.limits.first,
-                case let DatabaseQuery.Limit.count(limitValue) = limit,
+            if let limit = query.limits.first,
+                case DatabaseQuery.Limit.count(let limitValue) = limit,
                 let offset = query.offsets.first,
-                case let DatabaseQuery.Offset.count(offsetValue) = offset
+                case DatabaseQuery.Offset.count(let offsetValue) = offset
             {
                 result = [TestOutput](rows[min(offsetValue, rows.count - 1)..<min(offsetValue + limitValue, rows.count)])
             } else {
@@ -240,10 +238,10 @@ final class AsyncQueryBuilderTests: XCTestCase {
                 pageSizeLimit: pageSizeLimit
             )
         )
-        
+
         // When - query for invalid upper boundary page index
         let retrievedPlanets = try await Planet.query(on: db).page(withIndex: 4, size: 2)
-        
+
         // Then - the last page should be retrieved
         XCTAssertEqual(retrievedPlanets.items.first?.name, "e", "Last page should be maximum.")
         XCTAssertEqual(retrievedPlanets.items.count, 1, "Expecting last page to have a single item.")
@@ -251,14 +249,9 @@ final class AsyncQueryBuilderTests: XCTestCase {
 
     // https://github.com/vapor/fluent-kit/issues/310
     func testJoinOverloads() async throws {
-        final class UnsafeMutableTransferBox<Wrapped>: @unchecked Sendable {
-            var wrappedValue: Wrapped
-            init(_ wrappedValue: Wrapped) { self.wrappedValue = wrappedValue }
-        }
-
-        let query = UnsafeMutableTransferBox<DatabaseQuery?>(nil)
+        nonisolated(unsafe) var query: DatabaseQuery? = nil
         let test = CallbackTestDatabase {
-            query.wrappedValue = $0
+            query = $0
             return []
         }
         let planets = try await Planet.query(on: test.db)
@@ -267,8 +260,8 @@ final class AsyncQueryBuilderTests: XCTestCase {
             .filter(Star.self, \.$name, .custom("ilike"), "Sol")
             .all()
         XCTAssertEqual(planets.count, 0)
-        XCTAssertNotNil(query.wrappedValue?.filters[1])
-        switch query.wrappedValue?.filters[1] {
+        XCTAssertNotNil(query?.filters[1])
+        switch query?.filters[1] {
         case .value(let field, let method, let value):
             switch field {
             case .path(let path, let schema):
@@ -300,11 +293,14 @@ final class AsyncQueryBuilderTests: XCTestCase {
 
     func testComplexJoinOperators() async throws {
         let db = DummyDatabaseForTestSQLSerializer()
-        
+
         _ = try await Planet.query(on: db)
             .join(Star.self, on: \Star.$id == \Planet.$star.$id && \Star.$name != \Planet.$name)
             .all()
         XCTAssertEqual(db.sqlSerializers.count, 1)
-        XCTAssertEqual(try db.sqlSerializers.xctAt(0).sql, #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "planets" INNER JOIN "stars" ON "stars"."id" = "planets"."star_id" AND "stars"."name" <> "planets"."name" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1) AND ("stars"."deleted_at" IS NULL OR "stars"."deleted_at" > $2)"#)
+        XCTAssertEqual(
+            try db.sqlSerializers.xctAt(0).sql,
+            #"SELECT "planets"."id" AS "planets_id", "planets"."name" AS "planets_name", "planets"."star_id" AS "planets_star_id", "planets"."possible_star_id" AS "planets_possible_star_id", "planets"."deleted_at" AS "planets_deleted_at", "stars"."id" AS "stars_id", "stars"."name" AS "stars_name", "stars"."galaxy_id" AS "stars_galaxy_id", "stars"."deleted_at" AS "stars_deleted_at" FROM "planets" INNER JOIN "stars" ON "stars"."id" = "planets"."star_id" AND "stars"."name" <> "planets"."name" WHERE ("planets"."deleted_at" IS NULL OR "planets"."deleted_at" > $1) AND ("stars"."deleted_at" IS NULL OR "stars"."deleted_at" > $2)"#
+        )
     }
 }
