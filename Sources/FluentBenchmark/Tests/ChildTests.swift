@@ -1,34 +1,37 @@
 import FluentKit
+import FluentSQL
 import Foundation
 import NIOCore
-import FluentSQL
 import SQLKit
 import XCTest
 
 extension FluentBenchmarker {
     public func testChild() throws {
         try self.testChild_with()
-        
+
         guard let sql = self.database as? any SQLDatabase else {
             return
         }
         try self.testChild_sqlIdInt(sql)
-        
+
     }
 
     private func testChild_with() throws {
-        try self.runTest(#function, [
-            FooMigration(),
-            BarMigration(),
-            BazMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration(),
+                BarMigration(),
+                BazMigration(),
+            ]
+        ) {
             let foo = Foo(name: "a")
             try foo.save(on: self.database).wait()
             let bar = Bar(bar: 42, fooID: foo.id!)
             try bar.save(on: self.database).wait()
             let baz = Baz(baz: 3.14)
             try baz.save(on: self.database).wait()
-            
+
             // Test relationship @Parent - @OptionalChild
             // query(on: Parent)
             let foos = try Foo.query(on: self.database)
@@ -42,70 +45,71 @@ extension FluentBenchmarker {
                 // Child `baz` isn't eager loaded
                 XCTAssertNil(foo.baz?.baz)
             }
-            
+
             // Test relationship @Parent - @OptionalChild
             // query(on: Child)
             let bars = try Bar.query(on: self.database)
                 .with(\.$foo)
                 .all().wait()
-            
+
             for bar in bars {
                 XCTAssertEqual(bar.foo.name, "a")
             }
-            
+
             // Test relationship @OptionalParent - @OptionalChild
             // query(on: Child)
             let bazs = try Baz.query(on: self.database)
                 .with(\.$foo)
                 .all().wait()
-            
+
             for baz in bazs {
                 // test with missing parent
                 XCTAssertNil(baz.foo?.name)
             }
-            
+
             baz.$foo.id = foo.id
             try baz.save(on: self.database).wait()
-            
+
             let updatedBazs = try Baz.query(on: self.database)
                 .with(\.$foo)
                 .all().wait()
-            
+
             for updatedBaz in updatedBazs {
                 // test with valid parent
                 XCTAssertEqual(updatedBaz.foo?.name, "a")
             }
         }
     }
-    
+
     private func testChild_sqlIdInt(_ sql: any SQLDatabase) throws {
-        try self.runTest(#function, [
-            GameMigration(),
-            PlayerMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                GameMigration(),
+                PlayerMigration(),
+            ]
+        ) {
             let game = Game(title: "Solitare")
             try game.save(on: self.database).wait()
-            
+
             let frantisek = Player(name: "Frantisek", gameID: game.id!)
             try frantisek.save(on: self.database).wait()
-            
-            
+
             let player = try Player.query(on: self.database)
                 .with(\.$game)
                 .first().wait()
-            
+
             XCTAssertNotNil(player)
             if let player = player {
                 XCTAssertEqual(player.id, frantisek.id)
                 XCTAssertEqual(player.name, frantisek.name)
                 XCTAssertEqual(player.$game.id, frantisek.$game.id)
                 XCTAssertEqual(player.$game.id, game.id)
-                
+
             }
         }
     }
 }
-
 
 private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
@@ -122,7 +126,7 @@ private final class Foo: Model, @unchecked Sendable {
     @OptionalChild(for: \.$foo)
     var baz: Baz?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String) {
         self.id = id
@@ -155,7 +159,7 @@ private final class Bar: Model, @unchecked Sendable {
     @Parent(key: "foo_id")
     var foo: Foo
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, bar: Int, fooID: Foo.IDValue) {
         self.id = id
@@ -191,7 +195,7 @@ private final class Baz: Model, @unchecked Sendable {
     @OptionalParent(key: "foo_id")
     var foo: Foo?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue? = nil) {
         self.id = id
@@ -226,8 +230,8 @@ private final class Game: Model, @unchecked Sendable {
     // It's a solitare game :P
     @OptionalChild(for: \.$game)
     var player: Player?
-    
-    init() { }
+
+    init() {}
 
     init(
         id: Int? = nil,
@@ -263,7 +267,7 @@ private final class Player: Model, @unchecked Sendable {
     @Parent(key: "game_id")
     var game: Game
 
-    init() { }
+    init() {}
 
     init(
         id: Int? = nil,

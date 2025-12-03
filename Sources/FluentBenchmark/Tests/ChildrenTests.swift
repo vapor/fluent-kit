@@ -9,11 +9,14 @@ extension FluentBenchmarker {
     }
 
     private func testChildren_with() throws {
-        try self.runTest(#function, [
-            FooMigration(),
-            BarMigration(),
-            BazMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration(),
+                BarMigration(),
+                BazMigration(),
+            ]
+        ) {
             let foo = Foo(name: "a")
             try foo.save(on: self.database).wait()
             let bar = Bar(bar: 42, fooID: foo.id!)
@@ -34,7 +37,6 @@ extension FluentBenchmarker {
     }
 }
 
-
 private final class Foo: Model, @unchecked Sendable {
     static let schema = "foos"
 
@@ -50,7 +52,7 @@ private final class Foo: Model, @unchecked Sendable {
     @Children(for: \.$foo)
     var bazs: [Baz]
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String) {
         self.id = id
@@ -83,7 +85,7 @@ private final class Bar: Model, @unchecked Sendable {
     @Parent(key: "foo_id")
     var foo: Foo
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, bar: Int, fooID: Foo.IDValue) {
         self.id = id
@@ -118,7 +120,7 @@ private final class Baz: Model, @unchecked Sendable {
     @Parent(key: "foo_id")
     var foo: Foo
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, baz: Double, fooID: Foo.IDValue) {
         self.id = id

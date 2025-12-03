@@ -17,14 +17,12 @@ extension QueryBuilder {
         _ foreign: Foreign.Type,
         on filter: ComplexJoinFilterGroup,
         method: DatabaseQuery.Join.Method = .inner
-    ) -> Self
-        where Foreign: Schema
-    {
+    ) -> Self where Foreign: Schema {
         self.join(Foreign.self, filter.filters.map(\.filter), method: method)
     }
 
     // MARK: - Fundamental join methods
-    
+
     /// `.join(Foreign.self, filters, method: method)`
     ///
     /// Joins against `Foreign` with the specified method and using the given filter(s) as the join condition.
@@ -33,12 +31,11 @@ extension QueryBuilder {
         _ foreign: Foreign.Type,
         _ filters: [DatabaseQuery.Filter],
         method: DatabaseQuery.Join.Method = .inner
-    ) -> Self
-        where Foreign: Schema
-    {
-        self.join(Foreign.self, on: .advancedJoin(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
+    ) -> Self where Foreign: Schema {
+        self.join(
+            Foreign.self, on: .advancedJoin(schema: Foreign.schema, space: Foreign.space, alias: Foreign.alias, method, filters: filters))
     }
-    
+
     /// `.join(Foreign.self, on: databaseJoin)`
     ///
     /// Joins against `Foreign` using the given join description.
@@ -59,17 +56,20 @@ extension QueryBuilder {
         _ foreign: Foreign.Type,
         on join: DatabaseQuery.Join
     ) -> Self
-        where Foreign: Schema
-    {
+    where Foreign: Schema {
         #if DEBUG
-        switch join {
-        case let .join(jschema, jalias, _, _, _):
-            assert(jschema == Foreign.schema && jalias == Foreign.alias, "Join specification does not match provided Model type \(Foreign.self)")
-        case let .extendedJoin(jschema, jspace, jalias, _, _, _), let .advancedJoin(jschema, jspace, jalias, _, _):
-            assert(jspace == Foreign.space && jschema == Foreign.schema && jalias == Foreign.alias, "Join specification does not match provided Model type \(Foreign.self)")
-        case.custom(_):
-            break // We can't validate custom joins
-        }
+            switch join {
+            case .join(let jschema, let jalias, _, _, _):
+                assert(
+                    jschema == Foreign.schema && jalias == Foreign.alias,
+                    "Join specification does not match provided Model type \(Foreign.self)")
+            case .extendedJoin(let jschema, let jspace, let jalias, _, _, _), .advancedJoin(let jschema, let jspace, let jalias, _, _):
+                assert(
+                    jspace == Foreign.space && jschema == Foreign.schema && jalias == Foreign.alias,
+                    "Join specification does not match provided Model type \(Foreign.self)")
+            case .custom(_):
+                break  // We can't validate custom joins
+            }
         #endif
 
         self.models.append(Foreign.self)
@@ -82,7 +82,8 @@ extension QueryBuilder {
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> ComplexJoinFilter where
+) -> ComplexJoinFilter
+where
     Foreign: Schema, Local: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty,
     ForeignField.Value == LocalField.Value
 {
@@ -91,7 +92,8 @@ public func == <Foreign, ForeignField, Local, LocalField>(
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> ComplexJoinFilter where
+) -> ComplexJoinFilter
+where
     Foreign: Schema, Local: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty,
     ForeignField.Value == LocalField.Value?
 {
@@ -100,7 +102,8 @@ public func == <Foreign, ForeignField, Local, LocalField>(
 
 public func == <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> ComplexJoinFilter where
+) -> ComplexJoinFilter
+where
     Foreign: Schema, Local: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty,
     ForeignField.Value? == LocalField.Value
 {
@@ -111,7 +114,8 @@ public func == <Foreign, ForeignField, Local, LocalField>(
 
 public func != <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> ComplexJoinFilter where
+) -> ComplexJoinFilter
+where
     Foreign: Schema, Local: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty,
     ForeignField.Value == LocalField.Value
 {
@@ -120,7 +124,8 @@ public func != <Foreign, ForeignField, Local, LocalField>(
 
 public func != <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> ComplexJoinFilter where
+) -> ComplexJoinFilter
+where
     Foreign: Schema, Local: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty,
     ForeignField.Value == LocalField.Value?
 {
@@ -129,7 +134,8 @@ public func != <Foreign, ForeignField, Local, LocalField>(
 
 public func != <Foreign, ForeignField, Local, LocalField>(
     lhs: KeyPath<Local, LocalField>, rhs: KeyPath<Foreign, ForeignField>
-) -> ComplexJoinFilter where
+) -> ComplexJoinFilter
+where
     Foreign: Schema, Local: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty,
     ForeignField.Value? == LocalField.Value
 {
@@ -144,12 +150,12 @@ public func && (lhs: ComplexJoinFilter, rhs: ComplexJoinFilter) -> ComplexJoinFi
 }
 
 /// `a ==/!= b && c >/< 1`
-public func && <Model: Schema> (lhs: ComplexJoinFilter, rhs: ModelValueFilter<Model>) -> ComplexJoinFilterGroup {
+public func && <Model: Schema>(lhs: ComplexJoinFilter, rhs: ModelValueFilter<Model>) -> ComplexJoinFilterGroup {
     .init(filters: [lhs, .init(rhs)])
 }
 
 /// `c >/< 1 && a ==/!= b`
-public func && <Model: Schema> (lhs: ModelValueFilter<Model>, rhs: ComplexJoinFilter) -> ComplexJoinFilterGroup {
+public func && <Model: Schema>(lhs: ModelValueFilter<Model>, rhs: ComplexJoinFilter) -> ComplexJoinFilterGroup {
     .init(filters: [.init(lhs), rhs])
 }
 
@@ -179,47 +185,51 @@ public func && <Model: Schema>(lhs: ModelValueFilter<Model>, rhs: ComplexJoinFil
 /// compile times and avoiding "this expression is too complex..." errors.
 public struct ComplexJoinFilter {
     let filter: DatabaseQuery.Filter
-    
+
     init(filter: DatabaseQuery.Filter) {
         self.filter = filter
     }
-    
+
     init<Model: Schema>(_ filter: ModelValueFilter<Model>) {
-        self.init(filter: .value(
-            .extendedPath(filter.path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
-            filter.method,
-            filter.value
-        ))
+        self.init(
+            filter: .value(
+                .extendedPath(filter.path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
+                filter.method,
+                filter.value
+            ))
     }
-    
+
     init<Left, LField, Right, RField>(
         _ lhs: KeyPath<Left, LField>, _ method: DatabaseQuery.Filter.Method, _ rhs: KeyPath<Right, RField>
     ) where Left: Schema, Right: Schema, LField: QueryableProperty, RField: QueryableProperty, LField.Value == RField.Value {
-        self.init(filter: .field(
-            .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
-            method,
-            .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
-        ))
+        self.init(
+            filter: .field(
+                .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+                method,
+                .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            ))
     }
 
     init<Left, LField, Right, RField>(
         _ lhs: KeyPath<Left, LField>, _ method: DatabaseQuery.Filter.Method, _ rhs: KeyPath<Right, RField>
     ) where Left: Schema, Right: Schema, LField: QueryableProperty, RField: QueryableProperty, LField.Value? == RField.Value {
-        self.init(filter: .field(
-            .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
-            method,
-            .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
-        ))
+        self.init(
+            filter: .field(
+                .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+                method,
+                .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            ))
     }
 
     init<Left, LField, Right, RField>(
         _ lhs: KeyPath<Left, LField>, _ method: DatabaseQuery.Filter.Method, _ rhs: KeyPath<Right, RField>
     ) where Left: Schema, Right: Schema, LField: QueryableProperty, RField: QueryableProperty, LField.Value == RField.Value? {
-        self.init(filter: .field(
-            .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
-            method,
-            .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
-        ))
+        self.init(
+            filter: .field(
+                .extendedPath(Left.path(for: lhs), schema: Left.schemaOrAlias, space: Left.spaceIfNotAliased),
+                method,
+                .extendedPath(Right.path(for: rhs), schema: Right.schemaOrAlias, space: Right.spaceIfNotAliased)
+            ))
     }
 }
 
@@ -238,30 +248,30 @@ extension QueryBuilder {
         _ foreign: Foreign.Type,
         on filter: DatabaseQuery.Join
     ) -> Self
-        where Local: Schema, Foreign: Schema
-    {
+    where Local: Schema, Foreign: Schema {
         self.join(Foreign.self, on: filter)
     }
-    
+
     @discardableResult
     public func join<Foreign, Local, Value>(
         _ foreign: Foreign.Type,
         on filter: JoinFilter<Foreign, Local, Value>,
         method: DatabaseQuery.Join.Method = .inner
     ) -> Self
-        where Foreign: Schema, Local: Schema
-    {
-        self.join(Foreign.self, on: ComplexJoinFilter(filter: .field(
-            .extendedPath(filter.foreign, schema: Foreign.schemaOrAlias, space: Foreign.spaceIfNotAliased),
-            .equal,
-            .extendedPath(filter.local, schema: Local.schemaOrAlias, space: Local.spaceIfNotAliased)
-        )), method: method)
+    where Foreign: Schema, Local: Schema {
+        self.join(
+            Foreign.self,
+            on: ComplexJoinFilter(
+                filter: .field(
+                    .extendedPath(filter.foreign, schema: Foreign.schemaOrAlias, space: Foreign.spaceIfNotAliased),
+                    .equal,
+                    .extendedPath(filter.local, schema: Local.schemaOrAlias, space: Local.spaceIfNotAliased)
+                )), method: method)
     }
 }
 
 public struct JoinFilter<Foreign, Local, Value>
-    where Foreign: Fields, Local: Fields, Value: Codable
-{
+where Foreign: Fields, Local: Fields, Value: Codable {
     let foreign: [FieldKey]
     let local: [FieldKey]
 }

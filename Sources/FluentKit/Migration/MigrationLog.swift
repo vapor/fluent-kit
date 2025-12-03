@@ -1,5 +1,5 @@
-import NIOCore
 import Foundation
+import NIOCore
 
 /// Stores information about `Migration`s that have been run.
 public final class MigrationLog: Model, @unchecked Sendable {

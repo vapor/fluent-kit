@@ -1,18 +1,20 @@
 extension Fields {
     public typealias Enum<Value> = EnumProperty<Self, Value>
-        where Value: Codable & Sendable,
-            Value: RawRepresentable,
-            Value.RawValue == String
+    where
+        Value: Codable & Sendable,
+        Value: RawRepresentable,
+        Value.RawValue == String
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class EnumProperty<Model, Value>
-    where Model: FluentKit.Fields,
-        Value: Codable & Sendable,
-        Value: RawRepresentable,
-        Value.RawValue == String
+where
+    Model: FluentKit.Fields,
+    Value: Codable & Sendable,
+    Value: RawRepresentable,
+    Value.RawValue == String
 {
     public let field: FieldProperty<Model, String>
 
@@ -39,7 +41,7 @@ public final class EnumProperty<Model, Value>
 
 // MARK: Property
 
-extension EnumProperty: AnyProperty { }
+extension EnumProperty: AnyProperty {}
 
 extension EnumProperty: Property {
     public var value: Value? {

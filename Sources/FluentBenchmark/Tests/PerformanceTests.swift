@@ -1,11 +1,12 @@
 import FluentKit
-#if !canImport(Darwin)
-@preconcurrency import Foundation
-#else
-import Foundation
-#endif
 import NIOCore
 import XCTest
+
+#if !canImport(Darwin)
+    @preconcurrency import Foundation
+#else
+    import Foundation
+#endif
 
 extension FluentBenchmarker {
     public func testPerformance(decimalType: DatabaseSchema.DataType = .string) throws {
@@ -14,9 +15,12 @@ extension FluentBenchmarker {
     }
 
     private func testPerformance_largeModel(decimalType: DatabaseSchema.DataType) throws {
-        try runTest(#function, [
-            FooMigration(decimalType: decimalType)
-        ]) {
+        try runTest(
+            #function,
+            [
+                FooMigration(decimalType: decimalType)
+            ]
+        ) {
             for _ in 0..<100 {
                 let foo = Foo(
                     bar: 42,
@@ -44,59 +48,59 @@ extension FluentBenchmarker {
 }
 
 private final class Foo: Model, @unchecked Sendable {
-     static let schema = "foos"
+    static let schema = "foos"
 
-     struct Thud: Codable {
-         var foo: Int
-         var bar: Double
-         var baz: String
-     }
+    struct Thud: Codable {
+        var foo: Int
+        var bar: Double
+        var baz: String
+    }
 
-     @ID(key: .id) var id: UUID?
-     @Field(key: "bar") var bar: Int
-     @Field(key: "baz") var baz: Double
-     @Field(key: "qux") var qux: String
-     @Field(key: "quux") var quux: Date
-     @Field(key: "quuz") var quuz: Float
-     @Field(key: "corge") var corge: [Int]
-     @Field(key: "grault") var grault: [Double]
-     @Field(key: "garply") var garply: [String]
-     @Field(key: "fred") var fred: Decimal
-     @Field(key: "plugh") var plugh: Int?
-     @Field(key: "xyzzy") var xyzzy: Double?
-     @Field(key: "thud") var thud: Thud
+    @ID(key: .id) var id: UUID?
+    @Field(key: "bar") var bar: Int
+    @Field(key: "baz") var baz: Double
+    @Field(key: "qux") var qux: String
+    @Field(key: "quux") var quux: Date
+    @Field(key: "quuz") var quuz: Float
+    @Field(key: "corge") var corge: [Int]
+    @Field(key: "grault") var grault: [Double]
+    @Field(key: "garply") var garply: [String]
+    @Field(key: "fred") var fred: Decimal
+    @Field(key: "plugh") var plugh: Int?
+    @Field(key: "xyzzy") var xyzzy: Double?
+    @Field(key: "thud") var thud: Thud
 
-     init() { }
+    init() {}
 
-     init(
-         id: UUID? = nil,
-         bar: Int,
-         baz: Double,
-         qux: String,
-         quux: Date,
-         quuz: Float,
-         corge: [Int],
-         grault: [Double],
-         garply: [String],
-         fred: Decimal,
-         plugh: Int?,
-         xyzzy: Double?,
-         thud: Thud
-     ) {
-         self.id = id
-         self.bar = bar
-         self.baz = baz
-         self.qux = qux
-         self.quux = quux
-         self.quuz = quuz
-         self.corge = corge
-         self.grault = grault
-         self.garply = garply
-         self.fred = fred
-         self.plugh = plugh
-         self.xyzzy = xyzzy
-         self.thud = thud
-     }
+    init(
+        id: UUID? = nil,
+        bar: Int,
+        baz: Double,
+        qux: String,
+        quux: Date,
+        quuz: Float,
+        corge: [Int],
+        grault: [Double],
+        garply: [String],
+        fred: Decimal,
+        plugh: Int?,
+        xyzzy: Double?,
+        thud: Thud
+    ) {
+        self.id = id
+        self.bar = bar
+        self.baz = baz
+        self.qux = qux
+        self.quux = quux
+        self.quuz = quuz
+        self.corge = corge
+        self.grault = grault
+        self.garply = garply
+        self.fred = fred
+        self.plugh = plugh
+        self.xyzzy = xyzzy
+        self.thud = thud
+    }
 }
 
 private struct FooMigration: Migration {

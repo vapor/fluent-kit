@@ -23,7 +23,7 @@ public protocol EagerLoadable {
         _ relationKey: KeyPath<From, Self>,
         to builder: Builder
     ) where Builder: EagerLoadBuilder, Builder.Model == From
-    
+
     static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, Self>,
         withDeleted: Bool,
@@ -34,7 +34,9 @@ public protocol EagerLoadable {
         _ loader: Loader,
         through: KeyPath<From, Self>,
         to builder: Builder
-    ) where Loader: EagerLoader,
+    )
+    where
+        Loader: EagerLoader,
         Builder: EagerLoadBuilder,
         Loader.Model == To,
         Builder.Model == From

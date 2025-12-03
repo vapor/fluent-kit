@@ -10,14 +10,17 @@ extension FluentBenchmarker {
         try self.testMiddleware_batchCreationFail()
         try self.testAsyncMiddleware_methods()
     }
-    
+
     public func testMiddleware_methods() throws {
         self.databases.middleware.use(UserMiddleware())
         defer { self.databases.middleware.clear() }
 
-        try self.runTest(#function, [
-            UserMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let user = User(name: "A")
             // create
             do {
@@ -66,9 +69,12 @@ extension FluentBenchmarker {
         self.databases.middleware.use(AsyncUserMiddleware())
         defer { self.databases.middleware.clear() }
 
-        try self.runTest(#function, [
-            UserMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let user = User(name: "A")
             // create
             do {
@@ -112,24 +118,27 @@ extension FluentBenchmarker {
             XCTAssertEqual(user.name, "G")
         }
     }
-    
+
     public func testMiddleware_batchCreationFail() throws {
         self.databases.middleware.clear()
         self.databases.middleware.use(UserBatchMiddleware())
         defer { self.databases.middleware.clear() }
 
-        try self.runTest(#function, [
-            UserMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let user = User(name: "A")
             let user2 = User(name: "B")
             let user3 = User(name: "C")
-          
+
             XCTAssertThrowsError(try [user, user2, user3].create(on: self.database).wait()) { error in
                 let testError = (error as? TestError)
                 XCTAssertEqual(testError?.string, "cancelCreation")
             }
-            
+
             let userCount = try User.query(on: self.database).count().wait()
             XCTAssertEqual(userCount, 0)
         }
@@ -152,7 +161,7 @@ private final class User: Model, @unchecked Sendable {
     @Timestamp(key: "deletedAt", on: .delete)
     var deletedAt: Date?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String) {
         self.id = id
@@ -199,7 +208,7 @@ private struct AsyncUserMiddleware: AsyncModelMiddleware {
     func restore(model: User, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         model.name = "F"
 
-        try await next.restore(model , on: db)
+        try await next.restore(model, on: db)
         throw TestError(string: "didRestore")
     }
 
@@ -214,7 +223,7 @@ private struct AsyncUserMiddleware: AsyncModelMiddleware {
 private struct UserMiddleware: ModelMiddleware {
     func create(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "B"
-        
+
         return next.create(model, on: db).flatMap {
             db.eventLoop.makeFailedFuture(TestError(string: "didCreate"))
         }
@@ -239,7 +248,7 @@ private struct UserMiddleware: ModelMiddleware {
     func restore(model: User, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         model.name = "F"
 
-        return next.restore(model , on: db).flatMap {
+        return next.restore(model, on: db).flatMap {
             db.eventLoop.makeFailedFuture(TestError(string: "didRestore"))
         }
     }

@@ -9,9 +9,12 @@ extension FluentBenchmarker {
     }
 
     private func testBatch_create() throws {
-        try runTest(#function, [
-            GalaxyMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter in
                 return Galaxy(name: .init(letter))
             }
@@ -23,10 +26,13 @@ extension FluentBenchmarker {
     }
 
     private func testBatch_update() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            GalaxySeed()
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration(),
+                GalaxySeed(),
+            ]
+        ) {
             try Galaxy.query(on: self.database).set(\.$name, to: "Foo")
                 .update().wait()
 
@@ -38,15 +44,20 @@ extension FluentBenchmarker {
     }
 
     private func testBatch_delete() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let galaxies = Array("abcdefghijklmnopqrstuvwxyz").map { letter in
                 return Galaxy(name: .init(letter))
             }
-            try EventLoopFuture.andAllSucceed(galaxies.map {
-                $0.create(on: self.database)
-            }, on: self.database.eventLoop).wait()
+            try EventLoopFuture.andAllSucceed(
+                galaxies.map {
+                    $0.create(on: self.database)
+                }, on: self.database.eventLoop
+            ).wait()
 
             let count = try Galaxy.query(on: self.database).count().wait()
             XCTAssertEqual(count, 26)

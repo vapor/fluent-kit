@@ -1,6 +1,7 @@
-import NIOConcurrencyHelpers
-import class NIOPosix.ThreadSpecificVariable
 import Foundation
+import NIOConcurrencyHelpers
+
+import class NIOPosix.ThreadSpecificVariable
 
 // MARK: Format
 
@@ -13,7 +14,7 @@ public protocol TimestampFormat: Sendable {
 
 public struct TimestampFormatFactory<Format> {
     public let makeFormat: () -> Format
-    
+
     public init(_ makeFormat: @escaping () -> Format) {
         self.makeFormat = makeFormat
     }
@@ -41,7 +42,6 @@ public struct DefaultTimestampFormat: TimestampFormat {
     }
 }
 
-
 // MARK: ISO8601
 
 extension TimestampFormatFactory {
@@ -53,10 +53,8 @@ extension TimestampFormatFactory {
         withMilliseconds: Bool
     ) -> TimestampFormatFactory<ISO8601TimestampFormat> {
         .init {
-            ISO8601TimestampFormat(formatter: (withMilliseconds ?
-                ISO8601DateFormatter.sharedWithMs :
-                ISO8601DateFormatter.sharedWithoutMs
-            ).value)
+            ISO8601TimestampFormat(
+                formatter: (withMilliseconds ? ISO8601DateFormatter.sharedWithMs : ISO8601DateFormatter.sharedWithoutMs).value)
         }
     }
 }
@@ -66,7 +64,7 @@ extension ISO8601DateFormatter {
     // know that in reality, the formatter is safe to use simultaneously from multiple threads as long as the options
     // are not changed, and we never change the options after the formatter is first created.
     fileprivate struct FakeSendable<T>: @unchecked Sendable { let value: T }
-    
+
     fileprivate static let sharedWithoutMs: FakeSendable<ISO8601DateFormatter> = .init(value: .init())
     fileprivate static let sharedWithMs: FakeSendable<ISO8601DateFormatter> = {
         let formatter = ISO8601DateFormatter()
@@ -91,7 +89,6 @@ public struct ISO8601TimestampFormat: TimestampFormat, @unchecked Sendable {
 
 // MARK: Unix
 
-
 extension TimestampFormatFactory {
     public static var unix: TimestampFormatFactory<UnixTimestampFormat> {
         .init {
@@ -111,4 +108,3 @@ public struct UnixTimestampFormat: TimestampFormat {
         date.timeIntervalSince1970
     }
 }
-

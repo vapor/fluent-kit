@@ -1,10 +1,10 @@
+import NIOCore
+
 extension Database {
     public func schema(_ schema: String, space: String? = nil) -> SchemaBuilder {
         .init(database: self, schema: schema, space: space)
     }
 }
-
-import NIOCore
 
 public final class SchemaBuilder {
     let database: any Database
@@ -26,11 +26,12 @@ public final class SchemaBuilder {
         _ dataType: DatabaseSchema.DataType,
         _ constraints: DatabaseSchema.FieldConstraint...
     ) -> Self {
-        self.field(.definition(
-            name: .key(key),
-            dataType: dataType,
-            constraints: constraints
-        ))
+        self.field(
+            .definition(
+                name: .key(key),
+                dataType: dataType,
+                constraints: constraints
+            ))
     }
 
     @discardableResult
@@ -41,12 +42,13 @@ public final class SchemaBuilder {
 
     @discardableResult
     public func unique(on fields: FieldKey..., name: String? = nil) -> Self {
-        self.constraint(.constraint(
-            .unique(fields: fields.map { .key($0) }),
-            name: name
-        ))
+        self.constraint(
+            .constraint(
+                .unique(fields: fields.map { .key($0) }),
+                name: name
+            ))
     }
-    
+
     @discardableResult
     public func compositeIdentifier(over fields: FieldKey...) -> Self {
         self.constraint(.constraint(.compositeIdentifier(fields.map { .key($0) }), name: ""))
@@ -94,17 +96,18 @@ public final class SchemaBuilder {
         onUpdate: DatabaseSchema.ForeignKeyAction = .noAction,
         name: String? = nil
     ) -> Self {
-        self.schema.createConstraints.append(.constraint(
-            .foreignKey(
-                [.key(field)],
-                foreignSchema,
-                space: foreignSpace,
-                [.key(foreignField)],
-                onDelete: onDelete,
-                onUpdate: onUpdate
-            ),
-            name: name
-        ))
+        self.schema.createConstraints.append(
+            .constraint(
+                .foreignKey(
+                    [.key(field)],
+                    foreignSchema,
+                    space: foreignSpace,
+                    [.key(foreignField)],
+                    onDelete: onDelete,
+                    onUpdate: onUpdate
+                ),
+                name: name
+            ))
         return self
     }
 
@@ -118,17 +121,18 @@ public final class SchemaBuilder {
         onUpdate: DatabaseSchema.ForeignKeyAction = .noAction,
         name: String? = nil
     ) -> Self {
-        self.schema.createConstraints.append(.constraint(
-            .foreignKey(
-                fields.map { .key($0) },
-                foreignSchema,
-                space: foreignSpace,
-                foreignFields.map { .key($0) },
-                onDelete: onDelete,
-                onUpdate: onUpdate
-            ),
-            name: name
-        ))
+        self.schema.createConstraints.append(
+            .constraint(
+                .foreignKey(
+                    fields.map { .key($0) },
+                    foreignSchema,
+                    space: foreignSpace,
+                    foreignFields.map { .key($0) },
+                    onDelete: onDelete,
+                    onUpdate: onUpdate
+                ),
+                name: name
+            ))
         return self
     }
 
@@ -137,10 +141,11 @@ public final class SchemaBuilder {
         _ key: FieldKey,
         _ dataType: DatabaseSchema.DataType
     ) -> Self {
-        self.updateField(.dataType(
-            name: .key(key),
-            dataType: dataType
-        ))
+        self.updateField(
+            .dataType(
+                name: .key(key),
+                dataType: dataType
+            ))
     }
 
     @discardableResult

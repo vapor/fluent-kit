@@ -32,7 +32,7 @@ extension SQLKit.SQLList {
         get { self.expressions }
         set { self.expressions = newValue }
     }
-    
+
     @available(*, deprecated, message: "Use `init(_:separator:)` and include whitespace in the separator as needed instead.")
     public init(items: [any SQLExpression], separator: any SQLExpression) {
         self.init(items, separator: " \(separator) " as SQLQueryString)

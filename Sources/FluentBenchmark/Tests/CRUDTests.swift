@@ -11,18 +11,22 @@ extension FluentBenchmarker {
     }
 
     private func testCRUD_create() throws {
-        try self.runTest(#function, [
-            GalaxyMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let galaxy = Galaxy(name: "Messier")
             galaxy.name += " 82"
             try! galaxy.save(on: self.database).wait()
             XCTAssertNotNil(galaxy.id)
 
-            guard let fetched = try Galaxy.query(on: self.database)
-                .filter(\.$name == "Messier 82")
-                .first()
-                .wait()
+            guard
+                let fetched = try Galaxy.query(on: self.database)
+                    .filter(\.$name == "Messier 82")
+                    .first()
+                    .wait()
             else {
                 XCTFail("unexpected empty result set")
                 return
@@ -38,13 +42,17 @@ extension FluentBenchmarker {
     }
 
     private func testCRUD_read() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-            GalaxySeed()
-        ]) {
-            guard let milkyWay = try Galaxy.query(on: self.database)
-                .filter(\.$name == "Milky Way")
-                .first().wait()
+        try runTest(
+            #function,
+            [
+                GalaxyMigration(),
+                GalaxySeed(),
+            ]
+        ) {
+            guard
+                let milkyWay = try Galaxy.query(on: self.database)
+                    .filter(\.$name == "Milky Way")
+                    .first().wait()
             else {
                 XCTFail("unpexected missing galaxy")
                 return
@@ -57,9 +65,12 @@ extension FluentBenchmarker {
     }
 
     private func testCRUD_update() throws {
-        try runTest(#function, [
-            GalaxyMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let galaxy = Galaxy(name: "Milkey Way")
             try galaxy.save(on: self.database).wait()
             galaxy.name = "Milky Way"
@@ -81,9 +92,12 @@ extension FluentBenchmarker {
     }
 
     private func testCRUD_delete() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let galaxy = Galaxy(name: "Milky Way")
             try galaxy.save(on: self.database).wait()
             try galaxy.delete(on: self.database).wait()
@@ -98,9 +112,12 @@ extension FluentBenchmarker {
     }
 
     public func testAsyncCreate() throws {
-        try runTest(#function, [
-            GalaxyMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let a = Galaxy(name: "a")
             let b = Galaxy(name: "b")
             _ = try a.save(on: self.database).and(b.save(on: self.database)).wait()

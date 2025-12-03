@@ -1,8 +1,8 @@
 import FluentKit
 import Foundation
+import Logging
 import NIOCore
 import XCTest
-import Logging
 
 extension FluentBenchmarker {
     public func testMigrator() throws {
@@ -17,7 +17,7 @@ extension FluentBenchmarker {
             let migrations = Migrations()
             migrations.add(GalaxyMigration())
             migrations.add(StarMigration())
-            
+
             let database = self.database
             let migrator = Migrator(
                 databaseFactory: { _ in database },
@@ -46,7 +46,7 @@ extension FluentBenchmarker {
             migrations.add(GalaxyMigration())
             migrations.add(ErrorMigration())
             migrations.add(StarMigration())
-            
+
             let database = self.database
             let migrator = Migrator(
                 databaseFactory: { _ in database },
@@ -84,7 +84,6 @@ extension FluentBenchmarker {
 
             let migrations = Migrations()
 
-
             // Migration #1
             migrations.add(GalaxyMigration(), to: databaseID.0)
 
@@ -115,7 +114,6 @@ extension FluentBenchmarker {
                 // will have not been created yet.
             }
 
-
             // Migration #2
             migrations.add(GalaxyMigration(), to: databaseID.1)
 
@@ -129,7 +127,6 @@ extension FluentBenchmarker {
 
             try XCTAssertEqual(MigrationLog.query(on: database1).count().wait(), 1)
 
-            
             // Teardown
             try migrator.revertAllBatches().wait()
         }
@@ -141,7 +138,7 @@ extension FluentBenchmarker {
             let databaseIds = Array(self.databases.ids()).prefix(2)
             let databases = databaseIds.map { self.databases.database($0, logger: logger, on: self.databases.eventLoopGroup.next())! }
             let migrations = Migrations()
-            
+
             migrations.add([GalaxyMigration(), StarMigration(), GalaxySeed()], to: databaseIds[0])
             migrations.add(GalaxyMigration(), StarMigration(), PlanetMigration(), to: databaseIds[1])
 
@@ -173,9 +170,9 @@ extension FluentBenchmarker {
 }
 
 internal struct ErrorMigration: Migration {
-    init() { }
+    init() {}
 
-    struct Error: Swift.Error { }
+    struct Error: Swift.Error {}
 
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.eventLoop.makeFailedFuture(Error())

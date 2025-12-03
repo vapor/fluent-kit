@@ -11,7 +11,7 @@ public protocol AnyModelMiddleware: Sendable {
 
 public protocol ModelMiddleware: AnyModelMiddleware {
     associatedtype Model: FluentKit.Model
-    
+
     func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
     func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
     func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void>
@@ -20,11 +20,13 @@ public protocol ModelMiddleware: AnyModelMiddleware {
 }
 
 extension ModelMiddleware {
-    public func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database, chainingTo next: any AnyModelResponder) -> EventLoopFuture<Void> {
+    public func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database, chainingTo next: any AnyModelResponder)
+        -> EventLoopFuture<Void>
+    {
         guard let modelType = model as? Model else {
             return next.handle(event, model, on: db)
         }
-        
+
         switch event {
         case .create:
             return create(model: modelType, on: db, next: next)
@@ -38,23 +40,23 @@ extension ModelMiddleware {
             return restore(model: modelType, on: db, next: next)
         }
     }
-    
+
     public func create(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         next.create(model, on: db)
     }
-    
+
     public func update(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         next.update(model, on: db)
     }
-    
+
     public func delete(model: Model, force: Bool, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         next.delete(model, force: force, on: db)
     }
-    
+
     public func softDelete(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         next.softDelete(model, on: db)
     }
-    
+
     public func restore(model: Model, on db: any Database, next: any AnyModelResponder) -> EventLoopFuture<Void> {
         next.restore(model, on: db)
     }
@@ -82,7 +84,7 @@ extension Array where Element == any AnyModelMiddleware {
 private struct ModelMiddlewareResponder: AnyModelResponder {
     var middleware: any AnyModelMiddleware
     var responder: any AnyModelResponder
-    
+
     func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
         self.middleware.handle(event, model, on: db, chainingTo: responder)
     }

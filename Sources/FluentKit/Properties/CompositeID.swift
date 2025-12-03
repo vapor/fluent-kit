@@ -2,21 +2,20 @@ import NIOConcurrencyHelpers
 
 extension Model {
     public typealias CompositeID<Value> = CompositeIDProperty<Self, Value>
-        where Value: Fields
+    where Value: Fields
 }
 
 // MARK: Type
 
 @propertyWrapper @dynamicMemberLookup
 public final class CompositeIDProperty<Model, Value>: @unchecked Sendable
-    where Model: FluentKit.Model, Value: FluentKit.Fields
-{
+where Model: FluentKit.Model, Value: FluentKit.Fields {
     public var value: Value? = .init(.init())
     public var exists: Bool = false
     var cachedOutput: (any DatabaseOutput)?
 
     public var projectedValue: CompositeIDProperty<Model, Value> { self }
-    
+
     public var wrappedValue: Value? {
         get { self.value }
         set { self.value = newValue }
@@ -25,10 +24,9 @@ public final class CompositeIDProperty<Model, Value>: @unchecked Sendable
     public init() {}
 
     public subscript<Nested>(
-         dynamicMember keyPath: KeyPath<Value, Nested>
+        dynamicMember keyPath: KeyPath<Value, Nested>
     ) -> Nested
-        where Nested: Property
-    {
+    where Nested: Property {
         self.value![keyPath: keyPath]
     }
 }

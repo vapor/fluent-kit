@@ -4,7 +4,7 @@ import XCTest
 
 class DbQueryTestCase: XCTestCase {
     var db = DummyDatabaseForTestSQLSerializer()
-    
+
     override class func setUp() {
         super.setUp()
         XCTAssertTrue(isLoggingConfigured)
@@ -13,7 +13,7 @@ class DbQueryTestCase: XCTestCase {
     override func setUp() {
         self.db = DummyDatabaseForTestSQLSerializer()
     }
-    
+
     override func tearDown() {
         self.db.reset()
     }

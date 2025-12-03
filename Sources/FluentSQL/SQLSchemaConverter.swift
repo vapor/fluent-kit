@@ -1,5 +1,5 @@
-import SQLKit
 import FluentKit
+import SQLKit
 
 public protocol SQLConverterDelegate {
     func customDataType(_ dataType: DatabaseSchema.DataType) -> (any SQLExpression)?
@@ -11,7 +11,7 @@ extension SQLConverterDelegate {
     public func nestedFieldExpression(_ column: String, _ path: [String]) -> any SQLExpression {
         SQLNestedSubpathExpression(column: column, path: path)
     }
-    
+
     public func beforeConvert(_ schema: DatabaseSchema) -> DatabaseSchema {
         schema
     }
@@ -19,14 +19,14 @@ extension SQLConverterDelegate {
 
 public struct SQLSchemaConverter {
     let delegate: any SQLConverterDelegate
-    
+
     public init(delegate: any SQLConverterDelegate) {
         self.delegate = delegate
     }
-    
+
     public func convert(_ schema: DatabaseSchema) -> any SQLExpression {
         let schema = self.delegate.beforeConvert(schema)
-        
+
         return switch schema.action {
         case .create:
             self.create(schema)
@@ -36,12 +36,12 @@ public struct SQLSchemaConverter {
             self.update(schema)
         }
     }
-    
+
     // MARK: Private
 
     private func update(_ schema: DatabaseSchema) -> any SQLExpression {
         var update = SQLAlterTable(name: self.name(schema.schema, space: schema.space))
-    
+
         update.addColumns = schema.createFields.map(self.fieldDefinition)
         update.dropColumns = schema.deleteFields.map(self.fieldName)
         update.modifyColumns = schema.updateFields.map(self.fieldUpdate)
@@ -53,14 +53,14 @@ public struct SQLSchemaConverter {
         }
         return update
     }
-    
+
     private func delete(_ schema: DatabaseSchema) -> any SQLExpression {
         SQLDropTable(table: self.name(schema.schema, space: schema.space))
     }
-    
+
     private func create(_ schema: DatabaseSchema) -> any SQLExpression {
         var create = SQLCreateTable(name: self.name(schema.schema, space: schema.space))
-    
+
         create.columns = schema.createFields.map(self.fieldDefinition)
         create.tableConstraints = schema.createConstraints.map {
             self.constraint($0, table: schema.schema)
@@ -70,11 +70,11 @@ public struct SQLSchemaConverter {
         }
         return create
     }
-    
+
     private func name(_ string: String, space: String? = nil) -> any SQLExpression {
         SQLKit.SQLQualifiedTable(string, space: space)
     }
-    
+
     private func constraint(_ constraint: DatabaseSchema.Constraint, table: String) -> any SQLExpression {
         switch constraint {
         case .constraint(let algorithm, let customName):
@@ -118,7 +118,8 @@ public struct SQLSchemaConverter {
             return SQLDropTypedConstraint(name: SQLIdentifier(name), algorithm: .custom(""))
         case .custom(let any):
             if let fkeyExt = any as? DatabaseSchema.ConstraintDelete._ForeignKeyByNameExtension {
-                return SQLDropTypedConstraint(name: SQLIdentifier(fkeyExt.name), algorithm: .foreignKey([], "", [], onDelete: .noAction, onUpdate: .noAction))
+                return SQLDropTypedConstraint(
+                    name: SQLIdentifier(fkeyExt.name), algorithm: .foreignKey([], "", [], onDelete: .noAction, onUpdate: .noAction))
             }
             return custom(any)
         }
@@ -151,7 +152,6 @@ public struct SQLSchemaConverter {
         return "\(prefix):\(fieldsString)"
     }
 
-
     private func foreignKeyAction(_ action: DatabaseSchema.ForeignKeyAction) -> SQLForeignKeyAction {
         switch action {
         case .noAction:
@@ -166,7 +166,7 @@ public struct SQLSchemaConverter {
             .setDefault
         }
     }
-    
+
     private func fieldDefinition(_ fieldDefinition: DatabaseSchema.FieldDefinition) -> any SQLExpression {
         switch fieldDefinition {
         case .custom(let any):
@@ -191,7 +191,7 @@ public struct SQLSchemaConverter {
             )
         }
     }
-    
+
     private func fieldName(_ fieldName: DatabaseSchema.FieldName) -> any SQLExpression {
         switch fieldName {
         case .key(let key):
@@ -200,12 +200,12 @@ public struct SQLSchemaConverter {
             custom(any)
         }
     }
-    
+
     private func dataType(_ dataType: DatabaseSchema.DataType) -> any SQLExpression {
         if let custom = self.delegate.customDataType(dataType) {
             return custom
         }
-        
+
         return switch dataType {
         case .bool:
             SQLDataType.int
@@ -249,7 +249,7 @@ public struct SQLSchemaConverter {
             custom(any)
         }
     }
-    
+
     private func fieldConstraint(_ fieldConstraint: DatabaseSchema.FieldConstraint) -> any SQLExpression {
         switch fieldConstraint {
         case .required:
@@ -277,15 +277,15 @@ public struct SQLSchemaConverter {
 public struct SQLDropTypedConstraint: SQLExpression {
     public let name: any SQLExpression
     public let algorithm: DatabaseSchema.ConstraintAlgorithm
-    
+
     public init(name: any SQLExpression, algorithm: DatabaseSchema.ConstraintAlgorithm) {
         self.name = name
         self.algorithm = algorithm
     }
-    
+
     public func serialize(to serializer: inout SQLSerializer) {
         serializer.statement {
-            if $0.dialect.name == "mysql" { // TODO: Add an SQLDialect setting for this branch
+            if $0.dialect.name == "mysql" {  // TODO: Add an SQLDialect setting for this branch
                 // MySQL 5.7 does not support the type-generic "DROP CONSTRAINT" syntax.
                 switch algorithm {
                 case .foreignKey(_, _, _, _, _, _):

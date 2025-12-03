@@ -2,7 +2,9 @@ import FluentKit
 import SQLKit
 
 extension DatabaseSchema.DataType {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -25,7 +27,9 @@ extension DatabaseSchema.DataType {
 }
 
 extension DatabaseSchema.Constraint {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -48,7 +52,9 @@ extension DatabaseSchema.Constraint {
 }
 
 extension DatabaseSchema.ConstraintAlgorithm {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -62,12 +68,14 @@ extension DatabaseSchema.ConstraintAlgorithm {
     }
 
     public static func sql(_ expression: any SQLExpression) -> Self {
-    .custom(expression)
+        .custom(expression)
     }
 }
 
 extension DatabaseSchema.FieldConstraint {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -90,7 +98,9 @@ extension DatabaseSchema.FieldConstraint {
 }
 
 extension DatabaseSchema.FieldDefinition {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -109,7 +119,9 @@ extension DatabaseSchema.FieldDefinition {
 }
 
 extension DatabaseSchema.FieldUpdate {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -128,7 +140,9 @@ extension DatabaseSchema.FieldUpdate {
 }
 
 extension DatabaseSchema.FieldName {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }
@@ -147,7 +161,9 @@ extension DatabaseSchema.FieldName {
 }
 
 extension DatabaseSchema.ConstraintDelete {
-    @available(*, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL.")
+    @available(
+        *, deprecated, renamed: "sql(unsafeRaw:)", message: "Renamed to `.sql(unsafeRaw:)`. Please use caution when embedding raw SQL."
+    )
     public static func sql(raw: String) -> Self {
         .sql(unsafeRaw: raw)
     }

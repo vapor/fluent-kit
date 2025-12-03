@@ -11,16 +11,19 @@ extension FluentBenchmarker {
         try self.testEnum_queryFound()
         try self.testEnum_queryMissing()
         try self.testEnum_decode()
-        
+
         // Note: These should really be in their own top-level test case, but then I'd have to open
         // PRs against all the drivers again.
         try self.testBooleanProperties()
     }
 
     private func testEnum_basic() throws {
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let foo = Foo(bar: .baz, baz: .qux)
             XCTAssertTrue(foo.hasChanges)
             try foo.save(on: self.database).wait()
@@ -33,10 +36,13 @@ extension FluentBenchmarker {
     }
 
     private func testEnum_addCases() throws {
-        try self.runTest(#function, [
-            FooMigration(),
-            BarAddQuzAndQuzzMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration(),
+                BarAddQuzAndQuzzMigration(),
+            ]
+        ) {
             let foo = Foo(bar: .quz, baz: .quzz)
             try foo.save(on: self.database).wait()
 
@@ -47,9 +53,12 @@ extension FluentBenchmarker {
     }
 
     public func testEnum_raw() throws {
-        try runTest(#function, [
-            PetMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                PetMigration()
+            ]
+        ) {
             let pet = Pet(type: .cat)
             try pet.save(on: self.database).wait()
 
@@ -60,13 +69,17 @@ extension FluentBenchmarker {
 
     public func testEnum_queryFound() throws {
         // equal
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let foo = Foo(bar: .baz, baz: .qux)
             try foo.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar == .baz)
                 .first()
@@ -78,7 +91,8 @@ extension FluentBenchmarker {
             let foo2 = Foo(bar: .baz, baz: .qux)
             try foo2.save(on: self.database).wait()
 
-            let fetched2 = try Foo
+            let fetched2 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar != .qux)
                 .first()
@@ -90,7 +104,8 @@ extension FluentBenchmarker {
             let foo3 = Foo(bar: .baz, baz: .qux)
             try foo3.save(on: self.database).wait()
 
-            let fetched3 = try Foo
+            let fetched3 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar ~~ [.baz, .qux])
                 .first()
@@ -98,7 +113,8 @@ extension FluentBenchmarker {
             XCTAssertEqual(fetched3?.bar, .baz)
             XCTAssertEqual(fetched3?.baz, .qux)
 
-            let fetched3Opt = try Foo
+            let fetched3Opt =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$baz ~~ [.baz, .qux])
                 .first()
@@ -110,39 +126,43 @@ extension FluentBenchmarker {
             let foo4 = Foo(bar: .baz, baz: .qux)
             try foo4.save(on: self.database).wait()
 
-            let fetched4 = try Foo
+            let fetched4 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar !~ [.qux])
                 .first()
                 .wait()
             XCTAssertEqual(fetched4?.bar, .baz)
             XCTAssertEqual(fetched4?.baz, .qux)
-            
-            let fetched4Opt = try Foo
+
+            let fetched4Opt =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$baz !~ [.baz])
                 .first()
                 .wait()
             XCTAssertEqual(fetched4Opt?.bar, .baz)
             XCTAssertEqual(fetched4Opt?.baz, .qux)
-            
+
             // is null
             let foo5 = Foo(bar: .baz, baz: nil)
             try foo5.save(on: self.database).wait()
-            
-            let fetched5 = try Foo
+
+            let fetched5 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$baz == .null)
                 .first()
                 .wait()
             XCTAssertEqual(fetched5?.bar, .baz)
             XCTAssertNil(fetched5?.baz)
-            
+
             // is not null
             let foo6 = Foo(bar: .baz, baz: .qux)
             try foo6.save(on: self.database).wait()
-            
-            let fetched6 = try Foo
+
+            let fetched6 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$baz != .null)
                 .first()
@@ -154,13 +174,17 @@ extension FluentBenchmarker {
 
     public func testEnum_queryMissing() throws {
         // equal
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let foo = Foo(bar: .baz, baz: .qux)
             try foo.save(on: self.database).wait()
 
-            let fetched = try Foo
+            let fetched =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar == .qux)
                 .first()
@@ -171,7 +195,8 @@ extension FluentBenchmarker {
             let foo2 = Foo(bar: .baz, baz: .qux)
             try foo2.save(on: self.database).wait()
 
-            let fetched2 = try Foo
+            let fetched2 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar != .baz)
                 .first()
@@ -182,7 +207,8 @@ extension FluentBenchmarker {
             let foo3 = Foo(bar: .baz, baz: .qux)
             try foo3.save(on: self.database).wait()
 
-            let fetched3 = try Foo
+            let fetched3 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar ~~ [.qux])
                 .first()
@@ -193,29 +219,32 @@ extension FluentBenchmarker {
             let foo4 = Foo(bar: .baz, baz: .qux)
             try foo4.save(on: self.database).wait()
 
-            let fetched4 = try Foo
+            let fetched4 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar !~ [.baz, .qux])
                 .first()
                 .wait()
             XCTAssertNil(fetched4)
-            
+
             // is null
             let foo5 = Foo(bar: .baz, baz: .qux)
             try foo5.save(on: self.database).wait()
 
-            let fetched5 = try Foo
+            let fetched5 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$baz == .null)
                 .first()
                 .wait()
             XCTAssertNil(fetched5)
-            
+
             // is not null
             let foo6 = Foo(bar: .qux, baz: nil)
             try foo6.save(on: self.database).wait()
 
-            let fetched6 = try Foo
+            let fetched6 =
+                try Foo
                 .query(on: self.database)
                 .filter(\.$bar == .qux)
                 .filter(\.$baz != .null)
@@ -226,12 +255,15 @@ extension FluentBenchmarker {
     }
 
     public func testEnum_decode() throws {
-        try runTest(#function, [
-            FooMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let data = """
-            { "bar": "baz", "baz": "qux" }
-            """
+                { "bar": "baz", "baz": "qux" }
+                """
             let foo = try JSONDecoder().decode(Foo.self, from: .init(data.utf8))
             try foo.create(on: self.database).wait()
 
@@ -240,23 +272,26 @@ extension FluentBenchmarker {
             XCTAssertEqual(fetched?.baz, .qux)
         }
     }
-    
+
     public func testBooleanProperties() throws {
-        try runTest(#function, [
-            FlagsMigration()
-        ]) {
-            let flags1 = Flags(inquired: true, required: true, desired: true, expired: true, inspired: true, retired: true),
-                flags2 = Flags(inquired: false, required: false, desired: false, expired: false, inspired: false, retired: false),
-                flags3 = Flags(inquired: true, required: true, desired: true, expired: nil, inspired: nil, retired: nil)
-            
+        try runTest(
+            #function,
+            [
+                FlagsMigration()
+            ]
+        ) {
+            let flags1 = Flags(inquired: true, required: true, desired: true, expired: true, inspired: true, retired: true)
+            let flags2 = Flags(inquired: false, required: false, desired: false, expired: false, inspired: false, retired: false)
+            let flags3 = Flags(inquired: true, required: true, desired: true, expired: nil, inspired: nil, retired: nil)
+
             try flags1.create(on: self.database).wait()
             try flags2.create(on: self.database).wait()
             try flags3.create(on: self.database).wait()
-            
-            let rawFlags1 = try XCTUnwrap(RawFlags.find(flags1.id!, on: self.database).wait()),
-                rawFlags2 = try XCTUnwrap(RawFlags.find(flags2.id!, on: self.database).wait()),
-                rawFlags3 = try XCTUnwrap(RawFlags.find(flags3.id!, on: self.database).wait())
-            
+
+            let rawFlags1 = try XCTUnwrap(RawFlags.find(flags1.id!, on: self.database).wait())
+            let rawFlags2 = try XCTUnwrap(RawFlags.find(flags2.id!, on: self.database).wait())
+            let rawFlags3 = try XCTUnwrap(RawFlags.find(flags3.id!, on: self.database).wait())
+
             XCTAssertEqual(rawFlags1.inquired, true)
             XCTAssertEqual(rawFlags1.required, 1)
             XCTAssertEqual(rawFlags1.desired, "true")
@@ -278,10 +313,10 @@ extension FluentBenchmarker {
             XCTAssertNil(rawFlags3.inspired)
             XCTAssertNil(rawFlags3.retired)
 
-            let savedFlags1 = try XCTUnwrap(Flags.find(flags1.id!, on: self.database).wait()),
-                savedFlags2 = try XCTUnwrap(Flags.find(flags2.id!, on: self.database).wait()),
-                savedFlags3 = try XCTUnwrap(Flags.find(flags3.id!, on: self.database).wait())
-            
+            let savedFlags1 = try XCTUnwrap(Flags.find(flags1.id!, on: self.database).wait())
+            let savedFlags2 = try XCTUnwrap(Flags.find(flags2.id!, on: self.database).wait())
+            let savedFlags3 = try XCTUnwrap(Flags.find(flags3.id!, on: self.database).wait())
+
             XCTAssertEqual(savedFlags1.inquired, flags1.inquired)
             XCTAssertEqual(savedFlags1.required, flags1.required)
             XCTAssertEqual(savedFlags1.desired, flags1.desired)
@@ -318,11 +353,11 @@ private final class Foo: Model, @unchecked Sendable {
 
     @Enum(key: "bar")
     var bar: Bar
-    
+
     @OptionalEnum(key: "baz")
     var baz: Bar?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, bar: Bar, baz: Bar?) {
         self.id = id
@@ -331,21 +366,19 @@ private final class Foo: Model, @unchecked Sendable {
     }
 }
 
-
 private struct FooMigration: Migration {
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("bar")
             .case("baz")
             .case("qux")
             .create()
-            .flatMap
-        { bar in
-            database.schema("foos")
-                .field("id", .uuid, .identifier(auto: false))
-                .field("bar", bar, .required)
-                .field("baz", bar)
-                .create()
-        }
+            .flatMap { bar in
+                database.schema("foos")
+                    .field("id", .uuid, .identifier(auto: false))
+                    .field("bar", bar, .required)
+                    .field("baz", bar)
+                    .create()
+            }
     }
 
     func revert(on database: any Database) -> EventLoopFuture<Void> {
@@ -361,29 +394,26 @@ private struct BarAddQuzAndQuzzMigration: Migration {
             .case("quz")
             .case("quzz")
             .update()
-            .flatMap
-        { bar in
-            database.schema("foos")
-                .updateField("bar", bar)
-                .updateField("baz", bar)
-                .update()
-        }
+            .flatMap { bar in
+                database.schema("foos")
+                    .updateField("bar", bar)
+                    .updateField("baz", bar)
+                    .update()
+            }
     }
 
     func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.enum("bar")
             .deleteCase("quuz")
             .update()
-            .flatMap
-        { bar in
-            database.schema("foos")
-                .updateField("bar", bar)
-                .updateField("baz", bar)
-                .update()
-        }
+            .flatMap { bar in
+                database.schema("foos")
+                    .updateField("bar", bar)
+                    .updateField("baz", bar)
+                    .update()
+            }
     }
 }
-
 
 private enum Animal: UInt8, Codable {
     case dog, cat
@@ -398,14 +428,13 @@ private final class Pet: Model, @unchecked Sendable {
     @Field(key: "type")
     var type: Animal
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, type: Animal) {
         self.id = id
         self.type = type
     }
 }
-
 
 private struct PetMigration: Migration {
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
@@ -422,19 +451,19 @@ private struct PetMigration: Migration {
 
 private final class Flags: Model, @unchecked Sendable {
     static let schema = "flags"
-    
+
     @ID(key: .id)
     var id: UUID?
-    
+
     @Boolean(key: "inquired")
     var inquired: Bool
-    
+
     @Boolean(key: "required", format: .integer)
     var required: Bool
 
     @Boolean(key: "desired", format: .trueFalse)
     var desired: Bool
-    
+
     @OptionalBoolean(key: "expired")
     var expired: Bool?
 
@@ -443,10 +472,12 @@ private final class Flags: Model, @unchecked Sendable {
 
     @OptionalBoolean(key: "retired", format: .trueFalse)
     var retired: Bool?
-    
+
     init() {}
-    
-    init(id: IDValue? = nil, inquired: Bool, required: Bool, desired: Bool, expired: Bool? = nil, inspired: Bool? = nil, retired: Bool? = nil) {
+
+    init(
+        id: IDValue? = nil, inquired: Bool, required: Bool, desired: Bool, expired: Bool? = nil, inspired: Bool? = nil, retired: Bool? = nil
+    ) {
         self.id = id
         self.inquired = inquired
         self.required = required
@@ -459,7 +490,7 @@ private final class Flags: Model, @unchecked Sendable {
 
 private final class RawFlags: Model, @unchecked Sendable {
     static let schema = "flags"
-    
+
     @ID(key: .id) var id: UUID?
     @Field(key: "inquired") var inquired: Bool
     @Field(key: "required") var required: Int
@@ -467,7 +498,7 @@ private final class RawFlags: Model, @unchecked Sendable {
     @OptionalField(key: "expired") var expired: Bool?
     @OptionalField(key: "inspired") var inspired: Int?
     @OptionalField(key: "retired") var retired: String?
-    
+
     init() {}
 }
 
@@ -483,7 +514,7 @@ private struct FlagsMigration: Migration {
             .field("retired", .string)
             .create()
     }
-    
+
     func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(Flags.schema)
             .delete()

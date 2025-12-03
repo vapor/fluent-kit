@@ -6,30 +6,30 @@ public struct SQLQueryConverter {
     public init(delegate: any SQLConverterDelegate) {
         self.delegate = delegate
     }
-    
+
     public func convert(_ fluent: DatabaseQuery) -> any SQLExpression {
         let sql: any SQLExpression
-        
+
         switch fluent.action {
-        case .read:            sql = self.select(fluent)
-        case .aggregate:       sql = self.select(fluent)
-        case .create:          sql = self.insert(fluent)
-        case .update:          sql = self.update(fluent)
-        case .delete:          sql = self.delete(fluent)
+        case .read: sql = self.select(fluent)
+        case .aggregate: sql = self.select(fluent)
+        case .create: sql = self.insert(fluent)
+        case .update: sql = self.update(fluent)
+        case .delete: sql = self.delete(fluent)
         case .custom(let any): sql = custom(any)
         }
         return sql
     }
-    
+
     // MARK: Private
-    
+
     private func delete(_ query: DatabaseQuery) -> any SQLExpression {
         var delete = SQLDelete(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
 
         delete.predicate = self.filters(query.filters)
         return delete
     }
-    
+
     private func update(_ query: DatabaseQuery) -> any SQLExpression {
         var update = SQLUpdate(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
 
@@ -38,11 +38,11 @@ public struct SQLQueryConverter {
         }
         update.values = query.fields.compactMap { field -> (any SQLExpression)? in
             let key: FieldKey
-            
+
             switch field {
-            case let .path(path, schema) where schema == query.schema:
+            case .path(let path, let schema) where schema == query.schema:
                 key = path[0]
-            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space:
+            case .extendedPath(let path, let schema, let space) where schema == query.schema && space == query.space:
                 key = path[0]
             default:
                 return nil
@@ -55,10 +55,10 @@ public struct SQLQueryConverter {
         update.predicate = self.filters(query.filters)
         return update
     }
-    
+
     private func select(_ query: DatabaseQuery) -> any SQLExpression {
         var select = SQLSelect()
-        
+
         select.tables.append(SQLKit.SQLQualifiedTable(query.schema, space: query.space))
         switch query.action {
         case .read:
@@ -89,41 +89,43 @@ public struct SQLQueryConverter {
         }
         return select
     }
-    
+
     private func insert(_ query: DatabaseQuery) -> any SQLExpression {
         var insert = SQLInsert(table: SQLKit.SQLQualifiedTable(query.schema, space: query.space))
 
         // 1. Load the first set of inputs to the query, used as a basis to validate uniformity of all inputs.
-        guard let firstInput = query.input.first, case let .dictionary(firstValues) = firstInput else {
+        guard let firstInput = query.input.first, case .dictionary(let firstValues) = firstInput else {
             fatalError("Unexpected query input: \(query.input)")
         }
-        
+
         // 2. Translate the list of fields from the query, which are given in a meaningful, deterministic order, into
         //    column designators.
-        let keys = query.fields.compactMap { field -> FieldKey? in switch field {
-            case let .path(path, schema) where schema == query.schema:
+        let keys = query.fields.compactMap { field -> FieldKey? in
+            switch field {
+            case .path(let path, let schema) where schema == query.schema:
                 return path[0]
-            case let .extendedPath(path, schema, space) where schema == query.schema && space == query.space:
+            case .extendedPath(let path, let schema, let space) where schema == query.schema && space == query.space:
                 return path[0]
             default:
                 return nil
-        } }
-        
+            }
+        }
+
         // 3. Filter the list of columns so that only those actually provided are specified to the insert query, since
         //    often a query will insert only some of a model's fields while still listing all of them.
         let usedKeys = keys.filter {
             firstValues.keys.contains($0)
         }
-        
+
         // 4. Validate each set of inputs, making sure it provides exactly the keys as the first, and convert the sets
         //    to their underlying SQL representations.
         let dictionaries = query.input.map { input -> [FieldKey: any SQLExpression] in
-            guard case let .dictionary(value) = input else { fatalError("Unexpected query input: \(input)") }
+            guard case .dictionary(let value) = input else { fatalError("Unexpected query input: \(input)") }
             guard Set(value.keys).symmetricDifference(usedKeys).isEmpty else { fatalError("Non-uniform query input: \(query.input)") }
-            
+
             return value.mapValues(self.value(_:))
         }
-        
+
         // 5. Provide the list of columns and the sets of inserted values to the actual query, always specifying in the
         //    same order as the original field list.
         insert.columns = usedKeys.map { SQLColumn(self.key($0)) }
@@ -131,7 +133,7 @@ public struct SQLQueryConverter {
 
         return insert
     }
-    
+
     private func filters(_ filters: [DatabaseQuery.Filter]) -> (any SQLExpression)? {
         guard !filters.isEmpty else {
             return nil
@@ -162,7 +164,7 @@ public struct SQLQueryConverter {
             custom(any)
         }
     }
-    
+
     private func join(_ join: DatabaseQuery.Join) -> any SQLExpression {
         switch join {
         case .custom(let any):
@@ -178,21 +180,21 @@ public struct SQLQueryConverter {
             self.joinCondition(space: space, schema: schema, alias: alias, method: method, filters: filters)
         }
     }
-    
+
     private func joinCondition(
         space: String? = nil, schema: String,
         alias: String?,
         method: DatabaseQuery.Join.Method,
         filters: [DatabaseQuery.Filter]
     ) -> any SQLExpression {
-        let table: any SQLExpression = alias.map {
-            SQLAlias(SQLKit.SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0))
-        } ??
-            SQLKit.SQLQualifiedTable(schema, space: space)
-        
+        let table: any SQLExpression =
+            alias.map {
+                SQLAlias(SQLKit.SQLQualifiedTable(schema, space: space), as: SQLIdentifier($0))
+            } ?? SQLKit.SQLQualifiedTable(schema, space: space)
+
         return SQLJoin(method: self.joinMethod(method), table: table, expression: self.filters(filters) ?? SQLLiteral.boolean(true))
     }
-    
+
     private func joinMethod(_ method: DatabaseQuery.Join.Method) -> any SQLExpression {
         switch method {
         case .inner:
@@ -203,7 +205,7 @@ public struct SQLQueryConverter {
             custom(any)
         }
     }
-    
+
     private func field(_ field: DatabaseQuery.Field, aliased: Bool = false) -> any SQLExpression {
         switch field {
         case .custom(let any):
@@ -214,10 +216,10 @@ public struct SQLQueryConverter {
             self.fieldPath(path, space: space, schema: schema, aliased: aliased)
         }
     }
-    
+
     private func fieldPath(_ path: [FieldKey], space: String? = nil, schema: String, aliased: Bool) -> any SQLExpression {
         let field: any SQLExpression
-        
+
         switch path.count {
         case 1:
             field = SQLColumn(SQLIdentifier(self.key(path[0])), table: SQLKit.SQLQualifiedTable(schema, space: space))
@@ -226,21 +228,21 @@ public struct SQLQueryConverter {
         default:
             fatalError("Field path must not be empty.")
         }
-        
+
         if aliased {
             return SQLAlias(field, as: [space, schema, self.key(path[0])].compactMap({ $0 }).joined(separator: "_"))
         } else {
             return field
         }
     }
-    
+
     private func aggregate(_ aggregate: DatabaseQuery.Aggregate, isUnique: Bool) -> any SQLExpression {
         switch aggregate {
         case .custom(let any):
             return custom(any)
         case .field(let field, let method):
             let name: String
-            
+
             switch method {
             case .average: name = "AVG"
             case .count: name = "COUNT"
@@ -249,7 +251,7 @@ public struct SQLQueryConverter {
             case .minimum: name = "MIN"
             case .custom(let custom): name = custom as! String
             }
-            
+
             return SQLAlias(
                 SQLFunction(
                     name,
@@ -261,7 +263,7 @@ public struct SQLQueryConverter {
             )
         }
     }
-    
+
     private func filter(_ filter: DatabaseQuery.Filter) -> any SQLExpression {
         switch filter {
         case .value(let field, let method, let value):
@@ -331,7 +333,7 @@ public struct SQLQueryConverter {
             return SQLGroupExpression(expression)
         }
     }
-    
+
     private func relation(_ relation: DatabaseQuery.Filter.Relation) -> any SQLExpression {
         switch relation {
         case .and:
@@ -365,7 +367,7 @@ public struct SQLQueryConverter {
             custom(any)
         }
     }
-    
+
     private func method(_ method: DatabaseQuery.Filter.Method) -> any SQLExpression {
         switch method {
         case .equality(let inverse):

@@ -2,15 +2,14 @@ import NIOCore
 
 extension Model {
     public typealias Siblings<To, Through> = SiblingsProperty<Self, To, Through>
-        where To: Model, Through: Model
+    where To: Model, Through: Model
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
-    where From: Model, To: Model, Through: Model
-{
+where From: Model, To: Model, Through: Model {
     public enum AttachMethod {
         /// Always create the pivot model
         case always
@@ -22,9 +21,9 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     public let from: KeyPath<Through, Through.Parent<From>>
     public let to: KeyPath<Through, Through.Parent<To>>
     var idValue: From.IDValue?
-    
+
     public var value: [To]?
-    
+
     /// Allows eager loading of pivot objects through the sibling relation.
     /// Example:
     ///
@@ -114,15 +113,15 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     public func attach(
         _ tos: [To],
         on database: any Database,
-        _ edit: (Through) -> () = { _ in }
+        _ edit: (Through) -> Void = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
-        
+
         var pivots: [Through] = []
         pivots.reserveCapacity(tos.count)
-        
+
         for to in tos {
             guard let toID = to.id else {
                 return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
@@ -148,7 +147,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         _ to: To,
         method: AttachMethod,
         on database: any Database,
-        _ edit: @escaping @Sendable (Through) -> () = { _ in }
+        _ edit: @escaping @Sendable (Through) -> Void = { _ in }
     ) -> EventLoopFuture<Void> {
         switch method {
         case .always:
@@ -173,7 +172,7 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     public func attach(
         _ to: To,
         on database: any Database,
-        _ edit: @Sendable (Through) -> () = { _ in }
+        _ edit: @Sendable (Through) -> Void = { _ in }
     ) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
@@ -199,10 +198,10 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
-        
+
         var toIDs: [To.IDValue] = []
         toIDs.reserveCapacity(tos.count)
-        
+
         for to in tos {
             guard let toID = to.id else {
                 return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
@@ -234,13 +233,13 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
             .filter(self.to.appending(path: \.$id) == toID)
             .delete()
     }
-    
+
     /// Detach all models by deleting all pivots from this model.
     public func detachAll(on database: any Database) -> EventLoopFuture<Void> {
         guard let fromID = self.idValue else {
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
-        
+
         return Through.query(on: database)
             .filter(self.from.appending(path: \.$id) == fromID)
             .delete()
@@ -269,7 +268,7 @@ extension SiblingsProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension SiblingsProperty: AnyProperty { }
+extension SiblingsProperty: AnyProperty {}
 
 extension SiblingsProperty: Property {
     public typealias Model = From
@@ -282,7 +281,7 @@ extension SiblingsProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         []
     }
-    
+
     public func input(to input: any DatabaseInput) {
         // siblings never has input
     }
@@ -311,7 +310,7 @@ extension SiblingsProperty: AnyCodableProperty {
     }
 
     public var skipPropertyEncoding: Bool {
-        self.value == nil // Avoids leaving an empty JSON object lying around in some cases.
+        self.value == nil  // Avoids leaving an empty JSON object lying around in some cases.
     }
 }
 
@@ -338,28 +337,26 @@ extension SiblingsProperty: EagerLoadable {
         _ relationKey: KeyPath<From, SiblingsProperty<From, To, Through>>,
         to builder: Builder
     )
-    where Builder : EagerLoadBuilder, From == Builder.Model
-    {
+    where Builder: EagerLoadBuilder, From == Builder.Model {
         self.eagerLoad(relationKey, withDeleted: false, to: builder)
     }
-    
+
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Siblings<To, Through>>,
         withDeleted: Bool,
         to builder: Builder
     )
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    where Builder: EagerLoadBuilder, Builder.Model == From {
         let loader = SiblingsEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
-
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, From.Siblings<To, Through>>,
         to builder: Builder
-    ) where
+    )
+    where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
@@ -370,10 +367,8 @@ extension SiblingsProperty: EagerLoadable {
     }
 }
 
-
 private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
-    where From: Model, Through: Model, To: Model
-{
+where From: Model, Through: Model, To: Model {
     let relationKey: KeyPath<From, From.Siblings<To, Through>>
     let withDeleted: Bool
 
@@ -403,8 +398,7 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
 }
 
 private struct ThroughSiblingsEagerLoader<From, To, Through, Loader>: EagerLoader
-    where From: Model, Through: Model, Loader: EagerLoader, Loader.Model == To
-{
+where From: Model, Through: Model, Loader: EagerLoader, Loader.Model == To {
     let relationKey: KeyPath<From, From.Siblings<To, Through>>
     let loader: Loader
 

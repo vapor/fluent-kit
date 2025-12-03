@@ -5,7 +5,7 @@ import XCTest
 
 public final class Galaxy: Model, @unchecked Sendable {
     public static let schema = "galaxies"
-    
+
     @ID
     public var id: UUID?
 
@@ -14,7 +14,7 @@ public final class Galaxy: Model, @unchecked Sendable {
 
     @Children(for: \.$galaxy)
     public var stars: [Star]
-    
+
     @Siblings(through: GalacticJurisdiction.self, from: \.$id.$galaxy, to: \.$id.$jurisdiction)
     public var jurisdictions: [Jurisdiction]
 
@@ -49,7 +49,7 @@ public struct GalaxySeed: AsyncMigration {
             "Andromeda",
             "Milky Way",
             "Pinwheel Galaxy",
-            "Messier 82"
+            "Messier 82",
         ]
         .map { Galaxy(name: $0) }
         .create(on: database)

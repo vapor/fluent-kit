@@ -4,7 +4,7 @@ extension Model {
     /// A convenience alias for ``CompositeOptionalChildProperty``. It is strongly recommended that callers use this
     /// alias rather than referencing ``CompositeOptionalChildProperty`` directly whenever possible.
     public typealias CompositeOptionalChild<To> = CompositeOptionalChildProperty<Self, To>
-        where To: FluentKit.Model, Self.IDValue: Fields
+    where To: FluentKit.Model, Self.IDValue: Fields
 }
 
 /// Declares an optional one-to-one relation between the referenced ("child") model and the referencing
@@ -59,10 +59,9 @@ extension Model {
 /// ```
 @propertyWrapper
 public final class CompositeOptionalChildProperty<From, To>: @unchecked Sendable
-    where From: Model, To: Model, From.IDValue: Fields
-{
+where From: Model, To: Model, From.IDValue: Fields {
     public typealias Key = CompositeRelationParentKey<From, To>
-    
+
     public let parentKey: Key
     var idValue: From.IDValue?
 
@@ -71,7 +70,7 @@ public final class CompositeOptionalChildProperty<From, To>: @unchecked Sendable
     public init(for parentKey: KeyPath<To, To.CompositeParent<From>>) {
         self.parentKey = .required(parentKey)
     }
-    
+
     public init(for parentKey: KeyPath<To, To.CompositeOptionalParent<From>>) {
         self.parentKey = .optional(parentKey)
     }
@@ -89,13 +88,13 @@ public final class CompositeOptionalChildProperty<From, To>: @unchecked Sendable
     }
 
     public var projectedValue: CompositeOptionalChildProperty<From, To> { self }
-    
+
     public var fromId: From.IDValue? {
         get { self.idValue }
         set { self.idValue = newValue }
     }
 
-    public func query(on database:any  Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
@@ -113,7 +112,7 @@ extension CompositeOptionalChildProperty: CustomStringConvertible {
     public var description: String { self.name }
 }
 
-extension CompositeOptionalChildProperty: AnyProperty { }
+extension CompositeOptionalChildProperty: AnyProperty {}
 
 extension CompositeOptionalChildProperty: Property {
     public typealias Model = From
@@ -124,7 +123,7 @@ extension CompositeOptionalChildProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] { [] }
     public func input(to input: any DatabaseInput) {}
     public func output(from output: any DatabaseOutput) throws {
-        if From.IDValue.keys.reduce(true, { $0 && output.contains($1) }) { // don't output unless all keys are present
+        if From.IDValue.keys.reduce(true, { $0 && output.contains($1) }) {  // don't output unless all keys are present
             self.idValue = From.IDValue()
             try self.idValue!.output(from: output)
         }
@@ -149,30 +148,29 @@ extension CompositeOptionalChildProperty: Relation {
 
 extension CompositeOptionalChildProperty: EagerLoadable {
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, CompositeOptionalChildProperty<From, To>>, to builder: Builder)
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
+    where Builder: EagerLoadBuilder, From == Builder.Model {
         self.eagerLoad(relationKey, withDeleted: false, to: builder)
     }
-    
-    public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, withDeleted: Bool, to builder: Builder)
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
+
+    public static func eagerLoad<Builder>(
+        _ relationKey: KeyPath<From, From.CompositeOptionalChild<To>>, withDeleted: Bool, to builder: Builder
+    )
+    where Builder: EagerLoadBuilder, Builder.Model == From {
         let loader = CompositeOptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
 
-
-    public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeOptionalChild<To>>, to builder: Builder)
-        where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    public static func eagerLoad<Loader, Builder>(
+        _ loader: Loader, through: KeyPath<From, From.CompositeOptionalChild<To>>, to builder: Builder
+    )
+    where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From {
         let loader = ThroughCompositeOptionalChildEagerLoader(relationKey: through, loader: loader)
         builder.add(loader: loader)
     }
 }
 
 private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model, From.IDValue: Fields
-{
+where From: Model, To: Model, From.IDValue: Fields {
     let relationKey: KeyPath<From, From.CompositeOptionalChild<To>>
     let withDeleted: Bool
 
@@ -180,7 +178,7 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
-        
+
         builder.group(.or) { query in
             _ = parentKey.queryFilterIds(ids, in: query)
         }
@@ -189,7 +187,7 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         }
         return builder.all().map {
             let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
-            
+
             for model in models {
                 model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
             }
@@ -198,8 +196,7 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
 }
 
 private struct ThroughCompositeOptionalChildEagerLoader<From, Through, Loader>: EagerLoader
-    where From: Model, From.IDValue: Fields, Loader: EagerLoader, Loader.Model == Through
-{
+where From: Model, From.IDValue: Fields, Loader: EagerLoader, Loader.Model == Through {
     let relationKey: KeyPath<From, From.CompositeOptionalChild<Through>>
     let loader: Loader
 

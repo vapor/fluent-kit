@@ -82,7 +82,8 @@ extension FluentError {
     }
 
     internal static func missingParentError<Child: Model, Parent: Model>(
-        _: Child.Type = Child.self, _: Parent.Type = Parent.self, keyPath: KeyPath<Child, Child.CompositeOptionalParent<Parent>>, id: Parent.IDValue
+        _: Child.Type = Child.self, _: Parent.Type = Parent.self, keyPath: KeyPath<Child, Child.CompositeOptionalParent<Parent>>,
+        id: Parent.IDValue
     ) -> Self where Parent.IDValue: Fields {
         .missingParent(
             from: "\(Child.self)",
@@ -104,7 +105,7 @@ public enum SiblingsPropertyError: Error, LocalizedError, CustomStringConvertibl
     ///
     /// Includes the relation name of the siblings property.
     case owningModelIdRequired(property: String)
-    
+
     /// An attempt was made to attach, detach, or check attachment to a siblings property of a model whose
     /// ID is not currently known (usually because that model has not yet been saved to the database).
     ///
@@ -114,20 +115,20 @@ public enum SiblingsPropertyError: Error, LocalizedError, CustomStringConvertibl
     ///
     /// Includes the relation name of the siblings property.
     case operandModelIdRequired(property: String)
-    
+
     // `CustomStringConvertible` conformance.
     public var description: String {
         switch self {
-        case .owningModelIdRequired(property: let property):
+        case .owningModelIdRequired(let property):
             "siblings relation \(property) is missing owning model's ID (owner likely unsaved)"
-        case .operandModelIdRequired(property: let property):
+        case .operandModelIdRequired(let property):
             "operant model for siblings relation \(property) has no ID (attach/detach/etc. model likely unsaved)"
         }
     }
-    
+
     // `CustomDebugStringConvertible` conformance.
     public var debugDescription: String { self.description }
-    
+
     // `LocalizedError` conformance.
     public var errorDescription: String? { self.description }
 

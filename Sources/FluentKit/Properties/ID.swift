@@ -2,15 +2,14 @@ import Foundation
 
 extension Model {
     public typealias ID<Value> = IDProperty<Self, Value>
-        where Value: Codable & Sendable
+    where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class IDProperty<Model, Value>: @unchecked Sendable
-    where Model: FluentKit.Model, Value: Codable & Sendable
-{
+where Model: FluentKit.Model, Value: Codable & Sendable {
     public enum Generator {
         case user
         case random
@@ -44,7 +43,7 @@ public final class IDProperty<Model, Value>: @unchecked Sendable
     public var projectedValue: IDProperty<Model, Value> {
         self
     }
-    
+
     public var wrappedValue: Value? {
         get { self.value }
         set { self.value = newValue }
@@ -56,11 +55,11 @@ public final class IDProperty<Model, Value>: @unchecked Sendable
     public convenience init() where Value == UUID {
         self.init(custom: .id, generatedBy: .random)
     }
-    
+
     /// Helper type for compatibility initializer syntax. Do not use this type directly.
     public enum _DefaultIDFieldKey: ExpressibleByStringLiteral {
         case id
-        
+
         @available(*, deprecated, message: "The `@ID(key: \"id\")` syntax is deprecated. Use `@ID` or `@ID()` instead.")
         public init(stringLiteral value: String) {
             guard value == "id" else {
@@ -69,7 +68,7 @@ public final class IDProperty<Model, Value>: @unchecked Sendable
             self = .id
         }
     }
-    
+
     /// Compatibility syntax for initializing an `ID` property.
     ///
     /// This syntax is no longer recommended; use `@ID` instead.
@@ -118,7 +117,7 @@ extension IDProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension IDProperty: AnyProperty { }
+extension IDProperty: AnyProperty {}
 
 extension IDProperty: Property {
     public var value: Value? {
@@ -139,7 +138,7 @@ extension IDProperty: AnyQueryableProperty {
     }
 }
 
-extension IDProperty: QueryableProperty { }
+extension IDProperty: QueryableProperty {}
 
 // MARK: Query-addressable
 
@@ -184,7 +183,7 @@ extension IDProperty: AnyCodableProperty {
 
 // MARK: ID
 
-extension IDProperty: AnyID { }
+extension IDProperty: AnyID {}
 
 protocol AnyID: AnyObject {
     func generate()

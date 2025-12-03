@@ -10,13 +10,13 @@ extension FluentBenchmarker {
 
     private func testCodable_decodeError() throws {
         let json = """
-        {
-          "title": "Test Question",
-          "body": "Test Question Body",
-          "answer": "Test Answer",
-          "project": "TestProject"
-        }
-        """
+            {
+              "title": "Test Question",
+              "body": "Test Question Body",
+              "answer": "Test Answer",
+              "project": "TestProject"
+            }
+            """
 
         do {
             _ = try JSONDecoder().decode(Question.self, from: .init(json.utf8))
@@ -46,7 +46,7 @@ final class Question: Model, @unchecked Sendable {
     @Parent(key: "project_id")
     var project: Project
 
-    init() { }
+    init() {}
 
     init(id: Int? = nil, title: String, body: String = "", answer: String = "", projectId: Project.IDValue) {
         self.id = id
@@ -72,7 +72,7 @@ final class Project: Model, @unchecked Sendable {
     @Children(for: \.$project)
     var questions: [Question]
 
-    init() { }
+    init() {}
 
     init(id: String, title: String, links: [String] = []) {
         self.id = id

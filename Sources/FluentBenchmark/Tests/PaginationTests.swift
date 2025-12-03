@@ -3,9 +3,12 @@ import XCTest
 
 extension FluentBenchmarker {
     public func testPagination() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             do {
                 let planetsPage1 = try Planet.query(on: self.database)
                     .sort(\.$name)
@@ -53,9 +56,12 @@ extension FluentBenchmarker {
     }
 
     public func testPaginationDoesntCrashWithInvalidValues() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             do {
                 _ = try Planet.query(on: self.database)
                     .sort(\.$name)

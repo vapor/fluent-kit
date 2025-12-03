@@ -1,17 +1,17 @@
 import NIOCore
+
 import struct SQLKit.SomeCodingKey
 
 extension Model {
     public typealias Parent<To> = ParentProperty<Self, To>
-        where To: FluentKit.Model
+    where To: FluentKit.Model
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class ParentProperty<From, To>: @unchecked Sendable
-    where From: Model, To: Model
-{
+where From: Model, To: Model {
     @FieldProperty<From, To.IDValue>
     public var id: To.IDValue
 
@@ -35,7 +35,7 @@ public final class ParentProperty<From, To>: @unchecked Sendable
         guard !(To.IDValue.self is any Fields.Type) else {
             fatalError("Can not use @Parent to target a model with composite ID; use @CompositeParent instead.")
         }
-        
+
         self._id = .init(key: key)
     }
 
@@ -67,7 +67,7 @@ extension ParentProperty: Relation {
 
 // MARK: Property
 
-extension ParentProperty: AnyProperty { }
+extension ParentProperty: AnyProperty {}
 
 extension ParentProperty: Property {
     public typealias Model = From
@@ -91,7 +91,7 @@ extension ParentProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         self.$id.keys
     }
-    
+
     public func input(to input: any DatabaseInput) {
         self.$id.input(to: input)
     }
@@ -126,28 +126,26 @@ extension ParentProperty: EagerLoadable {
         _ relationKey: KeyPath<From, ParentProperty<From, To>>,
         to builder: Builder
     )
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
+    where Builder: EagerLoadBuilder, From == Builder.Model {
         self.eagerLoad(relationKey, withDeleted: false, to: builder)
     }
-    
+
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.Parent<To>>,
         withDeleted: Bool,
         to builder: Builder
     )
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    where Builder: EagerLoadBuilder, Builder.Model == From {
         let loader = ParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
-
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, From.Parent<To>>,
         to builder: Builder
-    ) where
+    )
+    where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
@@ -159,8 +157,7 @@ extension ParentProperty: EagerLoadable {
 }
 
 private struct ParentEagerLoader<From, To>: EagerLoader
-    where From: FluentKit.Model, To: FluentKit.Model
-{
+where From: FluentKit.Model, To: FluentKit.Model {
     let relationKey: KeyPath<From, ParentProperty<From, To>>
     let withDeleted: Bool
 
@@ -188,8 +185,7 @@ private struct ParentEagerLoader<From, To>: EagerLoader
 }
 
 private struct ThroughParentEagerLoader<From, Through, Loader>: EagerLoader
-    where From: Model, Loader: EagerLoader, Loader.Model == Through
-{
+where From: Model, Loader: EagerLoader, Loader.Model == Through {
     let relationKey: KeyPath<From, From.Parent<Through>>
     let loader: Loader
 

@@ -22,9 +22,12 @@ extension FluentBenchmarker {
     }
 
     private func testModel_uuid() throws {
-        try self.runTest(#function, [
-            UserMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             try User(name: "Vapor")
                 .save(on: self.database).wait()
             let count = try User.query(on: self.database).count().wait()
@@ -33,12 +36,15 @@ extension FluentBenchmarker {
     }
 
     private func testModel_decode() throws {
-        try self.runTest(#function, [
-            TodoMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TodoMigration()
+            ]
+        ) {
             let todo = """
-            {"title": "Finish Vapor 4"}
-            """
+                {"title": "Finish Vapor 4"}
+                """
             try JSONDecoder().decode(Todo.self, from: todo.data(using: .utf8)!)
                 .save(on: self.database).wait()
             guard try Todo.query(on: self.database).count().wait() == 1 else {
@@ -49,9 +55,12 @@ extension FluentBenchmarker {
     }
 
     private func testModel_nullField() throws {
-        try runTest(#function, [
-            FooMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let foo = Foo(bar: "test")
             try foo.save(on: self.database).wait()
             guard foo.bar != nil else {
@@ -77,9 +86,10 @@ extension FluentBenchmarker {
                 .all().wait()
             XCTAssertEqual(all.count, 1)
 
-            guard let fetched = try Foo.query(on: self.database)
-                .filter(\.$id == foo.id!)
-                .first().wait()
+            guard
+                let fetched = try Foo.query(on: self.database)
+                    .filter(\.$id == foo.id!)
+                    .first().wait()
             else {
                 XCTFail("no model returned")
                 return
@@ -92,9 +102,12 @@ extension FluentBenchmarker {
     }
 
     private func testModel_nullField_batchCreate() throws {
-        try runTest(#function, [
-            FooMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let a = Foo(bar: "test")
             let b = Foo(bar: nil)
             try [a, b].create(on: self.database).wait()
@@ -102,9 +115,12 @@ extension FluentBenchmarker {
     }
 
     private func testModel_idGeneration() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
             let galaxy = Galaxy(name: "Milky Way")
             guard galaxy.id == nil else {
                 XCTFail("id should not be set")
@@ -126,9 +142,12 @@ extension FluentBenchmarker {
     }
 
     private func testModel_jsonColumn() throws {
-        try runTest(#function, [
-            BarMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                BarMigration()
+            ]
+        ) {
             let bar = Bar(baz: .init(quux: "test"))
             try bar.save(on: self.database).wait()
 
@@ -146,9 +165,12 @@ extension FluentBenchmarker {
     }
 
     private func testModel_hasChanges() throws {
-        try runTest(#function, [
-            FooMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             // Test create
             let foo = Foo(bar: "test")
             XCTAssertTrue(foo.hasChanges)
@@ -156,9 +178,10 @@ extension FluentBenchmarker {
             XCTAssertFalse(foo.hasChanges)
 
             // Test update
-            guard let fetched = try Foo.query(on: self.database)
-                .filter(\.$id == foo.id!)
-                .first().wait()
+            guard
+                let fetched = try Foo.query(on: self.database)
+                    .filter(\.$id == foo.id!)
+                    .first().wait()
             else {
                 XCTFail("no model returned")
                 return
@@ -181,7 +204,7 @@ extension FluentBenchmarker {
             }
         }
     }
-    
+
     private func testModel_useOfFieldsWithoutGroup() throws {
         try runTest(#function, []) {
             final class Contained: Fields, @unchecked Sendable {
@@ -195,7 +218,7 @@ extension FluentBenchmarker {
                 @Field(key: "primary") var primary: Contained
                 @Field(key: "additional") var additional: [Contained]
                 init() {}
-                
+
                 struct Migration: FluentKit.Migration {
                     func prepare(on database: any Database) -> EventLoopFuture<Void> {
                         database.schema(Enclosure.schema)
@@ -207,10 +230,10 @@ extension FluentBenchmarker {
                     func revert(on database: any Database) -> EventLoopFuture<Void> { database.schema(Enclosure.schema).delete() }
                 }
             }
-            
+
             try (self.database as? any SQLDatabase)?.drop(table: Enclosure.schema).ifExists().run().wait()
             try Enclosure.Migration().prepare(on: self.database).wait()
-            
+
             do {
                 let enclosure = Enclosure()
                 enclosure.primary = .init()
@@ -245,13 +268,14 @@ struct BadFooOutput: DatabaseOutput {
     }
 
     func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
-        where T : Decodable
-    {
-        throw DecodingError.typeMismatch(T.self, .init(
-            codingPath: [],
-            debugDescription: "Failed to decode",
-            underlyingError: nil
-        ))
+    where T: Decodable {
+        throw DecodingError.typeMismatch(
+            T.self,
+            .init(
+                codingPath: [],
+                debugDescription: "Failed to decode",
+                underlyingError: nil
+            ))
     }
 
     var description: String {
@@ -268,7 +292,7 @@ private final class Foo: Model, @unchecked Sendable {
     @OptionalField(key: "bar")
     var bar: String?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, bar: String?) {
         self.id = id
@@ -298,7 +322,7 @@ private final class User: Model, @unchecked Sendable {
     @Field(key: "name")
     var name: String
 
-    init() { }
+    init() {}
     init(id: UUID? = nil, name: String) {
         self.id = id
         self.name = name
@@ -327,7 +351,7 @@ private final class Todo: Model, @unchecked Sendable {
     @Field(key: "title")
     var title: String
 
-    init() { }
+    init() {}
     init(id: UUID? = nil, title: String) {
         self.id = id
         self.title = title
@@ -360,7 +384,7 @@ private final class Bar: Model, @unchecked Sendable {
     @Field(key: "baz")
     var baz: Baz
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, baz: Baz) {
         self.id = id

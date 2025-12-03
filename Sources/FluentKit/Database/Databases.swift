@@ -1,8 +1,9 @@
 import Foundation
-import struct NIOConcurrencyHelpers.NIOLock
+import Logging
 import NIOCore
 import NIOPosix
-import Logging
+
+import struct NIOConcurrencyHelpers.NIOLock
 
 public struct DatabaseConfigurationFactory: Sendable {
     public let make: @Sendable () -> any DatabaseConfiguration
@@ -12,7 +13,7 @@ public struct DatabaseConfigurationFactory: Sendable {
     }
 }
 
-public final class Databases: @unchecked Sendable { // @unchecked is safe here; mutable data is protected by lock
+public final class Databases: @unchecked Sendable {  // @unchecked is safe here; mutable data is protected by lock
     public let eventLoopGroup: any EventLoopGroup
     public let threadPool: NIOThreadPool
 
@@ -25,7 +26,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
 
     // Synchronize access across threads.
     private var lock: NIOLock
-    
+
     public struct Middleware {
         let databases: Databases
 
@@ -40,7 +41,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
                 self.databases.configurations[id] = configuration
             }
         }
-        
+
         public func clear(on id: DatabaseID? = nil) {
             self.databases.lock.withLockVoid {
                 let id = id ?? self.databases._requireDefaultID()
@@ -54,7 +55,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
     public var middleware: Middleware {
         .init(databases: self)
     }
-    
+
     public init(threadPool: NIOThreadPool, on eventLoopGroup: any EventLoopGroup) {
         self.eventLoopGroup = eventLoopGroup
         self.threadPool = threadPool
@@ -62,7 +63,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
         self.drivers = [:]
         self.lock = .init()
     }
-    
+
     public func use(
         _ configuration: DatabaseConfigurationFactory,
         as id: DatabaseID,
@@ -70,7 +71,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
     ) {
         self.use(configuration.make(), as: id, isDefault: isDefault)
     }
-    
+
     public func use(
         _ driver: any DatabaseConfiguration,
         as id: DatabaseID,
@@ -89,13 +90,13 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
             self.defaultID = id
         }
     }
-    
+
     public func configuration(for id: DatabaseID? = nil) -> (any DatabaseConfiguration)? {
         self.lock.withLock {
             self.configurations[id ?? self._requireDefaultID()]
         }
     }
-    
+
     public func database(
         _ id: DatabaseID? = nil,
         logger: Logger,
@@ -150,10 +151,10 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
             self.drivers = [:]
         }
     }
-    
+
     public func shutdownAsync() async {
         var driversToShutdown: [any DatabaseDriver] = []
-        
+
         self.lock.withLockVoid {
             for driver in self.drivers.values {
                 driversToShutdown.append(driver)
@@ -171,7 +172,7 @@ public final class Databases: @unchecked Sendable { // @unchecked is safe here; 
         }
         return configuration
     }
-    
+
     private func _requireDefaultID() -> DatabaseID {
         guard let id = self.defaultID else {
             fatalError("No default database configured.")

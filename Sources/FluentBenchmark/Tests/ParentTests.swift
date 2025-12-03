@@ -11,9 +11,12 @@ extension FluentBenchmarker {
     }
 
     private func testParent_serialization() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let stars = try Star.query(on: self.database).all().wait()
 
             let encoded = try JSONEncoder().encode(stars)
@@ -24,11 +27,14 @@ extension FluentBenchmarker {
             XCTAssertEqual(stars.map { $0.$galaxy.id }, decoded.map { $0.galaxy.id })
         }
     }
-    
+
     private func testParent_get() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .all().wait()
 
@@ -46,12 +52,16 @@ extension FluentBenchmarker {
     }
 
     private func testParent_value() throws {
-        try runTest(#function, [
-            SolarSystem()
-        ]) {
-            guard let earth = try Planet.query(on: self.database)
-                .filter(\.$name == "Earth")
-                .first().wait()
+        try runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
+            guard
+                let earth = try Planet.query(on: self.database)
+                    .filter(\.$name == "Earth")
+                    .first().wait()
             else {
                 XCTFail("Could not load Planet earth")
                 return

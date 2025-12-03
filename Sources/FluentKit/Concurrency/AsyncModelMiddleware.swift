@@ -2,7 +2,7 @@ import NIOCore
 
 public protocol AsyncModelMiddleware: AnyModelMiddleware {
     associatedtype Model: FluentKit.Model
-    
+
     func create(model: Model, on db: any Database, next: any AnyAsyncModelResponder) async throws
     func update(model: Model, on db: any Database, next: any AnyAsyncModelResponder) async throws
     func delete(model: Model, force: Bool, on db: any Database, next: any AnyAsyncModelResponder) async throws
@@ -40,23 +40,23 @@ extension AsyncModelMiddleware {
             }
         }
     }
-    
+
     public func create(model: Model, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         try await next.create(model, on: db)
     }
-    
+
     public func update(model: Model, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         try await next.update(model, on: db)
     }
-    
+
     public func delete(model: Model, force: Bool, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         try await next.delete(model, force: force, on: db)
     }
-    
+
     public func softDelete(model: Model, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         try await next.softDelete(model, on: db)
     }
-    
+
     public func restore(model: Model, on db: any Database, next: any AnyAsyncModelResponder) async throws {
         try await next.restore(model, on: db)
     }

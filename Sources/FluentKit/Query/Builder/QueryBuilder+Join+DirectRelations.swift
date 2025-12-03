@@ -1,6 +1,6 @@
 extension QueryBuilder {
     // MARK: Parent, children, and siblings joins
-    
+
     /// This will join a foreign table based on a `@Parent` relation
     ///
     /// This will not decode the joined data, but can be used in order to filter.
@@ -84,7 +84,7 @@ extension QueryBuilder {
     ) -> Self {
         self.join(from: Model.self, parent: parent, method: method)
     }
-    
+
     /// This will join a foreign table based on a `@OptionalChild` relation
     ///
     /// This will not decode the joined data, but can be used in order to filter.
@@ -192,13 +192,13 @@ extension QueryBuilder {
     public func join<From, To, Through>(
         from model: From.Type,
         siblings: KeyPath<From, SiblingsProperty<From, To, Through>>
-    ) -> Self
-        where From: FluentKit.Model, To: FluentKit.Model, Through: FluentKit.Model
-    {
+    ) -> Self where From: FluentKit.Model, To: FluentKit.Model, Through: FluentKit.Model {
         let siblings = From()[keyPath: siblings]
-        
-        return self.join(Through.self, on: siblings.from.appending(path: \.$id) == \From._$id)
-                   .join(To.self, on: siblings.to.appending(path: \.$id) == \To._$id)
+
+        return
+            self
+            .join(Through.self, on: siblings.from.appending(path: \.$id) == \From._$id)
+            .join(To.self, on: siblings.to.appending(path: \.$id) == \To._$id)
     }
 
     /// This will join the foreign table based on a `@Siblings`relation
@@ -216,9 +216,7 @@ extension QueryBuilder {
     @discardableResult
     public func join<To, Through>(
         siblings: KeyPath<Model, SiblingsProperty<Model, To, Through>>
-    ) -> Self
-        where To: FluentKit.Model, Through: FluentKit.Model
-    {
+    ) -> Self where To: FluentKit.Model, Through: FluentKit.Model {
         self.join(from: Model.self, siblings: siblings)
     }
 }

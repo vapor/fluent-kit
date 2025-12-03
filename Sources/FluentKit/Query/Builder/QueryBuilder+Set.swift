@@ -1,6 +1,6 @@
 extension QueryBuilder {
     // MARK: Set
-    
+
     @discardableResult
     public func set(_ data: [FieldKey: DatabaseQuery.Value]) -> Self {
         self.set([data])
@@ -20,9 +20,7 @@ extension QueryBuilder {
     public func set<Field>(
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
-    ) -> Self
-        where Field: QueryableProperty, Field.Model == Model.IDValue
-    {
+    ) -> Self where Field: QueryableProperty, Field.Model == Model.IDValue {
         if self.query.input.isEmpty {
             self.query.input = [.dictionary([:])]
         }
@@ -44,9 +42,7 @@ extension QueryBuilder {
     public func set<Field>(
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
-    ) -> Self
-        where Field: QueryableProperty, Field.Model == Model
-    {
+    ) -> Self where Field: QueryableProperty, Field.Model == Model {
         if self.query.input.isEmpty {
             self.query.input = [.dictionary([:])]
         }

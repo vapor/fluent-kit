@@ -1,5 +1,5 @@
-import NIOCore
 import Foundation
+import NIOCore
 
 final class EnumMetadata: Model, @unchecked Sendable {
     static let schema = "_fluent_enums"

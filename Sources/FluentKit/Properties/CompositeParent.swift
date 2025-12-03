@@ -1,11 +1,12 @@
 import NIOCore
+
 import struct SQLKit.SomeCodingKey
 
 extension Model {
     /// A convenience alias for ``CompositeParentProperty``. It is strongly recommended that callers use this
     /// alias rather than referencing ``CompositeParentProperty`` directly whenever possible.
     public typealias CompositeParent<To> = CompositeParentProperty<Self, To>
-        where To: Model, To.IDValue: Fields
+    where To: Model, To.IDValue: Fields
 }
 
 /// Declares a one-to-many relation between the referenced ("parent") model and the referencing ("child") model,
@@ -66,8 +67,7 @@ extension Model {
 /// ```
 @propertyWrapper @dynamicMemberLookup
 public final class CompositeParentProperty<From, To>: @unchecked Sendable
-    where From: Model, To: Model, To.IDValue: Fields
-{
+where From: Model, To: Model, To.IDValue: Fields {
     public let prefix: FieldKey
     public let prefixingStrategy: KeyPrefixingStrategy
     public var id: To.IDValue = .init()
@@ -84,7 +84,7 @@ public final class CompositeParentProperty<From, To>: @unchecked Sendable
     }
 
     public var projectedValue: CompositeParentProperty<From, To> { self }
-    
+
     /// Configure a ``CompositeParentProperty`` with a key prefix and prefix strategy.
     ///
     /// - Parameters:
@@ -101,8 +101,7 @@ public final class CompositeParentProperty<From, To>: @unchecked Sendable
     }
 
     public subscript<Nested>(dynamicMember keyPath: KeyPath<To.IDValue, Nested>) -> Nested
-        where Nested: Property
-    {
+    where Nested: Property {
         self.id[keyPath: keyPath]
     }
 }
@@ -117,7 +116,7 @@ extension CompositeParentProperty: Relation {
     public var name: String {
         "CompositeParent<\(From.self), \(To.self)>(prefix: \(self.prefix), strategy: \(self.prefixingStrategy))"
     }
-    
+
     public func load(on database: any Database) -> EventLoopFuture<Void> {
         self.query(on: database)
             .first()
@@ -140,11 +139,11 @@ extension CompositeParentProperty: AnyDatabaseProperty {
             self.prefixingStrategy.apply(prefix: self.prefix, to: $0)
         }
     }
-    
+
     public func input(to input: any DatabaseInput) {
         self.id.input(to: input.prefixed(by: self.prefix, using: self.prefixingStrategy))
     }
-    
+
     public func output(from output: any DatabaseOutput) throws {
         try self.id.output(from: output.prefixed(by: self.prefix, using: self.prefixingStrategy))
     }
@@ -153,7 +152,7 @@ extension CompositeParentProperty: AnyDatabaseProperty {
 extension CompositeParentProperty: AnyCodableProperty {
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
-        
+
         if let value = self.value {
             try container.encode(value)
         } else {
@@ -169,30 +168,26 @@ extension CompositeParentProperty: AnyCodableProperty {
 
 extension CompositeParentProperty: EagerLoadable {
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, CompositeParentProperty<From, To>>, to builder: Builder)
-    where Builder : EagerLoadBuilder, From == Builder.Model
-    {
+    where Builder: EagerLoadBuilder, From == Builder.Model {
         self.eagerLoad(relationKey, withDeleted: false, to: builder)
     }
-    
+
     public static func eagerLoad<Builder>(_ relationKey: KeyPath<From, From.CompositeParent<To>>, withDeleted: Bool, to builder: Builder)
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    where Builder: EagerLoadBuilder, Builder.Model == From {
         builder.add(loader: CompositeParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted))
     }
 
     public static func eagerLoad<Loader, Builder>(_ loader: Loader, through: KeyPath<From, From.CompositeParent<To>>, to builder: Builder)
-        where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    where Loader: EagerLoader, Loader.Model == To, Builder: EagerLoadBuilder, Builder.Model == From {
         builder.add(loader: ThroughCompositeParentEagerLoader(relationKey: through, loader: loader))
     }
 }
 
 private struct CompositeParentEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model, To.IDValue: Fields
-{
+where From: Model, To: Model, To.IDValue: Fields {
     let relationKey: KeyPath<From, From.CompositeParent<To>>
     let withDeleted: Bool
-    
+
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
@@ -224,14 +219,14 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
 }
 
 private struct ThroughCompositeParentEagerLoader<From, Through, Loader>: EagerLoader
-    where From: Model, Loader: EagerLoader, Loader.Model == Through, Through.IDValue: Fields
-{
+where From: Model, Loader: EagerLoader, Loader.Model == Through, Through.IDValue: Fields {
     let relationKey: KeyPath<From, From.CompositeParent<Through>>
     let loader: Loader
-    
+
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        self.loader.run(models: models.map {
-            $0[keyPath: self.relationKey].value!
-        }, on: database)
+        self.loader.run(
+            models: models.map {
+                $0[keyPath: self.relationKey].value!
+            }, on: database)
     }
 }

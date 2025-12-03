@@ -14,118 +14,100 @@ extension QueryBuilder {
     }
 
     public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
-        where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable {
         self.aggregate(.count, key, as: Int.self)
     }
 
     public func count<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Int>
-        where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable {
         self.aggregate(.count, key, as: Int.self)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable {
         self.aggregate(.sum, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable {
         self.aggregate(.sum, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model {
         self.aggregate(.sum, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `SUM()`, try `.aggregate(.sum, key, as: ...)` for now
     public func sum<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue {
         self.aggregate(.sum, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable {
         self.aggregate(.average, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable {
         self.aggregate(.average, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model {
         self.aggregate(.average, key)
     }
 
     // TODO: `Field.Value` is not always the correct result type for `AVG()`, try `.aggregate(.average, key, as: ...)` for now
     public func average<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue {
         self.aggregate(.average, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable {
         self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable {
         self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model {
         self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue {
         self.aggregate(.minimum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable {
         self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value?>
-        where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model.IDValue, Field.Value: Sendable {
         self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model {
         self.aggregate(.maximum, key)
     }
 
     public func max<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<Field.Value>
-        where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue
-    {
+    where Field: QueryableProperty, Field.Value: OptionalType & Sendable, Field.Model == Model.IDValue {
         self.aggregate(.maximum, key)
     }
 
@@ -134,8 +116,7 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Field: QueryableProperty, Field.Model == Model, Result: Codable & Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model, Result: Codable & Sendable {
         self.aggregate(method, Model.path(for: field), as: Result.self)
     }
 
@@ -144,19 +125,16 @@ extension QueryBuilder {
         _ field: KeyPath<Model, Field>,
         as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Field: QueryableProperty, Field.Model == Model.IDValue, Result: Codable & Sendable
-    {
+    where Field: QueryableProperty, Field.Model == Model.IDValue, Result: Codable & Sendable {
         self.aggregate(method, Model.path(for: field), as: Result.self)
     }
-
 
     public func aggregate<Result>(
         _ method: DatabaseQuery.Aggregate.Method,
         _ field: FieldKey,
         as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Result: Codable & Sendable
-    {
+    where Result: Codable & Sendable {
         self.aggregate(method, [field], as: Result.self)
     }
 
@@ -165,8 +143,7 @@ extension QueryBuilder {
         _ path: [FieldKey],
         as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Result: Codable & Sendable
-    {
+    where Result: Codable & Sendable {
         self.aggregate(
             .field(
                 .extendedPath(path, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
@@ -175,13 +152,12 @@ extension QueryBuilder {
             as: Result.self
         )
     }
-    
+
     public func aggregate<Result>(
         _ aggregate: DatabaseQuery.Aggregate,
         as: Result.Type = Result.self
     ) -> EventLoopFuture<Result>
-        where Result: Codable & Sendable
-    {
+    where Result: Codable & Sendable {
         let copy = self.copy()
         // Remove all eager load requests otherwise we try to
         // read IDs from the aggreate reply when performing

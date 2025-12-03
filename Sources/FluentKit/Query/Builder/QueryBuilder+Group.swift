@@ -2,7 +2,7 @@ extension QueryBuilder {
     @discardableResult
     public func group(
         _ relation: DatabaseQuery.Filter.Relation = .and,
-        _ closure: (QueryBuilder<Model>) throws -> ()
+        _ closure: (QueryBuilder<Model>) throws -> Void
     ) rethrows -> Self {
         let group = QueryBuilder(database: self.database)
         try closure(group)

@@ -25,9 +25,9 @@ public protocol Fields: AnyObject, Codable, Sendable {
     /// > carries the same cost; it is not possible to meaningfully cache the results. See
     /// > `MirrorBypass.swift` for a considerable amount of very low-level detail.
     var properties: [any AnyProperty] { get }
-    
+
     init()
-    
+
     func input(to input: any DatabaseInput)
     func output(from output: any DatabaseOutput) throws
 }
@@ -46,9 +46,8 @@ extension Fields {
     /// version of FluentKit will always yield field paths with exactly one component. Unfortunately, the
     /// API can not be changed to eliminate the array wrapper without major source breakage.
     public static func path<Property>(for field: KeyPath<Self, Property>) -> [FieldKey]
-        where Property: AnyQueryableProperty
-    {
-         Self.init()[keyPath: field].path
+    where Property: AnyQueryableProperty {
+        Self.init()[keyPath: field].path
     }
 }
 
@@ -95,7 +94,7 @@ extension Fields {
     public var properties: [any AnyProperty] {
         return _FastChildSequence(subject: self).compactMap { $1 as? any AnyProperty }
     }
-    
+
     /// A wrapper around ``properties`` which returns only the properties which have database keys and can be
     /// input to and output from a database (corresponding to the ``AnyDatabaseProperty`` protocol).
     internal var databaseProperties: [any AnyDatabaseProperty] {
@@ -117,15 +116,16 @@ extension Fields {
     /// > Warning: Like ``properties``, this method uses reflection, and incurs all of the accompanying
     /// > performance penalties.
     internal var codableProperties: [SomeCodingKey: any AnyCodableProperty] {
-        return .init(uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
-            guard let value = $1 as? any AnyCodableProperty,
-                  let nameC = $0, nameC[0] != 0, nameC[1] != 0,
-                  let name = String(utf8String: nameC + 1)
-            else {
-                return nil
-            }
-            return (.init(stringValue: name), value)
-        })
+        return .init(
+            uniqueKeysWithValues: _FastChildSequence(subject: self).compactMap {
+                guard let value = $1 as? any AnyCodableProperty,
+                    let nameC = $0, nameC[0] != 0, nameC[1] != 0,
+                    let name = String(utf8String: nameC + 1)
+                else {
+                    return nil
+                }
+                return (.init(stringValue: name), value)
+            })
     }
 }
 
@@ -171,7 +171,7 @@ extension Fields {
 private final class DictionaryInput: DatabaseInput {
     var storage: [FieldKey: DatabaseQuery.Value] = [:]
     let wantsUnmodifiedKeys: Bool
-    
+
     init(wantsUnmodifiedKeys: Bool = false) {
         self.wantsUnmodifiedKeys = wantsUnmodifiedKeys
     }

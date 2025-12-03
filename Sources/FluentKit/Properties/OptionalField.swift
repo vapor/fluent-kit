@@ -2,15 +2,14 @@ import NIOConcurrencyHelpers
 
 extension Fields {
     public typealias OptionalField<Value> = OptionalFieldProperty<Self, Value>
-        where Value: Codable & Sendable
+    where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class OptionalFieldProperty<Model, WrappedValue>: @unchecked Sendable
-    where Model: FluentKit.Fields, WrappedValue: Codable & Sendable
-{
+where Model: FluentKit.Fields, WrappedValue: Codable & Sendable {
     public let key: FieldKey
     var outputValue: WrappedValue??
     var inputValue: DatabaseQuery.Value?
@@ -31,7 +30,7 @@ public final class OptionalFieldProperty<Model, WrappedValue>: @unchecked Sendab
 
 // MARK: Property
 
-extension OptionalFieldProperty: AnyProperty { }
+extension OptionalFieldProperty: AnyProperty {}
 
 extension OptionalFieldProperty: Property {
     public var value: WrappedValue?? {
@@ -57,7 +56,8 @@ extension OptionalFieldProperty: Property {
         }
         set {
             if let value = newValue {
-                self.inputValue = value
+                self.inputValue =
+                    value
                     .flatMap { .bind($0) }
                     ?? .null
             } else {
@@ -75,7 +75,7 @@ extension OptionalFieldProperty: AnyQueryableProperty {
     }
 }
 
-extension OptionalFieldProperty: QueryableProperty { }
+extension OptionalFieldProperty: QueryableProperty {}
 
 // MARK: Query-addressable
 

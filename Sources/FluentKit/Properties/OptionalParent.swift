@@ -1,17 +1,17 @@
 import NIOCore
+
 import struct SQLKit.SomeCodingKey
 
 extension Model {
     public typealias OptionalParent<To> = OptionalParentProperty<Self, To>
-        where To: Model
+    where To: Model
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class OptionalParentProperty<From, To>: @unchecked Sendable
-    where From: Model, To: Model
-{
+where From: Model, To: Model {
     @OptionalFieldProperty<From, To.IDValue>
     public var id: To.IDValue?
 
@@ -71,7 +71,7 @@ extension OptionalParentProperty: Relation {
 
 // MARK: Property
 
-extension OptionalParentProperty: AnyProperty { }
+extension OptionalParentProperty: AnyProperty {}
 
 extension OptionalParentProperty: Property {
     public typealias Model = From
@@ -95,7 +95,7 @@ extension OptionalParentProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         self.$id.keys
     }
-    
+
     public func input(to input: any DatabaseInput) {
         self.$id.input(to: input)
     }
@@ -110,7 +110,7 @@ extension OptionalParentProperty: AnyDatabaseProperty {
 extension OptionalParentProperty: AnyCodableProperty {
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
-        if case .some(.some(let parent)) = self.value { // require truly non-nil so we don't mis-encode when value has been manually cleared
+        if case .some(.some(let parent)) = self.value {  // require truly non-nil so we don't mis-encode when value has been manually cleared
             try container.encode(parent)
         } else {
             try container.encode([
@@ -132,18 +132,16 @@ extension OptionalParentProperty: EagerLoadable {
         _ relationKey: KeyPath<From, OptionalParentProperty<From, To>>,
         to builder: Builder
     )
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
+    where Builder: EagerLoadBuilder, From == Builder.Model {
         self.eagerLoad(relationKey, withDeleted: false, to: builder)
     }
-    
+
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalParent<To>>,
         withDeleted: Bool,
         to builder: Builder
     )
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    where Builder: EagerLoadBuilder, Builder.Model == From {
         let loader = OptionalParentEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
@@ -152,7 +150,8 @@ extension OptionalParentProperty: EagerLoadable {
         _ loader: Loader,
         through: KeyPath<From, From.OptionalParent<To>>,
         to builder: Builder
-    ) where
+    )
+    where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
@@ -164,8 +163,7 @@ extension OptionalParentProperty: EagerLoadable {
 }
 
 private struct OptionalParentEagerLoader<From, To>: EagerLoader
-    where From: FluentKit.Model, To: FluentKit.Model
-{
+where From: FluentKit.Model, To: FluentKit.Model {
     let relationKey: KeyPath<From, OptionalParentProperty<From, To>>
     let withDeleted: Bool
 
@@ -203,8 +201,7 @@ private struct OptionalParentEagerLoader<From, To>: EagerLoader
 }
 
 private struct ThroughOptionalParentEagerLoader<From, Through, Loader>: EagerLoader
-    where From: Model, Loader: EagerLoader, Loader.Model == Through
-{
+where From: Model, Loader: EagerLoader, Loader.Model == Through {
     let relationKey: KeyPath<From, From.OptionalParent<Through>>
     let loader: Loader
 

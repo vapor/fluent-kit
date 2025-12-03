@@ -5,7 +5,7 @@ import XCTest
 
 public final class PlanetTag: Model, @unchecked Sendable {
     public static let schema = "planet+tag"
-    
+
     @ID(key: .id)
     public var id: UUID?
 
@@ -14,11 +14,11 @@ public final class PlanetTag: Model, @unchecked Sendable {
 
     @Parent(key: "tag_id")
     public var tag: Tag
-    
+
     @OptionalField(key: "comments")
     public var comments: String?
 
-    public init() { }
+    public init() {}
 
     public init(id: IDValue? = nil, planetID: Planet.IDValue, tagID: Tag.IDValue, comments: String? = nil) {
         self.id = id
@@ -29,7 +29,7 @@ public final class PlanetTag: Model, @unchecked Sendable {
 }
 
 public struct PlanetTagMigration: Migration {
-    public init() { }
+    public init() {}
 
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(PlanetTag.schema)
@@ -48,8 +48,8 @@ public struct PlanetTagMigration: Migration {
 }
 
 public struct PlanetTagSeed: Migration {
-    public init() { }
-    
+    public init() {}
+
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let planets = Planet.query(on: database).all()
         let tags = Tag.query(on: database).all()
@@ -58,20 +58,21 @@ public struct PlanetTagSeed: Migration {
             let gasGiant = tags.filter { $0.name == "Gas Giant" }.first!
             let smallRocky = tags.filter { $0.name == "Small Rocky" }.first!
 
-            return .andAllSucceed(planets.map { planet in
-                let tags: [Tag]
-                switch planet.name {
-                case "Mercury", "Venus", "Mars", "Proxima Centauri b":
-                    tags = [smallRocky]
-                case "Earth":
-                    tags = [inhabited, smallRocky]
-                case "Jupiter", "Saturn", "Uranus", "Neptune":
-                    tags = [gasGiant]
-                default:
-                    tags = []
-                }
-                return planet.$tags.attach(tags, on: database)
-            }, on: database.eventLoop)
+            return .andAllSucceed(
+                planets.map { planet in
+                    let tags: [Tag]
+                    switch planet.name {
+                    case "Mercury", "Venus", "Mars", "Proxima Centauri b":
+                        tags = [smallRocky]
+                    case "Earth":
+                        tags = [inhabited, smallRocky]
+                    case "Jupiter", "Saturn", "Uranus", "Neptune":
+                        tags = [gasGiant]
+                    default:
+                        tags = []
+                    }
+                    return planet.$tags.attach(tags, on: database)
+                }, on: database.eventLoop)
         }
     }
 

@@ -1,8 +1,8 @@
 import FluentKit
-import NIOEmbedded
 import Logging
-import NIOCore
 import NIOConcurrencyHelpers
+import NIOCore
+import NIOEmbedded
 
 /// Lets you mock the row results for each query.
 ///
@@ -54,13 +54,12 @@ public final class ArrayTestDatabase: TestDatabase {
         self.results.withLockedValue { $0.append(result) }
     }
 
-    public func append<M>(_ result: [M]) 
-        where M: Model
-    {
+    public func append<M>(_ result: [M])
+    where M: Model {
         self.results.withLockedValue { $0.append(result.map { TestOutput($0) }) }
     }
 
-    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> Void) throws {
         guard !self.results.withLockedValue({ $0.isEmpty }) else {
             throw TestDatabaseError.ranOutOfResults
         }
@@ -79,7 +78,7 @@ public final class CallbackTestDatabase: TestDatabase {
         self.callback = callback
     }
 
-    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) throws {
+    public func execute(query: DatabaseQuery, onOutput: @escaping @Sendable (any DatabaseOutput) -> Void) throws {
         for output in self.callback(query) {
             onOutput(output)
         }
@@ -89,17 +88,18 @@ public final class CallbackTestDatabase: TestDatabase {
 public protocol TestDatabase: Sendable {
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> Void
     ) throws
 }
 
 extension TestDatabase {
     public var db: any Database {
-        self.database(context: .init(
-            configuration: self.configuration,
-            logger: Logger(label: "codes.vapor.fluent.test"),
-            eventLoop: EmbeddedEventLoop()
-        ))
+        self.database(
+            context: .init(
+                configuration: self.configuration,
+                logger: Logger(label: "codes.vapor.fluent.test"),
+                eventLoop: EmbeddedEventLoop()
+            ))
     }
 
     public func database(context: DatabaseContext) -> any Database {
@@ -116,7 +116,7 @@ private struct _TestDatabase: Database {
 
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> Void
     ) -> EventLoopFuture<Void> {
         guard context.eventLoop.inEventLoop else {
             return self.eventLoop.flatSubmit {
@@ -154,7 +154,6 @@ extension TestDatabase {
     }
 }
 
-
 private struct _TestConfiguration: DatabaseConfiguration {
     let test: any TestDatabase
     var middleware: [any AnyModelMiddleware] = []
@@ -186,8 +185,7 @@ public struct TestOutput: DatabaseOutput {
     }
 
     public func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
-        where T: Decodable
-    {
+    where T: Decodable {
         if let res = dummyDecodedFields[key] as? T {
             return res
         }
@@ -198,7 +196,6 @@ public struct TestOutput: DatabaseOutput {
         true
     }
 
-
     public func nested(_ key: FieldKey) throws -> any DatabaseOutput {
         self
     }
@@ -206,7 +203,6 @@ public struct TestOutput: DatabaseOutput {
     public func decodeNil(_ key: FieldKey) throws -> Bool {
         false
     }
-
 
     public var description: String {
         "<dummy>"
@@ -223,8 +219,7 @@ public struct TestOutput: DatabaseOutput {
     }
 
     public init<TestModel>(_ model: TestModel)
-        where TestModel: Model
-    {
+    where TestModel: Model {
         func unpack(_ dbValue: DatabaseQuery.Value) -> Any? {
             switch dbValue {
             case .null:
@@ -258,11 +253,11 @@ public struct TestOutput: DatabaseOutput {
 
 private final class CollectInput: DatabaseInput {
     var storage: [FieldKey: DatabaseQuery.Value]
-    
+
     init() {
         self.storage = [:]
     }
-    
+
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
         self.storage[key] = value
     }

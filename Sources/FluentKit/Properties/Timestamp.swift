@@ -2,7 +2,7 @@ import Foundation
 
 extension Model {
     public typealias Timestamp<Format> = TimestampProperty<Self, Format>
-        where Format: TimestampFormat
+    where Format: TimestampFormat
 }
 
 // MARK: Trigger
@@ -18,8 +18,7 @@ public enum TimestampTrigger {
 
 @propertyWrapper
 public final class TimestampProperty<Model, Format>
-    where Model: FluentKit.Model, Format: TimestampFormat
-{
+where Model: FluentKit.Model, Format: TimestampFormat {
     @OptionalFieldProperty<Model, Format.Value>
     public var timestamp: Format.Value?
 
@@ -33,8 +32,8 @@ public final class TimestampProperty<Model, Format>
     public var wrappedValue: Date? {
         get {
             switch self.value {
-                case .none, .some(.none): return nil
-                case .some(.some(let value)): return value
+            case .none, .some(.none): return nil
+            case .some(.some(let value)): return value
             }
         }
         set {
@@ -75,28 +74,28 @@ extension TimestampProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension TimestampProperty: AnyProperty { }
+extension TimestampProperty: AnyProperty {}
 
 extension TimestampProperty: Property {
     public var value: Date?? {
         get {
             switch self.$timestamp.value {
-                case .some(.some(let timestamp)):
-                    .some(self.format.parse(timestamp))
-                case .some(.none):
-                    .some(.none)
-                case .none:
-                    .none
+            case .some(.some(let timestamp)):
+                .some(self.format.parse(timestamp))
+            case .some(.none):
+                .some(.none)
+            case .none:
+                .none
             }
         }
         set {
             switch newValue {
-                case .some(.some(let newValue)):
-                    self.$timestamp.value = .some(self.format.serialize(newValue))
-                case .some(.none):
-                    self.$timestamp.value = .some(.none)
-                case .none:
-                    self.$timestamp.value = .none
+            case .some(.some(let newValue)):
+                self.$timestamp.value = .some(self.format.serialize(newValue))
+            case .some(.none):
+                self.$timestamp.value = .some(.none)
+            case .none:
+                self.$timestamp.value = .none
             }
         }
     }
@@ -110,7 +109,7 @@ extension TimestampProperty: AnyQueryableProperty {
     }
 }
 
-extension TimestampProperty: QueryableProperty { }
+extension TimestampProperty: QueryableProperty {}
 
 // MARK: Query-addressable
 
@@ -129,7 +128,7 @@ extension TimestampProperty: AnyDatabaseProperty {
     public var keys: [FieldKey] {
         self.$timestamp.keys
     }
-    
+
     public func input(to input: any DatabaseInput) {
         self.$timestamp.input(to: input)
     }
@@ -188,7 +187,7 @@ extension Fields {
             $0 as? any AnyTimestamp
         }
     }
-    
+
     func touchTimestamps(_ triggers: TimestampTrigger...) {
         self.touchTimestamps(triggers)
     }
@@ -217,9 +216,11 @@ extension Schema {
             schema: self.schemaOrAlias,
             space: self.space
         )
-        query.filters.append(.group([
-            .value(deletedAtField, .equal, .null),
-            .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
-        ], .or))
+        query.filters.append(
+            .group(
+                [
+                    .value(deletedAtField, .equal, .null),
+                    .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput),
+                ], .or))
     }
 }

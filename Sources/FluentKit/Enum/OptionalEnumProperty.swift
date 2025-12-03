@@ -1,18 +1,20 @@
 extension Fields {
     public typealias OptionalEnum<Value> = OptionalEnumProperty<Self, Value>
-        where Value: Codable & Sendable,
-            Value: RawRepresentable,
-            Value.RawValue == String
+    where
+        Value: Codable & Sendable,
+        Value: RawRepresentable,
+        Value.RawValue == String
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class OptionalEnumProperty<Model, WrappedValue>
-    where Model: FluentKit.Fields,
-        WrappedValue: Codable & Sendable,
-        WrappedValue: RawRepresentable,
-        WrappedValue.RawValue == String
+where
+    Model: FluentKit.Fields,
+    WrappedValue: Codable & Sendable,
+    WrappedValue: RawRepresentable,
+    WrappedValue.RawValue == String
 {
     public let field: OptionalFieldProperty<Model, String>
 
@@ -36,7 +38,7 @@ public final class OptionalEnumProperty<Model, WrappedValue>
 
 // MARK: Property
 
-extension OptionalEnumProperty: AnyProperty { }
+extension OptionalEnumProperty: AnyProperty {}
 
 extension OptionalEnumProperty: Property {
     public var value: WrappedValue?? {
@@ -100,7 +102,6 @@ extension OptionalEnumProperty: AnyDatabaseProperty {
         } else {
             value = self.field.inputValue ?? .default
         }
-
 
         switch value {
         case .bind(let bind as String):

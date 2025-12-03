@@ -7,7 +7,7 @@ public struct DatabaseSchema: Sendable {
         case update
         case delete
     }
-    
+
     public indirect enum DataType: Sendable {
         public static var int: DataType {
             .int64
@@ -16,7 +16,7 @@ public struct DatabaseSchema: Sendable {
         case int16
         case int32
         case int64
-        
+
         public static var uint: DataType {
             .uint64
         }
@@ -24,9 +24,9 @@ public struct DatabaseSchema: Sendable {
         case uint16
         case uint32
         case uint64
-        
+
         case bool
-        
+
         public struct Enum: Sendable {
             public var name: String
             public var cases: [String]
@@ -38,11 +38,11 @@ public struct DatabaseSchema: Sendable {
         }
         case `enum`(Enum)
         case string
-        
+
         case time
         case date
         case datetime
-        
+
         case float
         case double
         case data
@@ -96,7 +96,7 @@ public struct DatabaseSchema: Sendable {
         case constraint(ConstraintAlgorithm, name: String?)
         case custom(any Sendable)
     }
-    
+
     public enum ConstraintAlgorithm: Sendable {
         case unique(fields: [FieldName])
         case foreignKey(
@@ -118,7 +118,7 @@ public struct DatabaseSchema: Sendable {
         case setNull
         case setDefault
     }
-    
+
     public enum FieldDefinition: Sendable {
         case definition(
             name: FieldName,
@@ -132,7 +132,7 @@ public struct DatabaseSchema: Sendable {
         case dataType(name: FieldName, dataType: DataType)
         case custom(any Sendable)
     }
-    
+
     public enum FieldName: Sendable {
         case key(FieldKey)
         case custom(any Sendable)
@@ -142,9 +142,9 @@ public struct DatabaseSchema: Sendable {
         case constraint(ConstraintAlgorithm)
         case name(String)
         case custom(any Sendable)
-        
+
         /// Deletion specifier for an explicitly-named constraint known to be a referential constraint.
-        /// 
+        ///
         /// Certain old versions of certain databases (I'm looking at you, MySQL 5.7...) do not support dropping
         /// a `FOREIGN KEY` constraint by name without knowing ahead of time that it is a foreign key. When an
         /// unfortunate user runs into this, the options are:
@@ -182,7 +182,7 @@ public struct DatabaseSchema: Sendable {
     public var createConstraints: [Constraint]
     public var deleteConstraints: [ConstraintDelete]
     public var exclusiveCreate: Bool
-    
+
     public init(schema: String, space: String? = nil) {
         self.action = .create
         self.schema = schema
