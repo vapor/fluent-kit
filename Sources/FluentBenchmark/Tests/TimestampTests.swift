@@ -15,9 +15,12 @@ extension FluentBenchmarker {
     }
 
     private func testTimestamp_touch() throws {
-        try runTest(#function, [
-            UserMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let user = User(name: "A")
             XCTAssertNil(user.createdAt)
             XCTAssertNil(user.updatedAt)
@@ -37,14 +40,18 @@ extension FluentBenchmarker {
             user.addressedAt = addressedTime
             try user.save(on: self.database).wait()
             XCTAssertNotNil(user.addressedAt)
-            XCTAssertEqual(user.addressedAt?.timeIntervalSinceReferenceDate ?? 0.0, addressedTime.timeIntervalSinceReferenceDate, accuracy: 0.10)
+            XCTAssertEqual(
+                user.addressedAt?.timeIntervalSinceReferenceDate ?? 0.0, addressedTime.timeIntervalSinceReferenceDate, accuracy: 0.10)
         }
     }
 
     private func testTimestamp_ISO8601() throws {
-        try runTest(#function, [
-            EventMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                EventMigration()
+            ]
+        ) {
             let event = Event(name: "ServerSide.swift")
             try event.create(on: self.database).wait()
 
@@ -76,18 +83,21 @@ extension FluentBenchmarker {
             try XCTAssertEqual(Event.query(on: self.database).all().wait().count, 0)
         }
     }
-    
+
     private func testTimestamp_createOnUpdate() throws {
-        try runTest(#function, [
-            EventMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                EventMigration()
+            ]
+        ) {
             let event = Event(name: "C")
             try event.create(on: self.database).wait()
             XCTAssertNotNil(event.createdAt)
             XCTAssertNotNil(event.updatedAt)
             XCTAssertEqual(event.createdAt, event.updatedAt)
-            
-            Thread.sleep(forTimeInterval: 0.001) // ensure update timestamp with millisecond precision increments
+
+            Thread.sleep(forTimeInterval: 0.001)  // ensure update timestamp with millisecond precision increments
 
             let storedEvent = try Event.find(event.id, on: self.database).wait()
             XCTAssertNotNil(storedEvent)
@@ -96,11 +106,14 @@ extension FluentBenchmarker {
             XCTAssertEqual(storedEvent?.createdAt, event.createdAt)
         }
     }
-    
+
     private func testTimestamp_createOnBulkCreate() throws {
-        try runTest(#function, [
-            UserMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let userOne = User(name: "A")
             let userTwo = User(name: "B")
             XCTAssertEqual(userOne.createdAt, nil)
@@ -116,11 +129,14 @@ extension FluentBenchmarker {
             XCTAssertEqual(userTwo.updatedAt, userTwo.createdAt)
         }
     }
-    
+
     private func testTimestamp_createOnBulkUpdate() throws {
-        try runTest(#function, [
-            UserMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let userOne = User(name: "A")
             let userTwo = User(name: "B")
             XCTAssertEqual(userOne.createdAt, nil)
@@ -128,29 +144,34 @@ extension FluentBenchmarker {
             XCTAssertEqual(userTwo.createdAt, nil)
             XCTAssertEqual(userTwo.updatedAt, nil)
             try [userOne, userTwo].create(on: self.database).wait()
-            
+
             let originalOne = userOne.updatedAt
             let originalTwo = userTwo.updatedAt
-            
+
             Thread.sleep(forTimeInterval: 1)
-            
+
             try User.query(on: self.database).set(\.$name, to: "C").update().wait()
-            
-            XCTAssertNotEqual(try User.find(userOne.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalOne!.timeIntervalSinceNow)
-            XCTAssertNotEqual(try User.find(userTwo.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalTwo!.timeIntervalSinceNow)
+
+            XCTAssertNotEqual(
+                try User.find(userOne.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalOne!.timeIntervalSinceNow)
+            XCTAssertNotEqual(
+                try User.find(userTwo.id, on: self.database).wait()!.updatedAt!.timeIntervalSinceNow, originalTwo!.timeIntervalSinceNow)
         }
     }
 
     private func testTimestamp_updateNoChanges() throws {
-        try runTest(#function, [
-            EventMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                EventMigration()
+            ]
+        ) {
             let event = Event(name: "C")
             try event.create(on: self.database).wait()
             let updatedAtPreSave = event.updatedAt
 
             XCTAssertFalse(event.hasChanges)
-            Thread.sleep(forTimeInterval: 0.001) // ensure update timestamp with millisecond precision increments
+            Thread.sleep(forTimeInterval: 0.001)  // ensure update timestamp with millisecond precision increments
             try event.save(on: self.database).wait()
 
             let storedEvent = try Event.find(event.id, on: self.database).wait()
@@ -158,11 +179,10 @@ extension FluentBenchmarker {
         }
     }
 
-
     private func testTimestamp_decode() throws {
         let json = """
-        { "name": "Vapor", "createdAt": null }
-        """.data(using: .utf8)!
+            { "name": "Vapor", "createdAt": null }
+            """.data(using: .utf8)!
         let user = try! JSONDecoder().decode(User.self, from: json)
         XCTAssertNil(user.createdAt)
         XCTAssertNil(user.updatedAt)
@@ -187,8 +207,8 @@ private final class User: Model, @unchecked Sendable {
     @Timestamp(key: "addressed_at", on: .none)
     var addressedAt: Date?
 
-    init() { }
-    
+    init() {}
+
     init(id: IDValue? = nil, name: String) {
         self.id = id
         self.name = name
@@ -212,7 +232,6 @@ private struct UserMigration: Migration {
     }
 }
 
-
 private final class Event: Model, @unchecked Sendable {
     static let schema = "events"
 
@@ -234,7 +253,7 @@ private final class Event: Model, @unchecked Sendable {
     @Timestamp(key: "nudged_at", on: .delete, format: .iso8601(withMilliseconds: true))
     var nudgedAt: Date?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String) {
         self.id = id

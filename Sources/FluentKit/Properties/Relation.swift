@@ -30,7 +30,7 @@ extension Relation {
             database.eventLoop.makeSucceededFuture(value)
         } else {
             self.load(on: database).flatMapThrowing {
-                guard let value = self.value else { // This should never actually happen, but just in case...
+                guard let value = self.value else {  // This should never actually happen, but just in case...
                     throw FluentError.relationNotLoaded(name: self.name)
                 }
                 return value
@@ -38,15 +38,14 @@ extension Relation {
         }
     }
 }
-    
+
 /// A helper type used by ``ChildrenProperty`` and ``OptionalChildProperty`` to generically track the keypath
 /// of the property of the child model that defines the parent-child relationship.
 ///
 /// This type was extracted from its original definitions as a subtype of the property types. A typealias is
 /// provided on the property types to maintain public API compatibility.
 public enum RelationParentKey<From, To>: Sendable
-    where From: FluentKit.Model, To: FluentKit.Model
-{
+where From: FluentKit.Model, To: FluentKit.Model {
     case required(KeyPath<To, To.Parent<From>>)
     case optional(KeyPath<To, To.OptionalParent<From>>)
 }
@@ -70,11 +69,10 @@ extension RelationParentKey: CustomStringConvertible {
 /// > Note: This type is public partly to allow FluentKit users to introspect model metadata, but mostly it's
 /// > to maintain parity with ``RelationParentKey``, which was public in its original definition.
 public enum CompositeRelationParentKey<From, To>: Sendable
-    where From: FluentKit.Model, To: FluentKit.Model, From.IDValue: Fields
-{
+where From: FluentKit.Model, To: FluentKit.Model, From.IDValue: Fields {
     case required(KeyPath<To, To.CompositeParent<From>>)
     case optional(KeyPath<To, To.CompositeOptionalParent<From>>)
-    
+
     /// Use the stored key path to retrieve the appropriate parent ID from the given child model.
     internal func referencedId(in model: To) -> From.IDValue? {
         switch self {
@@ -82,7 +80,7 @@ public enum CompositeRelationParentKey<From, To>: Sendable
         case .optional(let keypath): model[keyPath: keypath].id
         }
     }
-    
+
     /// Use the parent property specified by the key path to filter the given query builder by each of the
     /// given parent IDs in turn. An empty ID list will apply no filters.
     ///
@@ -92,16 +90,25 @@ public enum CompositeRelationParentKey<From, To>: Sendable
     ///
     /// See ``QueryFilterInput`` for additional implementation details.
     internal func queryFilterIds<C>(_ ids: C, in builder: QueryBuilder<To>) -> QueryBuilder<To>
-        where C: Collection, C.Element == From.IDValue
-    {
+    where C: Collection, C.Element == From.IDValue {
         guard !ids.isEmpty else { return builder }
         switch self {
         case .required(let keypath):
             let prop = To()[keyPath: keypath]
-            return ids.reduce(builder) { b, id in b.group(.and) { prop.id = id; prop.input(to: QueryFilterInput(builder: $0)) } }
+            return ids.reduce(builder) { b, id in
+                b.group(.and) {
+                    prop.id = id
+                    prop.input(to: QueryFilterInput(builder: $0))
+                }
+            }
         case .optional(let keypath):
             let prop = To()[keyPath: keypath]
-            return ids.reduce(builder) { b, id in b.group(.and) { prop.id = id; prop.input(to: QueryFilterInput(builder: $0)) } }
+            return ids.reduce(builder) { b, id in
+                b.group(.and) {
+                    prop.id = id
+                    prop.input(to: QueryFilterInput(builder: $0))
+                }
+            }
         }
     }
 }

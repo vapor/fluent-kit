@@ -28,7 +28,7 @@ extension Model {
         }
         return id
     }
-    
+
     /// Replaces the existing common usage of `model._$id.exists`, which indicates whether any
     /// particular generic model has a non-`nil` ID that was loaded from a database query (or
     /// was overridden to allow Fluent to assume as such without having to check first). This

@@ -11,9 +11,12 @@ extension FluentBenchmarker {
     }
 
     private func testArray_basic() throws {
-        try runTest(#function, [
-            FooMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let new = Foo(
                 bar: [1, 2, 3],
                 baz: ["4", "5", "6"],
@@ -32,9 +35,12 @@ extension FluentBenchmarker {
     }
 
     private func testArray_set() throws {
-        try self.runTest(#function, [
-            FooSetMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooSetMigration()
+            ]
+        ) {
             let foo = FooSet(bar: ["a", "b", "c"])
             try foo.create(on: self.database).wait()
             let fetched = try FooSet.find(foo.id, on: self.database).wait()
@@ -43,9 +49,12 @@ extension FluentBenchmarker {
     }
 
     private func testArray_stringEnum() throws {
-        try self.runTest(#function, [
-            UserMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             // test array w/ 2 values
             do {
                 let user = User(roles: [.admin, .employee])
@@ -83,7 +92,7 @@ private final class Foo: Model, @unchecked Sendable {
     @Field(key: "qux")
     var qux: [Qux]
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil, bar: [Int], baz: [String]?, qux: [Qux]) {
         self.id = id
@@ -123,7 +132,7 @@ private final class User: Model, @unchecked Sendable {
     @Field(key: "roles")
     var roles: [Role]
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil, roles: [Role]) {
         self.id = id
@@ -153,7 +162,7 @@ private final class FooSet: Model, @unchecked Sendable {
     @Field(key: "bar")
     var bar: Set<String>
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, bar: Set<String>) {
         self.id = id

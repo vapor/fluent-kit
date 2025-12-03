@@ -4,45 +4,45 @@ import NIOCore
 
 public final class GalacticJurisdiction: Model, @unchecked Sendable {
     public static let schema = "galaxy_jurisdictions"
-    
+
     public final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Parent(key: "galaxy_id")
         public var galaxy: Galaxy
-        
+
         @Parent(key: "jurisdiction_id")
         public var jurisdiction: Jurisdiction
-        
+
         @Field(key: "rank")
         public var rank: Int
-        
+
         public init() {}
-        
+
         public convenience init(galaxy: Galaxy, jurisdiction: Jurisdiction, rank: Int) throws {
             try self.init(galaxyId: galaxy.requireID(), jurisdictionId: jurisdiction.requireID(), rank: rank)
         }
-        
+
         public init(galaxyId: Galaxy.IDValue, jurisdictionId: Jurisdiction.IDValue, rank: Int) {
             self.$galaxy.id = galaxyId
             self.$jurisdiction.id = jurisdictionId
             self.rank = rank
         }
-        
+
         public static func == (lhs: IDValue, rhs: IDValue) -> Bool {
             lhs.$galaxy.id == rhs.$galaxy.id && lhs.$jurisdiction.id == rhs.$jurisdiction.id && lhs.rank == rhs.rank
         }
-        
+
         public func hash(into hasher: inout Hasher) {
             hasher.combine(self.$galaxy.id)
             hasher.combine(self.$jurisdiction.id)
             hasher.combine(self.rank)
         }
     }
-    
+
     @CompositeID()
     public var id: IDValue?
-    
+
     public init() {}
-    
+
     public init(id: IDValue) {
         self.id = id
     }
@@ -50,7 +50,7 @@ public final class GalacticJurisdiction: Model, @unchecked Sendable {
 
 public struct GalacticJurisdictionMigration: Migration {
     public init() {}
-    
+
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(GalacticJurisdiction.schema)
             .field("galaxy_id", .uuid, .required, .references(Galaxy.schema, .id, onDelete: .cascade, onUpdate: .cascade))
@@ -59,7 +59,7 @@ public struct GalacticJurisdictionMigration: Migration {
             .compositeIdentifier(over: "galaxy_id", "jurisdiction_id", "rank")
             .create()
     }
-    
+
     public func revert(on database: any Database) -> EventLoopFuture<Void> {
         database.schema(GalacticJurisdiction.schema)
             .delete()
@@ -68,11 +68,11 @@ public struct GalacticJurisdictionMigration: Migration {
 
 public struct GalacticJurisdictionSeed: Migration {
     public init() {}
-    
+
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.eventLoop.flatSubmit {
             Galaxy.query(on: database).all().and(
-            Jurisdiction.query(on: database).all())
+                Jurisdiction.query(on: database).all())
         }.flatMap { galaxies, jurisdictions in
             [
                 ("Milky Way", "Old", 0),
@@ -86,16 +86,18 @@ public struct GalacticJurisdictionSeed: Migration {
             ]
             .reduce(database.eventLoop.makeSucceededVoidFuture()) { future, data in
                 future.flatMap {
-                    GalacticJurisdiction.init(id: try! .init(
-                        galaxy: galaxies.first(where: { $0.name == data.0 })!,
-                        jurisdiction: jurisdictions.first(where: { $0.title == data.1 })!,
-                        rank: data.2
-                    )).create(on: database)
+                    GalacticJurisdiction.init(
+                        id: try! .init(
+                            galaxy: galaxies.first(where: { $0.name == data.0 })!,
+                            jurisdiction: jurisdictions.first(where: { $0.title == data.1 })!,
+                            rank: data.2
+                        )
+                    ).create(on: database)
                 }
             }
         }
     }
-    
+
     public func revert(on database: any Database) -> EventLoopFuture<Void> {
         GalacticJurisdiction.query(on: database).delete()
     }

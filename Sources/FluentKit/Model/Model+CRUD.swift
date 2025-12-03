@@ -1,4 +1,5 @@
 import NIOCore
+
 import protocol SQLKit.SQLDatabase
 
 extension Model {
@@ -64,10 +65,9 @@ extension Model {
             .filter(id: id)
             .set(input)
             .update()
-            .flatMapThrowing
-        {
-            try self.output(from: SavedInput(input))
-        }
+            .flatMapThrowing {
+                try self.output(from: SavedInput(input))
+            }
     }
 
     public func delete(force: Bool = false, on database: any Database) -> EventLoopFuture<Void> {
@@ -88,12 +88,11 @@ extension Model {
         return Self.query(on: database)
             .filter(id: id)
             .delete(force: force)
-            .map
-        {
-            if force || self.deletedTimestamp == nil {
-                self._$idExists = false
+            .map {
+                if force || self.deletedTimestamp == nil {
+                    self._$idExists = false
+                }
             }
-        }
     }
 
     public func restore(on database: any Database) -> EventLoopFuture<Void> {
@@ -115,11 +114,10 @@ extension Model {
             .set(self.collectInput())
             .action(.update)
             .run()
-            .flatMapThrowing
-        {
-            try self.output(from: SavedInput(self.collectInput()))
-            self._$idExists = true
-        }
+            .flatMapThrowing {
+                try self.output(from: SavedInput(self.collectInput()))
+                self._$idExists = true
+            }
     }
 
     private func handle(_ event: ModelEvent, on db: any Database) throws -> EventLoopFuture<Void> {
@@ -143,20 +141,22 @@ extension Collection where Element: FluentKit.Model, Self: Sendable {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
-        
+
         precondition(self.allSatisfy { $0._$idExists })
 
-        return EventLoopFuture<Void>.andAllSucceed(self.map { model in
-            database.configuration.middleware.chainingTo(Element.self) { event, model, db in
-                db.eventLoop.makeSucceededFuture(())
-            }.delete(model, force: force, on: database)
-        }, on: database.eventLoop).flatMap {
+        return EventLoopFuture<Void>.andAllSucceed(
+            self.map { model in
+                database.configuration.middleware.chainingTo(Element.self) { event, model, db in
+                    db.eventLoop.makeSucceededFuture(())
+                }.delete(model, force: force, on: database)
+            }, on: database.eventLoop
+        ).flatMap {
             Element.query(on: database)
                 .filter(ids: self.map { $0.id! })
                 .delete(force: force)
         }.map {
             guard force else { return }
-            
+
             for model in self where model.deletedTimestamp == nil {
                 model._$idExists = false
             }
@@ -167,18 +167,20 @@ extension Collection where Element: FluentKit.Model, Self: Sendable {
         guard !self.isEmpty else {
             return database.eventLoop.makeSucceededFuture(())
         }
-        
+
         precondition(self.allSatisfy { !$0._$idExists })
-        
-        return EventLoopFuture<Void>.andAllSucceed(self.enumerated().map { idx, model in
-            database.configuration.middleware.chainingTo(Element.self) { event, model, db in
-                if model.anyID is any AnyQueryableProperty {
-                    model._$id.generate()
-                }
-                model.touchTimestamps(.create, .update)
-                return db.eventLoop.makeSucceededFuture(())
-            }.create(model, on: database)
-        }, on: database.eventLoop).flatMap {
+
+        return EventLoopFuture<Void>.andAllSucceed(
+            self.enumerated().map { idx, model in
+                database.configuration.middleware.chainingTo(Element.self) { event, model, db in
+                    if model.anyID is any AnyQueryableProperty {
+                        model._$id.generate()
+                    }
+                    model.touchTimestamps(.create, .update)
+                    return db.eventLoop.makeSucceededFuture(())
+                }.create(model, on: database)
+            }, on: database.eventLoop
+        ).flatMap {
             Element.query(on: database)
                 .set(self.map { $0.collectInput(withDefaultedValues: database is any SQLDatabase) })
                 .create()
@@ -201,7 +203,7 @@ public enum MiddlewareFailureHandler {
 
 private struct SavedInput: DatabaseOutput {
     var input: [FieldKey: DatabaseQuery.Value]
-    
+
     init(_ input: [FieldKey: DatabaseQuery.Value]) {
         self.input = input
     }
@@ -209,7 +211,7 @@ private struct SavedInput: DatabaseOutput {
     func schema(_ schema: String) -> any DatabaseOutput {
         self
     }
-    
+
     func contains(_ key: FieldKey) -> Bool {
         self.input[key] != nil
     }
@@ -235,10 +237,9 @@ private struct SavedInput: DatabaseOutput {
             return false
         }
     }
-    
+
     func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
-        where T : Decodable
-    {
+    where T: Decodable {
         guard let value = self.input[key] else {
             throw FluentError.missingField(name: key.description)
         }

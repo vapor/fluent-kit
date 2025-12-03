@@ -2,15 +2,14 @@ import NIOCore
 
 extension Model {
     public typealias OptionalChild<To> = OptionalChildProperty<Self, To>
-        where To: FluentKit.Model
+    where To: FluentKit.Model
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class OptionalChildProperty<From, To>: @unchecked Sendable
-    where From: Model, To: Model
-{
+where From: Model, To: Model {
     public typealias Key = RelationParentKey<From, To>
 
     public let parentKey: Key
@@ -25,7 +24,7 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
     public convenience init(for optionalParent: KeyPath<To, To.OptionalParent<From>>) {
         self.init(for: .optional(optionalParent))
     }
-    
+
     private init(for parentKey: Key) {
         self.parentKey = parentKey
     }
@@ -45,7 +44,7 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
     public var projectedValue: OptionalChildProperty<From, To> {
         self
     }
-    
+
     public var fromId: From.IDValue? {
         get { self.idValue }
         set { self.idValue = newValue }
@@ -87,7 +86,7 @@ extension OptionalChildProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension OptionalChildProperty: AnyProperty { }
+extension OptionalChildProperty: AnyProperty {}
 
 extension OptionalChildProperty: Property {
     public typealias Model = From
@@ -128,7 +127,7 @@ extension OptionalChildProperty: AnyCodableProperty {
     }
 
     public var skipPropertyEncoding: Bool {
-        self.value == nil // Avoids leaving an empty JSON object lying around in some cases.
+        self.value == nil  // Avoids leaving an empty JSON object lying around in some cases.
     }
 }
 
@@ -153,28 +152,26 @@ extension OptionalChildProperty: EagerLoadable {
         _ relationKey: KeyPath<From, OptionalChildProperty<From, To>>,
         to builder: Builder
     )
-        where Builder : EagerLoadBuilder, From == Builder.Model
-    {
+    where Builder: EagerLoadBuilder, From == Builder.Model {
         self.eagerLoad(relationKey, withDeleted: false, to: builder)
     }
-    
+
     public static func eagerLoad<Builder>(
         _ relationKey: KeyPath<From, From.OptionalChild<To>>,
         withDeleted: Bool,
         to builder: Builder
     )
-        where Builder: EagerLoadBuilder, Builder.Model == From
-    {
+    where Builder: EagerLoadBuilder, Builder.Model == From {
         let loader = OptionalChildEagerLoader(relationKey: relationKey, withDeleted: withDeleted)
         builder.add(loader: loader)
     }
-
 
     public static func eagerLoad<Loader, Builder>(
         _ loader: Loader,
         through: KeyPath<From, From.OptionalChild<To>>,
         to builder: Builder
-    ) where
+    )
+    where
         Loader: EagerLoader,
         Loader.Model == To,
         Builder: EagerLoadBuilder,
@@ -186,8 +183,7 @@ extension OptionalChildProperty: EagerLoadable {
 }
 
 private struct OptionalChildEagerLoader<From, To>: EagerLoader
-    where From: Model, To: Model
-{
+where From: Model, To: Model {
     let relationKey: KeyPath<From, From.OptionalChild<To>>
     let withDeleted: Bool
 
@@ -224,8 +220,7 @@ private struct OptionalChildEagerLoader<From, To>: EagerLoader
 }
 
 private struct ThroughChildEagerLoader<From, Through, Loader>: EagerLoader
-    where From: Model, Loader: EagerLoader, Loader.Model == Through
-{
+where From: Model, Loader: EagerLoader, Loader.Model == Through {
     let relationKey: KeyPath<From, From.OptionalChild<Through>>
     let loader: Loader
 

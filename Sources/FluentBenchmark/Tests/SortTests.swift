@@ -1,6 +1,6 @@
 import FluentSQL
-import XCTest
 import SQLKit
+import XCTest
 
 extension FluentBenchmarker {
     public func testSort(sql: Bool = true) throws {
@@ -12,9 +12,12 @@ extension FluentBenchmarker {
     }
 
     private func testSort_basic() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let ascending = try Galaxy.query(on: self.database)
                 .sort(\.$name, .ascending)
                 .all().wait()
@@ -29,9 +32,12 @@ extension FluentBenchmarker {
     }
 
     private func testSort_sql() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .sort(.sql("name", .notEqual, "Earth"))
                 .all().wait()
@@ -40,9 +46,12 @@ extension FluentBenchmarker {
     }
 
     private func testSort_embedSql() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .sort(.sql(embed: "\(ident: "name")\(SQLBinaryOperator.notEqual)\(literal: "Earth")"))
                 .all().wait()

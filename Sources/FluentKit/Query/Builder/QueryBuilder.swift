@@ -1,8 +1,7 @@
 import NIOCore
 
 public final class QueryBuilder<Model>
-    where Model: FluentKit.Model
-{
+where Model: FluentKit.Model {
     public var query: DatabaseQuery
 
     public let database: any Database
@@ -56,11 +55,10 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Fields
-    
+
     @discardableResult
-    public func fields<Joined>(for model: Joined.Type) -> Self 
-        where Joined: Schema & Fields
-    {
+    public func fields<Joined>(for model: Joined.Type) -> Self
+    where Joined: Schema & Fields {
         self.addFields(for: Joined.self, to: &self.query)
         return self
     }
@@ -73,19 +71,17 @@ public final class QueryBuilder<Model>
 
     @discardableResult
     public func field<Field>(_ field: KeyPath<Model, Field>) -> Self
-        where Field: QueryableProperty, Field.Model == Model
-    {
+    where Field: QueryableProperty, Field.Model == Model {
         self.field(Model.self, field)
     }
 
     @discardableResult
     public func field<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>) -> Self
-        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
-    {
+    where Joined: Schema, Field: QueryableProperty, Field.Model == Joined {
         self.query.fields.append(.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased))
         return self
     }
-    
+
     @discardableResult
     public func field(_ field: DatabaseQuery.Field) -> Self {
         self.query.fields.append(field)
@@ -120,7 +116,7 @@ public final class QueryBuilder<Model>
     }
 
     // MARK: Limit
-    
+
     @discardableResult
     public func limit(_ count: Int) -> Self {
         self.query.limits.append(.count(count))
@@ -145,10 +141,10 @@ public final class QueryBuilder<Model>
 
     // MARK: Fetch
 
-    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> ()) -> EventLoopFuture<Void> {
+    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> Void) -> EventLoopFuture<Void> {
         nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
-        
+
         return self.all { row in
             partial.append(row)
             if partial.count >= max {
@@ -169,9 +165,9 @@ public final class QueryBuilder<Model>
     }
 
     public func all<Field>(_ key: KeyPath<Model, Field>) -> EventLoopFuture<[Field.Value]>
-        where
-            Field: QueryableProperty,
-            Field.Model == Model
+    where
+        Field: QueryableProperty,
+        Field.Model == Model
     {
         let copy = self.copy()
         copy.query.fields = [.extendedPath(Model.path(for: key), schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased)]
@@ -186,10 +182,10 @@ public final class QueryBuilder<Model>
         _ joined: Joined.Type,
         _ field: KeyPath<Joined, Field>
     ) -> EventLoopFuture<[Field.Value]>
-        where
-            Joined: Schema,
-            Field: QueryableProperty,
-            Field.Model == Joined
+    where
+        Joined: Schema,
+        Field: QueryableProperty,
+        Field.Model == Joined
     {
         let copy = self.copy()
         copy.query.fields = [.extendedPath(Joined.path(for: field), schema: Joined.schemaOrAlias, space: Joined.spaceIfNotAliased)]
@@ -203,7 +199,8 @@ public final class QueryBuilder<Model>
     public func all() -> EventLoopFuture<[Model]> {
         nonisolated(unsafe) var models: [Result<Model, any Error>] = []
 
-        return self
+        return
+            self
             .all { models.append($0) }
             .flatMapThrowing { try models.map { try $0.get() } }
     }
@@ -212,23 +209,24 @@ public final class QueryBuilder<Model>
         self.run { _ in }
     }
 
-    public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> ()) -> EventLoopFuture<Void> {
+    public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> Void) -> EventLoopFuture<Void> {
         nonisolated(unsafe) var all: [Model] = []
 
         let done = self.run { output in
-            onOutput(.init(catching: {
-                let model = Model()
-                try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
-                all.append(model)
-                return model
-            }))
+            onOutput(
+                .init(catching: {
+                    let model = Model()
+                    try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
+                    all.append(model)
+                    return model
+                }))
         }
 
         // if eager loads exist, run them, and update models
         if !self.eagerLoaders.isEmpty {
             let loaders = self.eagerLoaders
             let db = self.database
-            
+
             return done.flatMapWithEventLoop {
                 // don't run eager loads if result set was empty
                 guard !all.isEmpty else {
@@ -252,7 +250,7 @@ public final class QueryBuilder<Model>
         return self
     }
 
-    public func run(_ onOutput: @escaping @Sendable (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+    public func run(_ onOutput: @escaping @Sendable (any DatabaseOutput) -> Void) -> EventLoopFuture<Void> {
         // make a copy of this query before mutating it
         // so that run can be called multiple times
         var query = self.query
@@ -274,7 +272,8 @@ public final class QueryBuilder<Model>
         }
 
         // TODO: combine this logic with model+crud timestamps
-        let forceDelete = Model.init().deletedTimestamp == nil
+        let forceDelete =
+            Model.init().deletedTimestamp == nil
             ? true : self.shouldForceDelete
         switch query.action {
         case .delete:
@@ -297,7 +296,7 @@ public final class QueryBuilder<Model>
         self.database.history?.add(self.query)
 
         let loop = self.database.eventLoop
-        
+
         let done = self.database.execute(query: query) { output in
             loop.assertInEventLoop()
             onOutput(output)

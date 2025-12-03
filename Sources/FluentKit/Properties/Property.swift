@@ -29,7 +29,7 @@ extension AnyProperty where Self: Property {
     public var anyValue: Any? {
         self.value
     }
-    
+
     /// The type-erased type of a property's value is the type of the property's value.
     public static var anyValueType: Any.Type {
         Value.self
@@ -68,10 +68,10 @@ public protocol AnyDatabaseProperty: AnyProperty {
 public protocol AnyCodableProperty: AnyProperty {
     /// Encode the property's data to an external representation.
     func encode(to encoder: any Encoder) throws
-    
+
     /// Decode an external representation and replace the property's current data with the result.
     func decode(from decoder: any Decoder) throws
-    
+
     /// Return `true` to skip encoding of this property. Defaults to `false` unless explicitly
     /// implemented.
     ///
@@ -96,7 +96,7 @@ public protocol AnyQueryableProperty: AnyProperty {
     /// such as a field containing a complex JSON document, but at present this is not
     /// fully implemented by Fluent, making a multi-key path as invalid as an empty one.
     var path: [FieldKey] { get }
-    
+
     /// If the property's current value has been set, return a description of the
     /// appropriate method for encoding that value into a database query. See
     /// ``DatabaseQuery/Value`` for more details. If the value is not set, the

@@ -9,11 +9,14 @@ extension FluentBenchmarker {
         try self.testSet_optional()
         try self.testSet_enum()
     }
-    
+
     private func testSet_multiple() throws {
-        try runTest(#function, [
-            TestMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                TestMigration()
+            ]
+        ) {
             // Int value set first
             try Test.query(on: self.database)
                 .set(\.$intValue, to: 1)
@@ -29,9 +32,12 @@ extension FluentBenchmarker {
     }
 
     private func testSet_optional() throws {
-        try runTest(#function, [
-            TestMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                TestMigration()
+            ]
+        ) {
             try Test.query(on: self.database)
                 .set(\.$intValue, to: nil)
                 .set(\.$stringValue, to: nil)
@@ -40,9 +46,12 @@ extension FluentBenchmarker {
     }
 
     private func testSet_enum() throws {
-        try runTest(#function, [
-            Test2Migration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                Test2Migration()
+            ]
+        ) {
             try Test2.query(on: self.database)
                 .set(\.$foo, to: .bar)
                 .update().wait()
@@ -107,4 +116,3 @@ private struct Test2Migration: FluentKit.Migration {
         }
     }
 }
-

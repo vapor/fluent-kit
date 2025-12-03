@@ -1,8 +1,8 @@
 import FluentKit
+import FluentSQL
 import Foundation
 import NIOCore
 import XCTest
-import FluentSQL
 
 extension FluentBenchmarker {
     public func testFilter(sql: Bool = true) throws {
@@ -23,9 +23,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_field() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let equalNumbers = try Moon.query(on: self.database)
                 .filter(\.$craters == \.$comets).all().wait()
             XCTAssertEqual(equalNumbers.count, 7)
@@ -41,9 +44,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_sqlValue() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let moon = try Moon.query(on: self.database)
                 .filter(\.$name == .sql(unsafeRaw: "'Moon'"))
                 .first()
@@ -55,9 +61,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_sqlEmbedValue() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let moon = try Moon.query(on: self.database)
                 .filter(\.$name == .sql(embed: "\(literal: "Moon")"))
                 .first()
@@ -69,9 +78,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_sqlEmbedField() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let moon = try Moon.query(on: self.database)
                 .filter(.sql(embed: "\(ident: "name")"), .equal, .bind("Moon"))
                 .first()
@@ -83,9 +95,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_sqlEmbedFilter() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let moon = try Moon.query(on: self.database)
                 .filter(.sql(embed: "\(ident: "name")=\(literal: "Moon")"))
                 .first()
@@ -97,9 +112,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_group() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .group(.or) {
                     $0.filter(\.$name == "Earth")
@@ -119,9 +137,12 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_emptyGroup() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .group(.or) { _ in }
                 .all().wait()
@@ -131,9 +152,12 @@ extension FluentBenchmarker {
 
     // https://github.com/vapor/fluent-kit/issues/257
     private func testFilter_emptyRightHandSide() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             guard let correctUUID = try Planet.query(on: self.database).first().wait()?.id else {
                 XCTFail("Cannot get UUID to test against")
                 return
@@ -148,11 +172,14 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_optionalStringContains() throws {
-        try self.runTest(#function, [
-            FooOwnerMigration(),
-            FooEnumMigration(),
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooOwnerMigration(),
+                FooEnumMigration(),
+                FooMigration(),
+            ]
+        ) {
             try Foo(bar: "foo").create(on: self.database).wait()
             try Foo(bar: "bar").create(on: self.database).wait()
             try Foo(bar: "baz").create(on: self.database).wait()
@@ -165,11 +192,14 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_enum() throws {
-        try self.runTest(#function, [
-            FooOwnerMigration(),
-            FooEnumMigration(),
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooOwnerMigration(),
+                FooEnumMigration(),
+                FooMigration(),
+            ]
+        ) {
             try Foo(bar: "foo1", type: .foo).create(on: self.database).wait()
             try Foo(bar: "foo2", type: .foo).create(on: self.database).wait()
             try Foo(bar: "baz", type: .baz).create(on: self.database).wait()
@@ -187,11 +217,14 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_joinedEnum() throws {
-        try self.runTest(#function, [
-            FooOwnerMigration(),
-            FooEnumMigration(),
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooOwnerMigration(),
+                FooEnumMigration(),
+                FooMigration(),
+            ]
+        ) {
             let fooOwner = FooOwner(name: "foo_owner")
             try fooOwner.create(on: self.database).wait()
 
@@ -217,11 +250,14 @@ extension FluentBenchmarker {
     }
 
     private func testFilter_joinedAliasedEnum() throws {
-        try self.runTest(#function, [
-            FooOwnerMigration(),
-            FooEnumMigration(),
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooOwnerMigration(),
+                FooEnumMigration(),
+                FooMigration(),
+            ]
+        ) {
             let fooOwner = FooOwner(name: "foo_owner")
             try fooOwner.create(on: self.database).wait()
 

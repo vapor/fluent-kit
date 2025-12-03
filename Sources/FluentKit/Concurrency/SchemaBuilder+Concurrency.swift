@@ -1,15 +1,15 @@
 import NIOCore
 
-public extension SchemaBuilder {
-    func create() async throws {
+extension SchemaBuilder {
+    public func create() async throws {
         try await self.create().get()
     }
-    
-    func update() async throws {
+
+    public func update() async throws {
         try await self.update().get()
     }
-    
-    func delete() async throws {
+
+    public func delete() async throws {
         try await self.delete().get()
     }
 }

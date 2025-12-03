@@ -2,19 +2,19 @@
 public enum KeyPrefixingStrategy: CustomStringConvertible, Sendable {
     /// The "do nothing" strategy - the prefix is applied to each key by simple concatenation.
     case none
-    
+
     /// Each key has its first character capitalized and the prefix is applied to the result.
     case camelCase
-    
+
     /// An underscore is placed between the prefix and each key.
     case snakeCase
-    
+
     /// A custom strategy - for each key, the closure is called with that key and the prefix with which the
     /// wrapper was initialized, and must return the field key to actually use. The closure must be "pure"
     /// (i.e. for any given pair of inputs it must always return the same result, in the same way that hash
     /// values must be consistent within a single execution context).
     case custom(@Sendable (_ prefix: FieldKey, _ idFieldKey: FieldKey) -> FieldKey)
-    
+
     // See `CustomStringConvertible.description`.
     public var description: String {
         switch self {
@@ -28,13 +28,13 @@ public enum KeyPrefixingStrategy: CustomStringConvertible, Sendable {
             ".custom(...)"
         }
     }
-    
+
     /// Apply this prefixing strategy and the given prefix to the given key, and return the result.
     public func apply(prefix: FieldKey, to key: FieldKey) -> FieldKey {
         switch self {
         case .none:
             .prefix(prefix, key)
-        
+
         // This strategy converts `.id` and `.aggregate` keys (but not prefixes) into generic `.string()`s.
         case .camelCase:
             switch key {
@@ -54,12 +54,12 @@ public enum KeyPrefixingStrategy: CustomStringConvertible, Sendable {
     }
 }
 
-fileprivate extension String {
-    func withUppercasedFirstCharacter() -> String {
+extension String {
+    fileprivate func withUppercasedFirstCharacter() -> String {
         guard !self.isEmpty else { return self }
-        
+
         var result = self
-        result.replaceSubrange(result.startIndex ... result.startIndex, with: result[result.startIndex].uppercased())
+        result.replaceSubrange(result.startIndex...result.startIndex, with: result[result.startIndex].uppercased())
         return result
     }
 }

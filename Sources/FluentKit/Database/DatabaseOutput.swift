@@ -3,16 +3,15 @@ public protocol DatabaseOutput: CustomStringConvertible, Sendable {
     func contains(_ key: FieldKey) -> Bool
     func decodeNil(_ key: FieldKey) throws -> Bool
     func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
-        where T: Decodable
+    where T: Decodable
 }
 
 extension DatabaseOutput {
     public func decode<T>(_ key: FieldKey) throws -> T
-        where T: Decodable
-    {
+    where T: Decodable {
         try self.decode(key, as: T.self)
     }
-    
+
     public func qualifiedSchema(space: String?, _ schema: String) -> any DatabaseOutput {
         self.schema([space, schema].compactMap({ $0 }).joined(separator: "_"))
     }
@@ -22,7 +21,7 @@ extension DatabaseOutput {
     public func prefixed(by prefix: FieldKey) -> any DatabaseOutput {
         PrefixedDatabaseOutput(prefix: prefix, strategy: .none, base: self)
     }
-    
+
     public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> any DatabaseOutput {
         PrefixedDatabaseOutput(prefix: prefix, strategy: stratgey, base: self)
     }
@@ -59,11 +58,11 @@ private struct CombinedOutput: DatabaseOutput {
 private struct PrefixedDatabaseOutput: DatabaseOutput {
     let prefix: FieldKey, strategy: KeyPrefixingStrategy
     let base: any DatabaseOutput
-    
+
     func schema(_ schema: String) -> any DatabaseOutput {
         PrefixedDatabaseOutput(prefix: self.prefix, strategy: self.strategy, base: self.base.schema(schema))
     }
-    
+
     func contains(_ key: FieldKey) -> Bool {
         self.base.contains(self.strategy.apply(prefix: self.prefix, to: key))
     }
@@ -72,7 +71,7 @@ private struct PrefixedDatabaseOutput: DatabaseOutput {
         try self.base.decodeNil(self.strategy.apply(prefix: self.prefix, to: key))
     }
 
-    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T where T : Decodable {
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T where T: Decodable {
         try self.base.decode(self.strategy.apply(prefix: self.prefix, to: key), as: T.self)
     }
 
@@ -80,4 +79,3 @@ private struct PrefixedDatabaseOutput: DatabaseOutput {
         "Prefix(\(self.prefix) by \(self.strategy), of: \(self.base.description))"
     }
 }
-

@@ -1,16 +1,16 @@
-import SQLKit
 import FluentKit
+import SQLKit
 
 /// A thin deprecated wrapper around `SQLNestedSubpathExpression`.
 @available(*, deprecated, message: "Replaced by `SQLNestedSubpathExpression` in SQLKit")
 public struct SQLJSONColumnPath: SQLExpression {
     private var realExpression: SQLNestedSubpathExpression
-    
+
     public var column: String {
         get { (self.realExpression.column as? SQLIdentifier)?.string ?? "" }
         set { self.realExpression.column = SQLIdentifier(newValue) }
     }
-    
+
     public var path: [String] {
         get { self.realExpression.path }
         set { self.realExpression.path = newValue }

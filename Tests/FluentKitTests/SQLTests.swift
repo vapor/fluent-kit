@@ -1,13 +1,16 @@
 import FluentKit
 import FluentSQL
 import SQLKit
-import XCTest
 import XCTFluent
+import XCTest
 
 final class SQLTests: DbQueryTestCase {
     func testFetchFluentModels() async throws {
-        let date1 = Date(), date2 = Date(), uuid1 = UUID(), uuid2 = UUID()
-        
+        let date1 = Date()
+        let date2 = Date()
+        let uuid1 = UUID()
+        let uuid2 = UUID()
+
         self.db.fakedRows.append(contentsOf: [
             [
                 .init([
@@ -26,11 +29,17 @@ final class SQLTests: DbQueryTestCase {
                 .init(["id": 2, "field": Data([4, 5, 6, 7]), "model1_id": 2, "othermodel1_id": nil]),
             ],
             [
-                .init(["model1_id": 1, "model2_id": 1]),
+                .init(["model1_id": 1, "model2_id": 1])
             ],
             [
-                .init(["field1": 1.0, "field2": uuid1, "pivot_model1_id": 1, "pivot_model2_id": 1, "optpivot_model1_id": 2, "optpivot_model2_id": 2]),
-                .init(["field1": 2.0, "field2": uuid2, "pivot_model1_id": 2, "pivot_model2_id": 2, "optpivot_model1_id": nil, "optpivot_model2_id": nil]),
+                .init([
+                    "field1": 1.0, "field2": uuid1, "pivot_model1_id": 1, "pivot_model2_id": 1, "optpivot_model1_id": 2,
+                    "optpivot_model2_id": 2,
+                ]),
+                .init([
+                    "field1": 2.0, "field2": uuid2, "pivot_model1_id": 2, "pivot_model2_id": 2, "optpivot_model1_id": nil,
+                    "optpivot_model2_id": nil,
+                ]),
             ],
         ])
 
@@ -38,12 +47,12 @@ final class SQLTests: DbQueryTestCase {
         let model2s = try await self.db.select().columns("*").from(Model2.schema).all(decodingFluent: Model2.self)
         let pivots = try await self.db.select().columns("*").from(Pivot.schema).all(decodingFluent: Pivot.self)
         let fromPivots = try await self.db.select().columns("*").from(FromPivot.schema).all(decodingFluent: FromPivot.self)
-        
+
         XCTAssertEqual(model1s.count, 2)
         XCTAssertEqual(model2s.count, 2)
         XCTAssertEqual(pivots.count, 1)
         XCTAssertEqual(fromPivots.count, 2)
-        
+
         let model1_1 = try XCTUnwrap(model1s.dropFirst(0).first)
         let model1_2 = try XCTUnwrap(model1s.dropFirst(1).first)
         let model2_1 = try XCTUnwrap(model2s.dropFirst(0).first)
@@ -51,7 +60,7 @@ final class SQLTests: DbQueryTestCase {
         let pivot = try XCTUnwrap(pivots.first)
         let fromPivot1 = try XCTUnwrap(fromPivots.dropFirst(0).first)
         let fromPivot2 = try XCTUnwrap(fromPivots.dropFirst(1).first)
-        
+
         XCTAssertEqual(model1_1.$id.value, 1)
         XCTAssertEqual(model1_1.$field.value, "a")
         XCTAssertEqual(model1_1.$optField.value, .some(.some(0)))
@@ -79,7 +88,7 @@ final class SQLTests: DbQueryTestCase {
         XCTAssertEqual(model1_2.$model2s.fromId, model1_2.$id.value)
         XCTAssertEqual(model1_2.$otherModel2.fromId, model1_2.$id.value)
         XCTAssertEqual(model1_2.$pivotedModels2.fromId, model1_2.$id.value)
-        
+
         XCTAssertEqual(model2_1.$id.value, 1)
         XCTAssertEqual(model2_1.$field.value, Data([0, 1, 2, 3]))
         XCTAssertEqual(model2_1.$model1.id, 1)
@@ -89,10 +98,10 @@ final class SQLTests: DbQueryTestCase {
         XCTAssertEqual(model2_2.$field.value, Data([4, 5, 6, 7]))
         XCTAssertEqual(model2_2.$model1.id, 2)
         XCTAssertEqual(model2_2.$otherModel1.id, nil)
-        
+
         XCTAssertEqual(pivot.$id.$model1.id, 1)
         XCTAssertEqual(pivot.$id.$model2.id, 1)
-        
+
         XCTAssertEqual(fromPivot1.$id.$field1.value, 1.0)
         XCTAssertEqual(fromPivot1.$id.$field2.value, uuid1)
         XCTAssertEqual(fromPivot1.$pivot.id.$model1.$id.value, 1)
@@ -107,9 +116,10 @@ final class SQLTests: DbQueryTestCase {
         XCTAssertEqual(fromPivot2.$optPivot.id?.$model1.$id.value, nil)
         XCTAssertEqual(fromPivot2.$optPivot.id?.$model2.$id.value, nil)
     }
-    
+
     func testInsertFluentModels() async throws {
-        let model1_1 = Model1(), model1_2 = Model1()
+        let model1_1 = Model1()
+        let model1_2 = Model1()
         model1_1.field = "a"
         model1_1.optField = 1
         model1_1.bool = true
@@ -129,7 +139,8 @@ final class SQLTests: DbQueryTestCase {
         model1_2.optEnum = nil
         model1_2.group.groupfield1 = 32
         model1_2.group.groupfield2 = 64
-        let model2_1 = Model2(), model2_2 = Model2()
+        let model2_1 = Model2()
+        let model2_2 = Model2()
         model2_1.field = Data([0])
         model2_1.$model1.id = 1
         model2_1.$otherModel1.id = 2
@@ -140,7 +151,8 @@ final class SQLTests: DbQueryTestCase {
         let pivot = Pivot()
         pivot.id?.$model1.id = 1
         pivot.id?.$model2.id = 1
-        let fromPivot1 = FromPivot(), fromPivot2 = FromPivot()
+        let fromPivot1 = FromPivot()
+        let fromPivot2 = FromPivot()
         fromPivot1.id?.field1 = 1.0
         fromPivot1.id?.field2 = UUID()
         fromPivot1.$pivot.id.$model1.id = 1
@@ -151,20 +163,28 @@ final class SQLTests: DbQueryTestCase {
         fromPivot2.$pivot.id.$model1.id = 2
         fromPivot2.$pivot.id.$model2.id = 2
         fromPivot2.$optPivot.id = nil
-        
+
         try await self.db.insert(into: Model1.schema).fluentModels([model1_1, model1_2]).run()
         try await self.db.insert(into: Model2.schema).fluentModels([model2_1, model2_2]).run()
         try await self.db.insert(into: Pivot.schema).fluentModel(pivot).run()
         try await self.db.insert(into: FromPivot.schema).fluentModels([fromPivot1, fromPivot2]).run()
-        
+
         XCTAssertEqual(self.db.sqlSerializers.count, 4)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(0).first?.sql, #"INSERT INTO "model1s" ("bool", "created_at", "enum", "field", "group_groupfield1", "group_groupfield2", "id", "optbool", "optenum", "optfield") VALUES ($1, $2, 'foo', $3, $4, $5, DEFAULT, $6, 'bar', $7), ($8, $9, 'foo', $10, $11, $12, $13, NULL, NULL, NULL)"#)
+        XCTAssertEqual(
+            self.db.sqlSerializers.dropFirst(0).first?.sql,
+            #"INSERT INTO "model1s" ("bool", "created_at", "enum", "field", "group_groupfield1", "group_groupfield2", "id", "optbool", "optenum", "optfield") VALUES ($1, $2, 'foo', $3, $4, $5, DEFAULT, $6, 'bar', $7), ($8, $9, 'foo', $10, $11, $12, $13, NULL, NULL, NULL)"#
+        )
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(0).first?.binds.count, 13)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(1).first?.sql, #"INSERT INTO "model2s" ("field", "id", "model1_id", "othermodel1_id") VALUES ($1, DEFAULT, $2, $3), ($4, $5, $6, NULL)"#)
+        XCTAssertEqual(
+            self.db.sqlSerializers.dropFirst(1).first?.sql,
+            #"INSERT INTO "model2s" ("field", "id", "model1_id", "othermodel1_id") VALUES ($1, DEFAULT, $2, $3), ($4, $5, $6, NULL)"#)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(1).first?.binds.count, 6)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(2).first?.sql, #"INSERT INTO "pivots" ("model1_id", "model2_id") VALUES ($1, $2)"#)
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(2).first?.binds.count, 2)
-        XCTAssertEqual(self.db.sqlSerializers.dropFirst(3).first?.sql, #"INSERT INTO "from_pivots" ("field1", "field2", "optpivot_model1_id", "optpivot_model2_id", "pivot_model1_id", "pivot_model2_id") VALUES ($1, $2, $3, $4, $5, $6), ($7, $8, NULL, NULL, $9, $10)"#)
+        XCTAssertEqual(
+            self.db.sqlSerializers.dropFirst(3).first?.sql,
+            #"INSERT INTO "from_pivots" ("field1", "field2", "optpivot_model1_id", "optpivot_model2_id", "pivot_model1_id", "pivot_model2_id") VALUES ($1, $2, $3, $4, $5, $6), ($7, $8, NULL, NULL, $9, $10)"#
+        )
         XCTAssertEqual(self.db.sqlSerializers.dropFirst(3).first?.binds.count, 10)
     }
 }
@@ -220,7 +240,10 @@ final class Pivot: Model, @unchecked Sendable {
         init(model1Id: Model1.IDValue, model2Id: Model2.IDValue) { (self.$model1.id, self.$model2.id) = (model1Id, model2Id) }
 
         static func == (lhs: IDValue, rhs: IDValue) -> Bool { lhs.$model1.id == rhs.$model1.id && lhs.$model2.id == rhs.$model2.id }
-        func hash(into hasher: inout Hasher) { hasher.combine(self.$model1.id); hasher.combine(self.$model2.id) }
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(self.$model1.id)
+            hasher.combine(self.$model2.id)
+        }
     }
 
     @CompositeID var id: IDValue?
@@ -233,7 +256,7 @@ final class Pivot: Model, @unchecked Sendable {
 
 final class FromPivot: Model, @unchecked Sendable {
     static let schema = "from_pivots"
-    
+
     final class IDValue: Fields, Hashable, @unchecked Sendable {
         @Field(key: "field1") var field1: Double
         @Field(key: "field2") var field2: UUID
@@ -242,13 +265,16 @@ final class FromPivot: Model, @unchecked Sendable {
         init(field1: Double, field2: UUID) { (self.field1, self.field2) = (field1, field2) }
 
         static func == (lhs: IDValue, rhs: IDValue) -> Bool { lhs.field1 == rhs.field1 && lhs.field2 == rhs.field2 }
-        func hash(into hasher: inout Hasher) { hasher.combine(self.field1); hasher.combine(self.field2) }
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(self.field1)
+            hasher.combine(self.field2)
+        }
     }
-    
+
     @CompositeID var id: IDValue?
     @CompositeParent(prefix: "pivot", strategy: .snakeCase) var pivot: Pivot
     @CompositeOptionalParent(prefix: "optpivot", strategy: .snakeCase) var optPivot: Pivot?
-    
+
     init() {}
     init(field1: Double, field2: UUID) { self.id = .init(field1: field1, field2: field2) }
 }

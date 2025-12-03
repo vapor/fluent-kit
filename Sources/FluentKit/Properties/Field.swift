@@ -2,19 +2,18 @@ import NIOConcurrencyHelpers
 
 extension Fields {
     public typealias Field<Value> = FieldProperty<Self, Value>
-        where Value: Codable & Sendable
+    where Value: Codable & Sendable
 }
 
 // MARK: Type
 
 @propertyWrapper
 public final class FieldProperty<Model, Value>: @unchecked Sendable
-    where Model: FluentKit.Fields, Value: Codable & Sendable
-{
+where Model: FluentKit.Fields, Value: Codable & Sendable {
     public let key: FieldKey
     var outputValue: Value?
     var inputValue: DatabaseQuery.Value?
-    
+
     public var projectedValue: FieldProperty<Model, Value> {
         self
     }
@@ -44,7 +43,7 @@ extension FieldProperty: CustomStringConvertible {
 
 // MARK: Property
 
-extension FieldProperty: AnyProperty { }
+extension FieldProperty: AnyProperty {}
 
 extension FieldProperty: Property {
     public var value: Value? {
@@ -80,7 +79,7 @@ extension FieldProperty: AnyQueryableProperty {
     }
 }
 
-extension FieldProperty: QueryableProperty { }
+extension FieldProperty: QueryableProperty {}
 
 // MARK: Query-addressable
 

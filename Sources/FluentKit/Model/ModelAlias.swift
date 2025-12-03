@@ -46,10 +46,10 @@
 public protocol ModelAlias: Schema {
     /// The model type to be aliased.
     associatedtype Model: FluentKit.Model
-    
+
     /// The actual alias name to be used in place of `Model.schema`.
     static var name: String { get }
-    
+
     /// An instance of the orignal model type. Holds returned data from lookups, and
     /// is used as a data source for CRUD operations.
     ///
@@ -64,7 +64,7 @@ public protocol ModelAlias: Schema {
     /// automatically and should not be overriden by conforming types. See
     /// ``ModelAlias/subscript(dynamicMember:)-8hc9u`` for details.
     subscript<Field>(dynamicMember keyPath: KeyPath<Self.Model, Field>) -> AliasedField<Self, Field>
-        where Field.Model == Self.Model
+    where Field.Model == Self.Model
     { get }
 
     /// `@dynamicMemberLookup` support. The implementation of this subscript is provided
@@ -76,7 +76,7 @@ public protocol ModelAlias: Schema {
 extension ModelAlias {
     /// An alias's ``space`` is always that of the original Model.
     public static var space: String? { Model.space }
-    
+
     /// An alias's ``schema`` is always that of the original Model. This is the full, unaliased
     /// schema name , and must remain so even for the aliased model type in order to correctly
     /// specify for the database driver what identifier the alias applies to.
@@ -107,8 +107,7 @@ extension ModelAlias {
     /// print(alias.$id.exists) // false
     /// ```
     public subscript<Field>(dynamicMember keyPath: KeyPath<Model, Field>) -> AliasedField<Self, Field>
-        where Field.Model == Self.Model
-    {
+    where Field.Model == Self.Model {
         .init(field: self.model[keyPath: keyPath])
     }
 
@@ -140,8 +139,7 @@ extension ModelAlias {
 /// levels of nested projected properties values.
 @dynamicMemberLookup
 public final class AliasedField<Alias, Field>
-    where Alias: ModelAlias, Field: Property, Alias.Model == Field.Model
-{
+where Alias: ModelAlias, Field: Property, Alias.Model == Field.Model {
     public let field: Field
 
     fileprivate init(field: Field) { self.field = field }

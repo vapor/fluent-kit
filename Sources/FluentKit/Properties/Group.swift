@@ -2,15 +2,14 @@ import NIOConcurrencyHelpers
 
 extension Fields {
     public typealias Group<Value> = GroupProperty<Self, Value>
-        where Value: Fields
+    where Value: Fields
 }
 
 // MARK: Type
 
 @propertyWrapper @dynamicMemberLookup
 public final class GroupProperty<Model, Value>: @unchecked Sendable
-    where Model: FluentKit.Fields, Value: FluentKit.Fields
-{
+where Model: FluentKit.Fields, Value: FluentKit.Fields {
     public let key: FieldKey
     public var value: Value?
 
@@ -36,10 +35,9 @@ public final class GroupProperty<Model, Value>: @unchecked Sendable
     }
 
     public subscript<Nested>(
-         dynamicMember keyPath: KeyPath<Value, Nested>
+        dynamicMember keyPath: KeyPath<Value, Nested>
     ) -> GroupPropertyPath<Model, Nested>
-        where Nested: Property
-    {
+    where Nested: Property {
         return .init(key: self.key, property: self.value![keyPath: keyPath])
     }
 }
@@ -52,9 +50,9 @@ extension GroupProperty: CustomStringConvertible {
 
 // MARK: + Property
 
-extension GroupProperty: AnyProperty { }
+extension GroupProperty: AnyProperty {}
 
-extension GroupProperty: Property { }
+extension GroupProperty: Property {}
 
 // MARK: + Database
 
@@ -88,21 +86,19 @@ extension GroupProperty: AnyCodableProperty {
 
     public func decode(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         guard !container.decodeNil() else { return }
         self.value = .some(try container.decode(Value.self))
     }
-    
+
     public var skipPropertyEncoding: Bool { self.value == nil }
 }
-
 
 // MARK: Path
 
 @dynamicMemberLookup
 public final class GroupPropertyPath<Model, Property>
-    where Model: Fields
-{
+where Model: Fields {
     let key: FieldKey
     let property: Property
 
@@ -112,7 +108,7 @@ public final class GroupPropertyPath<Model, Property>
     }
 
     public subscript<Nested>(
-         dynamicMember keyPath: KeyPath<Property, Nested>
+        dynamicMember keyPath: KeyPath<Property, Nested>
     ) -> GroupPropertyPath<Model, Nested> {
         .init(
             key: self.key,
@@ -124,8 +120,7 @@ public final class GroupPropertyPath<Model, Property>
 // MARK: + Property
 
 extension GroupPropertyPath: AnyProperty
-    where Property: AnyProperty
-{
+where Property: AnyProperty {
     public static var anyValueType: Any.Type {
         Property.anyValueType
     }
@@ -136,8 +131,7 @@ extension GroupPropertyPath: AnyProperty
 }
 
 extension GroupPropertyPath: FluentKit.Property
-    where Property: FluentKit.Property
-{
+where Property: FluentKit.Property {
     public typealias Model = Property.Model
     public typealias Value = Property.Value
 
@@ -154,8 +148,7 @@ extension GroupPropertyPath: FluentKit.Property
 // MARK: + Queryable
 
 extension GroupPropertyPath: AnyQueryableProperty
-    where Property: QueryableProperty
-{
+where Property: QueryableProperty {
     public var path: [FieldKey] {
         let subPath = self.property.path
         return [
@@ -165,8 +158,7 @@ extension GroupPropertyPath: AnyQueryableProperty
 }
 
 extension GroupPropertyPath: QueryableProperty
-    where Property: QueryableProperty
-{
+where Property: QueryableProperty {
     public static func queryValue(_ value: Value) -> DatabaseQuery.Value {
         Property.queryValue(value)
     }
@@ -175,12 +167,11 @@ extension GroupPropertyPath: QueryableProperty
 // MARK: + QueryAddressable
 
 extension GroupPropertyPath: AnyQueryAddressableProperty
-    where Property: AnyQueryAddressableProperty
-{
+where Property: AnyQueryAddressableProperty {
     public var anyQueryableProperty: any AnyQueryableProperty {
         self.property.anyQueryableProperty
     }
-    
+
     public var queryablePath: [FieldKey] {
         let subPath = self.property.queryablePath
         return [
@@ -190,10 +181,9 @@ extension GroupPropertyPath: AnyQueryAddressableProperty
 }
 
 extension GroupPropertyPath: QueryAddressableProperty
-    where Property: QueryAddressableProperty
-{
+where Property: QueryAddressableProperty {
     public typealias QueryablePropertyType = Property.QueryablePropertyType
-    
+
     public var queryableProperty: QueryablePropertyType {
         self.property.queryableProperty
     }

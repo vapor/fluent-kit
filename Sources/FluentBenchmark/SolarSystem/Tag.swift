@@ -15,7 +15,7 @@ public final class Tag: Model, @unchecked Sendable {
     @Siblings(through: PlanetTag.self, from: \.$tag, to: \.$planet)
     public var planets: [Planet]
 
-    public init() { }
+    public init() {}
 
     public init(id: UUID? = nil, name: String) {
         self.id = id
@@ -24,7 +24,7 @@ public final class Tag: Model, @unchecked Sendable {
 }
 
 public struct TagMigration: Migration {
-    public init() { }
+    public init() {}
 
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
         database.schema("tags")
@@ -39,15 +39,16 @@ public struct TagMigration: Migration {
 }
 
 public final class TagSeed: Migration {
-    public init() { }
+    public init() {}
 
     public func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        .andAllSucceed([
-            "Small Rocky", "Gas Giant", "Inhabited"
-        ].map {
-            Tag(name: $0)
-                .create(on: database)
-        }, on: database.eventLoop)
+        .andAllSucceed(
+            [
+                "Small Rocky", "Gas Giant", "Inhabited",
+            ].map {
+                Tag(name: $0)
+                    .create(on: database)
+            }, on: database.eventLoop)
     }
 
     public func revert(on database: any Database) -> EventLoopFuture<Void> {

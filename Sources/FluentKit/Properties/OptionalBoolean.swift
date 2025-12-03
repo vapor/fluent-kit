@@ -1,6 +1,6 @@
 extension Fields {
     public typealias OptionalBoolean<Format> = OptionalBooleanProperty<Self, Format>
-        where Format: BooleanPropertyFormat
+    where Format: BooleanPropertyFormat
 }
 
 /// A Fluent model property which represents an optional boolean (true/false) value.
@@ -44,8 +44,7 @@ extension Fields {
 /// > Note: See also ``BooleanProperty`` and ``BooleanPropertyFormat``.
 @propertyWrapper
 public final class OptionalBooleanProperty<Model, Format>
-    where Model: FluentKit.Fields, Format: BooleanPropertyFormat
-{
+where Model: FluentKit.Fields, Format: BooleanPropertyFormat {
     @OptionalFieldProperty<Model, Format.Value>
     public var field: Format.Value?
     public let format: Format

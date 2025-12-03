@@ -60,7 +60,7 @@ extension DatabaseQuery: CustomStringConvertible {
         }
         return parts.joined(separator: " ")
     }
-    
+
     var describedByLoggingMetadata: Logger.Metadata {
         var result: Logger.Metadata = [
             "action": "\(self.action)",

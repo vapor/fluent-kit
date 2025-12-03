@@ -5,9 +5,12 @@ import XCTest
 
 extension FluentBenchmarker {
     public func testOptionalParent() throws {
-        try runTest(#function, [
-            UserMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             // seed
             do {
                 let swift = User(
@@ -65,20 +68,21 @@ extension FluentBenchmarker {
                 .all().wait()
             XCTAssertEqual(users2.count, 1)
             XCTAssert(users2.first?.bestFriend == nil)
-            
+
             // Test deleted OptionalParent
             try User.query(on: self.database).filter(\.$name == "Swift").delete().wait()
-            
+
             let users3 = try User.query(on: self.database)
                 .with(\.$bestFriend, withDeleted: true)
                 .all().wait()
             XCTAssertEqual(users3.first?.bestFriend?.name, "Swift")
-            
-            XCTAssertThrowsError(try User.query(on: self.database)
-                .with(\.$bestFriend)
-                .all().wait()
+
+            XCTAssertThrowsError(
+                try User.query(on: self.database)
+                    .with(\.$bestFriend)
+                    .all().wait()
             ) { error in
-                guard case let .missingParent(from, to, key, _) = error as? FluentError else {
+                guard case .missingParent(let from, let to, let key, _) = error as? FluentError else {
                     return XCTFail("Unexpected error \(error) thrown")
                 }
                 XCTAssertEqual(from, "User")
@@ -113,11 +117,11 @@ private final class User: Model, @unchecked Sendable {
 
     @Children(for: \.$bestFriend)
     var friends: [User]
-    
+
     @Timestamp(key: "deleted_at", on: .delete)
     var deletedAt: Date?
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String, pet: Pet, bestFriend: User? = nil) {
         self.id = id
@@ -143,9 +147,8 @@ private struct UserMigration: Migration {
     }
 }
 
-
 private struct UserSeed: Migration {
-    init() { }
+    init() {}
 
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let tanner = User(name: "Tanner", pet: .init(name: "Ziz", type: .cat))

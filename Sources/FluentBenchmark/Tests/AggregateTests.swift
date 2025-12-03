@@ -8,9 +8,12 @@ extension FluentBenchmarker {
     }
 
     private func testAggregate_all(max: Bool) throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             // whole table
             let count = try Planet.query(on: self.database)
                 .count().wait()
@@ -52,9 +55,12 @@ extension FluentBenchmarker {
     }
 
     private func testAggregate_emptyDatabase(max: Bool) throws {
-        try self.runTest(#function, [
-            SolarSystem(seed: false)
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem(seed: false)
+            ]
+        ) {
             // whole table
             let count = try Planet.query(on: self.database)
                 .count().wait()
@@ -62,10 +68,10 @@ extension FluentBenchmarker {
 
             // max
             if max {
-            let maxName = try Planet.query(on: self.database)
-                .max(\.$name).wait()
-            // expect error?
-            XCTAssertNil(maxName)
+                let maxName = try Planet.query(on: self.database)
+                    .max(\.$name).wait()
+                // expect error?
+                XCTAssertNil(maxName)
             }
         }
     }

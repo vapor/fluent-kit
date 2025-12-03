@@ -19,9 +19,12 @@ extension FluentBenchmarker {
     }
 
     private func testSQL_rawDecode(_ sql: any SQLDatabase) throws {
-        try self.runTest(#function, [
-            UserMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                UserMigration()
+            ]
+        ) {
             let tanner = User(firstName: "Tanner", lastName: "Nelson", parentID: UUID())
             try tanner.create(on: self.database).wait()
 
@@ -66,7 +69,6 @@ extension FluentBenchmarker {
     }
 }
 
-
 private final class User: Model, @unchecked Sendable {
     static let schema = "users"
 
@@ -82,10 +84,10 @@ private final class User: Model, @unchecked Sendable {
     @OptionalParent(key: "parent_id")
     var parent: User?
 
-    init() { }
+    init() {}
 
     init(
-        id: UUID? = nil, 
+        id: UUID? = nil,
         firstName: String,
         lastName: String,
         parentID: UUID? = nil
@@ -111,4 +113,3 @@ private struct UserMigration: Migration {
         database.schema("users").delete()
     }
 }
-

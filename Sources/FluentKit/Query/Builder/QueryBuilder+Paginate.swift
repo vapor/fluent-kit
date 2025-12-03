@@ -13,7 +13,7 @@ extension QueryBuilder {
     ) -> EventLoopFuture<Page<Model>> {
         self.page(withIndex: request.page, size: request.per)
     }
-    
+
     /// Returns a single `Page` out of the complete result set.
     ///
     /// This method will first `count()` the result set, then request a subset of the results using `range()` and `all()`.
@@ -24,7 +24,8 @@ extension QueryBuilder {
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func page(
         withIndex page: Int,
-        size per: Int) -> EventLoopFuture<Page<Model>> {
+        size per: Int
+    ) -> EventLoopFuture<Page<Model>> {
         let trimmedRequest: PageRequest = {
             guard let pageSizeLimit = database.context.pageSizeLimit else {
                 return .init(page: Swift.max(page, 1), per: Swift.max(per, 1))
@@ -85,13 +86,13 @@ public struct PageMetadata: Codable, Sendable {
 
     /// Total number of items available.
     public let total: Int
-    
+
     /// Computed total number of pages with `1` being the minimum.
     public var pageCount: Int {
-        let count = Int((Double(self.total)/Double(self.per)).rounded(.up))
+        let count = Int((Double(self.total) / Double(self.per)).rounded(.up))
         return count < 1 ? 1 : count
     }
-    
+
     /// Creates a new `PageMetadata` instance.
     ///
     /// - Parameters:

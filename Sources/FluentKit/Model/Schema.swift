@@ -6,11 +6,11 @@ public protocol Schema: Fields {
 
 extension Schema {
     public static var space: String? { nil }
-    
+
     public static var schemaOrAlias: String {
         self.alias ?? self.schema
     }
-    
+
     public static var spaceIfNotAliased: String? {
         self.alias == nil ? self.space : nil
     }

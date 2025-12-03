@@ -1,13 +1,13 @@
 import NIOCore
 
-public extension ParentProperty {
-    func load(on database: any Database) async throws {
+extension ParentProperty {
+    public func load(on database: any Database) async throws {
         try await self.load(on: database).get()
     }
 }
 
-public extension CompositeParentProperty {
-    func load(on database: any Database) async throws {
+extension CompositeParentProperty {
+    public func load(on database: any Database) async throws {
         try await self.load(on: database).get()
     }
 }

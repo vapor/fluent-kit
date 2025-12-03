@@ -35,7 +35,7 @@ public protocol DatabaseInput {
     ///   behavior unless the semantics of the conforming type explicitly require otherwise and
     ///   the alternate behavior is clearly documented.
     func set(_ value: DatabaseQuery.Value, at key: FieldKey)
-    
+
     /// Indicates whether this ``DatabaseInput`` instance is requesting key/value pairs for _all_ defined
     /// database fields regardless of status, or only those pairs where the current value
     /// is known to be out of date (also referred to variously as "dirty", "modified", or "has changes").
@@ -75,7 +75,7 @@ extension DatabaseInput {
     public func prefixed(by prefix: FieldKey) -> any DatabaseInput {
         PrefixedDatabaseInput(prefix: prefix, strategy: .none, base: self)
     }
-    
+
     /// Return a ``DatabaseInput`` wrapping `self` so as to apply a given prefix, according to a given
     /// ``KeyPrefixingStrategy``, to each field key before processing.
     public func prefixed(by prefix: FieldKey, using stratgey: KeyPrefixingStrategy) -> any DatabaseInput {
@@ -89,7 +89,7 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
     let prefix: FieldKey
     let strategy: KeyPrefixingStrategy
     let base: Base
-    
+
     var wantsUnmodifiedKeys: Bool { self.base.wantsUnmodifiedKeys }
 
     func set(_ value: DatabaseQuery.Value, at key: FieldKey) {
@@ -121,13 +121,13 @@ private struct PrefixedDatabaseInput<Base: DatabaseInput>: DatabaseInput {
 internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Schema>: DatabaseInput {
     let builder: QueryBuilder<BuilderModel>
     let inverted: Bool
-    
+
     var wantsUnmodifiedKeys: Bool { true }
-    
+
     init(builder: QueryBuilder<BuilderModel>, inverted: Bool = false) where BuilderModel == InputModel {
         self.init(BuilderModel.self, builder: builder, inverted: inverted)
     }
-    
+
     init(_: InputModel.Type, builder: QueryBuilder<BuilderModel>, inverted: Bool = false) {
         self.builder = builder
         self.inverted = inverted
@@ -151,7 +151,7 @@ internal struct QueryFilterInput<BuilderModel: FluentKit.Model, InputModel: Sche
 internal struct NullValueOverrideInput<Base: DatabaseInput>: DatabaseInput {
     let base: Base
     var wantsUnmodifiedKeys: Bool { true }
-    
+
     func set(_: DatabaseQuery.Value, at key: FieldKey) {
         self.base.set(.null, at: key)
     }

@@ -1,12 +1,12 @@
-import NIOCore
 import Logging
+import NIOCore
 
 public protocol Database: Sendable {
     var context: DatabaseContext { get }
-    
+
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> Void
     ) -> EventLoopFuture<Void>
 
     func execute(
@@ -20,14 +20,13 @@ public protocol Database: Sendable {
     var inTransaction: Bool { get }
 
     func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
-    
+
     func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T>
 }
 
 extension Database {
     public func query<Model>(_ model: Model.Type) -> QueryBuilder<Model>
-        where Model: FluentKit.Model
-    {
+    where Model: FluentKit.Model {
         .init(database: self)
     }
 }
@@ -36,11 +35,11 @@ extension Database {
     public var configuration: any DatabaseConfiguration {
         self.context.configuration
     }
-    
+
     public var logger: Logger {
         self.context.logger
     }
-    
+
     public var eventLoop: any EventLoop {
         self.context.eventLoop
     }
@@ -60,8 +59,8 @@ public protocol DatabaseDriver: Sendable {
     func shutdownAsync() async
 }
 
-public extension DatabaseDriver {
-    func shutdownAsync() async {
+extension DatabaseDriver {
+    public func shutdownAsync() async {
         shutdown()
     }
 }
@@ -77,7 +76,7 @@ public struct DatabaseContext: Sendable {
     public let eventLoop: any EventLoop
     public let history: QueryHistory?
     public let pageSizeLimit: Int?
-    
+
     public init(
         configuration: any DatabaseConfiguration,
         logger: Logger,

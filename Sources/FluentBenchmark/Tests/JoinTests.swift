@@ -1,7 +1,7 @@
-import SQLKit
 import FluentKit
 import Foundation
 import NIOCore
+import SQLKit
 import XCTest
 
 extension FluentBenchmarker {
@@ -16,9 +16,12 @@ extension FluentBenchmarker {
     }
 
     private func testJoin_basic() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id)
                 .all().wait()
@@ -53,11 +56,14 @@ extension FluentBenchmarker {
     }
 
     private func testJoin_sameTable() throws {
-        try self.runTest(#function, [
-            TeamMigration(),
-            MatchMigration(),
-            TeamMatchSeed()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TeamMigration(),
+                MatchMigration(),
+                TeamMatchSeed(),
+            ]
+        ) {
             // test fetching teams
             do {
                 let teams = try Team.query(on: self.database)
@@ -118,12 +124,15 @@ extension FluentBenchmarker {
 
     private func testJoin_fieldFilter() throws {
         // seeded db
-        try runTest(#function, [
-            CityMigration(),
-            CitySeed(),
-            SchoolMigration(),
-            SchoolSeed()
-        ]) {
+        try runTest(
+            #function,
+            [
+                CityMigration(),
+                CitySeed(),
+                SchoolMigration(),
+                SchoolSeed(),
+            ]
+        ) {
             let smallSchools = try School.query(on: self.database)
                 .join(City.self, on: \School.$city.$id == \City.$id)
                 .filter(\School.$pupils < \City.$averagePupils)
@@ -146,7 +155,6 @@ extension FluentBenchmarker {
             XCTAssertEqual(averageSchools.count, 1)
         }
     }
-
 
     private func testJoin_fieldOrdering() throws {
         _ = School.query(on: self.database)
@@ -187,9 +195,12 @@ extension FluentBenchmarker {
     }
 
     private func testJoin_partialSelect() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let planets = try Planet.query(on: self.database)
                 .field(\.$name)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id)
@@ -212,23 +223,26 @@ extension FluentBenchmarker {
             }
         }
     }
-    
+
     private func testJoin_complexCondition() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             guard self.database is any SQLDatabase else { return }
-            
+
             let planets = try Planet.query(on: self.database)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != \Planet.$name)
                 .all().wait()
-            
+
             XCTAssertFalse(planets.isEmpty)
-            
+
             let morePlanets = try Planet.query(on: self.database)
                 .join(Star.self, on: \Planet.$star.$id == \Star.$id && \Star.$name != "Sol")
                 .all().wait()
-            
+
             XCTAssertEqual(morePlanets.count, 1)
         }
     }
@@ -249,7 +263,7 @@ private final class Team: Model, @unchecked Sendable {
     @Children(for: \.$awayTeam)
     var awayMatches: [Match]
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String) {
         self.id = id
@@ -285,7 +299,7 @@ private final class Match: Model, @unchecked Sendable {
     @Parent(key: "away_team_id")
     var awayTeam: Team
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String, homeTeam: Team, awayTeam: Team) {
         self.id = id
@@ -316,14 +330,15 @@ private struct TeamMatchSeed: Migration {
         let b = Team(name: "b")
         let c = Team(name: "c")
         return a.create(on: database).and(b.create(on: database)).and(c.create(on: database)).flatMap { _ -> EventLoopFuture<Void> in
-            .andAllSucceed([
-                Match(name: "a vs. b", homeTeam: a, awayTeam: b).save(on: database),
-                Match(name: "a vs. c", homeTeam: a, awayTeam: c).save(on: database),
-                Match(name: "b vs. c", homeTeam: b, awayTeam: c).save(on: database),
-                Match(name: "b vs. a", homeTeam: b, awayTeam: a).save(on: database),
-                Match(name: "c vs. b", homeTeam: c, awayTeam: b).save(on: database),
-                Match(name: "c vs. a", homeTeam: c, awayTeam: a).save(on: database),
-            ], on: database.eventLoop)
+            .andAllSucceed(
+                [
+                    Match(name: "a vs. b", homeTeam: a, awayTeam: b).save(on: database),
+                    Match(name: "a vs. c", homeTeam: a, awayTeam: c).save(on: database),
+                    Match(name: "b vs. c", homeTeam: b, awayTeam: c).save(on: database),
+                    Match(name: "b vs. a", homeTeam: b, awayTeam: a).save(on: database),
+                    Match(name: "c vs. b", homeTeam: c, awayTeam: b).save(on: database),
+                    Match(name: "c vs. a", homeTeam: c, awayTeam: a).save(on: database),
+                ], on: database.eventLoop)
         }
 
     }
@@ -335,7 +350,6 @@ private struct TeamMatchSeed: Migration {
 
     }
 }
-
 
 private final class School: Model, @unchecked Sendable {
     static let schema = "schools"
@@ -352,7 +366,7 @@ private final class School: Model, @unchecked Sendable {
     @Parent(key: "city_id")
     var city: City
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String, pupils: Int, cityID: City.IDValue) {
         self.id = id
@@ -384,7 +398,7 @@ private struct SchoolSeed: Migration {
                 (name: "schoolA1", pupils: 500),
                 (name: "schoolA2", pupils: 250),
                 (name: "schoolA3", pupils: 400),
-                (name: "schoolA4", pupils: 50)
+                (name: "schoolA4", pupils: 50),
             ],
             to: "Amsterdam",
             on: database
@@ -394,7 +408,7 @@ private struct SchoolSeed: Migration {
                 (name: "schoolB1", pupils: 500),
                 (name: "schoolB2", pupils: 500),
                 (name: "schoolB3", pupils: 400),
-                (name: "schoolB4", pupils: 200)
+                (name: "schoolB4", pupils: 200),
             ],
             to: "New York",
             on: database
@@ -438,7 +452,7 @@ private final class City: Model, @unchecked Sendable {
     @Children(for: \.$city)
     var schools: [School]
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, name: String, averagePupils: Int) {
         self.id = id
@@ -462,12 +476,12 @@ private struct CityMigration: Migration {
 }
 
 private struct CitySeed: Migration {
-    init() { }
+    init() {}
 
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
         let saves = [
             City(name: "Amsterdam", averagePupils: 300),
-            City(name: "New York", averagePupils: 400)
+            City(name: "New York", averagePupils: 400),
         ].map { city -> EventLoopFuture<Void> in
             return city.save(on: database)
         }

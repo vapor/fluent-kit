@@ -37,62 +37,62 @@ public struct Migrator: Sendable {
         self.eventLoop = eventLoop
         self.migrationLogLevel = migrationLogLevel
     }
-    
+
     // MARK: Setup
-    
+
     public func setupIfNeeded() -> EventLoopFuture<Void> {
-        self.migrators() { $0.setupIfNeeded() }.map { _ in }
+        self.migrators { $0.setupIfNeeded() }.map { _ in }
     }
-    
+
     // MARK: Prepare
-    
+
     public func prepareBatch() -> EventLoopFuture<Void> {
-        self.migrators() { $0.prepareBatch() }.map { _ in }
+        self.migrators { $0.prepareBatch() }.map { _ in }
     }
-    
+
     // MARK: Revert
-    
+
     public func revertLastBatch() -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertLastBatch() }.map { _ in }
+        self.migrators { $0.revertLastBatch() }.map { _ in }
     }
-    
+
     public func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertBatch(number: number) }.map { _ in }
+        self.migrators { $0.revertBatch(number: number) }.map { _ in }
     }
-    
+
     public func revertAllBatches() -> EventLoopFuture<Void> {
-        self.migrators() { $0.revertAllBatches() }.map { _ in }
+        self.migrators { $0.revertAllBatches() }.map { _ in }
     }
-    
+
     // MARK: Preview
-    
+
     public func previewPrepareBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
+        self.migrators { migrator in
             migrator.previewPrepareBatch().and(value: migrator.id)
         }.map {
             $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
-    
+
     public func previewRevertLastBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
+        self.migrators { migrator in
             migrator.previewRevertLastBatch().and(value: migrator.id)
         }.map {
             $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
-    
+
     public func previewRevertBatch() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
+        self.migrators { migrator in
             // This is not correct, but can't be fixed as it would require changing this API's parameters.
             migrator.previewPrepareBatch().and(value: migrator.id)
         }.map {
             $0.flatMap { migrations, id in migrations.map { ($0, id) } }
         }
     }
-    
+
     public func previewRevertAllBatches() -> EventLoopFuture<[(any Migration, DatabaseID?)]> {
-        self.migrators() { migrator in
+        self.migrators { migrator in
             migrator.previewRevertAllBatches().and(value: migrator.id)
         }.map {
             $0.flatMap { migrations, id in migrations.map { ($0, id) } }
@@ -102,9 +102,10 @@ public struct Migrator: Sendable {
     private func migrators<Result: Sendable>(
         _ handler: (DatabaseMigrator) -> EventLoopFuture<Result>
     ) -> EventLoopFuture<[Result]> {
-        EventLoopFuture.whenAllSucceed(self.migrations.storage.withLockedValue { $0 }.map {
-            handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLevel: self.migrationLogLevel))
-        }, on: self.eventLoop)
+        EventLoopFuture.whenAllSucceed(
+            self.migrations.storage.withLockedValue { $0 }.map {
+                handler(.init(id: $0, database: self.databaseFactory($0), migrations: $1, migrationLogLevel: self.migrationLogLevel))
+            }, on: self.eventLoop)
     }
 }
 
@@ -135,13 +136,16 @@ private final class DatabaseMigrator: Sendable {
     /// will include an identifier that can change from one execution to the next.
     private func preventUnstableNames() {
         for migration in self.migrations
-            where migration.name == migration.defaultName && migration.name.contains("$")
-        {
+        where migration.name == migration.defaultName && migration.name.contains("$") {
             if migration.name.contains("unknown context at") {
-                self.database.logger.critical("The migration at \(migration.name) is in a private context. Either explicitly give it a name by adding the `var name: String` property or make the migration `internal` or `public` instead of `private`.")
+                self.database.logger.critical(
+                    "The migration at \(migration.name) is in a private context. Either explicitly give it a name by adding the `var name: String` property or make the migration `internal` or `public` instead of `private`."
+                )
                 fatalError("Private migrations not allowed")
             }
-            self.database.logger.error("The migration has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.", metadata: ["migration": .string(migration.name)])
+            self.database.logger.error(
+                "The migration has an unexpected default name. Consider giving it an explicit name by adding a `var name: String` property before applying these migrations.",
+                metadata: ["migration": .string(migration.name)])
         }
     }
 
@@ -164,7 +168,9 @@ private final class DatabaseMigrator: Sendable {
     }
 
     func revertBatch(number: Int) -> EventLoopFuture<Void> {
-        self.preparedMigrations(batch: number).flatMapWithEventLoop { $0.reduce($1.makeSucceededVoidFuture()) { f, m in f.flatMap { self.revert(m) } } }
+        self.preparedMigrations(batch: number).flatMapWithEventLoop {
+            $0.reduce($1.makeSucceededVoidFuture()) { f, m in f.flatMap { self.revert(m) } }
+        }
     }
 
     func revertAllBatches() -> EventLoopFuture<Void> {
@@ -194,29 +200,35 @@ private final class DatabaseMigrator: Sendable {
     // MARK: Private
 
     private func prepare(_ migration: any Migration, batch: Int) -> EventLoopFuture<Void> {
-        self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
-        
+        self.database.logger.log(
+            level: self.migrationLogLevel, "[Migrator] Starting prepare", metadata: ["migration": .string(migration.name)])
+
         return migration.prepare(on: self.database).flatMap {
-            self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
-        
+            self.database.logger.log(
+                level: self.migrationLogLevel, "[Migrator] Finished prepare", metadata: ["migration": .string(migration.name)])
+
             return MigrationLog(name: migration.name, batch: batch).save(on: self.database)
         }.flatMapErrorThrowing {
-            self.database.logger.error("[Migrator] Failed prepare", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
-        
+            self.database.logger.error(
+                "[Migrator] Failed prepare", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
+
             throw $0
         }
     }
 
     private func revert(_ migration: any Migration) -> EventLoopFuture<Void> {
-        self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
-        
+        self.database.logger.log(
+            level: self.migrationLogLevel, "[Migrator] Starting revert", metadata: ["migration": .string(migration.name)])
+
         return migration.revert(on: self.database).flatMap {
-            self.database.logger.log(level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
-        
+            self.database.logger.log(
+                level: self.migrationLogLevel, "[Migrator] Finished revert", metadata: ["migration": .string(migration.name)])
+
             return MigrationLog.query(on: self.database).filter(\.$name == migration.name).delete()
         }.flatMapErrorThrowing {
-            self.database.logger.error("[Migrator] Failed revert", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
-        
+            self.database.logger.error(
+                "[Migrator] Failed revert", metadata: ["migration": .string(migration.name), "error": .string(String(reflecting: $0))])
+
             throw $0
         }
     }

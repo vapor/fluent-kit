@@ -10,9 +10,12 @@ extension FluentBenchmarker {
     }
 
     private func testUnique_fields() throws {
-        try self.runTest(#function, [
-            FooMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             try Foo(bar: "a", baz: 1).save(on: self.database).wait()
             try Foo(bar: "a", baz: 2).save(on: self.database).wait()
             do {
@@ -26,10 +29,13 @@ extension FluentBenchmarker {
 
     // https://github.com/vapor/fluent-kit/issues/112
     public func testUnique_duplicateKey() throws {
-        try runTest(#function, [
-            BarMigration(),
-            BazMigration()
-        ]) {
+        try runTest(
+            #function,
+            [
+                BarMigration(),
+                BazMigration(),
+            ]
+        ) {
             //
         }
     }
@@ -47,7 +53,7 @@ private final class Foo: Model, @unchecked Sendable {
     @Field(key: "baz")
     var baz: Int
 
-    init() { }
+    init() {}
 
     init(id: IDValue? = nil, bar: String, baz: Int) {
         self.id = id

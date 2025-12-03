@@ -4,7 +4,7 @@ import struct NIOConcurrencyHelpers.NIOLockedValueBox
 public final class QueryHistory: @unchecked Sendable {
     /// The underlying (locked) storage.
     private let _queries: NIOLockedValueBox<[DatabaseQuery]> = .init([])
-    
+
     /// The queries that have been executed.
     ///
     /// > Warning: This array can be modified aribtrarily by any code with access to the ``QueryHistory``
@@ -17,7 +17,7 @@ public final class QueryHistory: @unchecked Sendable {
 
     /// Create a new ``QueryHistory`` with no existing history.
     public init() {}
-    
+
     /// Add a query to the history.
     func add(_ query: DatabaseQuery) {
         self._queries.withLockedValue { $0.append(query) }

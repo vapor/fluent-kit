@@ -1,12 +1,12 @@
-import SQLKit
 import FluentKit
+import SQLKit
 
 extension SQLQueryFetcher {
     @available(*, deprecated, renamed: "first(decodingFluent:)", message: "Renamed to first(decodingFluent:)")
     public func first<Model: FluentKit.Model>(decoding: Model.Type) -> EventLoopFuture<Model?> {
         self.first(decodingFluent: Model.self)
     }
-    
+
     public func first<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<Model?> {
         self.first().flatMapThrowing { row in try row?.decode(fluentModel: Model.self) }
     }
@@ -15,7 +15,7 @@ extension SQLQueryFetcher {
     public func all<Model: FluentKit.Model>(decoding: Model.Type) -> EventLoopFuture<[Model]> {
         self.all(decodingFluent: Model.self)
     }
-    
+
     public func all<Model: FluentKit.Model>(decodingFluent: Model.Type) -> EventLoopFuture<[Model]> {
         self.all().flatMapThrowing { rows in try rows.map { row in try row.decode(fluentModel: Model.self) } }
     }
@@ -26,7 +26,7 @@ extension SQLRow {
     public func decode<Model: FluentKit.Model>(model: Model.Type) throws -> Model {
         try self.decode(fluentModel: Model.self)
     }
-    
+
     public func decode<Model: FluentKit.Model>(fluentModel: Model.Type) throws -> Model {
         let model = Model()
         try model.output(from: SQLDatabaseOutput(sql: self))
@@ -53,9 +53,8 @@ struct SQLDatabaseOutput: DatabaseOutput {
         try self.sql.decodeNil(column: key.description)
     }
 
-    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T 
-        where T: Decodable
-    {
+    func decode<T>(_ key: FieldKey, as type: T.Type) throws -> T
+    where T: Decodable {
         try self.sql.decode(column: key.description, as: T.self)
     }
 }
@@ -66,17 +65,17 @@ extension DatabaseQuery.Value {
     /// really, but why add more fatal errors than we have to?).
     fileprivate var asSQLExpression: any SQLExpression {
         switch self {
-        case .bind(let value):   SQLBind(value)
-        case .null:              SQLLiteral.null
+        case .bind(let value): SQLBind(value)
+        case .null: SQLLiteral.null
         case .array(let values): SQLGroupExpression(SQLKit.SQLList(values.map(\.asSQLExpression), separator: SQLRaw(",")))
-        case .default:           SQLLiteral.default
+        case .default: SQLLiteral.default
         case .enumCase(let str): SQLLiteral.string(str)
         case .custom(let any as any SQLExpression):
-                                 any
+            any
         case .custom(let any as any CustomStringConvertible):
-                                 SQLRaw(any.description)
-        case .dictionary(_):     fatalError("Dictionary database values are unimplemented for SQL")
-        case .custom(_):         fatalError("Unsupported custom database value")
+            SQLRaw(any.description)
+        case .dictionary(_): fatalError("Dictionary database values are unimplemented for SQL")
+        case .custom(_): fatalError("Unsupported custom database value")
         }
     }
 }
@@ -96,19 +95,23 @@ extension SQLInsertBuilder {
     @discardableResult
     public func fluentModels<Model: FluentKit.Model>(_ models: [Model]) throws -> Self {
         var validColumns: [String] = []
-        
+
         for model in models {
             let pairs = model.encodeForSQL(withDefaultedValues: true)
-            
+
             if validColumns.isEmpty {
                 validColumns = pairs.map(\.0)
                 self.columns(validColumns)
             } else {
                 guard validColumns == pairs.map(\.0) else {
-                    throw EncodingError.invalidValue(model, .init(codingPath: [], debugDescription: """
-                        One or more input Fluent models does not encode to the same set of columns.
-                        """
-                    ))
+                    throw EncodingError.invalidValue(
+                        model,
+                        .init(
+                            codingPath: [],
+                            debugDescription: """
+                                One or more input Fluent models does not encode to the same set of columns.
+                                """
+                        ))
                 }
             }
             self.values(pairs.map(\.1))

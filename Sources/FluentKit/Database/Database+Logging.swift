@@ -1,5 +1,5 @@
-import NIOCore
 import Logging
+import NIOCore
 import SQLKit
 
 extension Database {
@@ -22,10 +22,10 @@ extension LoggingOverrideDatabase: Database {
             history: self.database.context.history
         )
     }
-    
+
     func execute(
         query: DatabaseQuery,
-        onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
+        onOutput: @escaping @Sendable (any DatabaseOutput) -> Void
     ) -> EventLoopFuture<Void> {
         self.database.execute(query: query, onOutput: onOutput)
     }
@@ -49,17 +49,17 @@ extension LoggingOverrideDatabase: Database {
     func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.transaction(closure)
     }
-    
+
     func withConnection<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         self.database.withConnection(closure)
     }
 }
 
 extension LoggingOverrideDatabase: SQLDatabase where D: SQLDatabase {
-    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) -> EventLoopFuture<Void> {
+    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> Void) -> EventLoopFuture<Void> {
         self.database.execute(sql: query, onRow)
     }
-    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> ()) async throws {
+    func execute(sql query: any SQLExpression, _ onRow: @escaping @Sendable (any SQLRow) -> Void) async throws {
         try await self.database.execute(sql: query, onRow)
     }
     func withSession<R>(_ closure: @escaping @Sendable (any SQLDatabase) async throws -> R) async throws -> R {

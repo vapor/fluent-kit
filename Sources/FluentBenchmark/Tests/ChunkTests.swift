@@ -1,5 +1,5 @@
-import NIOCore
 import NIOConcurrencyHelpers
+import NIOCore
 import XCTest
 
 extension FluentBenchmarker {
@@ -8,9 +8,12 @@ extension FluentBenchmarker {
     }
 
     private func testChunk_fetch() throws {
-        try runTest(#function, [
-            GalaxyMigration(),
-        ]) {
+        try runTest(
+            #function,
+            [
+                GalaxyMigration()
+            ]
+        ) {
 
             let saves = (1...512).map { i -> EventLoopFuture<Void> in
                 return Galaxy(name: "Milky Way \(i)")

@@ -1,59 +1,59 @@
 import NIOCore
 
-public extension SiblingsProperty {
-    
-    func load(on database: any Database) async throws {
+extension SiblingsProperty {
+
+    public func load(on database: any Database) async throws {
         try await self.load(on: database).get()
     }
-    
+
     // MARK: Checking state
-    
-    func isAttached(to: To, on database: any Database) async throws -> Bool {
+
+    public func isAttached(to: To, on database: any Database) async throws -> Bool {
         try await self.isAttached(to: to, on: database).get()
     }
-    
-    func isAttached(toID: To.IDValue, on database: any Database) async throws -> Bool {
+
+    public func isAttached(toID: To.IDValue, on database: any Database) async throws -> Bool {
         try await self.isAttached(toID: toID, on: database).get()
     }
-    
+
     // MARK: Operations
-    
+
     /// Attach multiple models with plain edit closure.
-    func attach(_ tos: [To], on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
+    public func attach(_ tos: [To], on database: any Database, _ edit: @escaping @Sendable (Through) -> Void = { _ in }) async throws {
         try await self.attach(tos, on: database, edit).get()
     }
 
     /// Attach single model with plain edit closure.
-    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
+    public func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) -> Void = { _ in }) async throws {
         try await self.attach(to, method: .always, on: database, edit)
     }
-    
+
     /// Attach single model by specific method with plain edit closure.
-    func attach(
+    public func attach(
         _ to: To, method: AttachMethod, on database: any Database,
-        _ edit: @escaping @Sendable (Through) -> () = { _ in }
+        _ edit: @escaping @Sendable (Through) -> Void = { _ in }
     ) async throws {
         try await self.attach(to, method: method, on: database, edit).get()
     }
-    
+
     /// A version of ``attach(_:on:_:)-791gu`` whose edit closure is async and can throw.
     ///
     /// This method provides "all or none" semantics- if the edit closure throws an error, any already-
     /// processed pivots are discarded. Only if all pivots are successfully edited are any of them saved.
     ///
     /// These semantics require us to reimplement, rather than calling through to, the ELF version.
-    func attach(
+    public func attach(
         _ tos: [To],
         on database: any Database,
-        _ edit: @escaping @Sendable (Through) async throws -> ()
+        _ edit: @escaping @Sendable (Through) async throws -> Void
     ) async throws {
         guard let fromID = self.idValue else {
             throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
         }
-        
+
         var pivots: [Through] = []
         pivots.reserveCapacity(tos.count)
-        
+
         for to in tos {
             guard let toID = to.id else {
                 throw SiblingsPropertyError.operandModelIdRequired(property: self.name)
@@ -71,16 +71,16 @@ public extension SiblingsProperty {
     /// A version of ``attach(_:on:_:)-791gu`` whose edit closure is async and can throw.
     ///
     /// These semantics require us to reimplement, rather than calling through to, the ELF version.
-    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) async throws -> ()) async throws {
+    public func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) async throws -> Void) async throws {
         try await self.attach(to, method: .always, on: database, edit)
     }
-    
+
     /// A version of ``attach(_:method:on:_:)-20vs`` whose edit closure is async and can throw.
     ///
     /// These semantics require us to reimplement, rather than calling through to, the ELF version.
-    func attach(
+    public func attach(
         _ to: To, method: AttachMethod, on database: any Database,
-        _ edit: @escaping @Sendable (Through) async throws -> ()
+        _ edit: @escaping @Sendable (Through) async throws -> Void
     ) async throws {
         switch method {
         case .ifNotExists:
@@ -90,16 +90,16 @@ public extension SiblingsProperty {
             try await self.attach([to], on: database, edit)
         }
     }
-    
-    func detach(_ tos: [To], on database: any Database) async throws {
+
+    public func detach(_ tos: [To], on database: any Database) async throws {
         try await self.detach(tos, on: database).get()
     }
-    
-    func detach(_ to: To, on database: any Database) async throws {
+
+    public func detach(_ to: To, on database: any Database) async throws {
         try await self.detach(to, on: database).get()
     }
-    
-    func detachAll(on database: any Database) async throws {
+
+    public func detachAll(on database: any Database) async throws {
         try await self.detachAll(on: database).get()
     }
 }

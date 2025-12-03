@@ -39,7 +39,7 @@ extension DatabaseQuery {
                 case suffix
                 case anywhere
             }
-            
+
             /// RHS is [anchored] substring/isn't [anchored] substring of LHS
             case contains(inverse: Bool, Contains)
 

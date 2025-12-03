@@ -11,11 +11,11 @@ public protocol BooleanPropertyFormat: Sendable {
 /// Represent a `Bool` natively, using the database's underlying support (if any). This is the default.
 public struct DefaultBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
-    
+
     public func parse(_ value: Bool) -> Bool? {
         value
     }
-    
+
     public func serialize(_ bool: Bool) -> Bool {
         bool
     }
@@ -32,7 +32,7 @@ extension BooleanPropertyFormat where Self == DefaultBooleanPropertyFormat {
 /// > model with a `BIGINT` field instead of the default `TINYINT`.
 public struct IntegerBooleanPropertyFormat<T: FixedWidthInteger & Codable & Sendable>: BooleanPropertyFormat {
     public init() {}
-    
+
     public func parse(_ value: T) -> Bool? {
         switch value {
         case .zero: false
@@ -40,7 +40,7 @@ public struct IntegerBooleanPropertyFormat<T: FixedWidthInteger & Codable & Send
         default: nil
         }
     }
-    
+
     public func serialize(_ bool: Bool) -> T {
         .zero.advanced(by: bool ? 1 : 0)
     }
@@ -53,7 +53,7 @@ extension BooleanPropertyFormat where Self == IntegerBooleanPropertyFormat<Int> 
 /// Represent a `Bool` as the strings "0" and "1". Any other value is considered invalid.
 public struct OneZeroBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
-    
+
     public func parse(_ value: String) -> Bool? {
         switch value {
         case "0": false
@@ -61,7 +61,7 @@ public struct OneZeroBooleanPropertyFormat: BooleanPropertyFormat {
         default: nil
         }
     }
-    
+
     public func serialize(_ bool: Bool) -> String {
         bool ? "1" : "0"
     }
@@ -74,7 +74,7 @@ extension BooleanPropertyFormat where Self == OneZeroBooleanPropertyFormat {
 /// Represent a `Bool` as the strings "N" and "Y". Parsing is case-insensitive. Serialization always stores uppercase.
 public struct YNBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
-    
+
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
         case "n": false
@@ -82,7 +82,7 @@ public struct YNBooleanPropertyFormat: BooleanPropertyFormat {
         default: nil
         }
     }
-    
+
     public func serialize(_ bool: Bool) -> String {
         bool ? "Y" : "N"
     }
@@ -92,11 +92,10 @@ extension BooleanPropertyFormat where Self == YNBooleanPropertyFormat {
     public static var yn: Self { .init() }
 }
 
-
 /// Represent a `Bool` as the strings "NO" and "YES". Parsing is case-insensitive. Serialization always stores uppercase.
 public struct YesNoBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
-    
+
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
         case "no": false
@@ -104,7 +103,7 @@ public struct YesNoBooleanPropertyFormat: BooleanPropertyFormat {
         default: nil
         }
     }
-    
+
     public func serialize(_ bool: Bool) -> String {
         bool ? "YES" : "NO"
     }
@@ -125,7 +124,7 @@ public struct OnOffBooleanPropertyFormat: BooleanPropertyFormat {
         default: nil
         }
     }
-        
+
     public func serialize(_ bool: Bool) -> String {
         bool ? "ON" : "OFF"
     }
@@ -138,7 +137,7 @@ extension BooleanPropertyFormat where Self == OnOffBooleanPropertyFormat {
 /// Represent a `Bool` as the strings "false" and "true". Parsing is case-insensitive. Serialization always stores lowercase.
 public struct TrueFalseBooleanPropertyFormat: BooleanPropertyFormat {
     public init() {}
-    
+
     public func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
         case "false": false
@@ -146,7 +145,7 @@ public struct TrueFalseBooleanPropertyFormat: BooleanPropertyFormat {
         default: nil
         }
     }
-    
+
     public func serialize(_ bool: Bool) -> String {
         bool ? "true" : "false"
     }
@@ -166,7 +165,7 @@ extension BooleanPropertyFormatFactory {
     public static var integer: BooleanPropertyFormatFactory<IntegerBooleanPropertyFormat<Int>> {
         .init(format: .init())
     }
-    
+
     public static var oneZero: BooleanPropertyFormatFactory<OneZeroBooleanPropertyFormat> {
         .init(format: .init())
     }

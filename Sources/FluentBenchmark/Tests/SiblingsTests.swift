@@ -1,5 +1,5 @@
-import XCTest
 import FluentKit
+import XCTest
 
 extension FluentBenchmarker {
     public func testSiblings() throws {
@@ -10,20 +10,26 @@ extension FluentBenchmarker {
     }
 
     private func testSiblings_attach() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
-            let inhabited = try XCTUnwrap(try Tag.query(on: self.database)
-                .filter(\.$name == "Inhabited")
-                .first().wait()
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
+            let inhabited = try XCTUnwrap(
+                try Tag.query(on: self.database)
+                    .filter(\.$name == "Inhabited")
+                    .first().wait()
             )
-            let smallRocky = try XCTUnwrap(try Tag.query(on: self.database)
-                .filter(\.$name == "Small Rocky")
-                .first().wait()
+            let smallRocky = try XCTUnwrap(
+                try Tag.query(on: self.database)
+                    .filter(\.$name == "Small Rocky")
+                    .first().wait()
             )
-            let earth = try XCTUnwrap(try Planet.query(on: self.database)
-                .filter(\.$name == "Earth")
-                .first().wait()
+            let earth = try XCTUnwrap(
+                try Planet.query(on: self.database)
+                    .filter(\.$name == "Earth")
+                    .first().wait()
             )
 
             // check tag has expected planet
@@ -65,9 +71,9 @@ extension FluentBenchmarker {
                 XCTAssertEqual(tags.count, 2)
                 XCTAssertEqual(tags.map(\.name).sorted(), ["Inhabited", "Small Rocky"])
             }
-            
+
             try earth.$tags.detachAll(on: self.database).wait()
-            
+
             // check pivot provided to the edit closure has the "to" model when attaching
             try earth.$tags.attach([inhabited, smallRocky], on: self.database) { pivot in
                 guard pivot.$tag.value != nil else {
@@ -75,10 +81,10 @@ extension FluentBenchmarker {
                 }
                 pivot.comments = "Tagged with name \(pivot.tag.name)"
             }.wait()
-            
+
             do {
                 let pivots = try earth.$tags.$pivots.get(reload: true, on: self.database).wait()
-                
+
                 XCTAssertEqual(pivots.count, 2)
                 XCTAssertEqual(pivots.compactMap(\.comments).sorted(), ["Tagged with name Inhabited", "Tagged with name Small Rocky"])
             }
@@ -86,9 +92,12 @@ extension FluentBenchmarker {
     }
 
     private func testSiblings_detachArray() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let inhabited = try Tag.query(on: self.database)
                 .filter(\.$name == "Inhabited")
                 .first().wait()!
@@ -112,33 +121,39 @@ extension FluentBenchmarker {
             }
         }
     }
-    
+
     private func testSiblings_pivotLoading() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let earth = try Planet.query(on: self.database)
                 .filter(\.$name == "Earth").with(\.$tags).with(\.$tags.$pivots)
                 .first().wait()!
-            
+
             // verify tag count
             XCTAssertEqual(earth.$tags.pivots.count, 2)
         }
     }
-    
+
     private func testSiblings_detachAll() throws {
-        try self.runTest(#function, [
-            SolarSystem()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                SolarSystem()
+            ]
+        ) {
             let earth = try Planet.query(on: self.database)
                 .filter(\.$name == "Earth")
                 .first().wait()!
-            
+
             // verify tag count
             try XCTAssertEqual(earth.$tags.query(on: self.database).count().wait(), 2)
-            
+
             try earth.$tags.detachAll(on: self.database).wait()
-            
+
             // check earth has tags removed
             do {
                 let tags = try earth.$tags.query(on: self.database)

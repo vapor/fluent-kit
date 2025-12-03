@@ -12,7 +12,7 @@ extension FluentBenchmarker {
         try self.testSoftDelete_forceOnQuery()
         try self.testSoftDelete_parent()
     }
-    
+
     private func testCounts(
         allCount: Int,
         realCount: Int,
@@ -25,9 +25,12 @@ extension FluentBenchmarker {
     }
 
     private func testSoftDelete_model() throws {
-        try self.runTest(#function, [
-            TrashMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TrashMigration()
+            ]
+        ) {
             // save two users
             try Trash(contents: "A").save(on: self.database).wait()
             try Trash(contents: "B").save(on: self.database).wait()
@@ -49,9 +52,12 @@ extension FluentBenchmarker {
     }
 
     private func testSoftDelete_query() throws {
-        try self.runTest(#function, [
-            TrashMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TrashMigration()
+            ]
+        ) {
             // a is scheduled for soft-deletion
             let a = Trash(contents: "a")
             a.deletedAt = Date(timeIntervalSinceNow: 50)
@@ -73,9 +79,12 @@ extension FluentBenchmarker {
     }
 
     private func testSoftDelete_timestampUpdate() throws {
-        try self.runTest(#function, [
-            TrashMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TrashMigration()
+            ]
+        ) {
             // Create soft-deletable model.
             let a = Trash(contents: "A")
             try a.create(on: self.database).wait()
@@ -104,9 +113,12 @@ extension FluentBenchmarker {
     }
 
     private func testSoftDelete_onBulkDelete() throws {
-        try self.runTest(#function, [
-            TrashMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TrashMigration()
+            ]
+        ) {
             // save two users
             try Trash(contents: "A").save(on: self.database).wait()
             try Trash(contents: "B").save(on: self.database).wait()
@@ -116,11 +128,14 @@ extension FluentBenchmarker {
             try testCounts(allCount: 0, realCount: 2)
         }
     }
-    
+
     private func testSoftDelete_forceOnQuery() throws {
-        try self.runTest(#function, [
-            TrashMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                TrashMigration()
+            ]
+        ) {
             // save two users
             try Trash(contents: "A").save(on: self.database).wait()
             try Trash(contents: "B").save(on: self.database).wait()
@@ -142,7 +157,7 @@ extension FluentBenchmarker {
             @Parent(key: "bar")
             var bar: Bar
 
-            init() { }
+            init() {}
         }
 
         struct FooMigration: Migration {
@@ -167,7 +182,7 @@ extension FluentBenchmarker {
             @Timestamp(key: "deleted_at", on: .delete)
             var deletedAt: Date?
 
-            init() { }
+            init() {}
         }
 
         struct BarMigration: Migration {
@@ -183,10 +198,13 @@ extension FluentBenchmarker {
             }
         }
 
-        try self.runTest(#function, [
-            FooMigration(),
-            BarMigration(),
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration(),
+                BarMigration(),
+            ]
+        ) {
             let bar1 = Bar()
             try bar1.create(on: self.database).wait()
             let bar2 = Bar()
@@ -213,7 +231,7 @@ extension FluentBenchmarker {
             // this should throw an error now because one of the
             // parents is missing and the results cannot be loaded
             XCTAssertThrowsError(try Foo.query(on: self.database).with(\.$bar).all().wait()) { error in
-                guard case let .missingParent(from, to, key, id) = error as? FluentError else {
+                guard case .missingParent(let from, let to, let key, let id) = error as? FluentError else {
                     return XCTFail("Expected FluentError.missingParent, but got \(error)")
                 }
                 XCTAssertEqual(from, "\(Foo.self)")
@@ -221,7 +239,7 @@ extension FluentBenchmarker {
                 XCTAssertEqual(key, "bar")
                 XCTAssertEqual(id, "\(bar1.id!)")
             }
-            
+
             XCTAssertNoThrow(try Foo.query(on: self.database).with(\.$bar, withDeleted: true).all().wait())
         }
     }
@@ -239,7 +257,7 @@ private final class Trash: Model, @unchecked Sendable {
     @Timestamp(key: "deleted_at", on: .delete)
     var deletedAt: Date?
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil, contents: String, deletedAt: Date? = nil) {
         if let id = id {

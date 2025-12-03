@@ -8,7 +8,7 @@ public final class FluentBenchmarker {
 
     public init(databases: Databases) {
         precondition(databases.ids().count >= 2, "FluentBenchmarker Databases instance must have 2 or more registered databases")
-        
+
         self.databases = databases
         self.database = self.databases.database(
             logger: .init(label: "codes.vapor.fluent.benchmarker"),
@@ -54,17 +54,17 @@ public final class FluentBenchmarker {
     // MARK: Utilities
 
     func runTest(
-        _ name: String, 
-        _ migrations: [any Migration], 
-        _ test: () throws -> ()
+        _ name: String,
+        _ migrations: [any Migration],
+        _ test: () throws -> Void
     ) throws {
         try self.runTest(name, migrations, { _ in try test() })
     }
-    
+
     func runTest(
         _ name: String,
         _ migrations: [any Migration],
-        _ test: (any Database) throws -> ()
+        _ test: (any Database) throws -> Void
     ) throws {
         // This re-initialization is required to make the middleware tests work thanks to ridiculous design flaws
         self.database = self.databases.database(
@@ -73,12 +73,12 @@ public final class FluentBenchmarker {
         )!
         try self.runTest(name, migrations, on: self.database, test)
     }
-    
+
     func runTest(
         _ name: String,
         _ migrations: [any Migration],
         on database: any Database,
-        _ test: (any Database) throws -> ()
+        _ test: (any Database) throws -> Void
     ) throws {
         database.logger.notice("Running \(name)...")
 
@@ -91,7 +91,7 @@ public final class FluentBenchmarker {
             database.logger.error("\(name): Error: \(String(reflecting: error))")
             throw error
         }
-        
+
         let result = Result { try test(database) }
 
         // Revert migrations
@@ -106,7 +106,7 @@ public final class FluentBenchmarker {
                 throw error
             }
         }
-        
+
         if case .failure(let error) = result {
             database.logger.error("\(name): Error: \(String(reflecting: error))")
             throw error

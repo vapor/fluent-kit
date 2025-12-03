@@ -1,5 +1,5 @@
-import NIOCore
 import NIOConcurrencyHelpers
+import NIOCore
 import SQLKit
 
 extension Database {
@@ -67,10 +67,11 @@ public final class EnumBuilder: Sendable {
             EnumMetadata.query(on: self.database).filter(\.$name == self.enum.name).all()
         }.map { cases in
             // Convert latest cases to usable DataType.
-            .enum(.init(
-                name: self.enum.name,
-                cases: cases.map { $0.case }
-            ))
+            .enum(
+                .init(
+                    name: self.enum.name,
+                    cases: cases.map { $0.case }
+                ))
         }
     }
 
@@ -92,16 +93,15 @@ public final class EnumBuilder: Sendable {
         EnumMetadata.query(on: self.database)
             .filter(\.$name == self.enum.name)
             .delete()
-            .flatMap
-        { _ in
-            EnumMetadata.query(on: self.database).count()
-        }.flatMap { count in
-            // If no enums are left, remove table.
-            if count == 0 {
-                return EnumMetadata.migration.revert(on: self.database)
-            } else {
-                return self.database.eventLoop.makeSucceededFuture(())
+            .flatMap { _ in
+                EnumMetadata.query(on: self.database).count()
+            }.flatMap { count in
+                // If no enums are left, remove table.
+                if count == 0 {
+                    return EnumMetadata.migration.revert(on: self.database)
+                } else {
+                    return self.database.eventLoop.makeSucceededFuture(())
+                }
             }
-        }
     }
 }

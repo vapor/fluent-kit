@@ -21,9 +21,12 @@ extension FluentBenchmarker {
     }
 
     private func testID_default() throws {
-        try self.runTest(#function, [
-            FooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                FooMigration()
+            ]
+        ) {
             let foo1 = Foo()
             try foo1.save(on: self.database).wait()
             XCTAssertNotNil(foo1.id)
@@ -35,9 +38,12 @@ extension FluentBenchmarker {
     }
 
     private func testID_string() throws {
-        try self.runTest(#function, [
-            StringFooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                StringFooMigration()
+            ]
+        ) {
             let foo1 = StringFoo(id: "a")
             try foo1.save(on: self.database).wait()
             XCTAssertEqual(foo1.id, "a")
@@ -48,9 +54,12 @@ extension FluentBenchmarker {
     }
 
     private func testID_autoincrementing() throws {
-        try self.runTest(#function, [
-            AutoincrementingFooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                AutoincrementingFooMigration()
+            ]
+        ) {
             let foo1 = AutoincrementingFoo()
             try foo1.save(on: self.database).wait()
             XCTAssertEqual(foo1.id, 1)
@@ -60,11 +69,13 @@ extension FluentBenchmarker {
         }
     }
 
-
     private func testID_customAutoincrementing() throws {
-        try self.runTest(#function, [
-            CustomAutoincrementingFooMigration()
-        ]) {
+        try self.runTest(
+            #function,
+            [
+                CustomAutoincrementingFooMigration()
+            ]
+        ) {
             let foo1 = CustomAutoincrementingFoo()
             try foo1.save(on: self.database).wait()
             XCTAssertEqual(foo1.id, 1)
@@ -82,7 +93,7 @@ private final class Foo: Model, @unchecked Sendable {
     @ID
     var id: UUID?
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil) {
         self.id = id
@@ -107,7 +118,7 @@ private final class StringFoo: Model, @unchecked Sendable {
     @ID(custom: .id, generatedBy: .user)
     var id: String?
 
-    init() { }
+    init() {}
 
     init(id: String) {
         self.id = id
@@ -132,7 +143,7 @@ private final class AutoincrementingFoo: Model, @unchecked Sendable {
     @ID(custom: .id, generatedBy: .database)
     var id: Int?
 
-    init() { }
+    init() {}
 
     init(id: Int? = nil) {
         self.id = id
@@ -157,7 +168,7 @@ private final class CustomAutoincrementingFoo: Model, @unchecked Sendable {
     @ID(custom: "bar", generatedBy: .database)
     var id: Int?
 
-    init() { }
+    init() {}
 
     init(id: Int? = nil) {
         self.id = id

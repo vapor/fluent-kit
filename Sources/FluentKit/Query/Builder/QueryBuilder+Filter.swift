@@ -1,6 +1,6 @@
 extension QueryBuilder {
     // MARK: Filter
-    
+
     @discardableResult
     func filter(id: Model.IDValue) -> Self {
         if let fields = id as? any Fields {
@@ -9,7 +9,7 @@ extension QueryBuilder {
             self.filter(\Model._$id == id)
         }
     }
-    
+
     @discardableResult
     func filter(ids: [Model.IDValue]) -> Self {
         guard let firstId = ids.first else { return self.limit(0) }
@@ -26,13 +26,13 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Field.Value
     ) -> Self
-        where Field: QueryableProperty, Field.Model == Model
-    {
-        self.filter(.extendedPath(
-            Model.path(for: field),
-            schema: Model.schemaOrAlias,
-            space: Model.spaceIfNotAliased
-        ), method, Field.queryValue(value))
+    where Field: QueryableProperty, Field.Model == Model {
+        self.filter(
+            .extendedPath(
+                Model.path(for: field),
+                schema: Model.schemaOrAlias,
+                space: Model.spaceIfNotAliased
+            ), method, Field.queryValue(value))
     }
 
     @discardableResult
@@ -42,13 +42,13 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Field.Value
     ) -> Self
-        where Joined: Schema, Field: QueryableProperty, Field.Model == Joined
-    {
-        self.filter(.extendedPath(
-            Joined.path(for: field),
-            schema: Joined.schemaOrAlias,
-            space: Joined.spaceIfNotAliased
-        ), method, Field.queryValue(value))
+    where Joined: Schema, Field: QueryableProperty, Field.Model == Joined {
+        self.filter(
+            .extendedPath(
+                Joined.path(for: field),
+                schema: Joined.schemaOrAlias,
+                space: Joined.spaceIfNotAliased
+            ), method, Field.queryValue(value))
     }
 
     @discardableResult
@@ -57,10 +57,11 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ rhsField: KeyPath<Model, Right>
     ) -> Self
-        where Left: QueryableProperty,
-            Left.Model == Model,
-            Right: QueryableProperty,
-            Right.Model == Model
+    where
+        Left: QueryableProperty,
+        Left.Model == Model,
+        Right: QueryableProperty,
+        Right.Model == Model
     {
         self.filter(Model.path(for: lhsField), method, Model.path(for: rhsField))
     }
@@ -71,8 +72,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
-        where Value: Codable & Sendable
-    {
+    where Value: Codable & Sendable {
         self.filter([fieldName], method, value)
     }
 
@@ -82,8 +82,7 @@ extension QueryBuilder {
         _ method: DatabaseQuery.Filter.Method,
         _ value: Value
     ) -> Self
-        where Value: Codable & Sendable
-    {
+    where Value: Codable & Sendable {
         self.filter(
             .extendedPath(fieldPath, schema: Model.schemaOrAlias, space: Model.spaceIfNotAliased),
             method,
