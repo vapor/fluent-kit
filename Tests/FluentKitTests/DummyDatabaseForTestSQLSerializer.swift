@@ -60,7 +60,8 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         self.context = .init(
             configuration: Configuration(),
             logger: .init(label: "test"),
-            eventLoop: NIOSingletons.posixEventLoopGroup.any()
+            eventLoop: NIOSingletons.posixEventLoopGroup.any(),
+            shouldTrace: true
         )
     }
 

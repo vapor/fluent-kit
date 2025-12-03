@@ -13,9 +13,9 @@ public final class QueryBuilder<Model>
 
     public convenience init(database: any Database) {
         self.init(
-            query: .init(schema: Model.schema, space: Model.space),
+            query: .init(schema: Model.schema, space: Model.space, shouldTrace: database.context.shouldTrace),
             database: database,
-            models: [Model.self]
+            models: [Model.self],
         )
     }
 
@@ -25,7 +25,7 @@ public final class QueryBuilder<Model>
         models: [any Schema.Type] = [],
         eagerLoaders: [any AnyEagerLoader] = [],
         includeDeleted: Bool = false,
-        shouldForceDelete: Bool = false
+        shouldForceDelete: Bool = false,
     ) {
         self.query = query
         self.database = database

@@ -1,11 +1,14 @@
 import NIOCore
+import Tracing
 
 public extension Database {
     func execute(
         query: DatabaseQuery,
         onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) async throws {
-        try await self.execute(query: query, onOutput: onOutput).get()
+        try await query.withTracing {
+            try await self.execute(query: query, onOutput: onOutput).get()
+        }
     }
 
     func execute(

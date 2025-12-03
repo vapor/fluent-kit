@@ -19,6 +19,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.81.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.32.0"),
+        .package(url: "https://github.com/apple/swift-distributed-tracing.git", from: "1.3.1"),
+        .package(url: "https://github.com/apple/swift-service-context.git", from: "1.0.0"),
     ],
     targets: [
         .target(
@@ -30,6 +32,8 @@ let package = Package(
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "SQLKit", package: "sql-kit"),
+                .product(name: "Tracing", package: "swift-distributed-tracing"),
+                .product(name: "ServiceContextModule", package: "swift-service-context"),
             ],
             swiftSettings: swiftSettings
         ),

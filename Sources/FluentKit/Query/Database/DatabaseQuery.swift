@@ -1,3 +1,5 @@
+import Tracing
+
 public struct DatabaseQuery: Sendable {
     public var schema: String
     public var space: String?
@@ -12,7 +14,10 @@ public struct DatabaseQuery: Sendable {
     public var limits: [Limit]
     public var offsets: [Offset]
 
-    init(schema: String, space: String? = nil) {
+    var serviceContext: ServiceContext
+    let shouldTrace: Bool
+
+    init(schema: String, space: String? = nil, shouldTrace: Bool = false) {
         self.schema = schema
         self.space = space
         self.isUnique = false
@@ -24,6 +29,27 @@ public struct DatabaseQuery: Sendable {
         self.sorts = []
         self.limits = []
         self.offsets = []
+        self.serviceContext = .topLevel
+        self.shouldTrace = shouldTrace
+    }
+
+    func withTracing<T>(_ closure: () async throws -> T) async rethrows -> T {
+        if shouldTrace {
+            try await withSpan(
+                "db.query",
+                context: self.serviceContext,
+                ofKind: .server
+            ) { span in
+                // https://opentelemetry.io/docs/specs/semconv/database/database-spans/#span-definition
+                span.updateAttributes { attributes in
+                    attributes["db.action"] = "\(self.action)"
+                }
+
+                return try await closure()
+            }
+        } else {
+            try await closure()
+        }
     }
 }
 
@@ -67,7 +93,8 @@ extension DatabaseQuery: CustomStringConvertible {
             "schema": "\(self.space.map { "\($0)." } ?? "")\(self.schema)",
         ]
         switch self.action {
-        case .create, .update, .custom: result["input"] = .array(self.input.map(\.describedByLoggingMetadata))
+        case .create, .update, .custom:
+            result["input"] = .array(self.input.map(\.describedByLoggingMetadata))
         default: break
         }
         switch self.action {
