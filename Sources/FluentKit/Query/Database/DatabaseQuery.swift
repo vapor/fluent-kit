@@ -29,7 +29,7 @@ public struct DatabaseQuery: Sendable {
         self.sorts = []
         self.limits = []
         self.offsets = []
-        self.serviceContext = .topLevel
+        self.serviceContext = ServiceContext.current ?? .topLevel
         self.shouldTrace = shouldTrace
     }
 
@@ -40,15 +40,25 @@ public struct DatabaseQuery: Sendable {
                 context: self.serviceContext,
                 ofKind: .server
             ) { span in
-                // https://opentelemetry.io/docs/specs/semconv/database/database-spans/#span-definition
-                span.updateAttributes { attributes in
-                    attributes["db.action"] = "\(self.action)"
-                }
-
+                self.setSpanAttributes(span)
                 return try await closure()
             }
         } else {
             try await closure()
+        }
+    }
+
+    // https://opentelemetry.io/docs/specs/semconv/database/database-spans/#span-definition
+    fileprivate func setSpanAttributes(_ span: any Span) {
+        span.updateAttributes { attributes in
+            // db.system.name
+            attributes["db.collection.name"] = self.schema
+            attributes["db.namespace"] = self.space
+            attributes["db.operation.name"] = "\(self.action)"
+            // db.response.status_code
+            // error.type
+            // server.port
+            attributes["db.query.summary"] = "\(self.action) \(self.space.map { "\($0)." } ?? "")\(self.schema)"
         }
     }
 }
