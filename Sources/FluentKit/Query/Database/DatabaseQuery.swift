@@ -35,7 +35,7 @@ public struct DatabaseQuery: Sendable {
 
     func withTracing<T>(_ closure: () async throws -> T) async rethrows -> T {
         if shouldTrace {
-            try await withSpan("db.query", context: self.serviceContext, ofKind: .server) { span in
+            try await withSpan("db.query", context: self.serviceContext, ofKind: .client) { span in
                 // https://opentelemetry.io/docs/specs/semconv/database/database-spans/#span-definition
                 // We add what we can. The rest is up to the underlying driver packages
                 span.updateAttributes { attributes in
