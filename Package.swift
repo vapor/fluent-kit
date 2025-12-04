@@ -69,6 +69,7 @@ let package = Package(
                 .target(name: "FluentBenchmark"),
                 .target(name: "FluentSQL"),
                 .target(name: "XCTFluent"),
+                .product(name: "InMemoryTracing", package: "swift-distributed-tracing")
             ],
             swiftSettings: swiftSettings
         ),
