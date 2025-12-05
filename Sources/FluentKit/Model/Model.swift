@@ -14,12 +14,9 @@ extension Model {
         _ id: Self.IDValue?,
         on database: any Database
     ) -> EventLoopFuture<Self?> {
-        guard let id = id else {
-            return database.eventLoop.makeSucceededFuture(nil)
+        database.eventLoop.makeFutureWithTask {
+            try await self.find(id, on: database)
         }
-        return Self.query(on: database)
-            .filter(id: id)
-            .first()
     }
 
     public func requireID() throws -> IDValue {

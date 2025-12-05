@@ -66,31 +66,15 @@ public final class ChildrenProperty<From, To>: @unchecked Sendable
     }
 
     public func create(_ to: [To], on database: any Database) -> EventLoopFuture<Void> {
-        guard let id = self.idValue else {
-            fatalError("Cannot save child in relation \(self.name) to unsaved model.")
+        database.eventLoop.makeFutureWithTask {
+            try await self.create(to, on: database)
         }
-        to.forEach {
-            switch self.parentKey {
-            case .required(let keyPath):
-                $0[keyPath: keyPath].id = id
-            case .optional(let keyPath):
-                $0[keyPath: keyPath].id = id
-            }
-        }
-        return to.create(on: database)
     }
 
     public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
-        guard let id = self.idValue else {
-            fatalError("Cannot save child in relation \(self.name) to unsaved model.")
+        database.eventLoop.makeFutureWithTask {
+            try await self.create(to, on: database)
         }
-        switch self.parentKey {
-        case .required(let keyPath):
-            to[keyPath: keyPath].id = id
-        case .optional(let keyPath):
-            to[keyPath: keyPath].id = id
-        }
-        return to.create(on: database)
     }
 }
 

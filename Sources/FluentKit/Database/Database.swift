@@ -77,19 +77,22 @@ public struct DatabaseContext: Sendable {
     public let eventLoop: any EventLoop
     public let history: QueryHistory?
     public let pageSizeLimit: Int?
-    
+    public let shouldTrace: Bool
+
     public init(
         configuration: any DatabaseConfiguration,
         logger: Logger,
         eventLoop: any EventLoop,
         history: QueryHistory? = nil,
-        pageSizeLimit: Int? = nil
+        pageSizeLimit: Int? = nil,
+        shouldTrace: Bool = false
     ) {
         self.configuration = configuration
         self.logger = logger
         self.eventLoop = eventLoop
         self.history = history
         self.pageSizeLimit = pageSizeLimit
+        self.shouldTrace = shouldTrace
     }
 }
 
