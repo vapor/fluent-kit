@@ -309,7 +309,7 @@ public final class QueryBuilder<Model>
         return done
     }
 
-    private func addTimestamps(
+    func addTimestamps(
         triggers: [TimestampTrigger],
         to query: inout DatabaseQuery
     ) {

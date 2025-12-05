@@ -194,6 +194,12 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+        database.eventLoop.makeFutureWithTask {
+            try await self.run(models: models, on: database)
+        }
+    }
+
+    private func run(models: [From], on database: any Database) async throws {
         let sets = Dictionary(grouping: models, by: { $0[keyPath: self.relationKey].id })
 
         let builder = To.query(on: database)
@@ -203,23 +209,22 @@ private struct CompositeParentEagerLoader<From, To>: EagerLoader
         if self.withDeleted {
             builder.withDeleted()
         }
-        return builder.all()
-            .flatMapThrowing {
-                let parents = Dictionary(uniqueKeysWithValues: $0.map { ($0.id!, $0) })
 
-                for (parentId, models) in sets {
-                    guard let parent = parents[parentId] else {
-                        database.logger.debug(
-                            "Missing parent model in eager-load lookup results.",
-                            metadata: ["parent": "\(To.self)", "id": "\(parentId)"]
-                        )
-                        throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
-                    }
-                    models.forEach {
-                        $0[keyPath: self.relationKey].value = parent
-                    }
-                }
+        let result = try await builder.all()
+        let parents = Dictionary(uniqueKeysWithValues: result.map { ($0.id!, $0) })
+
+        for (parentId, models) in sets {
+            guard let parent = parents[parentId] else {
+                database.logger.debug(
+                    "Missing parent model in eager-load lookup results.",
+                    metadata: ["parent": "\(To.self)", "id": "\(parentId)"]
+                )
+                throw FluentError.missingParentError(keyPath: self.relationKey, id: parentId)
             }
+            models.forEach {
+                $0[keyPath: self.relationKey].value = parent
+            }
+        }
     }
 }
 

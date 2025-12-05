@@ -191,6 +191,12 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
     
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+        database.eventLoop.makeFutureWithTask {
+            try await self.run(models: models, on: database)
+        }
+    }
+
+    func run(models: [From], on database: any Database) async throws {
         let ids = models.map { $0.id! }
 
         let builder = To.query(on: database)
@@ -204,16 +210,15 @@ private struct ChildrenEagerLoader<From, To>: EagerLoader
         if (self.withDeleted) {
             builder.withDeleted()
         }
-        return builder.all().map {
-            for model in models {
-                let id = model[keyPath: self.relationKey].idValue!
-                model[keyPath: self.relationKey].value = $0.filter { child in
-                    switch parentKey {
-                    case .optional(let optional):
-                        return child[keyPath: optional].id == id
-                    case .required(let required):
-                        return child[keyPath: required].id == id
-                    }
+        let result = try await builder.all() 
+        for model in models {
+            let id = model[keyPath: self.relationKey].idValue!
+            model[keyPath: self.relationKey].value = result.filter { child in
+                switch parentKey {
+                case .optional(let optional):
+                    return child[keyPath: optional].id == id
+                case .required(let required):
+                    return child[keyPath: required].id == id
                 }
             }
         }

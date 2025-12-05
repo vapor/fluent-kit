@@ -378,6 +378,12 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+        database.eventLoop.makeFutureWithTask {
+            try await self.run(models: models, on: database)
+        }
+    }
+
+    private func run(models: [From], on database: any Database) async throws {
         let ids = models.map { $0.id! }
 
         let from = From()[keyPath: self.relationKey].from
@@ -388,16 +394,15 @@ private struct SiblingsEagerLoader<From, To, Through>: EagerLoader
         if self.withDeleted {
             builder.withDeleted()
         }
-        return builder.all().flatMapThrowing {
-            var map: [From.IDValue: [To]] = [:]
-            for to in $0 {
-                let fromID = try to.joined(Through.self)[keyPath: from].id
-                map[fromID, default: []].append(to)
-            }
-            for model in models {
-                guard let id = model.id else { throw FluentError.idRequired }
-                model[keyPath: self.relationKey].value = map[id] ?? []
-            }
+        let result = try await builder.all()
+        var map: [From.IDValue: [To]] = [:]
+        for to in result {
+            let fromID = try to.joined(Through.self)[keyPath: from].id
+            map[fromID, default: []].append(to)
+        }
+        for model in models {
+            guard let id = model.id else { throw FluentError.idRequired }
+            model[keyPath: self.relationKey].value = map[id] ?? []
         }
     }
 }

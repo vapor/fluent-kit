@@ -192,6 +192,12 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+        database.eventLoop.makeFutureWithTask {
+            try await self.run(models: models, on: database)
+        }
+    }
+
+    private func run(models: [From], on database: any Database) async throws {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -202,13 +208,13 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
         if self.withDeleted {
             builder.withDeleted()
         }
-        
-        return builder.all().map {
-            let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
-            
-            for model in models {
-                model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!] ?? []
-            }
+
+        let result = try await builder.all()
+
+        let indexedResults = Dictionary(grouping: result, by: { parentKey.referencedId(in: $0)! })
+
+        for model in models {
+            model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!] ?? []
         }
     }
 }
