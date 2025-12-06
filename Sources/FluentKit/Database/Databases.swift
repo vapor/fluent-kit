@@ -181,7 +181,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
     }
 
     public func run() async throws {
-        try await gracefulShutdown()
+        try? await gracefulShutdown()
         await self.shutdownAsync()
     }
 }
