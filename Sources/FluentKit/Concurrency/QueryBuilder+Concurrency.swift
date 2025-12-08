@@ -22,7 +22,7 @@ extension QueryBuilder {
 
     // MARK: - Fetch
 
-    func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> Void) async throws {
+    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> Void) async throws {
         nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
 
