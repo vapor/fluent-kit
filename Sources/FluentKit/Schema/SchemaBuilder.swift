@@ -167,17 +167,20 @@ public final class SchemaBuilder {
     }
 
     public func create() -> EventLoopFuture<Void> {
-        self.schema.action = .create
-        return self.database.execute(schema: self.schema)
+        self.database.eventLoop.makeFutureWithTask {
+            try await self.create()
+        }
     }
 
     public func update() -> EventLoopFuture<Void> {
-        self.schema.action = .update
-        return self.database.execute(schema: self.schema)
+        self.database.eventLoop.makeFutureWithTask {
+            try await self.update()
+        }
     }
 
     public func delete() -> EventLoopFuture<Void> {
-        self.schema.action = .delete
-        return self.database.execute(schema: self.schema)
+        self.database.eventLoop.makeFutureWithTask {
+            try await self.delete()
+        }
     }
 }
