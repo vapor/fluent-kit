@@ -19,7 +19,8 @@ extension LoggingOverrideDatabase: Database {
             configuration: self.database.context.configuration,
             logger: self.logger,
             eventLoop: self.database.context.eventLoop,
-            history: self.database.context.history
+            history: self.database.context.history,
+            shouldTrace: self.database.context.shouldTrace
         )
     }
     
