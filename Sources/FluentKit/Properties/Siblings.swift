@@ -11,7 +11,7 @@ extension Model {
 public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     where From: Model, To: Model, Through: Model
 {
-    public enum AttachMethod {
+    public enum AttachMethod: Sendable {
         /// Always create the pivot model
         case always
 
@@ -79,11 +79,9 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     ///     - to: The model to check whether it is attached through a pivot.
     ///     - database: The database to perform check on.
     public func isAttached(to: To, on database: any Database) -> EventLoopFuture<Bool> {
-        guard let toID = to.id else {
-            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
+        database.eventLoop.makeFutureWithTask {
+            try await self.isAttached(to: to, on: database)
         }
-
-        return self.isAttached(toID: toID, on: database)
     }
 
     /// Check whether a specific model ID is already attached through a sibling relationship.
@@ -92,15 +90,9 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     ///     - toID: The ID of the model to check whether it is attached through a pivot.
     ///     - database: The database to perform the check on.
     public func isAttached(toID: To.IDValue, on database: any Database) -> EventLoopFuture<Bool> {
-        guard let fromID = self.idValue else {
-            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
+        database.eventLoop.makeFutureWithTask {
+            try await self.isAttached(toID: toID, on: database)
         }
-
-        return Through.query(on: database)
-            .filter(self.from.appending(path: \.$id) == fromID)
-            .filter(self.to.appending(path: \.$id) == toID)
-            .count()
-            .map { $0 > 0 }
     }
 
     // MARK: Operations
@@ -134,7 +126,10 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
             edit(pivot)
             pivots.append(pivot)
         }
-        return pivots.create(on: database)
+
+        return database.eventLoop.makeFutureWithTask {
+            try await pivots.create(on: database)
+        }
     }
 
     /// Attach a single model by creating a pivot model and specifying the attachment method.
@@ -150,17 +145,8 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         on database: any Database,
         _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) -> EventLoopFuture<Void> {
-        switch method {
-        case .always:
-            return self.attach(to, on: database, edit)
-        case .ifNotExists:
-            return self.isAttached(to: to, on: database).flatMap { alreadyAttached in
-                if alreadyAttached {
-                    return database.eventLoop.makeSucceededFuture(())
-                }
-
-                return self.attach(to, on: database, edit)
-            }
+        database.eventLoop.makeFutureWithTask {
+            try await self.attach(to, method: method, on: database, edit)
         }
     }
 
@@ -187,7 +173,10 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
         pivot[keyPath: self.to].id = toID
         pivot[keyPath: self.to].value = to
         edit(pivot)
-        return pivot.save(on: database)
+
+        return database.eventLoop.makeFutureWithTask {
+            try await pivot.save(on: database)
+        }
     }
 
     /// Detaches an array of models from this model by deleting each pivot.
@@ -196,24 +185,9 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     ///     - tos: An array of models to detach from this model.
     ///     - database: The database to perform the attachment on.
     public func detach(_ tos: [To], on database: any Database) -> EventLoopFuture<Void> {
-        guard let fromID = self.idValue else {
-            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
+        database.eventLoop.makeFutureWithTask {
+            try await self.detach(tos, on: database)
         }
-        
-        var toIDs: [To.IDValue] = []
-        toIDs.reserveCapacity(tos.count)
-        
-        for to in tos {
-            guard let toID = to.id else {
-                return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
-            }
-            toIDs.append(toID)
-        }
-
-        return Through.query(on: database)
-            .filter(self.from.appending(path: \.$id) == fromID)
-            .filter(self.to.appending(path: \.$id) ~~ toIDs)
-            .delete()
     }
 
     /// Detach a single model by deleting the pivot.
@@ -222,28 +196,16 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
     ///     - to: The model to detach from this model.
     ///     - database: The database to perform the attachment on.
     public func detach(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
-        guard let fromID = self.idValue else {
-            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
+        database.eventLoop.makeFutureWithTask {
+            try await self.detach(to, on: database)
         }
-        guard let toID = to.id else {
-            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
-        }
-
-        return Through.query(on: database)
-            .filter(self.from.appending(path: \.$id) == fromID)
-            .filter(self.to.appending(path: \.$id) == toID)
-            .delete()
     }
     
     /// Detach all models by deleting all pivots from this model.
     public func detachAll(on database: any Database) -> EventLoopFuture<Void> {
-        guard let fromID = self.idValue else {
-            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
+        database.eventLoop.makeFutureWithTask {
+            try await self.detachAll(on: database)
         }
-        
-        return Through.query(on: database)
-            .filter(self.from.appending(path: \.$id) == fromID)
-            .delete()
     }
 
     // MARK: Query
@@ -325,8 +287,8 @@ extension SiblingsProperty: Relation {
     }
 
     public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).all().map {
-            self.value = $0
+        database.eventLoop.makeFutureWithTask {
+            try await self.load(on: database)
         }
     }
 }
