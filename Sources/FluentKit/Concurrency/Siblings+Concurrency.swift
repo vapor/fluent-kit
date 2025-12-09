@@ -61,7 +61,7 @@ public extension SiblingsProperty {
     ) async throws {
         switch method {
         case .always: 
-            try await self.attach(to, on: database)
+            try await self.attach(to, on: database, edit)
         case .ifNotExists:
             let alreadyAttached = try await self.isAttached(to: to, on: database)
             if alreadyAttached == true { return }
