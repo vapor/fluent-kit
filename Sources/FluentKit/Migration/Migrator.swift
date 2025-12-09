@@ -226,30 +226,34 @@ private final class DatabaseMigrator: Sendable {
     }
 
     private func lastBatchNumber() -> EventLoopFuture<Int> {
-        MigrationLog.query(on: self.database).sort(\.$batch, .descending).first().map { log in
-            log?.batch ?? 0
+        self.database.eventLoop.makeFutureWithTask {
+            let log = try await MigrationLog.query(on: self.database).sort(\.$batch, .descending).first()
+            return log?.batch ?? 0
         }
     }
 
     private func preparedMigrations() -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).all().map { logs in
-            self.migrations.filter { migration in
+        self.database.eventLoop.makeFutureWithTask {
+            let logs = try await MigrationLog.query(on: self.database).all()
+            return self.migrations.filter { migration in
                 logs.contains(where: { $0.name == migration.name })
             }.reversed()
         }
     }
 
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).filter(\.$batch == batch).all().map { logs in
-            self.migrations.filter { migration in
+        self.database.eventLoop.makeFutureWithTask {
+            let logs = try await MigrationLog.query(on: self.database).filter(\.$batch == batch).all()
+            return self.migrations.filter { migration in
                 logs.contains(where: { $0.name == migration.name })
             }.reversed()
         }
     }
 
     private func unpreparedMigrations() -> EventLoopFuture<[any Migration]> {
-        MigrationLog.query(on: self.database).all().map { logs in
-            self.migrations.compactMap { migration in
+        self.database.eventLoop.makeFutureWithTask {
+            let logs = try await MigrationLog.query(on: self.database).all()
+            return self.migrations.compactMap { migration in
                 if logs.contains(where: { $0.name == migration.name }) { return nil }
                 return migration
             }
