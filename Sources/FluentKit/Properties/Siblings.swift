@@ -127,8 +127,11 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
             pivots.append(pivot)
         }
 
+        let boxedPivots = UnsafeMutableTransferBox<[Through]>(pivots)
         return database.eventLoop.makeFutureWithTask {
-            try await pivots.create(on: database)
+            // While this is unsafe, we're okay with it as we want to avoid 
+            // duplicating the code across concurrency and EL methods.
+            try await boxedPivots.wrappedValue.create(on: database)
         }
     }
 
