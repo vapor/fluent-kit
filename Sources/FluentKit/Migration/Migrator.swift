@@ -253,7 +253,7 @@ private final class DatabaseMigrator: Sendable {
     private func unpreparedMigrations() -> EventLoopFuture<[any Migration]> {
         self.database.eventLoop.makeFutureWithTask {
             let logs = try await MigrationLog.query(on: self.database).field(\.$name).all().map(\.name)
-            return self.migrations.filter { logs.contains($0.name) }
+            return self.migrations.filter { !logs.contains($0.name) }
         }
     }
 }
