@@ -90,16 +90,6 @@ struct TracingTests {
         #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
         #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
     }
-
-    // @Test 
-    // func tracingRaw() async throws {
-    //     _ = try await self.db.select().columns("*").from(Planet.schema).all(decodingFluent: Planet.self)
-    //     let span = try #require(tracer.finishedSpans.last)
-    //     #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "read")
-    //     #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "read \(Planet.schema)")
-    //     #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-    //     #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
-    // }
 }
 
 @TaskLocal var tracer = InMemoryTracer()
@@ -107,7 +97,7 @@ struct TracingTests {
 struct TracingTaskLocalTrait: TestTrait, SuiteTrait, TestScoping {
     fileprivate let implementation: @Sendable (_ body: @Sendable () async throws -> Void) async throws -> Void
 
-    func provideScope(for test: Test, testCase: Test.Case?, performing function: @Sendable @concurrent () async throws -> Void) async throws {
+    func provideScope(for test: Test, testCase: Test.Case?, performing function: @Sendable () async throws -> Void) async throws {
         try await implementation { try await function() }
     }
 }
