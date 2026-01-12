@@ -22,7 +22,7 @@ extension QueryBuilder {
 
     // MARK: - Fetch
 
-    func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> Void) async throws {
+    public func chunk(max: Int, closure: @escaping @Sendable ([Result<Model, any Error>]) -> Void) async throws {
         nonisolated(unsafe) var partial: [Result<Model, any Error>] = []
         partial.reserveCapacity(max)
 
@@ -85,28 +85,24 @@ extension QueryBuilder {
     public func all(_ onOutput: @escaping @Sendable (Result<Model, any Error>) -> Void) async throws {
         nonisolated(unsafe) var all: [Model] = []
 
-        do {
-            try await self.run { output in
-                onOutput(
-                    .init(catching: {
-                        let model = Model()
-                        try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
-                        all.append(model)
-                        return model
-                    }))
-            }
-        } catch {
-            // if eager loads exist, run them, and update models
-            if !self.eagerLoaders.isEmpty {
-                let loaders = self.eagerLoaders
-                let db = self.database
+        try await self.run { output in
+            onOutput(.init(catching: {
+                let model = Model()
+                try model.output(from: output.qualifiedSchema(space: Model.spaceIfNotAliased, Model.schemaOrAlias))
+                all.append(model)
+                return model
+            }))
+        }
+        // if eager loads exist, run them, and update models
+        if !self.eagerLoaders.isEmpty {
+            let loaders = self.eagerLoaders
+            let db = self.database
 
-                // don't run eager loads if result set was empty
-                guard !all.isEmpty else { return }
+            // don't run eager loads if result set was empty
+            guard !all.isEmpty else { return }
 
-                for loader in loaders {
-                    try await loader.anyRun(models: all, on: db).get()
-                }
+            for loader in loaders {
+                try await loader.anyRun(models: all, on: db).get()
             }
         }
     }

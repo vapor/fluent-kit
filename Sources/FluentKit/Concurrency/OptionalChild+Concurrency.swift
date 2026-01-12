@@ -2,7 +2,7 @@ import NIOCore
 
 public extension OptionalChildProperty {
     func load(on database: any Database) async throws {
-        try await self.query(on: database).first().map { self.value = $0 }
+        self.value = try await self.query(on: database).first()
     }
     
     func create(_ to: To, on database: any Database) async throws {
@@ -21,6 +21,6 @@ public extension OptionalChildProperty {
 
 public extension CompositeOptionalChildProperty {
     func load(on database: any Database) async throws {
-        try await self.query(on: database).first().map { self.value = $0 }
+        self.value = try await self.query(on: database).first()
     }
 }

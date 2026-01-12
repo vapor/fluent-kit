@@ -11,7 +11,7 @@ public struct DummyDatabase: Database {
         self.context = context ?? .init(
             configuration: DummyDatabaseConfiguration(middleware: []),
             logger: .init(label: "codes.vapor.test"),
-            eventLoop: EmbeddedEventLoop()
+            eventLoop: NIOAsyncTestingEventLoop()
         )
     }
 

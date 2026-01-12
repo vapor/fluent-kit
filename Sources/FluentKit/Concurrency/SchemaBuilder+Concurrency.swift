@@ -2,14 +2,17 @@ import NIOCore
 
 public extension SchemaBuilder {
     func create() async throws {
-        try await self.create().get()
+        self.schema.action = .create
+        return try await self.database.execute(schema: self.schema)
     }
     
     func update() async throws {
-        try await self.update().get()
+        self.schema.action = .update
+        return try await self.database.execute(schema: self.schema)
     }
     
     func delete() async throws {
-        try await self.delete().get()
+        self.schema.action = .delete
+        return try await self.database.execute(schema: self.schema)
     }
 }

@@ -167,17 +167,29 @@ public final class SchemaBuilder {
     }
 
     public func create() -> EventLoopFuture<Void> {
-        self.schema.action = .create
-        return self.database.execute(schema: self.schema)
+        // While this is unsafe, we're okay with it as we want to avoid 
+        // duplicating the code across concurrency and EL methods.
+        nonisolated(unsafe) let unsafeSelf = self
+        return self.database.eventLoop.makeFutureWithTask {
+            try await unsafeSelf.create()
+        }
     }
 
     public func update() -> EventLoopFuture<Void> {
-        self.schema.action = .update
-        return self.database.execute(schema: self.schema)
+        // While this is unsafe, we're okay with it as we want to avoid 
+        // duplicating the code across concurrency and EL methods.
+        nonisolated(unsafe) let unsafeSelf = self
+        return self.database.eventLoop.makeFutureWithTask {
+            try await unsafeSelf.update()
+        }
     }
 
     public func delete() -> EventLoopFuture<Void> {
-        self.schema.action = .delete
-        return self.database.execute(schema: self.schema)
+        // While this is unsafe, we're okay with it as we want to avoid 
+        // duplicating the code across concurrency and EL methods.
+        nonisolated(unsafe) let unsafeSelf = self
+        return self.database.eventLoop.makeFutureWithTask {
+            try await unsafeSelf.delete()
+        }
     }
 }

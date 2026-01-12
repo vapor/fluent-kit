@@ -3,29 +3,55 @@ import NIOCore
 public extension SiblingsProperty {
     
     func load(on database: any Database) async throws {
-        try await self.load(on: database).get()
+        self.value = try await self.query(on: database).all()
     }
     
     // MARK: Checking state
     
     func isAttached(to: To, on database: any Database) async throws -> Bool {
-        try await self.isAttached(to: to, on: database).get()
+        guard let toID = to.id else {
+            throw SiblingsPropertyError.operandModelIdRequired(property: self.name)
+        }
+
+        return try await self.isAttached(toID: toID, on: database)
     }
     
     func isAttached(toID: To.IDValue, on database: any Database) async throws -> Bool {
-        try await self.isAttached(toID: toID, on: database).get()
+        guard let fromID = self.idValue else {
+            throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
+        }
+
+        let count = try await Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(self.to.appending(path: \.$id) == toID)
+            .count()
+        return count > 0
     }
     
     // MARK: Operations
     
     /// Attach multiple models with plain edit closure.
     func attach(_ tos: [To], on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
-        try await self.attach(tos, on: database, edit).get()
-    }
+        guard let fromID = self.idValue else {
+            throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
+        }
+        
+        var pivots: [Through] = []
+        pivots.reserveCapacity(tos.count)
+        
+        for to in tos {
+            guard let toID = to.id else {
+                throw SiblingsPropertyError.operandModelIdRequired(property: self.name)
+            }
+            let pivot = Through()
+            pivot[keyPath: self.from].id = fromID
+            pivot[keyPath: self.to].id = toID
+            pivot[keyPath: self.to].value = to
+            edit(pivot)
+            pivots.append(pivot)
+        }
 
-    /// Attach single model with plain edit closure.
-    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
-        try await self.attach(to, method: .always, on: database, edit)
+        try await pivots.create(on: database)
     }
     
     /// Attach single model by specific method with plain edit closure.
@@ -33,7 +59,32 @@ public extension SiblingsProperty {
         _ to: To, method: AttachMethod, on database: any Database,
         _ edit: @escaping @Sendable (Through) -> () = { _ in }
     ) async throws {
-        try await self.attach(to, method: method, on: database, edit).get()
+        switch method {
+        case .always: 
+            try await self.attach(to, on: database, edit)
+        case .ifNotExists:
+            let alreadyAttached = try await self.isAttached(to: to, on: database)
+            if alreadyAttached == true { return }
+            try await self.attach(to, on: database, edit)
+        }
+    }
+
+    /// Attach single model with plain edit closure.
+    func attach(_ to: To, on database: any Database, _ edit: @escaping @Sendable (Through) -> () = { _ in }) async throws {
+        guard let fromID = self.idValue else {
+            throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
+        }
+        guard let toID = to.id else {
+            throw SiblingsPropertyError.operandModelIdRequired(property: self.name)
+        }
+
+        let pivot = Through()
+        pivot[keyPath: self.from].id = fromID
+        pivot[keyPath: self.to].id = toID
+        pivot[keyPath: self.to].value = to
+        edit(pivot)
+
+        try await pivot.save(on: database)
     }
     
     /// A version of ``attach(_:on:_:)-791gu`` whose edit closure is async and can throw.
@@ -65,6 +116,7 @@ public extension SiblingsProperty {
             try await edit(pivot)
             pivots.append(pivot)
         }
+
         try await pivots.create(on: database)
     }
 
@@ -92,14 +144,47 @@ public extension SiblingsProperty {
     }
     
     func detach(_ tos: [To], on database: any Database) async throws {
-        try await self.detach(tos, on: database).get()
+        guard let fromID = self.idValue else {
+            throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
+        }
+        
+        var toIDs: [To.IDValue] = []
+        toIDs.reserveCapacity(tos.count)
+        
+        for to in tos {
+            guard let toID = to.id else {
+                throw SiblingsPropertyError.operandModelIdRequired(property: self.name)
+            }
+            toIDs.append(toID)
+        }
+
+        try await Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(self.to.appending(path: \.$id) ~~ toIDs)
+            .delete()
     }
     
     func detach(_ to: To, on database: any Database) async throws {
-        try await self.detach(to, on: database).get()
+        guard let fromID = self.idValue else {
+            throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
+        }
+        guard let toID = to.id else {
+            throw SiblingsPropertyError.operandModelIdRequired(property: self.name)
+        }
+
+        try await Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .filter(self.to.appending(path: \.$id) == toID)
+            .delete()
     }
     
     func detachAll(on database: any Database) async throws {
-        try await self.detachAll(on: database).get()
+        guard let fromID = self.idValue else {
+            throw SiblingsPropertyError.owningModelIdRequired(property: self.name)
+        }
+        
+        try await Through.query(on: database)
+            .filter(self.from.appending(path: \.$id) == fromID)
+            .delete()
     }
 }

@@ -149,15 +149,15 @@ public extension Collection where Element: FluentKit.Model, Self: Sendable {
             try await database.configuration.middleware.chainingTo(Element.self) { event, model, db in
                 return
             }.delete(model, force: force, on: database)
+        }
 
-            try await Element.query(on: database)
-                .filter(ids: self.map { $0.id! })
-                .delete(force: force)
+        try await Element.query(on: database)
+            .filter(ids: self.map { $0.id! })
+            .delete(force: force)
 
-            guard force else { return }
-            for model in self where model.deletedTimestamp == nil {
-                model._$idExists = false
-            }
+        guard force else { return }
+        for model in self where model.deletedTimestamp == nil {
+            model._$idExists = false
         }
     }
     
@@ -166,7 +166,7 @@ public extension Collection where Element: FluentKit.Model, Self: Sendable {
         
         precondition(self.allSatisfy { !$0._$idExists })
 
-        try await withThrowingTaskGroup { group in
+        try await withThrowingTaskGroup(of: Void.self) { group in
             for model in self {
                 group.addTask {
                     try await database.configuration.middleware.chainingTo(Element.self) { event, model, db in
