@@ -15,7 +15,7 @@ public final class QueryBuilder<Model>
         self.init(
             query: .init(schema: Model.schema, space: Model.space, shouldTrace: database.context.shouldTrace),
             database: database,
-            models: [Model.self],
+            models: [Model.self]
         )
     }
 
