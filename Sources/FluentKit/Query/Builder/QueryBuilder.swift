@@ -25,7 +25,7 @@ public final class QueryBuilder<Model>
         models: [any Schema.Type] = [],
         eagerLoaders: [any AnyEagerLoader] = [],
         includeDeleted: Bool = false,
-        shouldForceDelete: Bool = false,
+        shouldForceDelete: Bool = false
     ) {
         self.query = query
         self.database = database
