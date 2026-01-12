@@ -27,6 +27,9 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
     // Synchronize access across threads.
     private var lock: NIOLock
 
+    // Lifecycle state for `Databases`
+    private var shudown: Bool
+
     public struct Middleware {
         let databases: Databases
 
@@ -62,6 +65,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
         self.configurations = [:]
         self.drivers = [:]
         self.lock = .init()
+        self.shudown = false
     }
 
     public func use(
@@ -105,6 +109,10 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
         pageSizeLimit: Int? = nil
     ) -> (any Database)? {
         self.lock.withLock {
+            guard !self.shudown else {
+                logger.debug("Can't request a database on an already shutdown Databases instance")
+                return nil
+            }
             let id = id ?? self._requireDefaultID()
             var logger = logger
             logger[metadataKey: "database-id"] = .string(id.string)
@@ -149,6 +157,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
                 driver.shutdown()
             }
             self.drivers = [:]
+            self.shudown = true
         }
     }
 
@@ -160,6 +169,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
                 driversToShutdown.append(driver)
             }
             self.drivers = [:]
+            self.shudown = true
         }
         for driver in driversToShutdown {
             await driver.shutdownAsync()
