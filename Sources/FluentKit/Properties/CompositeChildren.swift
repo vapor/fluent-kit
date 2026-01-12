@@ -210,7 +210,6 @@ private struct CompositeChildrenEagerLoader<From, To>: EagerLoader
         }
 
         let result = try await builder.all()
-
         let indexedResults = Dictionary(grouping: result, by: { parentKey.referencedId(in: $0)! })
 
         for model in models {

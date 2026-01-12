@@ -112,26 +112,24 @@ public final class SiblingsProperty<From, To, Through>: @unchecked Sendable
             return database.eventLoop.makeFailedFuture(SiblingsPropertyError.owningModelIdRequired(property: self.name))
         }
         
-        var pivots: [Through] = []
-        pivots.reserveCapacity(tos.count)
-        
-        for to in tos {
+        let pivots: [Through] = tos.compactMap { to in
             guard let toID = to.id else {
-                return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
+                return nil
             }
             let pivot = Through()
             pivot[keyPath: self.from].id = fromID
             pivot[keyPath: self.to].id = toID
             pivot[keyPath: self.to].value = to
             edit(pivot)
-            pivots.append(pivot)
+            return pivot
+        }
+        
+        guard pivots.count == tos.count else {
+            return database.eventLoop.makeFailedFuture(SiblingsPropertyError.operandModelIdRequired(property: self.name))
         }
 
-        let boxedPivots = UnsafeMutableTransferBox<[Through]>(pivots)
         return database.eventLoop.makeFutureWithTask {
-            // While this is unsafe, we're okay with it as we want to avoid 
-            // duplicating the code across concurrency and EL methods.
-            try await boxedPivots.wrappedValue.create(on: database)
+            try await pivots.create(on: database)
         }
     }
 

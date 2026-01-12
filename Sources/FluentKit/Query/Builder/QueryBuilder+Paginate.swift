@@ -26,8 +26,9 @@ extension QueryBuilder {
         withIndex page: Int,
         size per: Int
     ) -> EventLoopFuture<Page<Model>> {
-        self.database.eventLoop.makeFutureWithTask { 
-            try await self.page(withIndex: page, size: per)
+        nonisolated(unsafe) let unsafeSelf = self
+        return self.database.eventLoop.makeFutureWithTask { 
+            try await unsafeSelf.page(withIndex: page, size: per)
         }
     }
 }

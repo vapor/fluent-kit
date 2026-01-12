@@ -227,36 +227,33 @@ private final class DatabaseMigrator: Sendable {
 
     private func lastBatchNumber() -> EventLoopFuture<Int> {
         self.database.eventLoop.makeFutureWithTask {
-            let log = try await MigrationLog.query(on: self.database).sort(\.$batch, .descending).first()
-            return log?.batch ?? 0
+            try await MigrationLog.query(on: self.database).sort(\.$batch, .descending).first()?.batch ?? 0
         }
     }
 
     private func preparedMigrations() -> EventLoopFuture<[any Migration]> {
         self.database.eventLoop.makeFutureWithTask {
-            let logs = try await MigrationLog.query(on: self.database).all()
-            return self.migrations.filter { migration in
-                logs.contains(where: { $0.name == migration.name })
-            }.reversed()
+            let logs = Set(try await MigrationLog.query(on: self.database).field(\.$name).all().map(\.name))
+            return self.migrations.filter { logs.contains($0.name) }.reversed()
         }
     }
 
     private func preparedMigrations(batch: Int) -> EventLoopFuture<[any Migration]> {
         self.database.eventLoop.makeFutureWithTask {
-            let logs = try await MigrationLog.query(on: self.database).filter(\.$batch == batch).all()
-            return self.migrations.filter { migration in
-                logs.contains(where: { $0.name == migration.name })
-            }.reversed()
+            let logs = Set(
+                try await MigrationLog.query(on: self.database)
+                    .filter(\.$batch == batch)
+                    .field(\.$name)
+                    .all().map(\.name)
+            )
+            return self.migrations.filter { logs.contains($0.name) }.reversed()
         }
     }
 
     private func unpreparedMigrations() -> EventLoopFuture<[any Migration]> {
         self.database.eventLoop.makeFutureWithTask {
-            let logs = try await MigrationLog.query(on: self.database).all()
-            return self.migrations.compactMap { migration in
-                if logs.contains(where: { $0.name == migration.name }) { return nil }
-                return migration
-            }
+            let logs = try await MigrationLog.query(on: self.database).field(\.$name).all().map(\.name)
+            return self.migrations.filter { logs.contains($0.name) }
         }
     }
 }

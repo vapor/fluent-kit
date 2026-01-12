@@ -169,27 +169,27 @@ public final class SchemaBuilder {
     public func create() -> EventLoopFuture<Void> {
         // While this is unsafe, we're okay with it as we want to avoid 
         // duplicating the code across concurrency and EL methods.
-        let boxedSelf = UnsafeMutableTransferBox<SchemaBuilder>(self)
+        nonisolated(unsafe) let unsafeSelf = self
         return self.database.eventLoop.makeFutureWithTask {
-            try await boxedSelf.wrappedValue.create()
+            try await unsafeSelf.create()
         }
     }
 
     public func update() -> EventLoopFuture<Void> {
         // While this is unsafe, we're okay with it as we want to avoid 
         // duplicating the code across concurrency and EL methods.
-        let boxedSelf = UnsafeMutableTransferBox<SchemaBuilder>(self)
+        nonisolated(unsafe) let unsafeSelf = self
         return self.database.eventLoop.makeFutureWithTask {
-            try await boxedSelf.wrappedValue.update()
+            try await unsafeSelf.update()
         }
     }
 
     public func delete() -> EventLoopFuture<Void> {
         // While this is unsafe, we're okay with it as we want to avoid 
         // duplicating the code across concurrency and EL methods.
-        let boxedSelf = UnsafeMutableTransferBox<SchemaBuilder>(self)
+        nonisolated(unsafe) let unsafeSelf = self
         return self.database.eventLoop.makeFutureWithTask {
-            try await boxedSelf.wrappedValue.delete()
+            try await unsafeSelf.delete()
         }
     }
 }
