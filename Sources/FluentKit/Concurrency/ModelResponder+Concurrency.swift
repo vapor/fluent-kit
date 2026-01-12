@@ -38,7 +38,7 @@ extension AnyAsyncModelResponder {
     }
 }
 
-internal struct AsyncBasicModelResponder: AnyAsyncModelResponder {
+internal struct AnyAsyncBasicModelResponder: AnyAsyncModelResponder {
     private let _handle: @Sendable (ModelEvent, any AnyModel, any Database) async throws -> Void
 
     internal func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) async throws {
@@ -46,6 +46,22 @@ internal struct AsyncBasicModelResponder: AnyAsyncModelResponder {
     }
 
     init(handle: @escaping @Sendable (ModelEvent, any AnyModel, any Database) async throws -> Void) {
+        self._handle = handle
+    }
+}
+
+internal struct AsyncBasicModelResponder<Model>: AnyAsyncModelResponder where Model: FluentKit.Model {
+    private let _handle: @Sendable (ModelEvent, Model, any Database) async throws -> Void
+
+    internal func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) async throws {
+        guard let modelType = model as? Model else {
+            fatalError("Could not convert type AnyModel to \(Model.self)")
+        }
+        
+        try await _handle(event, modelType, db)
+    }
+
+    init(handle: @escaping @Sendable (ModelEvent, Model, any Database) async throws -> Void) {
         self._handle = handle
     }
 }

@@ -66,16 +66,9 @@ public final class OptionalChildProperty<From, To>: @unchecked Sendable
     }
 
     public func create(_ to: To, on database: any Database) -> EventLoopFuture<Void> {
-        guard let id = self.idValue else {
-            fatalError("Cannot save child in \(self.name) to unsaved model in.")
+        database.eventLoop.makeFutureWithTask {
+            try await self.create(to, on: database)
         }
-        switch self.parentKey {
-        case .required(let keyPath):
-            to[keyPath: keyPath].id = id
-        case .optional(let keyPath):
-            to[keyPath: keyPath].id = id
-        }
-        return to.create(on: database)
     }
 }
 
@@ -140,8 +133,8 @@ extension OptionalChildProperty: Relation {
     }
 
     public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database).first().map {
-            self.value = $0
+        database.eventLoop.makeFutureWithTask {
+            try await self.load(on: database)
         }
     }
 }

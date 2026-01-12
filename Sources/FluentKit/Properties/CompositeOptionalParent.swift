@@ -127,11 +127,9 @@ extension CompositeOptionalParentProperty: Relation {
     }
     
     public func load(on database: any Database) -> EventLoopFuture<Void> {
-        self.query(on: database)
-            .first()
-            .map {
-                self.value = $0
-            }
+        database.eventLoop.makeFutureWithTask {
+            try await self.load(on: database)
+        }
     }
 }
 

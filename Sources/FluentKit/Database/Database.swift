@@ -77,7 +77,7 @@ public struct DatabaseContext: Sendable {
     public let eventLoop: any EventLoop
     public let history: QueryHistory?
     public let pageSizeLimit: Int?
-    
+
     public init(
         configuration: any DatabaseConfiguration,
         logger: Logger,

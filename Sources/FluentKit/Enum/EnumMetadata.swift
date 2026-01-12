@@ -4,7 +4,7 @@ import Foundation
 final class EnumMetadata: Model, @unchecked Sendable {
     static let schema = "_fluent_enums"
 
-    static var migration: any Migration {
+    static var migration: any AsyncMigration {
         EnumMetadataMigration()
     }
 
@@ -26,9 +26,9 @@ final class EnumMetadata: Model, @unchecked Sendable {
     }
 }
 
-private struct EnumMetadataMigration: Migration {
-    func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        database.schema(EnumMetadata.schema)
+private struct EnumMetadataMigration: AsyncMigration {
+    func prepare(on database: any Database) async throws  {
+        try await database.schema(EnumMetadata.schema)
             .id()
             .field("name", .string, .required)
             .field("case", .string, .required)
@@ -37,7 +37,7 @@ private struct EnumMetadataMigration: Migration {
             .create()
     }
 
-    func revert(on database: any Database) -> EventLoopFuture<Void> {
-        database.schema(EnumMetadata.schema).delete()
+    func revert(on database: any Database) async throws {
+        try await database.schema(EnumMetadata.schema).delete()
     }
 }

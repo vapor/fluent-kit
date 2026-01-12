@@ -26,15 +26,8 @@ extension Relation {
     ///   - database: The database to use if the value needs to be loaded.
     /// - Returns: The loaded value.
     public func get(reload: Bool = false, on database: any Database) -> EventLoopFuture<RelatedValue> {
-        if let value = self.value, !reload {
-            database.eventLoop.makeSucceededFuture(value)
-        } else {
-            self.load(on: database).flatMapThrowing {
-                guard let value = self.value else { // This should never actually happen, but just in case...
-                    throw FluentError.relationNotLoaded(name: self.name)
-                }
-                return value
-            }
+        database.eventLoop.makeFutureWithTask {
+            try await self.get(reload: reload, on: database)
         }
     }
 }

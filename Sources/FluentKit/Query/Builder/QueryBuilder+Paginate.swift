@@ -24,27 +24,11 @@ extension QueryBuilder {
     /// - Returns: A single `Page` of the result set containing the requested items and page metadata.
     public func page(
         withIndex page: Int,
-        size per: Int) -> EventLoopFuture<Page<Model>> {
-        let trimmedRequest: PageRequest = {
-            guard let pageSizeLimit = database.context.pageSizeLimit else {
-                return .init(page: Swift.max(page, 1), per: Swift.max(per, 1))
-            }
-            return .init(
-                page: Swift.max(page, 1),
-                per: Swift.max(Swift.min(per, pageSizeLimit), 1)
-            )
-        }()
-        let count = self.count()
-        let items = self.copy().range(trimmedRequest.start..<trimmedRequest.end).all()
-        return items.and(count).map { (models, total) in
-            Page(
-                items: models,
-                metadata: .init(
-                    page: trimmedRequest.page,
-                    per: trimmedRequest.per,
-                    total: total
-                )
-            )
+        size per: Int
+    ) -> EventLoopFuture<Page<Model>> {
+        nonisolated(unsafe) let unsafeSelf = self
+        return self.database.eventLoop.makeFutureWithTask { 
+            try await unsafeSelf.page(withIndex: page, size: per)
         }
     }
 }
