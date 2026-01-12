@@ -4,17 +4,18 @@ import NIOCore
 import SQLKit
 import XCTFluent
 import NIOConcurrencyHelpers
+import NIOPosix
 
 struct FakedDatabaseRow: DatabaseOutput, SQLRow {
     let data: [String: (any Sendable)?]
     let schema: String?
-    
+
     private func column(for key: FieldKey) -> String { "\(self.schema.map { "\($0)_" } ?? "")\(key.description)" }
     func schema(_ schema: String) -> any DatabaseOutput { FakedDatabaseRow(self.data, schema: schema) }
     func contains(_ key: FieldKey) -> Bool { self.contains(column: self.column(for: key)) }
     func decodeNil(_ key: FieldKey) throws -> Bool { try self.decodeNil(column: self.column(for: key)) }
     func decode<T: Decodable>(_ key: FieldKey, as: T.Type) throws -> T { try self.decode(column: self.column(for: key), as: T.self) }
-    
+
     var allColumns: [String] { .init(self.data.keys) }
     func contains(column: String) -> Bool { self.data.keys.contains(column) }
     func decodeNil(column: String) throws -> Bool { self.data[column].map { $0 == nil } ?? true }
@@ -23,9 +24,9 @@ struct FakedDatabaseRow: DatabaseOutput, SQLRow {
         guard let value = v as? D else { throw DecodingError.typeMismatch(D.self, .init(codingPath: [], debugDescription: "")) }
         return value
     }
-    
+
     var description: String { "" }
-    
+
     init(_ data: [String: (any Sendable)?], schema: String? = nil) {
         self.data = data
         self.schema = schema
@@ -36,7 +37,9 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     var inTransaction: Bool { false }
 
     struct Configuration: DatabaseConfiguration {
-        func makeDriver(for databases: Databases) -> any DatabaseDriver { fatalError() }
+        func makeDriver(for databases: Databases) -> any DatabaseDriver {
+            DummyDatabaseDriver()
+         }
         var middleware: [any AnyModelMiddleware] = []
     }
 
@@ -49,7 +52,7 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         get { self._sqlSerializers.withLockedValue { $0 } }
         set { self._sqlSerializers.withLockedValue { $0 = newValue } }
     }
-    
+
     let _fakedRows = NIOLockedValueBox<[[FakedDatabaseRow]]>([])
     var fakedRows: [[FakedDatabaseRow]] {
         get { self._fakedRows.withLockedValue { $0 } }
@@ -67,13 +70,13 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     func reset() {
         self.sqlSerializers = []
     }
-    
+
     func execute(
         query: DatabaseQuery,
         onOutput: @escaping @Sendable (any DatabaseOutput) -> ()
     ) -> EventLoopFuture<Void> {
         let sqlExpression = SQLQueryConverter(delegate: DummyDatabaseConverterDelegate()).convert(query)
-        
+
         return self.execute(sql: sqlExpression, { row in onOutput(row as! any DatabaseOutput) })
     }
 
@@ -94,10 +97,10 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     func transaction<T>(_ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         closure(self)
     }
-    
+
     func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
         let sqlExpression = SQLSchemaConverter(delegate: DummyDatabaseConverterDelegate()).convert(schema)
-        
+
         return self.execute(sql: sqlExpression, { _ in })
     }
 
@@ -105,7 +108,7 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
         // do nothing
         self.eventLoop.makeSucceededVoidFuture()
     }
-    
+
     func withConnection<T>(
         _ closure: @escaping @Sendable (any Database) -> EventLoopFuture<T>
     ) -> EventLoopFuture<T> {
@@ -114,6 +117,38 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
 
     func shutdown() {
         //
+    }
+}
+
+struct DummyDatabaseDriver: DatabaseDriver {
+    func shutdown() {}
+
+    func makeDatabase(with context: DatabaseContext) -> any Database {
+        DummyDatabase(context: context)
+    }
+}
+
+struct DummyDatabase: Database {
+    var context: DatabaseContext
+    var inTransaction: Bool { false }
+    func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
+        MultiThreadedEventLoopGroup.singleton.any().makeSucceededVoidFuture()
+    }
+
+    func execute(query: DatabaseQuery, onOutput: @escaping (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
+        MultiThreadedEventLoopGroup.singleton.any().makeSucceededVoidFuture()
+    }
+
+    func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
+        MultiThreadedEventLoopGroup.singleton.any().makeSucceededVoidFuture()
+    }
+
+    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
+    }
+
+    func withConnection<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        closure(self)
     }
 }
 
@@ -150,7 +185,7 @@ struct DummyDatabaseDialect: SQLDialect {
     var autoIncrementClause: any SQLExpression {
         SQLRaw("GENERATED BY DEFAULT AS IDENTITY")
     }
-    
+
     var sharedSelectLockExpression: (any SQLExpression)? {
         SQLRaw("FOR SHARE")
     }
