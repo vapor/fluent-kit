@@ -95,7 +95,7 @@ public final class CompositeOptionalChildProperty<From, To>: @unchecked Sendable
         set { self.idValue = newValue }
     }
 
-    public func query(on database:any  Database) -> QueryBuilder<To> {
+    public func query(on database: any Database) -> QueryBuilder<To> {
         guard let id = self.idValue else {
             fatalError("Cannot query child relation \(self.name) from unsaved model.")
         }
@@ -144,7 +144,7 @@ extension CompositeOptionalChildProperty: AnyCodableProperty {
 
 extension CompositeOptionalChildProperty: Relation {
     public var name: String { "CompositeOptionalChild<\(From.self), \(To.self)>(for: \(self.parentKey))" }
-    public func load(on database: any Database) -> EventLoopFuture<Void> { self.query(on: database).first().map { self.value = $0 } }
+    public func load(on database: any Database) -> EventLoopFuture<Void> { database.eventLoop.makeFutureWithTask { try await self.load(on: database) } }
 }
 
 extension CompositeOptionalChildProperty: EagerLoadable {
@@ -177,6 +177,12 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
     let withDeleted: Bool
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
+        database.eventLoop.makeFutureWithTask {
+            try await self.run(models: models, on: database)
+        }
+    }
+
+    private func run(models: [From], on database: any Database) async throws {
         let ids = Set(models.map(\.id!))
         let parentKey = From()[keyPath: self.relationKey].parentKey
         let builder = To.query(on: database)
@@ -187,12 +193,12 @@ private struct CompositeOptionalChildEagerLoader<From, To>: EagerLoader
         if self.withDeleted {
             builder.withDeleted()
         }
-        return builder.all().map {
-            let indexedResults = Dictionary(grouping: $0, by: { parentKey.referencedId(in: $0)! })
-            
-            for model in models {
-                model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
-            }
+
+        let result = try await builder.all()
+        let indexedResults = Dictionary(grouping: result, by: { parentKey.referencedId(in: $0)! })
+        
+        for model in models {
+            model[keyPath: self.relationKey].value = indexedResults[model[keyPath: self.relationKey].idValue!]?.first
         }
     }
 }
@@ -204,6 +210,6 @@ private struct ThroughCompositeOptionalChildEagerLoader<From, Through, Loader>: 
     let loader: Loader
 
     func run(models: [From], on database: any Database) -> EventLoopFuture<Void> {
-        return self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
+        self.loader.run(models: models.compactMap { $0[keyPath: self.relationKey].value! }, on: database)
     }
 }

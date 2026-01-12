@@ -11,33 +11,45 @@ public protocol AsyncModelMiddleware: AnyModelMiddleware {
 }
 
 extension AsyncModelMiddleware {
+    func handle(
+        _ event: ModelEvent,
+        _ model: any AnyModel,
+        on db: any Database,
+        chainingTo next: any AnyAsyncModelResponder
+    ) async throws {
+        guard let modelType = (model as? Model) else {
+            return try await next.handle(event, model, on: db)
+        }
+
+        switch event {
+        case .create:
+            try await self.create(model: modelType, on: db, next: next)
+        case .update:
+            try await self.update(model: modelType, on: db, next: next)
+        case .delete(let force):
+            try await self.delete(model: modelType, force: force, on: db, next: next)
+        case .softDelete:
+            try await self.softDelete(model: modelType, on: db, next: next)
+        case .restore:
+            try await self.restore(model: modelType, on: db, next: next)
+        }
+    }
+
     public func handle(
         _ event: ModelEvent,
         _ model: any AnyModel,
         on db: any Database,
         chainingTo next: any AnyModelResponder
-    ) -> EventLoopFuture<Void> {
-        guard let modelType = (model as? Model) else {
-            return next.handle(event, model, on: db)
-        }
-
-        return db.eventLoop.makeFutureWithTask {
-            let responder = AsyncBasicModelResponder { responderEvent, responderModel, responderDB in
-                try await next.handle(responderEvent, responderModel, on: responderDB).get()
+    ) -> EventLoopFuture<Void> { 
+        db.eventLoop.makeFutureWithTask {
+            let responder = AnyAsyncBasicModelResponder { responderModel, responderEvent, responderDB in 
+                if let next = (next as? any AnyAsyncModelResponder) {
+                    try await next.handle(responderModel, responderEvent, on: responderDB)
+                } else {
+                    try await next.handle(responderModel, responderEvent, on: responderDB).get()
+                }
             }
-
-            switch event {
-            case .create:
-                try await self.create(model: modelType, on: db, next: responder)
-            case .update:
-                try await self.update(model: modelType, on: db, next: responder)
-            case .delete(let force):
-                try await self.delete(model: modelType, force: force, on: db, next: responder)
-            case .softDelete:
-                try await self.softDelete(model: modelType, on: db, next: responder)
-            case .restore:
-                try await self.restore(model: modelType, on: db, next: responder)
-            }
+            try await self.handle(event, model, on: db, chainingTo: responder)
         }
     }
     

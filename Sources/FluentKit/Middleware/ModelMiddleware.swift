@@ -64,6 +64,10 @@ extension AnyModelMiddleware {
     func makeResponder(chainingTo responder: any AnyModelResponder) -> any AnyModelResponder {
         ModelMiddlewareResponder(middleware: self, responder: responder)
     }
+
+    func makeAsyncResponser(chainingTo responder: any AnyAsyncModelResponder) -> any AnyAsyncModelResponder {
+        AsyncModelMiddlewareResponder(middleware: self, responder: responder)
+    }
 }
 
 extension Array where Element == any AnyModelMiddleware {
@@ -77,6 +81,17 @@ extension Array where Element == any AnyModelMiddleware {
         }
         return responder
     }
+
+    internal func chainingTo<Model>(
+        _ type: Model.Type,
+        closure: @escaping @Sendable (ModelEvent, Model, any Database) async throws -> Void
+    ) -> any AnyAsyncModelResponder where Model: FluentKit.Model {
+        var responder: any AnyAsyncModelResponder = AsyncBasicModelResponder(handle: closure)
+        for middleware in reversed() {
+            responder = middleware.makeAsyncResponser(chainingTo: responder)
+        }
+        return responder
+    }
 }
 
 private struct ModelMiddlewareResponder: AnyModelResponder {
@@ -85,6 +100,19 @@ private struct ModelMiddlewareResponder: AnyModelResponder {
     
     func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) -> EventLoopFuture<Void> {
         self.middleware.handle(event, model, on: db, chainingTo: responder)
+    }
+}
+
+private struct AsyncModelMiddlewareResponder: AnyAsyncModelResponder {
+    var middleware: any AnyModelMiddleware
+    var responder: any AnyModelResponder
+
+    func handle(_ event: ModelEvent, _ model: any AnyModel, on db: any Database) async throws {
+        if let middleware = (middleware as? any AsyncModelMiddleware), let responder = (responder as? any AnyAsyncModelResponder) {
+            try await middleware.handle(event, model, on: db, chainingTo: responder)
+        } else {
+            try await middleware.handle(event, model, on: db, chainingTo: responder).get()
+        }
     }
 }
 
