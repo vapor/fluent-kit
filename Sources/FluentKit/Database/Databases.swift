@@ -28,7 +28,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
     private var lock: NIOLock
 
     // Lifecycle state for `Databases`
-    private var shudown: Bool
+    private var isShutdown: Bool
 
     public struct Middleware {
         let databases: Databases
@@ -65,7 +65,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
         self.configurations = [:]
         self.drivers = [:]
         self.lock = .init()
-        self.shudown = false
+        self.isShutdown = false
     }
 
     public func use(
@@ -109,7 +109,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
         pageSizeLimit: Int? = nil
     ) -> (any Database)? {
         self.lock.withLock {
-            guard !self.shudown else {
+            guard !self.isShutdown else {
                 logger.debug("Can't request a database on an already shutdown Databases instance")
                 return nil
             }
@@ -157,7 +157,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
                 driver.shutdown()
             }
             self.drivers = [:]
-            self.shudown = true
+            self.isShutdown = true
         }
     }
 
@@ -169,7 +169,7 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
                 driversToShutdown.append(driver)
             }
             self.drivers = [:]
-            self.shudown = true
+            self.isShutdown = true
         }
         for driver in driversToShutdown {
             await driver.shutdownAsync()

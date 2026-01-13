@@ -124,31 +124,7 @@ struct DummyDatabaseDriver: DatabaseDriver {
     func shutdown() {}
 
     func makeDatabase(with context: DatabaseContext) -> any Database {
-        DummyDatabase(context: context)
-    }
-}
-
-struct DummyDatabase: Database {
-    var context: DatabaseContext
-    var inTransaction: Bool { false }
-    func execute(enum: DatabaseEnum) -> EventLoopFuture<Void> {
-        MultiThreadedEventLoopGroup.singleton.any().makeSucceededVoidFuture()
-    }
-
-    func execute(query: DatabaseQuery, onOutput: @escaping (any DatabaseOutput) -> ()) -> EventLoopFuture<Void> {
-        MultiThreadedEventLoopGroup.singleton.any().makeSucceededVoidFuture()
-    }
-
-    func execute(schema: DatabaseSchema) -> EventLoopFuture<Void> {
-        MultiThreadedEventLoopGroup.singleton.any().makeSucceededVoidFuture()
-    }
-
-    func transaction<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-        closure(self)
-    }
-
-    func withConnection<T>(_ closure: @escaping (any Database) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
-        closure(self)
+        DummyDatabaseForTestSQLSerializer()
     }
 }
 
