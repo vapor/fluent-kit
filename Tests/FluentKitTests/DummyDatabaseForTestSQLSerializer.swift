@@ -60,11 +60,9 @@ final class DummyDatabaseForTestSQLSerializer: Database, SQLDatabase {
     }
 
     init() {
-        var logger = Logger(label: "test")
-        logger.logLevel = .debug
         self.context = .init(
             configuration: Configuration(),
-            logger: logger,
+            logger: .init(label: "test"),
             eventLoop: NIOSingletons.posixEventLoopGroup.any(),
             shouldTrace: true
         )
