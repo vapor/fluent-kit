@@ -6,7 +6,7 @@ import InMemoryTracing
 import Testing
 import FluentSQL
 
-@Suite()
+@Suite("Tracing Tests")
 struct TracingTests {
     let db = DummyDatabaseForTestSQLSerializer()
 
@@ -16,79 +16,135 @@ struct TracingTests {
 
     @Test("Tracing CRUD", .withTracing(InMemoryTracer()))
     func tracingCRUD() async throws {
-        let planet = Planet()
-        planet.name = "Pluto"
-        try await planet.create(on: db)
-        var span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "create")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "create \(Planet.schema)")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+        try await expectSpans(attributes: [
+            .init(operation: "create", summary: "create \(Planet.schema)", collection: "\(Planet.schema)"),
+            .init(operation: "read", summary: "read planets", collection: "\(Planet.schema)"),
+            .init(operation: "update", summary: "update \(Planet.schema)", collection: "\(Planet.schema)"),
+            .init(operation: "delete", summary: "delete \(Planet.schema)", collection: "\(Planet.schema)")
+        ]) {
+            // create
+            let planet = Planet()
+            planet.name = "Pluto"
+            try await planet.create(on: db)
 
-        _ = try await Planet.find(planet.requireID(), on: db)
-        span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "read")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "read planets")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+            // read
+            _ = try await Planet.find(planet.requireID(), on: db)
 
-        planet.name = "Jupiter"
-        try await planet.update(on: db)
-        span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "update")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "update \(Planet.schema)")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+            // update
+            planet.name = "Jupiter"
+            try await planet.update(on: db)
 
-        try await planet.delete(force: true, on: db)
-        span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "delete")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "delete \(Planet.schema)")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+            // delete
+            try await planet.delete(force: true, on: db)
+        }
     }
 
     @Test("Tracing All", .withTracing(InMemoryTracer()))
-    func tracingFirst() async throws {
-        _ = try await Planet.query(on: db).all()
-        let span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "read")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "read \(Planet.schema)")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+    func tracingAll() async throws {
+        try await expectSpan(attributes: .init(operation: "read", summary: "read \(Planet.schema)", collection: "\(Planet.schema)")) {
+            _ = try await Planet.query(on: db).all()
+        }
     }
 
     @Test("Aggregate Tracing", .withTracing(InMemoryTracer()))
     func tracingAggregates() async throws {
         db.fakedRows.append([.init(["aggregate": 1])])
-        _ = try await Planet.query(on: db).count()
-        let span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "aggregate(count(planets[id]))")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "aggregate(count(planets[id])) planets")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
-    }
 
-    @Test("CRUD Tracing", .withTracing(InMemoryTracer()))
-    func tracingFindInsertRaw() async throws {
-        try await Planet(name: "Pluto").create(on: db)
-        _ = try await Planet.find(UUID(), on: db)
-        let span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "read")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "read \(Planet.schema)")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+        try await expectSpan(attributes: .init(
+            operation: "aggregate(count(planets[id]))",
+            summary: "aggregate(count(planets[id])) planets",
+            collection: "\(Planet.schema)"
+        )) {
+            _ = try await Planet.query(on: db).count()
+        }
     }
 
     @Test("Insert Tracing", .withTracing(InMemoryTracer()))
     func tracingInsert() async throws {
-        let id = UUID()
-        try await Planet(id: id, name: "Pluto").create(on: db)
+        try await expectSpan(attributes: .init(operation: "create", summary: "create \(Planet.schema)", collection: "\(Planet.schema)")) {
+            try await Planet(name: "Pluto").create(on: db)
+        }
+    }
+
+    @Test("Trace Getting Relations", .withTracing(InMemoryTracer()))
+    func traceGettingRelations() async throws {
+        try await expectSpan(attributes: .init(operation: "read", summary: "read \(Governor.schema)", collection: "\(Governor.schema)")) {
+            let planet = Planet(name: "Pluto")
+            try await planet.create(on: db)
+            _ = try await planet.$governor.get(on: db)
+        }
+    }
+
+    @Test("Trace Queries on Relations", .withTracing(InMemoryTracer()))
+    func traceQueriesOnRelations() async throws {
+        try await expectSpan(attributes: .init(operation: "read", summary: "read \(Moon.schema)", collection: "\(Moon.schema)")) {
+            let planet = Planet(name: "Earth")
+            try await planet.create(on: db)
+            _ = try await planet.$moons.query(on: db).all()
+        }
+    }
+
+    @Test("Trace First Query", .withTracing(InMemoryTracer()))
+    func tracingFirst() async throws {
+        try await expectSpan(attributes: .init(
+            operation: "read", summary: "read \(Planet.schema)", collection: "\(Planet.schema)"
+        )) {
+            _ = try await Planet.query(on: db).first()
+        }
+    }
+
+    @Test("Trace Min Aggregate", .withTracing(InMemoryTracer()))
+    func tracingMin() async throws {
+        db.fakedRows.append([.init(["aggregate": 100])])
+
+        try await expectSpan(attributes: .init(
+            operation: "aggregate(minimum(moons[craters]))",
+            summary: "aggregate(minimum(moons[craters])) moons",
+            collection: "\(Moon.schema)",
+        )) {
+            _ = try await Moon.query(on: db).min(\.$craters)
+        }
+    }
+
+    func expectSpan(
+        attributes: SpanAttributesSet,
+        performing query: () async throws -> ()
+    ) async throws {
+        _ = try await query()
+
         let span = try #require(tracer.finishedSpans.last)
-        #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "create")
-        #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "create \(Planet.schema)")
-        #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(Planet.schema)")
-        #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+        attributes.check(against: span)
+    }
+
+    func expectSpans(
+        attributes: [SpanAttributesSet],
+        performing queries: () async throws -> ()
+    ) async throws {
+        _ = try await queries()
+
+        #expect(attributes.count == tracer.finishedSpans.count, "Performed query count does not match expected attributes count")
+
+        for (attributesSet, span) in zip(attributes, tracer.finishedSpans) {
+            attributesSet.check(against: span)
+        }
+    }
+
+    struct SpanAttributesSet {
+        let operation: String
+        let summary: String
+        let collection: String
+        let namespace: String? = nil
+
+        func check(against span: FinishedInMemorySpan) {
+            #expect(span.attributes["fluent.query.operation"]?.toSpanAttribute() == "\(self.operation)")
+            #expect(span.attributes["fluent.query.summary"]?.toSpanAttribute() == "\(self.summary)")
+            #expect(span.attributes["fluent.query.collection"]?.toSpanAttribute() == "\(self.collection)")
+            if let namespace {
+                #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == "\(namespace)")
+            } else {
+                #expect(span.attributes["fluent.query.namespace"]?.toSpanAttribute() == nil)
+            }
+        }
     }
 }
 
