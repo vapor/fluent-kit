@@ -231,7 +231,7 @@ extension QueryBuilder {
     public func min<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
         where Field: QueryableProperty, Field.Model == Model, Field.Value: Sendable 
     {
-        try await self.aggregate(.average, key)
+        try await self.aggregate(.minimum, key)
     }
 
     public func min<Field>(_ key: KeyPath<Model, Field>) async throws -> Field.Value?
