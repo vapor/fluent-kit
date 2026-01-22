@@ -1,3 +1,4 @@
+#if swift(>=6.1)
 import FluentBenchmark
 import FluentKit
 @testable import Tracing
@@ -191,3 +192,4 @@ struct TaskLocalTracer: Tracer {
         tracer.forceFlush()
     }
 }
+#endif
