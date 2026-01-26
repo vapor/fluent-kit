@@ -47,10 +47,10 @@ jobs:
     container: swift:6.2-noble
     steps:
       - name: Check out package
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { repository: vapor/fluent-sqlite-driver, path: fluent-sqlite-driver }
       - name: Use local package and run tests
         run: |
@@ -66,10 +66,10 @@ jobs:
       mysql-b: { image: 'mysql:9', env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database } }
     steps:
       - name: Check out package
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { repository: vapor/fluent-mysql-driver, path: fluent-mysql-driver }
       - name: Use local package and run tests
         run: |
@@ -85,10 +85,10 @@ jobs:
       psql-b: { image: 'postgres:17', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
     steps:
       - name: Check out package
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { repository: vapor/fluent-postgres-driver, path: fluent-postgres-driver }
       - name: Use local package and run tests
         run: |
@@ -104,10 +104,10 @@ jobs:
       mongo-b: { image: 'mongo:6' }
     steps:
       - name: Check out package
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: { repository: vapor/fluent-mongo-driver, path: fluent-mongo-driver }
       - name: Use local package and run tests
         run: |
