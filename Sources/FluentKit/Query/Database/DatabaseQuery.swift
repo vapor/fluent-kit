@@ -84,15 +84,14 @@ extension DatabaseQuery: CustomStringConvertible {
         }
         return parts.joined(separator: " ")
     }
-    
+
     var describedByLoggingMetadata: Logger.Metadata {
         var result: Logger.Metadata = [
             "action": "\(self.action)",
             "schema": "\(self.space.map { "\($0)." } ?? "")\(self.schema)",
         ]
         switch self.action {
-        case .create, .update, .custom:
-            result["input"] = .array(self.input.map(\.describedByLoggingMetadata))
+        case .create, .update, .custom: result["input"] = .array(self.input.map(\.describedByLoggingMetadata))
         default: break
         }
         switch self.action {
