@@ -106,7 +106,8 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
         logger: Logger,
         on eventLoop: any EventLoop,
         history: QueryHistory? = nil,
-        pageSizeLimit: Int? = nil
+        pageSizeLimit: Int? = nil,
+        withTracing: Bool = true
     ) -> (any Database)? {
         self.lock.withLock {
             guard !self.isShutdown else {
@@ -122,7 +123,8 @@ public final class Databases: @unchecked Sendable, Service { // @unchecked is sa
                 logger: logger,
                 eventLoop: eventLoop,
                 history: history,
-                pageSizeLimit: pageSizeLimit
+                pageSizeLimit: pageSizeLimit,
+                shouldTrace: withTracing
             )
             let driver: any DatabaseDriver
             if let existing = self.drivers[id] {

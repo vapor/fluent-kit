@@ -32,7 +32,7 @@ public extension Model {
         self.touchTimestamps(.create, .update)
         if self.anyID is any AnyQueryableProperty {
             self.anyID.generate()
-            
+
             nonisolated(unsafe) var output: (any DatabaseOutput)?
             try await Self.query(on: database)
                 .set(self.collectInput(withDefaultedValues: database is any SQLDatabase))
