@@ -36,12 +36,18 @@ env:
   MONGO_HOSTNAME_A: 'mongo-a'
   MONGO_HOSTNAME_B: 'mongo-b'
 
-permissions:
-  contents: read
-
 jobs:
 
+  submit-dependencies:
+    permissions:
+      contents: write
+    if: ${{ github.event_name == 'push' }}
+    uses: vapor/ci/.github/workflows/submit-deps.yml@main
+    secrets: inherit
+
   linux-integration-sqlite:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:6.2-noble
@@ -58,6 +64,8 @@ jobs:
           swift test --package-path fluent-sqlite-driver --sanitize=thread
 
   linux-integration-mysql:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:6.2-noble
@@ -77,12 +85,14 @@ jobs:
           swift test --package-path fluent-mysql-driver --sanitize=thread
 
   linux-integration-psql:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:6.2-noble
     services:
-      psql-a: { image: 'postgres:17', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
-      psql-b: { image: 'postgres:17', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
+      psql-a: { image: 'postgres:18', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
+      psql-b: { image: 'postgres:18', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
     steps:
       - name: Check out package
         uses: actions/checkout@v6
@@ -96,12 +106,14 @@ jobs:
           swift test --package-path fluent-postgres-driver --sanitize=thread
 
   linux-integration-mongo:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:6.2-noble
     services:
-      mongo-a: { image: 'mongo:6' }
-      mongo-b: { image: 'mongo:6' }
+      mongo-a: { image: 'mongo:8' }
+      mongo-b: { image: 'mongo:8' }
     steps:
       - name: Check out package
         uses: actions/checkout@v6
@@ -115,7 +127,11 @@ jobs:
           swift test --package-path fluent-mongo-driver --sanitize=thread
 
   unit-tests:
+    permissions:
+      contents: read
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@main
     secrets: inherit
     with:
       with_android: true
+      with_musl: true
+      with_release_mode_testing: true
