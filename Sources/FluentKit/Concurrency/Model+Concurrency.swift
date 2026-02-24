@@ -72,6 +72,7 @@ public extension Model {
         guard let id = self.id else { throw FluentError.idRequired }
         try await Self.query(on: database)
             .filter(id: id)
+            .withDeleted()
             .set(input)
             .update()
         try self.output(from: SavedInput(input))

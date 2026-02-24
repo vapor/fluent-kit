@@ -131,6 +131,25 @@ extension FluentBenchmarker {
         }
     }
 
+    private func testSoftDelete_updateAfter() throws {
+        try self.runTest(#function, [
+            TrashMigration()
+        ]) {
+            let trash = Trash(contents: "A")
+            try trash.save(on: self.database).wait()
+            try testCounts(allCount: 1, realCount: 1)
+
+            try Trash.query(on: self.database).delete().wait()
+            try testCounts(allCount: 0, realCount: 1)
+
+            trash.contents = "B"
+            try trash.save(on: self.database).wait()
+            try testCounts(allCount: 0, realCount: 1)
+            let updated = try XCTUnwrap(try Trash.query(on: self.database).withDeleted().first().wait())
+            XCTAssertEqual(updated.contents, "B")
+        }
+    }
+
     // Tests eager load of @Parent relation that has been soft-deleted.
     private func testSoftDelete_parent() throws {
         final class Foo: Model, @unchecked Sendable {
