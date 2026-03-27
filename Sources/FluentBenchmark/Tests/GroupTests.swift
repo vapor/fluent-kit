@@ -29,6 +29,20 @@ extension FluentBenchmarker {
             XCTAssertEqual(moon.planet.star.name, "Sol")
             XCTAssertEqual(moon.planet.star.galaxy.name, "Milky Way")
 
+            let moon1 = try FlatMoon.query(on: self.database).filter(\.$name == "Moon").all().wait()
+            XCTAssertEqual(moon1.count, 1)
+            XCTAssertEqual(moon1.first?.planet.type, .smallRocky)
+
+            // Test updating moons
+            try FlatMoon.query(on: self.database)
+                .set(\.$planet.$type, to: .dwarf)
+                .filter(\.$name == "Moon")
+                .update().wait()
+
+            let moon2 = try FlatMoon.query(on: self.database).filter(\.$name == "Moon").all().wait()
+            XCTAssertEqual(moon2.count, 1)
+            XCTAssertEqual(moon2.first?.planet.type, .dwarf)
+
             // Test JSON
             let json = prettyJSON(moon)
             self.database.logger.debug(json)
@@ -195,7 +209,7 @@ private struct FlatMoonSeed: Migration {
             )
         )
         let europa = FlatMoon(
-            name: "Moon",
+            name: "Europa",
             planet: .init(
                 name: "Jupiter",
                 type: .gasGiant,
