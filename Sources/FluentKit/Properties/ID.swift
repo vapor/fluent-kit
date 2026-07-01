@@ -186,7 +186,7 @@ extension IDProperty: AnyCodableProperty {
 
 extension IDProperty: AnyID { }
 
-protocol AnyID: AnyObject {
+protocol AnyID: AnyDatabaseProperty {
     func generate()
     var exists: Bool { get set }
     var cachedOutput: (any DatabaseOutput)? { get set }

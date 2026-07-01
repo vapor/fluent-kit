@@ -370,6 +370,13 @@ final class CompositeIDTests: XCTestCase {
     func testCompositeOptionalParentNestedKeyPathFieldKey() {
         XCTAssertEqual(CompositeMoon()[keyPath: \.$progenitor.$normalizedOrdinal!.queryablePath][0].description, "nrm_ord")
     }
+
+    func testModelIDFieldKeys() {
+        // `@ID` resolves to its single key...
+        XCTAssertEqual(SolarSystem()._$idKeys, ["id"])
+        // ...and `@CompositeID` resolves to the full set of composite keys.
+        XCTAssertEqual(CompositePlanetTag()._$idKeys, ["planet_id", "tag_id"])
+    }
 }
 
 fileprivate func XCTAssertNilNil<V>(_ expression: @autoclosure () throws -> Optional<Optional<V>>, _ message: @autoclosure () -> String = "", file: StaticString = #filePath, line: UInt = #line) {
