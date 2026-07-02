@@ -44,4 +44,17 @@ extension Model {
     public var _$id: ID<IDValue> {
         self.anyID as! ID<IDValue>
     }
+
+    /// The database ``FieldKey``(s) which make up this model's identifier.
+    ///
+    /// Returns a single key for models declared with `@ID`, or the complete set of composite
+    /// keys for models declared with `@CompositeID`. Like ``_$idExists``, this works for both
+    /// cases, whereas ``_$id`` traps when applied to a model using `@CompositeID`.
+    ///
+    /// > Note: This accessor exists for the same reason as ``_$idExists``: to avoid making the
+    /// > ``AnyID`` protocol and ``anyID`` property public, which can not be usefully conformed
+    /// > to from outside FluentKit.
+    public var _$idKeys: [FieldKey] {
+        self.anyID.keys
+    }
 }
