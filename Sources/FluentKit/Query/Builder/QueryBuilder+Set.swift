@@ -42,6 +42,30 @@ extension QueryBuilder {
 
     @discardableResult
     public func set<Field>(
+        _ field: KeyPath<Model, GroupPropertyPath<Model, Field>>,
+        to value: Field.Value
+    ) -> Self
+        where Field: QueryableProperty
+    {
+        if self.query.input.isEmpty {
+            self.query.input = [.dictionary([:])]
+        }
+
+        switch self.query.input[0] {
+        case .dictionary(var existing):
+            let path = Model.path(for: field)
+            assert(path.count == 1, "Set on nested properties is not yet supported.")
+            existing[path[0]] = Field.queryValue(value)
+            self.query.input[0] = .dictionary(existing)
+        default:
+            fatalError()
+        }
+
+        return self
+    }
+
+    @discardableResult
+    public func set<Field>(
         _ field: KeyPath<Model, Field>,
         to value: Field.Value
     ) -> Self

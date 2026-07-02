@@ -7,7 +7,6 @@ on:
   push: { branches: [ main ] }
 
 env:
-  LOG_LEVEL: info
   POSTGRES_HOSTNAME: 'psql-a'
   POSTGRES_HOSTNAME_A: 'psql-a'
   POSTGRES_HOSTNAME_B: 'psql-b'
@@ -36,21 +35,27 @@ env:
   MONGO_HOSTNAME_A: 'mongo-a'
   MONGO_HOSTNAME_B: 'mongo-b'
 
-permissions:
-  contents: read
-
 jobs:
 
+  submit-dependencies:
+    permissions:
+      contents: write
+    if: ${{ github.event_name == 'push' }}
+    uses: vapor/ci/.github/workflows/submit-deps.yml@main
+    secrets: inherit
+
   linux-integration-sqlite:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.2-noble
+    container: swift:6.3-noble
     steps:
       - name: Check out package
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { repository: vapor/fluent-sqlite-driver, path: fluent-sqlite-driver }
       - name: Use local package and run tests
         run: |
@@ -58,18 +63,20 @@ jobs:
           swift test --package-path fluent-sqlite-driver --sanitize=thread
 
   linux-integration-mysql:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.2-noble
+    container: swift:6.3-noble
     services:
       mysql-a: { image: 'mysql:9', env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database } }
       mysql-b: { image: 'mysql:9', env: { MYSQL_ALLOW_EMPTY_PASSWORD: true, MYSQL_USER: test_username, MYSQL_PASSWORD: test_password, MYSQL_DATABASE: test_database } }
     steps:
       - name: Check out package
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { repository: vapor/fluent-mysql-driver, path: fluent-mysql-driver }
       - name: Use local package and run tests
         run: |
@@ -77,18 +84,20 @@ jobs:
           swift test --package-path fluent-mysql-driver --sanitize=thread
 
   linux-integration-psql:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.2-noble
+    container: swift:6.3-noble
     services:
-      psql-a: { image: 'postgres:17', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
-      psql-b: { image: 'postgres:17', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
+      psql-a: { image: 'postgres:18', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
+      psql-b: { image: 'postgres:18', env: { POSTGRES_USER: test_username, POSTGRES_PASSWORD: test_password, POSTGRES_DB: test_database, POSTGRES_HOST_AUTH_METHOD: scram-sha-256, POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 } }
     steps:
       - name: Check out package
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { repository: vapor/fluent-postgres-driver, path: fluent-postgres-driver }
       - name: Use local package and run tests
         run: |
@@ -96,18 +105,20 @@ jobs:
           swift test --package-path fluent-postgres-driver --sanitize=thread
 
   linux-integration-mongo:
+    permissions:
+      contents: read
     if: ${{ !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:6.2-noble
+    container: swift:6.3-noble
     services:
-      mongo-a: { image: 'mongo:6' }
-      mongo-b: { image: 'mongo:6' }
+      mongo-a: { image: 'mongo:8' }
+      mongo-b: { image: 'mongo:8' }
     steps:
       - name: Check out package
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { path: fluent-kit }
       - name: Check out dependent
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with: { repository: vapor/fluent-mongo-driver, path: fluent-mongo-driver }
       - name: Use local package and run tests
         run: |
@@ -115,7 +126,11 @@ jobs:
           swift test --package-path fluent-mongo-driver --sanitize=thread
 
   unit-tests:
+    permissions:
+      contents: read
     uses: vapor/ci/.github/workflows/run-unit-tests.yml@main
     secrets: inherit
     with:
       with_android: true
+      with_musl: true
+      with_release_mode_testing: true
