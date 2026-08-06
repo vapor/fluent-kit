@@ -3,7 +3,7 @@
 public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Schema,
         Field: QueryableProperty,
-        Values: Collection,
+        Values: Sequence,
         Values.Element == Field.Value
 {
     lhs ~~ .array(rhs.map { Field.queryValue($0) })
@@ -14,7 +14,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: Codable,
-        Values: Collection,
+        Values: Sequence,
         Values.Element == Field.Value.Wrapped
 {
     lhs ~~ .array(rhs.map { Field.queryValue(.init($0)) })
@@ -23,7 +23,7 @@ public func ~~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
 public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -> ModelValueFilter<Model>
     where Model: FluentKit.Schema,
         Field: QueryableProperty,
-        Values: Collection,
+        Values: Sequence,
         Values.Element == Field.Value
 {
     lhs !~ .array(rhs.map { Field.queryValue($0) })
@@ -34,7 +34,7 @@ public func !~ <Model, Field, Values>(lhs: KeyPath<Model, Field>, rhs: Values) -
         Field: QueryableProperty,
         Field.Value: OptionalType,
         Field.Value.Wrapped: Codable,
-        Values: Collection,
+        Values: Sequence,
         Values.Element == Field.Value.Wrapped
 {
     lhs !~ .array(rhs.map { Field.queryValue(.init($0)) })
