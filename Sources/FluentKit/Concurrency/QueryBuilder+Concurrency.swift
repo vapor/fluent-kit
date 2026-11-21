@@ -130,7 +130,7 @@ extension QueryBuilder {
 
         // TODO: combine this logic with model+crud timestamps
         let forceDelete =
-            Model.init().deletedTimestamp == nil
+            Model.deletedTimestampDescriptor == nil
             ? true : self.shouldForceDelete
         switch query.action {
         case .delete:

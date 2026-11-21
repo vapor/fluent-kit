@@ -1,4 +1,5 @@
 import Foundation
+import NIOConcurrencyHelpers
 
 extension Model {
     public typealias Timestamp<Format> = TimestampProperty<Self, Format>
@@ -7,7 +8,7 @@ extension Model {
 
 // MARK: Trigger
 
-public enum TimestampTrigger {
+public enum TimestampTrigger: Sendable {
     case create
     case update
     case delete
@@ -164,15 +165,17 @@ extension TimestampProperty: AnyTimestamp {
         self.$timestamp.key
     }
 
-    var currentTimestampInput: DatabaseQuery.Value {
-        self.format.serialize(Date()).flatMap { .bind($0) } ?? .null
+    var currentTimestampInput: @Sendable () -> DatabaseQuery.Value {
+        { [format] in format.serialize(Date()).flatMap { .bind($0) } ?? .null }
     }
 }
 
 protocol AnyTimestamp: AnyProperty {
     var key: FieldKey { get }
     var trigger: TimestampTrigger { get }
-    var currentTimestampInput: DatabaseQuery.Value { get }
+    /// Serializes the current date in the timestamp's format. It reads only the format, so it outlives the
+    /// property it was taken from.
+    var currentTimestampInput: @Sendable () -> DatabaseQuery.Value { get }
     func touch(date: Date?)
 }
 
@@ -182,34 +185,84 @@ extension AnyTimestamp {
     }
 }
 
+/// What one timestamp of a type is, which never changes for the type: its field's key, what stamps it, how it
+/// serializes the current date, and where it stands among an instance's stored properties.
+struct TimestampDescriptor: Sendable {
+    let key: FieldKey
+    let trigger: TimestampTrigger
+    let currentInput: @Sendable () -> DatabaseQuery.Value
+    /// Its offset among an instance's reflected children, or `nil` where the type's ``Fields/properties`` are
+    /// not its own children, as a ``ModelAlias``'s are its model's.
+    let childIndex: Int?
+}
+
+/// Each type's timestamps, found the first time the type is asked about them.
+private let timestampDescriptorsByType = NIOLockedValueBox<[ObjectIdentifier: [TimestampDescriptor]]>([:])
+
 extension Fields {
-    var timestamps: [any AnyTimestamp] {
-        self.properties.compactMap {
-            $0 as? any AnyTimestamp
+    /// This type's timestamps, found by reflecting a fresh instance the first time the type is asked, and
+    /// remembered since, so a query or a save reflects no instance to learn them.
+    static var timestampDescriptors: [TimestampDescriptor] {
+        let type = ObjectIdentifier(self)
+        if let known = timestampDescriptorsByType.withLockedValue({ $0[type] }) {
+            return known
         }
-    }
-    
-    func touchTimestamps(_ triggers: TimestampTrigger...) {
-        self.touchTimestamps(triggers)
+        let found = self.findTimestampDescriptors()
+        timestampDescriptorsByType.withLockedValue { $0[type] = found }
+        return found
     }
 
-    private func touchTimestamps(_ triggers: [TimestampTrigger]) {
+    /// This type's soft-delete timestamp, if it holds one.
+    static var deletedTimestampDescriptor: TimestampDescriptor? {
+        self.timestampDescriptors.first { $0.trigger == .delete }
+    }
+
+    private static func findTimestampDescriptors() -> [TimestampDescriptor] {
+        let prototype = self.init()
+        let timestamps = prototype.properties.compactMap { $0 as? any AnyTimestamp }
+        guard !timestamps.isEmpty else {
+            return []
+        }
+        let children = _FastChildSequence(subject: prototype).map(\.child)
+        return timestamps.map { timestamp in
+            .init(
+                key: timestamp.key,
+                trigger: timestamp.trigger,
+                currentInput: timestamp.currentTimestampInput,
+                childIndex: children.firstIndex { ($0 as? any AnyTimestamp) === timestamp }
+            )
+        }
+    }
+
+    /// The timestamps the given triggers stamp, read from this instance where its type's were found.
+    func timestamps(triggeredBy triggers: [TimestampTrigger]) -> [any AnyTimestamp] {
+        let descriptors = type(of: self).timestampDescriptors.filter { triggers.contains($0.trigger) }
+        guard !descriptors.isEmpty else {
+            return []
+        }
+        let childIndices = descriptors.compactMap(\.childIndex)
+        guard childIndices.count == descriptors.count else {
+            return self.properties.compactMap { $0 as? any AnyTimestamp }.filter { triggers.contains($0.trigger) }
+        }
+        let children = _FastChildSequence(subject: self)
+        return childIndices.compactMap { children.child(at: $0) as? any AnyTimestamp }
+    }
+
+    func touchTimestamps(_ triggers: TimestampTrigger...) {
         let date = Date()
-        self.timestamps.forEach { timestamp in
-            if triggers.contains(timestamp.trigger) {
-                timestamp.touch(date: date)
-            }
+        for timestamp in self.timestamps(triggeredBy: triggers) {
+            timestamp.touch(date: date)
         }
     }
 
     var deletedTimestamp: (any AnyTimestamp)? {
-        self.timestamps.filter { $0.trigger == .delete }.first
+        self.timestamps(triggeredBy: [.delete]).first
     }
 }
 
 extension Schema {
     static func excludeDeleted(from query: inout DatabaseQuery) {
-        guard let timestamp = self.init().deletedTimestamp else {
+        guard let timestamp = self.deletedTimestampDescriptor else {
             return
         }
         let deletedAtField = DatabaseQuery.Field.extendedPath(
@@ -219,7 +272,7 @@ extension Schema {
         )
         query.filters.append(.group([
             .value(deletedAtField, .equal, .null),
-            .value(deletedAtField, .greaterThan, timestamp.currentTimestampInput)
+            .value(deletedAtField, .greaterThan, timestamp.currentInput())
         ], .or))
     }
 }
