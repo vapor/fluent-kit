@@ -118,3 +118,18 @@ internal struct _FastChildSequence: Sequence {
         #endif
     }
 }
+
+extension _FastChildSequence {
+    /// The child at the given offset, read alone rather than by walking every child before it.
+    func child(at index: Int) -> Any {
+        #if compiler(<6.4)
+        var nameC: UnsafePointer<CChar>? = nil
+        var freeFunc: (@convention(c) (UnsafePointer<CChar>?) -> Void)? = nil
+        let child = _getChild(of: self.subject, type: self.type, index: index, outName: &nameC, outFreeFunc: &freeFunc)
+        freeFunc?(nameC)
+        return child
+        #else
+        return self.children[self.children.index(self.children.startIndex, offsetBy: index)].value
+        #endif
+    }
+}

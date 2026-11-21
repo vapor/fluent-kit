@@ -95,7 +95,7 @@ public extension Model {
         try await Self.query(on: database)
             .filter(id: id)
             .delete(force: force)   
-        if force || self.deletedTimestamp == nil {
+        if force || type(of: self).deletedTimestampDescriptor == nil {
             self._$idExists = false
         }
     }
@@ -107,7 +107,7 @@ public extension Model {
     }
 
     private func _restore(on database: any Database) async throws {
-        guard let timestamp = self.timestamps.filter({ $0.trigger == .delete }).first else {
+        guard let timestamp = self.deletedTimestamp else {
             fatalError("no delete timestamp on this model")
         }
         timestamp.touch(date: nil)
@@ -156,7 +156,7 @@ public extension Collection where Element: FluentKit.Model, Self: Sendable {
             .delete(force: force)
 
         guard force else { return }
-        for model in self where model.deletedTimestamp == nil {
+        for model in self where type(of: model).deletedTimestampDescriptor == nil {
             model._$idExists = false
         }
     }
